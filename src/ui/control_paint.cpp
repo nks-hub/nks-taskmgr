@@ -132,9 +132,15 @@ void Desktop::drawResource(const DRAWITEMSTRUCT& entry)
         drawBrush->SetColor(mix(color, line, .4f));
         surface->DrawRoundedRectangle(D2D1::RoundedRect(rect(.5f, 1.1f, w - 1, 55), 6.5f, 6.5f), drawBrush, 1);
     } else if (hoveredControl == resourceList && hoveredResource == static_cast<int>(entry.itemID)) fill(rect(0, .6f, w, 56), D2D1::ColorF(0x232d34), 7);
-    text(item.title, rect(72, 7.6f, w - 82, 16), 12, ink, 600);
-    text(item.description, rect(72, 23.6f, w - 82, 12), 9, muted);
-    text(resourceValue(item), rect(72, 35.6f, w - 82, 14), 10, item.primary.valid() ? color : muted);
+    const auto compact = performanceLayout().compact;
+    const auto textX = compact ? 49.f : 72.f;
+    text(item.title, rect(textX, compact ? 13.6f : 7.6f, w - textX - 10, 16), 12, ink, 600);
+    if (!compact) text(item.description, rect(textX, 23.6f, w - textX - 10, 12), 9, muted);
+    if (compact && item.kind == ResourceKind::network && item.primary.valid()) {
+        text(L"↓ " + decimal(item.primary.value / 1000000, L" Mbit/s"), rect(textX, 29.6f, w - textX - 10, 13), 9, color);
+        text(L"↑ " + (item.secondary.valid() ? decimal(item.secondary.value / 1000000, L" Mbit/s") : L"—"),
+            rect(textX, 42.6f, w - textX - 10, 13), 9, resourceColor(ResourceKind::cpu));
+    } else text(resourceValue(item), rect(textX, compact ? 29.6f : 35.6f, w - textX - 10, 14), 10, item.primary.valid() ? color : muted);
     const auto* series = history.find(item.id);
     const auto* uploads = item.kind == ResourceKind::network ? history.find(item.id + L":up") : nullptr;
     double maximum = item.kind == ResourceKind::memory ? item.capacity : 100;
@@ -143,11 +149,12 @@ void Desktop::drawResource(const DRAWITEMSTRUCT& entry)
         for (const auto* values : {series, uploads}) if (values) for (std::size_t i = 0; i < values->size(); ++i)
             if (values->at(i).metric.valid()) maximum = std::max(maximum, values->at(i).metric.value * 1.1);
     }
-    graph(series, rect(10, 12.6f, 50, 31), color, maximum, false);
-    if (uploads) graph(uploads, rect(10, 12.6f, 50, 31), resourceColor(ResourceKind::cpu), maximum, false);
+    const auto preview = compact ? rect(6, 15.6f, 36, 25) : rect(10, 12.6f, 50, 31);
+    graph(series, preview, color, maximum, false);
+    if (uploads) graph(uploads, preview, resourceColor(ResourceKind::cpu), maximum, false);
     drawBrush->SetColor(mix(color, panel, .35f));
-    surface->DrawLine(D2D1::Point2F(10, 43.6f), D2D1::Point2F(60, 43.6f), drawBrush, 1);
-    if (!item.primary.valid()) text(L"—", rect(10, 19, 50, 20), 12, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
+    surface->DrawLine(D2D1::Point2F(preview.left, preview.bottom), D2D1::Point2F(preview.right, preview.bottom), drawBrush, 1);
+    if (!item.primary.valid()) text(L"—", rect(preview.left, preview.top + 6, preview.right - preview.left, 20), 12, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
     endControl();
 }
 
@@ -159,34 +166,44 @@ void Desktop::drawConsumer(const DRAWITEMSTRUCT& item)
     if (found == processes->processes.end() || !beginControl(item)) return;
     const auto& process = *found;
     const auto w = controlSize.width, h = controlSize.height;
+    RECT client{}; GetClientRect(window, &client);
+    const auto width = client.right / scale;
+    const bool narrow = width <= 1250, compact = width <= 1000;
+    const auto padding = narrow ? 12.f : 18.f;
     const auto color = resourceColor(selectedResource() ? selectedResource()->kind : ResourceKind::cpu);
     fill(rect(0, 0, w, h), D2D1::ColorF(0x171d21));
     fill(rect(.5f, .5f, w - 1, h - 1), hoveredControl == item.hwndItem ? D2D1::ColorF(0x232d34) : panel, 9);
     drawBrush->SetColor(line);
     surface->DrawRoundedRectangle(D2D1::RoundedRect(rect(.5f, .5f, w - 1, h - 1), 9, 9), drawBrush);
-    text(L"0" + std::to_wstring(index + 1), rect(18, 28, 20, 16), 9, muted);
+    if (!narrow) text(L"0" + std::to_wstring(index + 1), rect(18, 28, 20, 16), 9, muted);
     const std::array backgrounds{0xdcf2f6, 0xe1effe, 0xfcebd8, 0xe9edf2};
     const std::array foregrounds{0x167a9c, 0x176bc4, 0xad631d, 0x526273};
     unsigned hash = 0; for (wchar_t c : process.name) hash = hash * 31 + c;
     const auto palette = hash % backgrounds.size();
-    fill(rect(38, 21, 30, 30), D2D1::ColorF(backgrounds[palette]), 8);
+    const auto iconX = narrow ? 13.f : 38.f;
     auto initial = process.name.empty() ? L"?" : process.name.substr(0, 1);
     std::transform(initial.begin(), initial.end(), initial.begin(), [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
-    text(initial, rect(38, 27, 30, 20), 12, D2D1::ColorF(foregrounds[palette]), 700, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
-    text(process.name, rect(79, 19, w - 175, 17), 11, ink, 600);
-    text(L"PID " + std::to_wstring(process.identity.pid), rect(79, 41, w - 175, 15), 9, muted);
+    if (!compact) {
+        fill(rect(iconX, 21, 30, 30), D2D1::ColorF(backgrounds[palette]), 8);
+        text(initial, rect(iconX, 27, 30, 20), 12, D2D1::ColorF(foregrounds[palette]), 700, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
+    }
+    const auto textX = compact ? 13.f : narrow ? 51.f : 79.f;
+    const auto valueRight = w - (narrow ? 13.f : 42.f);
+    const auto nameWidth = compact ? w - 26 : valueRight - 80 - textX;
+    text(process.name, rect(textX, compact ? 14.f : 19.f, nameWidth, 17), compact ? 10.f : 11.f, ink, 600);
+    text(L"PID " + std::to_wstring(process.identity.pid), rect(textX, compact ? 38.f : 41.f, compact ? w - 92 : nameWidth, 15), 9, muted);
     const bool memory = selectedResource() && selectedResource()->kind == ResourceKind::memory;
     const auto value = memory ? decimal(process.counters.workingSetBytes / 1048576., L" MiB", 0) : decimal(process.cpuPercent.value, L" %");
-    text(value, rect(w - 111, 28, 69, 20), 12, ink, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
-    icon(5, w - 31, 29, 13, muted);
-    fill(rect(18, h - 12, w - 36, 2), line);
+    text(value, rect(valueRight - 69, compact ? 36.f : 28.f, 69, 20), narrow ? 10.f : 12.f, ink, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
+    if (!narrow) icon(5, w - 31, 29, 13, muted);
+    fill(rect(padding, h - 12, w - padding * 2, 2), line);
     double top = memory ? static_cast<double>(process.counters.workingSetBytes) : process.cpuPercent.value;
     if (consumers[0]) {
         const auto first = std::find_if(processes->processes.begin(), processes->processes.end(), [&](const auto& p) { return p.identity == *consumers[0]; });
         if (first != processes->processes.end()) top = memory ? static_cast<double>(first->counters.workingSetBytes) : first->cpuPercent.value;
     }
     const auto amount = memory ? static_cast<double>(process.counters.workingSetBytes) : process.cpuPercent.value;
-    if (top > 0) fill(rect(18, h - 12, (w - 36) * static_cast<float>(amount / top), 2), mix(color, panel, .5f));
+    if (top > 0) fill(rect(padding, h - 12, (w - padding * 2) * static_cast<float>(amount / top), 2), mix(color, panel, .5f));
     endControl();
 }
 

@@ -52,6 +52,13 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
     UpdateWindow(window);
     MSG event{};
     while (GetMessageW(&event, nullptr, 0, 0) > 0) {
+        if (performance && event.message == WM_MOUSEWHEEL) {
+            POINT pointer{GET_X_LPARAM(event.lParam), GET_Y_LPARAM(event.lParam)}; ScreenToClient(window, &pointer);
+            const auto frame = performanceLayout();
+            if (pointer.x / scale >= frame.detailX && pointer.y / scale >= frame.top) {
+                message(event.message, event.wParam, event.lParam); continue;
+            }
+        }
         if (event.message == WM_MOUSEMOVE && GetParent(event.hwnd) == window) {
             const auto row = event.hwnd == resourceList ? static_cast<int>(LOWORD(SendMessageW(resourceList, LB_ITEMFROMPOINT, 0, event.lParam))) : -1;
             if (hoveredControl != event.hwnd || hoveredResource != row) {
@@ -205,33 +212,38 @@ void Desktop::layout()
     move(minimizeButton, width - 123, 0, 41, 48);
     move(maximizeButton, width - 82, 0, 41, 48);
     move(closeButton, width - 41, 0, 41, 48);
-    move(processButton, 8, 127, 71, 66);
-    move(performanceButton, 8, 197, 71, 66);
-    move(intervalButton, width - 200, 84, 65, 35);
-    move(pauseButton, width - 126, 84, 96, 35);
-    move(resourceList, 123, 202, 258, std::max(30.f, std::min(height - 290, static_cast<float>(resources.size()) * 59)));
-    move(search, 118, 151, std::max(100.f, width - 150), 35);
-    move(table.handle(), 118, 205, std::max(100.f, width - 150), std::max(60.f, height - 360));
-    const float detailX = 411, available = width - detailX - 25;
-    const float factsWidth = 242;
-    const float chartWidth = available - factsWidth - 14;
-    move(range60Button, detailX + chartWidth - 135, 183, 46, 27);
-    move(range600Button, detailX + chartWidth - 85, 183, 59, 27);
-    move(cpuTotalButton, detailX + 22, 302, 64, 25);
-    move(cpuEachButton, detailX + 87, 302, 64, 25);
-    move(cpuOverlayButton, detailX + 152, 302, 64, 25);
+    const auto frame = performanceLayout();
+    detailScroll = std::clamp(detailScroll, 0.f, frame.maxScroll);
+    const auto navX = width <= 1000 ? 5.f : 8.f;
+    const auto navWidth = frame.sidebar - navX * 2 - 1;
+    move(processButton, navX, 127, navWidth, 66);
+    move(performanceButton, navX, 197, navWidth, 66);
+    const auto headerPadding = width <= 1000 ? 22.f : 30.f;
+    move(intervalButton, width - headerPadding - 170, 84, 65, 35);
+    move(pauseButton, width - headerPadding - 96, 84, 96, 35);
+    move(resourceList, frame.inventoryX + 10, 202, frame.inventoryWidth - 20,
+        std::max(30.f, std::min(height - 290, static_cast<float>(resources.size()) * 59)));
+    const auto headerX = frame.sidebar + headerPadding;
+    move(search, headerX, 151, std::max(100.f, width - headerX - headerPadding), 35);
+    move(table.handle(), headerX, 205, std::max(100.f, width - headerX - headerPadding), std::max(60.f, height - 360));
+    const auto scrolled = [&](HWND child, float x, float y, float w, float h, bool visible) {
+        const auto shiftedY = y - detailScroll;
+        move(child, x, shiftedY, w, h);
+        const bool inside = shiftedY >= frame.top && shiftedY + h <= frame.bottom;
+        ShowWindow(child, visible && performance && inside ? SW_SHOW : SW_HIDE);
+    };
+    scrolled(range60Button, frame.detailX + frame.chartWidth - 135, 183, 46, 27, true);
+    scrolled(range600Button, frame.detailX + frame.chartWidth - 85, 183, 59, 27, true);
     const auto* selected = selectedResource();
-    for (const auto control : {cpuTotalButton, cpuEachButton, cpuOverlayButton})
-        ShowWindow(control, performance && selected && selected->kind == ResourceKind::cpu ? SW_SHOW : SW_HIDE);
-    for (const auto control : {range60Button, range600Button, allProcessesButton}) ShowWindow(control, performance ? SW_SHOW : SW_HIDE);
-    const auto cardHeight = std::min(475.f, height - 333);
-    const auto rowY = 150.59375f + cardHeight + 74;
-    move(allProcessesButton, width - 190, rowY - 46, 165, 30);
-    const auto consumerWidth = (available - 26) / 3;
-    for (std::size_t i = 0; i < consumerButtons.size(); ++i) {
-        move(consumerButtons[i], detailX + static_cast<float>(i) * (consumerWidth + 13), rowY, consumerWidth, 74);
-        ShowWindow(consumerButtons[i], performance && consumers[i] ? SW_SHOW : SW_HIDE);
-    }
+    const auto cpu = selected && selected->kind == ResourceKind::cpu;
+    scrolled(cpuTotalButton, frame.detailX + 22, 302, 64, 25, cpu);
+    scrolled(cpuEachButton, frame.detailX + 87, 302, 64, 25, cpu);
+    scrolled(cpuOverlayButton, frame.detailX + 152, 302, 64, 25, cpu);
+    scrolled(allProcessesButton, frame.detailX + frame.available - 165, frame.rowY - 46, 165, 30, true);
+    const auto consumerWidth = (frame.available - frame.consumerGap * 2) / 3;
+    for (std::size_t i = 0; i < consumerButtons.size(); ++i)
+        scrolled(consumerButtons[i], frame.detailX + static_cast<float>(i) * (consumerWidth + frame.consumerGap),
+            frame.rowY, consumerWidth, 74, consumers[i].has_value());
     if (target) target->Resize(D2D1::SizeU(client.right, client.bottom));
     InvalidateRect(window, nullptr, FALSE);
 }
@@ -333,6 +345,19 @@ const ResourceRecord* Desktop::selectedResource() const
     return found == resources.end() ? nullptr : &*found;
 }
 
+PerformanceLayout Desktop::performanceLayout() const
+{
+    RECT bounds{}; GetClientRect(window, &bounds);
+    const auto* resource = selectedResource();
+    return PerformanceLayout::calculate(bounds.right / scale, bounds.bottom / scale, resource ? resource->kind : ResourceKind::cpu);
+}
+
+void Desktop::scrollDetail(float position)
+{
+    detailScroll = std::clamp(position, 0.f, performanceLayout().maxScroll);
+    layout();
+}
+
 LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg) {
@@ -349,7 +374,7 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
     }
     case WM_GETMINMAXINFO: {
         auto* bounds = reinterpret_cast<MINMAXINFO*>(lp);
-        bounds->ptMinTrackSize = {static_cast<LONG>(1040 * scale), static_cast<LONG>(700 * scale)};
+        bounds->ptMinTrackSize = {static_cast<LONG>(720 * scale), static_cast<LONG>(500 * scale)};
         MONITORINFO monitor{sizeof(monitor)};
         if (GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor)) {
             bounds->ptMaxPosition = {monitor.rcWork.left - monitor.rcMonitor.left, monitor.rcWork.top - monitor.rcMonitor.top};
@@ -380,6 +405,31 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
     }
     case WM_TIMER: if (wp == refreshTimer) tick(); return 0;
     case WM_ERASEBKGND: return 1;
+    case WM_MOUSEWHEEL:
+        if (performance) { scrollDetail(detailScroll - GET_WHEEL_DELTA_WPARAM(wp) / static_cast<float>(WHEEL_DELTA) * 48); return 0; }
+        break;
+    case WM_LBUTTONDOWN:
+        if (performance) {
+            const auto frame = performanceLayout();
+            const auto x = GET_X_LPARAM(lp) / scale, y = GET_Y_LPARAM(lp) / scale;
+            if (frame.maxScroll > 0 && x >= frame.detailRight - 17 && x <= frame.detailRight && y >= frame.top && y <= frame.bottom) {
+                detailDragging = true; detailDragY = y; detailDragStart = detailScroll; SetCapture(window); return 0;
+            }
+        }
+        break;
+    case WM_MOUSEMOVE:
+        if (detailDragging) {
+            const auto frame = performanceLayout();
+            const auto viewport = frame.bottom - frame.top;
+            const auto thumb = std::max(30.f, viewport * viewport / frame.contentHeight);
+            scrollDetail(detailDragStart + (GET_Y_LPARAM(lp) / scale - detailDragY) / std::max(1.f, viewport - thumb) * frame.maxScroll);
+            return 0;
+        }
+        break;
+    case WM_LBUTTONUP:
+        if (detailDragging) { detailDragging = false; ReleaseCapture(); return 0; }
+        break;
+    case WM_CAPTURECHANGED: detailDragging = false; break;
     case WM_PAINT: paint(); return 0;
     case WM_DRAWITEM: {
         const auto& item = *reinterpret_cast<DRAWITEMSTRUCT*>(lp);
@@ -430,7 +480,10 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         }
         case 5: if (HIWORD(wp) == LBN_SELCHANGE) {
             const auto index = SendMessageW(resourceList, LB_GETCURSEL, 0, 0);
-            if (index >= 0 && static_cast<std::size_t>(index) < resources.size()) selectedId = resources[index].id;
+            if (index >= 0 && static_cast<std::size_t>(index) < resources.size()) {
+                if (selectedId != resources[index].id) detailScroll = 0;
+                selectedId = resources[index].id;
+            }
             updateConsumers(); layout();
             InvalidateRect(window, nullptr, FALSE);
         } break;

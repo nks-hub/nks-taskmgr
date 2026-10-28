@@ -57,6 +57,8 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - Testy výpočtů prostředků a historie a dva živé testy sběru prošly. Test nativního okna ověřuje přepnutí pohledů, výběr identity přes obnovu, filtr PID a označení starých dat po přerušení obou sběrů.
 - T06, T12, T14 a T16 zůstávají otevřené: chybí srovnání WinUI/AOT, ukončitelná izolace poskytovatelů, světlý vzhled, přístupnost a úplné přijímací scénáře. Dílčí UI není dokončená aplikace.
 - Rozpracovaný Výkon má seznam s minigrafy, časovou osu, pravý panel sestavy a proklikávací karty procesů; vzhled ještě není přijatý. CPU nabízí celek, logické procesory a překrytí; síť oba směry, paměť samostatný graf stránkovacího souboru.
+- Pixelové porovnání při 1440 × 920 a 100% DPI: osm statických oblastí má shodné hranice znaků, dvě navigační ikony se liší nejvýše o 1 px; celé UI tím není přijaté.
+- Release, čtyři testy sběru a výpočtů a test nativního okna prošly; při čtyřech velikostech od 720 × 500 do 1440 × 920 jsou karty procesů dosažitelné posunem a ovládání nepřekrývá záhlaví ani patičku. Skutečné 150/200% DPI zbývá ověřit.
 - Historie má nejvýše 512 řad po 2 401 bodech včetně logických CPU; samotné bodové buffery zůstávají pod 64 MiB. Rozsah lze přepnout mezi 60 s a 10 min; nejde o záruku uchování celé délky při každém intervalu.
 
 ## Etapa 0: Základ a měřený prototyp

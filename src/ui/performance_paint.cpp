@@ -14,32 +14,34 @@ void Desktop::paintPerformance(float width, float height)
         const auto stroke = D2D1::RectF(bounds.left + .5f, bounds.top + .5f, bounds.right - .5f, bounds.bottom - .5f);
         surface->DrawRoundedRectangle(D2D1::RoundedRect(stroke, radius - .5f, radius - .5f), drawBrush, 1);
     };
-    card(rect(113, 150.59375f, 278, height - 202.59375f), 10);
-    text(L"Prostředky", rect(132, 170.59375f, 150, 22), 13, ink, 600);
-    text(std::to_wstring(resources.size()) + L" prostředků", rect(300, 173.59375f, 71, 18), 9, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
-    text(paused.load() ? L"Pozastavený přehled" : L"Živá data · všechny prostředky", rect(132, height - 76, 240, 18), 9, muted);
+    const auto frame = performanceLayout();
+    card(rect(frame.inventoryX, frame.top, frame.inventoryWidth, frame.bottom - frame.top), 10);
+    text(L"Prostředky", rect(frame.inventoryX + 19, 170.59375f, 110, 22), 13, ink, 600);
+    text(std::to_wstring(resources.size()) + L" prostředků", rect(frame.inventoryX + frame.inventoryWidth - 91, 173.59375f, 71, 18), 9, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
+    text(paused.load() ? L"Pozastavený přehled" : L"Živá data · všechny prostředky", rect(frame.inventoryX + 19, height - 76, frame.inventoryWidth - 38, 18), 9, muted);
     const auto* item = selectedResource();
     if (!item) { text(L"Načítám prostředky…", rect(433, 190, 400, 40), 20, muted); return; }
     const auto color = resourceColor(item->kind);
-    const float x = 411, y = 150.59375f, available = width - x - 25;
-    const float factsWidth = 242;
-    const float w = available - factsWidth - 14;
-    const float h = std::min(475.f, height - 333);
-    const float fx = x + w + 14;
+    surface->PushAxisAlignedClip(D2D1::RectF(frame.detailX, frame.top, frame.detailRight - (frame.maxScroll > 0 ? 17 : 0), frame.bottom), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+    surface->SetTransform(D2D1::Matrix3x2F::Translation(0, -detailScroll));
+    const float x = frame.detailX, y = frame.top, available = frame.available;
+    const float factsWidth = frame.factsWidth;
+    const float w = frame.chartWidth, h = frame.chartHeight;
+    const float fx = frame.factsX, factsY = frame.factsY;
     card(rect(x, y, w, h));
-    card(rect(fx, y, factsWidth, h));
+    card(rect(fx, factsY, factsWidth, frame.factsHeight));
     text(item->kind == ResourceKind::memory ? L"FYZICKÁ PAMĚŤ" : L"AKTIVITA PROSTŘEDKU", rect(x + 23, y + 21, w - 164, 18), 9, muted, 600, 1.6f);
     const auto title = text(item->title, rect(x + 23, y + 45, w - 46, 31), 20, ink, 600, -.3f);
     const auto captionX = x + 23 + title.widthIncludingTrailingWhitespace + 17;
     const auto modelCaption = item->kind == ResourceKind::memory ? decimal(item->capacity / 1073741824., L" GiB celkem") : item->description;
-    text(modelCaption, D2D1::RectF(captionX, y + 56, x + w - 161, y + 75), 11, muted);
+    if (width > 1000) text(modelCaption, D2D1::RectF(captionX, y + 56, x + w - 161, y + 75), 11, muted);
     fill(rect(x + w - 139, y + 29, 116, 35), D2D1::ColorF(0x12181c), 7);
     drawBrush->SetColor(line);
     surface->DrawRoundedRectangle(D2D1::RoundedRect(rect(x + w - 138.5f, y + 29.5f, 115, 34), 6.5f, 6.5f), drawBrush);
     double divisor = item->kind == ResourceKind::memory ? 1073741824. : item->kind == ResourceKind::network ? 1000000. : 1.;
     const auto unit = item->kind == ResourceKind::memory ? L"GiB" : item->kind == ResourceKind::network ? L"Mbit/s" : L"%";
     const auto reading = item->primary.valid() ? decimal(item->primary.value / divisor, L"") : resourceValue(*item);
-    const auto quantity = text(reading, rect(x + 23, y + 88, w - 46, 55), item->primary.valid() ? 42.f : 21.f, ink, 400, item->primary.valid() ? -1.f : 0);
+    const auto quantity = text(reading, rect(x + 23, y + 88, w - 46, 55), item->primary.valid() ? frame.compact ? 34.f : 42.f : 21.f, ink, 400, item->primary.valid() ? -1.f : 0);
     if (item->primary.valid()) {
         const auto unitX = x + 23 + quantity.widthIncludingTrailingWhitespace + 8;
         const auto unitSize = text(unit, rect(unitX, y + 111, 70, 22), 13, muted);
@@ -116,9 +118,9 @@ void Desktop::paintPerformance(float width, float height)
             + L" · " + std::to_wstring(series->size()) + L" vzorků", rect(x + 22, y + h - 40, w - 44, 22), 9, muted);
     }
 
-    text(L"SESTAVA", rect(fx + 23, y + 23, factsWidth - 46, 18), 9, muted, 600, 1.6f);
+    text(L"SESTAVA", rect(fx + 23, factsY + 23, factsWidth - 46, 18), 9, muted, 600, 1.6f);
     const auto model = item->kind == ResourceKind::memory ? decimal((processes && processes->memory.installedBytes ? static_cast<double>(processes->memory.installedBytes) : item->capacity) / 1073741824., L" GiB") : item->description;
-    const auto modelSize = text(model, rect(fx + 23, y + 50, factsWidth - 46, 90), 17, ink, 600);
+    const auto modelSize = text(model, rect(fx + 23, factsY + 50, factsWidth - 46, 90), 17, ink, 600);
     std::vector<std::pair<std::wstring, std::wstring>> facts;
     std::vector<std::pair<std::wstring, std::wstring>> stats;
     const auto measured = [&](Metric<double> value, double scaleBy, const wchar_t* suffix) { return value.valid() ? decimal(value.value / scaleBy, suffix) : L"Nezměřeno"; };
@@ -144,25 +146,34 @@ void Desktop::paintPerformance(float width, float height)
         facts = {{L"Adaptér", item->title}, {L"Vyhrazená paměť", decimal(item->capacity / 1073741824., L" GiB")}, {L"Zobrazené využití", L"Nejvyšší engine"}};
         stats = {{L"Aktivita", measured(item->primary, 1, L" %")}, {L"Zdroj", L"GPU Engine"}};
     }
-    float fy = y + 50 + modelSize.height + 20;
+    const auto factsColumnWidth = frame.stacked ? (factsWidth - 66) / 2 : factsWidth - 46;
+    float fy = frame.stacked ? factsY + 98 : factsY + 50 + modelSize.height + 20;
+    const auto statisticsTop = fy;
     for (const auto& [label, value] : facts) {
-        text(label, rect(fx + 23, fy, factsWidth * .53f - 23, 18), 10, muted);
-        text(value, rect(fx + factsWidth * .53f, fy, factsWidth * .47f - 23, 20), 10, ink, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
+        text(label, rect(fx + 23, fy, factsColumnWidth * .53f, 18), 10, muted);
+        text(value, rect(fx + 23 + factsColumnWidth * .53f, fy, factsColumnWidth * .47f, 20), 10, ink, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
         fy += 27;
     }
-    fill(rect(fx + 23, fy + 8, factsWidth - 46, 1), line);
-    fy += 32;
+    if (!frame.stacked) { fill(rect(fx + 23, fy + 8, factsWidth - 46, 1), line); fy += 32; }
+    else fy = statisticsTop;
     for (std::size_t i = 0; i < stats.size(); ++i) {
-        const auto columnWidth = (factsWidth - 46 - 15) / 2;
-        const auto sx = fx + 23 + static_cast<float>(i % 2) * (columnWidth + 15);
+        const auto columnWidth = (factsColumnWidth - 15) / 2;
+        const auto sx = fx + 23 + (frame.stacked ? factsColumnWidth + 20 : 0) + static_cast<float>(i % 2) * (columnWidth + 15);
         const auto sy = fy + static_cast<float>(i / 2) * 57;
-        if (sy + 40 > y + h - 12) break;
+        if (sy + 40 > factsY + frame.factsHeight - 12) break;
         text(stats[i].first, rect(sx, sy, columnWidth, 17), 9, muted);
         text(stats[i].second, rect(sx, sy + 19, columnWidth, 24), 14, ink, 600);
     }
-    const auto rowY = y + h + 74;
+    const auto rowY = frame.rowY;
     text(L"S O U V I S L O S T I", rect(x, rowY - 49, 250, 18), 9, muted);
     text(item->kind == ResourceKind::memory ? L"Procesy podle pracovní sady" : L"Procesy podle CPU · celý systém", rect(x, rowY - 33, available - 180, 27), 16, ink, 600);
+    surface->SetTransform(D2D1::Matrix3x2F::Identity());
+    surface->PopAxisAlignedClip();
+    if (frame.maxScroll > 0) {
+        const auto viewport = frame.bottom - frame.top;
+        const auto thumb = std::max(30.f, viewport * viewport / frame.contentHeight);
+        fill(rect(frame.detailRight - 10, frame.top + detailScroll / frame.maxScroll * (viewport - thumb), 6, thumb), line, 3);
+    }
 }
 
 void Desktop::updateConsumers()

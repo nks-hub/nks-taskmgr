@@ -3,6 +3,7 @@
 #include "core/history.hpp"
 #include "core/resource.hpp"
 #include "process_table.hpp"
+#include "performance_layout.hpp"
 #include <d2d1.h>
 #include <dwrite.h>
 #include <dwrite_1.h>
@@ -65,6 +66,8 @@ private:
     void fill(D2D1_RECT_F box, D2D1_COLOR_F color, float radius = 0);
     void graph(const HistorySeries* series, D2D1_RECT_F box, D2D1_COLOR_F color, double maximum, bool grid, bool area = true);
     void rebuildResources();
+    void scrollDetail(float position);
+    PerformanceLayout performanceLayout() const;
     const ResourceRecord* selectedResource() const;
     HWND window{}, resourceList{}, search{}, processButton{}, performanceButton{}, pauseButton{}, intervalButton{};
     HWND hoveredControl{};
@@ -79,6 +82,8 @@ private:
     bool processStale{}, resourceStale{};
     int ticks{}, smokeChecks{};
     int cpuView{}, rangeSeconds{60};
+    float detailScroll{}, detailDragY{}, detailDragStart{};
+    bool detailDragging{};
     std::wstring selectedId{L"cpu"}, processError, resourceError;
     ProcessTable table;
     std::shared_ptr<const ProcessSnapshot> processes;

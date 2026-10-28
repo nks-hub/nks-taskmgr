@@ -46,9 +46,9 @@ std::wstring resourceValue(const ResourceRecord& item)
 DWRITE_TEXT_METRICS Desktop::text(const std::wstring& value, D2D1_RECT_F box, float size, D2D1_COLOR_F color,
     int weight, float spacing, DWRITE_TEXT_ALIGNMENT alignment)
 {
-    if (!weight) weight = size == 42 ? 400 : size >= 16 ? 600 : 400;
+    if (!weight) weight = size == 42 || size == 34 ? 400 : size >= 16 ? 600 : 400;
     auto& format = formats[{size, weight}];
-    if (!format && FAILED(writing->CreateTextFormat(size == 42 ? L"Bahnschrift" : L"Segoe UI", nullptr,
+    if (!format && FAILED(writing->CreateTextFormat(size == 42 || size == 34 ? L"Bahnschrift" : L"Segoe UI", nullptr,
         static_cast<DWRITE_FONT_WEIGHT>(weight), DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, size, L"cs-CZ", &format))) return {};
     format->SetWordWrapping(box.bottom - box.top > size * 2.2f ? DWRITE_WORD_WRAPPING_WRAP : DWRITE_WORD_WRAPPING_NO_WRAP);
     format->SetTextAlignment(alignment);
@@ -168,21 +168,23 @@ void Desktop::paint()
     target->BeginDraw();
     target->Clear(D2D1::ColorF(0x171d21));
     const auto width = client.right / scale, height = client.bottom / scale;
+    const auto frame = performanceLayout();
+    const auto headerX = frame.sidebar + (width <= 1000 ? 22.f : 30.f);
     fill(rect(0, 0, width, 49), D2D1::ColorF(0x12181c));
-    fill(rect(0, 49, 88, height - 49), D2D1::ColorF(0x12181c));
+    fill(rect(0, 49, frame.sidebar, height - 49), D2D1::ColorF(0x12181c));
     fill(rect(0, 48, width, 1), line);
-    fill(rect(87, 49, 1, height - 49), line);
-    fill(rect(88, height - 30, width - 88, 1), line);
+    fill(rect(frame.sidebar - 1, 49, 1, height - 49), line);
+    fill(rect(frame.sidebar, height - 30, width - frame.sidebar, 1), line);
     icon(2, 23, 16, 18, amber);
     text(L"NKS", rect(51, 16, 35, 22), 12, ink, 700);
     text(L"Task Manager", rect(82, 16, 110, 22), 12, muted);
     fill(rect(194, 17, 1, 14), line);
     text(L"Lokální počítač", rect(218, 18, 180, 20), 10, muted);
-    text(L"n", rect(31, 62, 30, 40), 32, ink, 700);
-    text(L".", rect(46, 62, 18, 40), 32, amber, 700);
+    text(L"n", rect(frame.sidebar / 2 - 13, 62, 30, 40), 32, ink, 700);
+    text(L".", rect(frame.sidebar / 2 + 2, 62, 18, 40), 32, amber, 700);
     fill(rect(0, performance ? 220.f : 150.f, 3, 20), amber, 1);
-    text(performance ? L"Výkon" : L"Procesy", rect(118, 72, 300, 38), 28, ink, 600, -.7f);
-    text(performance ? L"Živý přehled všech prostředků" : L"Aplikace, prostředky a jejich souvislosti.", rect(119, 117, 600, 19), 11, muted);
+    text(performance ? L"Výkon" : L"Procesy", rect(headerX, 72, 300, 38), 28, ink, 600, -.7f);
+    text(performance ? L"Živý přehled všech prostředků" : L"Aplikace, prostředky a jejich souvislosti.", rect(headerX + 1, 117, width - headerX - 220, 19), width <= 1000 ? 10.f : 11.f, muted);
     if (performance) paintPerformance(width, height); else paintProcesses(width, height);
     auto status = paused.load() ? L"Pozastaveno" : processes ? L"Živá data" : L"Načítám procesy";
     std::wstring footer = status;
@@ -190,7 +192,7 @@ void Desktop::paint()
         + decimal(std::chrono::duration<double>(std::chrono::steady_clock::now() - processes->measuredAt).count(), L" s");
     if (!processError.empty()) footer = L"Sběr procesů selhal: " + processError;
     else if (!resourceError.empty()) footer += L"  ·  Sběr zařízení: " + resourceError;
-    text(footer, rect(113, height - 21, width - 140, 18), 9, muted);
+    text(footer, rect(frame.inventoryX, height - 21, width - frame.inventoryX - 25, 18), 9, muted);
     if (target->EndDraw() == D2DERR_RECREATE_TARGET) { brush.Reset(); target.Reset(); }
     EndPaint(window, &paint);
 }
