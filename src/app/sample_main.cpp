@@ -66,6 +66,12 @@ int main(int argc, char** argv)
         if (verify) {
             require(after.systemCpuPercent.valid() && after.systemCpuPercent.value >= 0 && after.systemCpuPercent.value <= 100,
                 "System CPU counters are unavailable or invalid");
+            require(after.processors.size() == after.logicalProcessors, "Logical processor list is incomplete");
+            for (const auto& processor : after.processors)
+                require(processor.cpuPercent.valid() && processor.cpuPercent.value >= 0 && processor.cpuPercent.value <= 100,
+                    "Logical processor sample is unavailable or invalid");
+            if (after.memory.pageFileState == nks::SampleState::valid)
+                require(after.memory.pageFileUsedBytes <= after.memory.pageFileBytes, "Pagefile usage exceeds its capacity");
             FILETIME created{}, exited{}, kernel{}, user{};
             require(GetProcessTimes(GetCurrentProcess(), &created, &exited, &kernel, &user) != FALSE, "Cannot verify creation time");
             const auto generation = (static_cast<std::uint64_t>(created.dwHighDateTime) << 32) | created.dwLowDateTime;
@@ -82,6 +88,8 @@ int main(int argc, char** argv)
             << ",\"validProcessCpu\":" << valid << ",\"systemCpuState\":" << static_cast<int>(after.systemCpuPercent.state)
             << ",\"systemCpuPercent\":" << after.systemCpuPercent.value
             << ",\"physicalBytes\":" << after.memory.physicalBytes << ",\"availableBytes\":" << after.memory.availableBytes
+            << ",\"pageFileState\":" << static_cast<int>(after.memory.pageFileState) << ",\"pageFileBytes\":" << after.memory.pageFileBytes
+            << ",\"pageFileUsedBytes\":" << after.memory.pageFileUsedBytes
             << ",\"collectionMs\":" << std::chrono::duration<double, std::milli>(after.collectionTime).count()
             << ",\"verification\":" << (verify ? "true" : "false") << "}\n";
         return 0;

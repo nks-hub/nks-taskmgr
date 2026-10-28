@@ -7,11 +7,17 @@
 
 A Windows process and system monitor written in C++20.
 
-Development has started with the native collector, local tests, and measurement tools. The desktop interface and administrative actions are tracked in [TODO.md](TODO.md).
+The current desktop prototype displays live processes and individual system devices. Administrative actions and the remaining application scope are tracked in [TODO.md](TODO.md).
 
 ## Features
 
 - 🔎 **Process collection** - Reads process identities, parent PIDs, CPU times, threads, handles, and I/O counters through the Windows native API.
+- 🖥️ **Desktop prototype** - Provides a virtual process table with name/PID search, column sorting, multiple selection, and a selection detail panel.
+- 📊 **Device view** - Lists individual disks, hardware GPUs, and physical network adapters, including disconnected adapters. Each item opens a graph and current counters.
+- ⏱️ **History** - Stores up to 2,401 samples for each of 512 series, draws gaps, and shows the retained duration. Collection runs on separate process and device threads with one pending snapshot each.
+- 🧩 **CPU graphs** - Switches between total CPU, a graph for each logical processor, and overlaid processor graphs. Processor groups retain separate identities.
+- ↕️ **Network traffic** - Shows receive and transmit rates in the resource list, selected chart, and device details.
+- 💾 **Pagefile usage** - Displays the current and peak pagefile allocation, its capacity, and a usage graph beside physical memory and commit values.
 - 🧮 **Sample states** - Distinguishes a first sample, measured zero, unavailable data, and gaps after counter or topology changes.
 - 🧠 **Memory accounting** - Keeps working set, private memory, physical memory, and commit values separate.
 - 🧪 **Local verification** - Tests malformed buffers, PID reuse, CPU normalization, and a controlled CPU and memory load.
@@ -35,9 +41,21 @@ From a checked-out repository:
 pwsh -NoProfile -File scripts/build.ps1 -Configuration Release
 ```
 
-The current executables are placed in `build/msvc/Release`. The collector is a console development tool; the desktop application is still being implemented.
+The executables are placed in `build/msvc/Release`. The desktop uses Win32 and Direct2D as the first UI candidate. The planned WinUI 3 and Native AOT comparison remains open.
 
 ## Usage
+
+Open the desktop prototype:
+
+```powershell
+./build/msvc/Release/nks-taskmgr.exe
+```
+
+Switch between Processes and Performance using the left navigation. Performance keeps individual resource previews beside the graph, hardware facts, and process cards. Select a process card to open its row in the process table. The refresh control switches between one second and 250 milliseconds; Pause stops both collectors. Graphs switch between 60 seconds and 10 minutes. Ctrl+F opens the process search.
+
+The memory page separates physical memory, commit, and pagefile usage. Pagefile usage comes from `EnumPageFilesW`; it is not a measure of paging I/O activity. Network graphs show receive and transmit values in bits per second.
+
+The current UI implements the dark appearance. Services, administrative actions, accessibility acceptance, and the light appearance are not yet implemented. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
 
 Capture two real process samples one second apart:
 
@@ -68,7 +86,17 @@ Run the collection benchmark:
 pwsh -NoProfile -File scripts/build.ps1 -Configuration Release -Benchmark
 ```
 
-The benchmark performs 10 warm-up collections and 200 measured collections without a sampling delay. It measures collector and calculation cost, not idle CPU usage, startup, or desktop rendering. Acceptance targets and open findings are maintained in TODO.md.
+The collection benchmark performs 10 warm-up collections and 200 measured collections without a sampling delay. It reports native query, parser, system counter, and calculation costs separately. It does not measure idle CPU usage, startup, or rendering.
+
+Measure desktop CPU, private memory, working set, handles, and GDI objects:
+
+```powershell
+pwsh -NoProfile -File benchmarks/desktop_bench.ps1
+```
+
+This local benchmark opens its own application instance, warms it up for 10 seconds, then measures 60 seconds visible and 60 seconds minimized. Results, including the executable hash, are written to the system temporary directory. CPU is normalized to the whole machine. Acceptance targets and open findings are maintained in TODO.md; these measurements do not replace the planned OS, UI candidate, or 24-hour tests.
+
+The desktop `--smoke` option runs a local check of view switching, retained process selection, PID filtering, and stale data after stopping both collectors, then exits with code 0 on success.
 
 The build script discovers Visual Studio and the installed Windows SDK. It sets the CRT root only for its child build processes and restores the previous environment afterward.
 

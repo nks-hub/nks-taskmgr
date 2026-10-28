@@ -23,16 +23,27 @@ add_library(nks_native STATIC
     src/collectors/process_collector.cpp
     src/collectors/processor_query.cpp
     src/core/process_sampler.cpp
+    src/core/resource.cpp
+    src/collectors/pdh_counters.cpp
+    src/collectors/resource_collector.cpp
 )
 target_include_directories(nks_native PUBLIC src)
 target_include_directories(nks_native SYSTEM PRIVATE third_party/phnt/include)
 target_compile_definitions(nks_native PRIVATE PHNT_VERSION=117)
-target_link_libraries(nks_native PUBLIC ntdll psapi)
+target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid)
 target_compile_options(nks_native PRIVATE /W4 /WX /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
 
 add_executable(nks-sample src/app/sample_main.cpp)
 target_link_libraries(nks-sample PRIVATE nks_native)
 target_compile_options(nks-sample PRIVATE /W4 /WX /utf-8 /permissive-)
+
+add_executable(nks-resource-sample src/app/resource_sample.cpp)
+target_link_libraries(nks-resource-sample PRIVATE nks_native)
+target_compile_options(nks-resource-sample PRIVATE /W4 /WX /utf-8 /permissive-)
+
+add_executable(nks-taskmgr WIN32 src/app/desktop_main.cpp src/ui/desktop.cpp src/ui/desktop_paint.cpp src/ui/control_paint.cpp src/ui/performance_paint.cpp src/ui/process_table.cpp)
+target_link_libraries(nks-taskmgr PRIVATE nks_native d2d1 dwrite dwmapi comctl32)
+target_compile_options(nks-taskmgr PRIVATE /W4 /WX /utf-8 /permissive-)
 
 include(CTest)
 if(BUILD_TESTING)
@@ -44,6 +55,12 @@ if(BUILD_TESTING)
     add_test(NAME core COMMAND nks-core-tests)
     add_test(NAME live-sampling COMMAND nks-sample --verify)
     set_tests_properties(live-sampling PROPERTIES TIMEOUT 20)
+    add_executable(nks-resource-tests tests/resource_tests.cpp)
+    target_link_libraries(nks-resource-tests PRIVATE nks_native)
+    target_compile_options(nks-resource-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    add_test(NAME resource-calculations COMMAND nks-resource-tests)
+    add_test(NAME live-resources COMMAND nks-resource-sample)
+    set_tests_properties(live-resources PROPERTIES TIMEOUT 20)
 endif()
 
 add_executable(nks-collect-bench benchmarks/collect_bench.cpp)

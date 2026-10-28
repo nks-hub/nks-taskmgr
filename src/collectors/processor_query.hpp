@@ -16,6 +16,7 @@ struct ProcessorTimes {
     std::uint64_t user100ns{};
     std::uint64_t idle100ns{};
     SampleState state{SampleState::unavailable};
+    std::vector<LogicalProcessor> processors;
 };
 
 using ProcessorGroupQuery = LONG (NTAPI*)(USHORT, void*, ULONG, ULONG*);

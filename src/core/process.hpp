@@ -12,7 +12,7 @@ enum class SampleState : std::uint8_t {
 };
 
 enum class MetricSource : std::uint8_t {
-    nativeProcess, processorTime, performanceInfo
+    nativeProcess, processorTime, performanceInfo, performanceCounter, networkInterface, dxgi
 };
 
 template<class T>
@@ -64,13 +64,25 @@ struct SystemMemory {
     std::uint64_t pagedPoolBytes{};
     std::uint64_t nonpagedPoolBytes{};
     SampleState state{SampleState::unavailable};
+    std::uint64_t pageFileBytes{}, pageFileUsedBytes{}, pageFilePeakBytes{};
+    SampleState pageFileState{SampleState::unavailable};
+    std::uint64_t installedBytes{};
+};
+
+struct LogicalProcessor {
+    std::uint16_t group{}, index{};
+    std::uint64_t kernel100ns{}, user100ns{}, idle100ns{};
+    Metric<double> cpuPercent{0, SampleState::first, MetricSource::processorTime};
 };
 
 struct ProcessSnapshot {
     std::chrono::steady_clock::time_point measuredAt;
     std::chrono::system_clock::time_point wallTime;
     std::chrono::nanoseconds collectionTime{};
+    std::chrono::nanoseconds queryTime{}, parseTime{}, systemTime{};
     std::uint32_t logicalProcessors{};
+    std::wstring cpuModel;
+    std::vector<LogicalProcessor> processors;
     std::uint64_t systemKernel100ns{};
     std::uint64_t systemUser100ns{};
     std::uint64_t systemIdle100ns{};

@@ -29,6 +29,7 @@ Metric<double> rate(std::uint64_t current, std::uint64_t before, double seconds)
 void ProcessSampler::apply(ProcessSnapshot& snapshot)
 {
     snapshot.systemCpuPercent = {0, SampleState::first, MetricSource::processorTime};
+    for (auto& processor : snapshot.processors) processor.cpuPercent = {0, SampleState::first, MetricSource::processorTime};
     for (auto& process : snapshot.processes) {
         process.cpuPercent = {};
         process.readIoBytesPerSecond = {};
@@ -47,6 +48,7 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
             process.writeIoBytesPerSecond.state = SampleState::gap;
         }
         snapshot.systemCpuPercent.state = SampleState::gap;
+        for (auto& processor : snapshot.processors) processor.cpuPercent.state = SampleState::gap;
         previous = snapshot;
         return;
     }
@@ -91,6 +93,23 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
         snapshot.systemCpuPercent.state = snapshot.processorState == SampleState::valid
             && previous->processorState == SampleState::valid ? SampleState::gap : SampleState::unavailable;
     }
+    for (std::size_t i = 0; i < snapshot.processors.size(); ++i) {
+        auto& now = snapshot.processors[i];
+        if (i >= previous->processors.size()) continue;
+        const auto& before = previous->processors[i];
+        if (now.group != before.group || now.index != before.index) { now.cpuPercent.state = SampleState::gap; continue; }
+        if (now.kernel100ns < before.kernel100ns || now.user100ns < before.user100ns || now.idle100ns < before.idle100ns) {
+            now.cpuPercent.state = SampleState::gap; continue;
+        }
+        const auto elapsed = static_cast<long double>(now.kernel100ns - before.kernel100ns) + now.user100ns - before.user100ns;
+        const auto idle = static_cast<long double>(now.idle100ns - before.idle100ns);
+        now.cpuPercent = elapsed > 0 && idle <= elapsed
+            ? Metric<double>{static_cast<double>((elapsed - idle) / elapsed * 100.L), SampleState::valid, MetricSource::processorTime}
+            : Metric<double>{0, SampleState::gap, MetricSource::processorTime};
+    }
+    if (snapshot.systemCpuPercent.valid() && (snapshot.processors.size() != previous->processors.size()
+        || std::any_of(snapshot.processors.begin(), snapshot.processors.end(), [](const auto& cpu) { return !cpu.cpuPercent.valid(); })))
+        snapshot.systemCpuPercent.state = SampleState::gap;
     previous = snapshot;
 }
 

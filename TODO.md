@@ -34,15 +34,30 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 ## Průběžné nálezy a review
 
 - [x] F01 Sestavení: MSBuild x64 načítal jiný kořen UCRT než SDK; místní build skript ověřuje skutečný SDK a nastavuje UCRTContentRoot jen pro podřízené procesy.
-- [ ] F02 Výkon: rychle opakované sběry vykazují proměnlivé špičky; oddělit cenu nativního dotazu, parseru, systémových čítačů a výpočtů. Výsledek burst testu není důkaz klidové spotřeby ani výkonu UI.
+- [ ] F02 Výkon: měření nyní odděluje nativní dotaz, parser, systémové čítače a výpočty; lokální špičky převládají v systémových dotazech. Omezit jejich dopad a ověřit přijímací scénáře; burst test není důkaz klidové spotřeby ani výkonu UI.
 - [x] F03 Review: systémové CPU nyní používá NtQuerySystemInformationEx pro každou skupinu; dvě skupiny a selhání jedné z nich pokrývají testy. Skutečný víceskupinový stroj zůstává v T41.
 - [ ] F04 Identita: v T09 doplnit neměnnou identitu bootu a ověřit exporty přes změnu systémových hodin; nynější sběrač drží BootTime jen po dobu svého běhu.
+- [x] F05 Review sběru: chyba obnovy inventáře už nemaže zařízení ani nepřiřazuje čítače k nejisté identitě; chybějící registrace PDH se opakuje nejvýše jednou za 15 s.
+- [x] F06 Review UI: opravit dvojí vlastnictví seznamu obrázků, vyhodnocovat stáří i bez nových vzorků, kontrolovat vytvoření štětce a nezobrazovat neplatnou paměť jako nulu.
+- [ ] F07 Izolace sběru: získání diskového čísla používá synchronní systémový dotaz v odděleném vlákně; v T12 doplnit pracovní proces pro možnost ukončit zaseknutého poskytovatele i při zavírání aplikace.
+- [ ] F08 Sítě: přidat přepínač pro virtuální rozhraní; nyní jsou vidět všechny fyzické adaptéry včetně odpojených.
+- [ ] F09 Výkon: orientační místní měření ukázalo vyšší CPU při minimalizaci, než stanoví cíl; po změnách UI opakovat měření a ověřit referenčních 500 procesů. Výsledek se nepovažuje za přijetí T44.
+- [x] F10 GPU: PDH vrací hexadecimální písmena LUID jinou velikostí než DXGI; porovnání už velikost písmen ignoruje a test zahrnuje A–F. Živý test nyní načítá obě GPU.
+- [x] F11 CPU: reset jednoho logického CPU nyní zneplatní také souhrn, i když ho růst ostatních čítačů skryje; regrese ověřuje i návrat k platnému měření.
+- [ ] F12 Zveřejnění: před prvním veřejným pushem prověřit starší commity původních podkladů; jejich odstranění z pracovního stromu není kontrola historie.
+- [ ] F13 UI: uživatel odmítl dosavadní vzhled; dokončit pixelové porovnání fontů, ikon, rozměrů a mezer s HTML. Ověřený sběr a funkční grafy nejsou přijetí vzhledu.
 
 ## Průběžné ověření
 
 - První Release a Debug sestavení prošla; 30 kontrol parseru a výpočtů a živý test vlastní CPU zátěže a alokace 32 MiB prošly.
 - Benchmark má 10 zahřívacích a 200 měřených sběrů. Původní výstupy a údaje o sestavě zůstávají mimo Git; přijímací limity aplikace nejsou označené za splněné.
 - Nezávislé read-only review nativního základu našlo chybějící větev pro více skupin CPU a doporučilo typový wrapper nativního dotazu. Opravy prošly opakovaným review bez dalšího konkrétního nálezu; testy skupin používají mock.
+- První C++/Win32/Direct2D kandidát běží nad živými daty; má virtualizovanou tabulku, hledání, řazení, více výběrů, detail procesu a samostatný pohled Výkon se seznamem jednotlivých prostředků, minigrafy a velkým grafem.
+- Výkon uchovává omezenou historii, ukazuje její skutečné trvání a přerušuje čáru při chybějících vzorcích. Sběr procesů a zařízení běží odděleně; každá předávací schránka má nejvýše jeden čekající snímek.
+- Testy výpočtů prostředků a historie a dva živé testy sběru prošly. Test nativního okna ověřuje přepnutí pohledů, výběr identity přes obnovu, filtr PID a označení starých dat po přerušení obou sběrů.
+- T06, T12, T14 a T16 zůstávají otevřené: chybí srovnání WinUI/AOT, ukončitelná izolace poskytovatelů, světlý vzhled, přístupnost a úplné přijímací scénáře. Dílčí UI není dokončená aplikace.
+- Rozpracovaný Výkon má seznam s minigrafy, časovou osu, pravý panel sestavy a proklikávací karty procesů; vzhled ještě není přijatý. CPU nabízí celek, logické procesory a překrytí; síť oba směry, paměť samostatný graf stránkovacího souboru.
+- Historie má nejvýše 512 řad po 2 401 bodech včetně logických CPU; samotné bodové buffery zůstávají pod 64 MiB. Rozsah lze přepnout mezi 60 s a 10 min; nejde o záruku uchování celé délky při každém intervalu.
 
 ## Etapa 0: Základ a měřený prototyp
 
