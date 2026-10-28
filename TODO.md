@@ -12,7 +12,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [x] R04 Rozebrat oba cíle přes REA; uložené importy, ochranné deklarace, dvě těla PH2 a tři těla Task Manageru.
 - [x] R05 Prozkoumat sběr PH2, služby, síť, ETW, podrobnosti, pluginy a správní akce; konkrétní zdroje jsou v evidenci.
 - [x] R06 Připravit analýzu, audit, návrh UI, plán a úkoly; omezení běhové a uživatelské zkoušky jsou přiznaná.
-- [x] R07 Porovnat jazyky a vytvořit tři proklikávací návrhy UI; 38 kontrol ukázky prošlo a výsledky jsou v design/overeni.json.
+- [x] R07 Porovnat jazyky a vytvořit čtyři pracovní pohledy třetí iterace; 56 kontrol ukázky prošlo a výsledky jsou v design/overeni.json.
 
 ## Etapa 0: Základ a měřený prototyp
 
@@ -40,7 +40,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 
 ## Etapa 2: Podrobnosti, události a historie
 
-- [ ] T18 P1 · Sběr/UI: zobrazit služby a vazbu na hostitelské procesy; závisí na T07,T17; hotovo při správném životním cyklu služby a odlišení více služeb ve společném procesu.
+- [ ] T18 P1 · Sběr/UI: zobrazit služby a vazbu na hostitelské procesy; závisí na T07,T17; hotovo při filtrech stavů, hledání, účtech, způsobu spouštění, závislostech a odlišení služeb ve společném procesu.
 - [ ] T19 P0 · Sběr: izolovat blokující dotazy na handly do pracovního procesu; závisí na T12,T17; hotovo při časovém limitu, obnovení vlastního pracovníka a nedotčeném základním sběru.
 - [ ] T20 P1 · Sběr/UI: doplnit vlákna, moduly a podpisy pro x64 i WOW64; závisí na T09,T17; hotovo při správné bitové šířce struktur, čtení podrobností na vyžádání a chybách přístupu bez pádu.
 - [ ] T21 P1 · Sběr/UI: doplnit čtení mapy paměti a hledání otevřených objektů; závisí na T19,T20; hotovo při omezeném čtení, zrušení úlohy a výsledcích navázaných na správnou generaci.
