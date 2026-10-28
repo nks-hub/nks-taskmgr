@@ -44,7 +44,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] F09 Výkon: orientační místní měření ukázalo vyšší CPU při minimalizaci, než stanoví cíl; po změnách UI opakovat měření a ověřit referenčních 500 procesů. Výsledek se nepovažuje za přijetí T44.
 - [x] F10 GPU: PDH vrací hexadecimální písmena LUID jinou velikostí než DXGI; porovnání už velikost písmen ignoruje a test zahrnuje A–F. Živý test nyní načítá obě GPU.
 - [x] F11 CPU: reset jednoho logického CPU nyní zneplatní také souhrn, i když ho růst ostatních čítačů skryje; regrese ověřuje i návrat k platnému měření.
-- [ ] F12 Zveřejnění: před prvním veřejným pushem prověřit starší commity původních podkladů; jejich odstranění z pracovního stromu není kontrola historie.
+- [x] F12 Historie: odstranit původní dokumenty, designové podklady a RE ze všech lokálních commitů. Odstraněno 19 cest; kontrola všech větví našla 0 zakázaných cest, aktuální strom zůstal totožný a záloha je mimo repo.
 - [ ] F13 UI: uživatel odmítl dosavadní vzhled; dokončit pixelové porovnání fontů, ikon, rozměrů a mezer s HTML. Ověřený sběr a funkční grafy nejsou přijetí vzhledu.
 
 ## Průběžné ověření
