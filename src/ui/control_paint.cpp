@@ -13,7 +13,7 @@ D2D1_COLOR_F mix(D2D1_COLOR_F a, D2D1_COLOR_F b, float amount)
 }
 }
 
-bool Desktop::beginControl(const DRAWITEMSTRUCT& item)
+bool Desktop::beginControl(const DRAWITEMSTRUCT& item, D2D1_COLOR_F background)
 {
     if (!controlTarget) {
         const auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_DEFAULT,
@@ -41,6 +41,7 @@ bool Desktop::beginControl(const DRAWITEMSTRUCT& item)
     }
     controlTarget->SetTransform(D2D1::Matrix3x2F::Translation(offset.x, offset.y));
     controlTarget->BeginDraw();
+    controlTarget->Clear(background);
     return true;
 }
 
@@ -79,15 +80,15 @@ void Desktop::icon(unsigned kind, float x, float y, float size, D2D1_COLOR_F col
 
 void Desktop::drawButton(const DRAWITEMSTRUCT& item)
 {
-    if (!beginControl(item)) return;
-    const auto w = controlSize.width, h = controlSize.height;
     const bool navigation = item.CtlID == 1 || item.CtlID == 2;
     const bool caption = item.CtlID >= 10 && item.CtlID <= 12;
+    const auto background = navigation || caption ? D2D1::ColorF(0x12181c) : item.CtlID == 40 ? D2D1::ColorF(0x171d21) : panel;
+    if (!beginControl(item, background)) return;
+    const auto w = controlSize.width, h = controlSize.height;
     const bool segmented = (item.CtlID >= 20 && item.CtlID <= 22) || item.CtlID == 30 || item.CtlID == 31;
     const bool selected = (item.CtlID == 1 && !performance) || (item.CtlID == 2 && performance)
         || (item.CtlID >= 20 && item.CtlID <= 22 && static_cast<int>(item.CtlID) - 20 == cpuView)
         || (item.CtlID == 30 && rangeSeconds == 60) || (item.CtlID == 31 && rangeSeconds == 600);
-    const auto background = navigation || caption ? D2D1::ColorF(0x12181c) : item.CtlID == 40 ? D2D1::ColorF(0x171d21) : panel;
     fill(rect(0, 0, w, h), background);
     wchar_t label[80]{}; GetWindowTextW(item.hwndItem, label, 80);
     if (navigation) {
@@ -122,7 +123,7 @@ void Desktop::drawButton(const DRAWITEMSTRUCT& item)
 
 void Desktop::drawResource(const DRAWITEMSTRUCT& entry)
 {
-    if (entry.itemID >= resources.size() || !beginControl(entry)) return;
+    if (entry.itemID >= resources.size() || !beginControl(entry, panel)) return;
     const auto w = controlSize.width, h = controlSize.height;
     const auto& item = resources[entry.itemID];
     const auto color = resourceColor(item.kind);
@@ -163,7 +164,7 @@ void Desktop::drawConsumer(const DRAWITEMSTRUCT& item)
     const auto index = item.CtlID - 60;
     if (!processes || index >= consumers.size() || !consumers[index]) return;
     const auto found = std::find_if(processes->processes.begin(), processes->processes.end(), [&](const auto& p) { return p.identity == *consumers[index]; });
-    if (found == processes->processes.end() || !beginControl(item)) return;
+    if (found == processes->processes.end() || !beginControl(item, D2D1::ColorF(0x171d21))) return;
     const auto& process = *found;
     const auto w = controlSize.width, h = controlSize.height;
     RECT client{}; GetClientRect(window, &client);

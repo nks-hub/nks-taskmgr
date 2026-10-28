@@ -41,7 +41,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [x] F06 Review UI: opravit dvojí vlastnictví seznamu obrázků, vyhodnocovat stáří i bez nových vzorků, kontrolovat vytvoření štětce a nezobrazovat neplatnou paměť jako nulu.
 - [ ] F07 Izolace sběru: získání diskového čísla používá synchronní systémový dotaz v odděleném vlákně; v T12 doplnit pracovní proces pro možnost ukončit zaseknutého poskytovatele i při zavírání aplikace.
 - [ ] F08 Sítě: přidat přepínač pro virtuální rozhraní; nyní jsou vidět všechny fyzické adaptéry včetně odpojených.
-- [ ] F09 Výkon: orientační místní měření ukázalo vyšší CPU při minimalizaci, než stanoví cíl; po změnách UI opakovat měření a ověřit referenčních 500 procesů. Výsledek se nepovažuje za přijetí T44.
+- [ ] F09 Výkon: revize 6c81228 za 60 s zobrazení a 60 s minimalizace naměřila 0,165 % a 0,069 % CPU celého PC, soukromá paměť nejvýše 75,7 MiB; ověřit také předepsaných 500 procesů a dlouhý běh v T44.
 - [x] F10 GPU: PDH vrací hexadecimální písmena LUID jinou velikostí než DXGI; porovnání už velikost písmen ignoruje a test zahrnuje A–F. Živý test nyní načítá obě GPU.
 - [x] F11 CPU: reset jednoho logického CPU nyní zneplatní také souhrn, i když ho růst ostatních čítačů skryje; regrese ověřuje i návrat k platnému měření.
 - [x] F12 Historie: odstranit původní dokumenty, designové podklady a RE ze všech lokálních commitů. Odstraněno 19 cest; kontrola všech větví našla 0 zakázaných cest, aktuální strom zůstal totožný a záloha je mimo repo.
@@ -58,6 +58,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - T06, T12, T14 a T16 zůstávají otevřené: chybí srovnání WinUI/AOT, ukončitelná izolace poskytovatelů, světlý vzhled, přístupnost a úplné přijímací scénáře. Dílčí UI není dokončená aplikace.
 - Rozpracovaný Výkon má seznam s minigrafy, časovou osu, pravý panel sestavy a proklikávací karty procesů; vzhled ještě není přijatý. CPU nabízí celek, logické procesory a překrytí; síť oba směry, paměť samostatný graf stránkovacího souboru.
 - Pixelové porovnání při 1440 × 920 a 100% DPI: osm statických oblastí má shodné hranice znaků, dvě navigační ikony se liší nejvýše o 1 px; celé UI tím není přijaté.
+- Vykreslení celého DC odstranilo světlé stopy na hranách karet; Common Controls v6 a motiv posuvníku odstranily bílý pruh v seznamu prostředků. Ověřeno za běhu, pixelovým porovnáním a testem nativního okna.
 - Release, čtyři testy sběru a výpočtů a test nativního okna prošly; při čtyřech velikostech od 720 × 500 do 1440 × 920 jsou karty procesů dosažitelné posunem a ovládání nepřekrývá záhlaví ani patičku. Skutečné 150/200% DPI zbývá ověřit.
 - Historie má nejvýše 512 řad po 2 401 bodech včetně logických CPU; samotné bodové buffery zůstávají pod 64 MiB. Rozsah lze přepnout mezi 60 s a 10 min; nejde o záruku uchování celé délky při každém intervalu.
 

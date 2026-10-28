@@ -42,7 +42,7 @@ target_link_libraries(nks-resource-sample PRIVATE nks_native)
 target_compile_options(nks-resource-sample PRIVATE /W4 /WX /utf-8 /permissive-)
 
 add_executable(nks-taskmgr WIN32 src/app/desktop_main.cpp src/ui/desktop.cpp src/ui/desktop_paint.cpp src/ui/control_paint.cpp src/ui/performance_paint.cpp src/ui/process_table.cpp)
-target_link_libraries(nks-taskmgr PRIVATE nks_native d2d1 dwrite dwmapi comctl32)
+target_link_libraries(nks-taskmgr PRIVATE nks_native d2d1 dwrite dwmapi comctl32 uxtheme)
 target_compile_options(nks-taskmgr PRIVATE /W4 /WX /utf-8 /permissive-)
 
 include(CTest)

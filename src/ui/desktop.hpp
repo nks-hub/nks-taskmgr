@@ -59,7 +59,7 @@ private:
     void updateConsumers();
     DWRITE_TEXT_METRICS text(const std::wstring& value, D2D1_RECT_F box, float size, D2D1_COLOR_F color,
         int weight = 0, float spacing = 0, DWRITE_TEXT_ALIGNMENT alignment = DWRITE_TEXT_ALIGNMENT_LEADING);
-    bool beginControl(const DRAWITEMSTRUCT& item);
+    bool beginControl(const DRAWITEMSTRUCT& item, D2D1_COLOR_F background);
     void endControl();
     void icon(unsigned kind, float x, float y, float size, D2D1_COLOR_F color);
     void drawPolyline(std::span<const D2D1_POINT_2F> points, float width);

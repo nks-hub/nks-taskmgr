@@ -4,6 +4,7 @@
 #include "core/process_sampler.hpp"
 #include <dwmapi.h>
 #include <windowsx.h>
+#include <uxtheme.h>
 #include <algorithm>
 #include <stdexcept>
 #include <utility>
@@ -115,6 +116,7 @@ void Desktop::create()
     resourceList = CreateWindowExW(0, L"LISTBOX", L"Prostředky systému", WS_CHILD | WS_VISIBLE | WS_TABSTOP
         | WS_VSCROLL | LBS_NOTIFY | LBS_OWNERDRAWVARIABLE | LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT,
         0, 0, 0, 0, window, reinterpret_cast<HMENU>(5), nullptr, nullptr);
+    SetWindowTheme(resourceList, L"DarkMode_Explorer", L"Scrollbar");
     search = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL,
         0, 0, 0, 0, window, reinterpret_cast<HMENU>(6), nullptr, nullptr);
     SendMessageW(search, WM_SETFONT, reinterpret_cast<WPARAM>(font), FALSE);
