@@ -96,7 +96,8 @@ void Desktop::drawButton(const DRAWITEMSTRUCT& item)
         icon(item.CtlID, (w - 20) / 2, 13, 20, selected ? amber : muted);
         text(label, rect(0, 41, w, 16), 9, selected ? amber : muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
     } else if (caption) {
-        text(label, rect(0, 11, w, 28), 17, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
+        const auto left = item.CtlID == 12 ? .5f : 0;
+        text(label, rect(left, 13, w, 28), 17, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
     } else if (segmented) {
         fill(rect(0, 0, w, h), selected ? D2D1::ColorF(0x222d34) : D2D1::ColorF(0x12181c), 4);
         text(label, rect(0, 6, w, 17), 11, selected ? ink : muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);

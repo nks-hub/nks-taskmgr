@@ -178,8 +178,8 @@ void Desktop::paint()
     text(L"Task Manager", rect(82, 16, 110, 22), 12, muted);
     fill(rect(194, 17, 1, 14), line);
     text(L"Lokální počítač", rect(218, 18, 180, 20), 10, muted);
-    text(L"n", rect(31, 70, 30, 40), 32, ink);
-    text(L".", rect(48, 70, 18, 40), 32, amber);
+    text(L"n", rect(31, 62, 30, 40), 32, ink, 700);
+    text(L".", rect(46, 62, 18, 40), 32, amber, 700);
     fill(rect(0, performance ? 220.f : 150.f, 3, 20), amber, 1);
     text(performance ? L"Výkon" : L"Procesy", rect(118, 72, 300, 38), 28, ink, 600, -.7f);
     text(performance ? L"Živý přehled všech prostředků" : L"Aplikace, prostředky a jejich souvislosti.", rect(119, 117, 600, 19), 11, muted);
