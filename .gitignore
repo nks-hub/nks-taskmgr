@@ -1,1 +1,3 @@
 .research/
+.playwright-cli/
+output/playwright/
