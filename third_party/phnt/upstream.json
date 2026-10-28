@@ -1,0 +1,194 @@
+{
+  "repository": "https://github.com/winsiderss/systeminformer",
+  "revision": "99a0d28e091878967a804ac9ea2fe22f2c1fdadb",
+  "license": "MIT",
+  "headers": "phnt/include",
+  "adapted": {
+    "path": "phlib/native.c",
+    "function": "PhEnumProcessesEx",
+    "target": "src/collectors/process_query.c",
+    "changes": [
+      "Caller-owned buffer",
+      "64 MiB allocation limit",
+      "Eight query attempts"
+    ]
+  },
+  "files": [
+    {
+      "path": "include/ntafd.h",
+      "sha256": "b9488fc22e8f207c21748826e32abe822b5c2152b534f6c7ff6ed47868b6b377"
+    },
+    {
+      "path": "include/ntbcd.h",
+      "sha256": "365ead04caee960ec2baaddf1961786a25a9e5c7388257ce0b5d3f58a842eeff"
+    },
+    {
+      "path": "include/ntd3dkmt.h",
+      "sha256": "119bd12cd15a3e71898d43885baf840db19a4c56849c0086b5ade936420d0389"
+    },
+    {
+      "path": "include/ntdbg.h",
+      "sha256": "5cac63a73e542a7d9f572bb94606b7bc7e2e1e1a6756bfc40db8933a0323c2f7"
+    },
+    {
+      "path": "include/ntexapi.h",
+      "sha256": "0fdf461572b397150757cee4431b43e3c8d3c0c0d48a1db91cd404569fc7ba11"
+    },
+    {
+      "path": "include/ntgdi.h",
+      "sha256": "42be69ef357fc6c51ab41c274268de7aeac43bb23391a87c4c562aee39198139"
+    },
+    {
+      "path": "include/ntimage.h",
+      "sha256": "d36a5bd8c71fee0eaf85f234bd6a884107cbec69603f4400e33209d173875b32"
+    },
+    {
+      "path": "include/ntintsafe.h",
+      "sha256": "430291d1e66ab2faca9ecce883f8ec64d454640522923c9779ce78141a979472"
+    },
+    {
+      "path": "include/ntioapi.h",
+      "sha256": "fd74902a1c7d148ed7c4991bf5b5b4784d84836b7baf910916d86110df336247"
+    },
+    {
+      "path": "include/ntkeapi.h",
+      "sha256": "5b990921f4ad38908e00121b89a65eaed751e0903ca0986e34ba4f1a1f9b901c"
+    },
+    {
+      "path": "include/ntldr.h",
+      "sha256": "69b4de8d9070b409cd10c3a1dc99b715215fe99209393f53867ae5eb5fd5856f"
+    },
+    {
+      "path": "include/ntlpcapi.h",
+      "sha256": "b344a298c2aa468fb3d76f8209a4bdf830f53b0aee6da086bd592abb66c45341"
+    },
+    {
+      "path": "include/ntlsa.h",
+      "sha256": "e8e374e87386782bee6fe1d7b23ad7277ea76c08f0cae7b2a00bb1ce6bc49ea8"
+    },
+    {
+      "path": "include/ntmisc.h",
+      "sha256": "413877faa4aa9b39d9ca8871372b491ed18d979206bcddf951c78792f080cff3"
+    },
+    {
+      "path": "include/ntmmapi.h",
+      "sha256": "ba1928eac62b4a5f65c61bc032c89dbf5292f9cab21115468449471741dd4b59"
+    },
+    {
+      "path": "include/ntnls.h",
+      "sha256": "6d5fd2a22ed8b54cba1c19f190d76538e07766b99d3283c5e3063c05fe1d31ec"
+    },
+    {
+      "path": "include/ntobapi.h",
+      "sha256": "9ff4130fc74a35541efd4013ded91d1f16f389a977cab349f861de08ac93f39c"
+    },
+    {
+      "path": "include/ntpebteb.h",
+      "sha256": "e43e709f0c69b83c0df53cce6dca7f79b8ded762723bb683d664f931defdd4ab"
+    },
+    {
+      "path": "include/ntpfapi.h",
+      "sha256": "b12d313bc07520cb3a38699679e141cf6758b4c614e502a9bd760e9e14f62f68"
+    },
+    {
+      "path": "include/ntpnpapi.h",
+      "sha256": "74ec80e7b8d6db557316d8232cbcfb29ecfbb6971474181be610a895ad6f20c0"
+    },
+    {
+      "path": "include/ntpoapi.h",
+      "sha256": "1a737968def55ed286f102756e85faf6969caa94623d3d00230804aae687c761"
+    },
+    {
+      "path": "include/ntpsapi.h",
+      "sha256": "e4a10807e11d5c20b815c69a35e9813a4a882c5e17641799b2136ce2336675ef"
+    },
+    {
+      "path": "include/ntregapi.h",
+      "sha256": "d98c039bd2bbe804933aeb5d956e7e0b2037eaa90377c5bc3f71e682a51b043f"
+    },
+    {
+      "path": "include/ntrtl.h",
+      "sha256": "040bd1431437423768e342fb6dfc10aedf27724161612b6f3d5e4ff8317c4d6b"
+    },
+    {
+      "path": "include/ntsam.h",
+      "sha256": "43b0246ed6e5c3fcb65fa67cb5e81811e5404a2e4ad10102939247247b0bd9f4"
+    },
+    {
+      "path": "include/ntseapi.h",
+      "sha256": "ee09111fe17fe3c59fb3ad8ea89ac88ded8f2a69f0c110a7135e0dc6850cf4e7"
+    },
+    {
+      "path": "include/ntsmss.h",
+      "sha256": "d22b04d51772fe3c6a0a57b6becb50de5e10f7eaa32ee9853dc14f1a05aba576"
+    },
+    {
+      "path": "include/ntstrsafe.h",
+      "sha256": "e7163c7c52c4b0a39b8612308d0c619560591973d952995526ed5fac9204f5b9"
+    },
+    {
+      "path": "include/ntsxs.h",
+      "sha256": "217233f36f3c455797509bfaf3025d883691b1df92a4d6c21b707f82d2f17dcb"
+    },
+    {
+      "path": "include/nttmapi.h",
+      "sha256": "6a9c4cd7f13138b7b07dd36b7e20c61e50ecc795193d91ded6b7739c7f48cd6a"
+    },
+    {
+      "path": "include/nttp.h",
+      "sha256": "9de8abb385b2d43d7a4b481d1e5d82b1e62dae428da35274056f68fa509bb8cb"
+    },
+    {
+      "path": "include/nttypesafe.h",
+      "sha256": "c21fec0b02d4b9513393da13b86cb073abb83ccbae8a5a0f3d0e3091733ed570"
+    },
+    {
+      "path": "include/ntuser.h",
+      "sha256": "2c2877decaf0b7cb0b3adbe14ee02548df6012e896a1fd819105b09bba4d75a9"
+    },
+    {
+      "path": "include/ntwmi.h",
+      "sha256": "ae6004e0f8d360ca31ce65b2bfee5cc4a6f90dda103c13f318a5f2f90e48cdd7"
+    },
+    {
+      "path": "include/ntwow64.h",
+      "sha256": "42202b969552b02fa78ed973e51107244bf5d03a5e01117b506dac8180be6a88"
+    },
+    {
+      "path": "include/ntxcapi.h",
+      "sha256": "f3310b8d8f1e66a3b947851ba78e441d2942973cba32284562283ac521e96a03"
+    },
+    {
+      "path": "include/ntzwapi.h",
+      "sha256": "3a49007ea28eb79af114b047cae15ae15836411c333a438c878c30ab2d8fa62d"
+    },
+    {
+      "path": "include/phnt.h",
+      "sha256": "549edb2de8eded95b8783b8766bcc2ed738dadffcaa2cb7847401b4e7e3a2334"
+    },
+    {
+      "path": "include/phnt_ntdef.h",
+      "sha256": "eab594e3fa83a3de4d80982bce3c8b55241a25af0f07231c07ac251cb0682ecc"
+    },
+    {
+      "path": "include/phnt_windows.h",
+      "sha256": "26d3a5e84c8cc82dbab733b317d59e9eacc059f306ec45fd0dcb54078c0061f9"
+    },
+    {
+      "path": "include/smbios.h",
+      "sha256": "51af47b20a3d1e4a01b9bbbbcf33df82b58fce0f780199427665cafc35b2f0c8"
+    },
+    {
+      "path": "include/subprocesstag.h",
+      "sha256": "9fe034f1df7d4481e8c8bfb627efe8d9d80ad7d287147a45d9f83728dec37515"
+    },
+    {
+      "path": "include/usermgr.h",
+      "sha256": "c70b9fc5bcb47148f62a29fea0b0a940e0100b50fd62cd9fce53667b87ee33ed"
+    },
+    {
+      "path": "include/winsta.h",
+      "sha256": "a4cf9ec829fa0771b62ff597dc7e23b9dfc5955d124ae512fabc5b48d4891385"
+    }
+  ]
+}

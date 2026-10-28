@@ -1,3 +1,10 @@
 .research/
 .playwright-cli/
 output/playwright/
+/build/
+/out/
+/packages/
+/.vs/
+*.user
+*.suo
+CMakeUserPresets.json

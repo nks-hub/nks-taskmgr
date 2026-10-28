@@ -1,0 +1,3 @@
+* text=auto
+third_party/phnt/include/* -text
+third_party/phnt/LICENSE -text

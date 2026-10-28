@@ -1,26 +1,56 @@
 # Seznam úkolů NKS Task Manageru
 
-Výzkum je hotový; implementační úkoly čekají na zahájení vývoje podle [plánu](PLAN_IMPLEMENTACE.md) a [návrhu UI](NAVRH_UI.md).
+Vývoj nativní aplikace začal. Tento soubor drží plán, nálezy, review a stav ověření. Původní analýzy, RE podklady a webový návrh jsou mimo repozitář. Dokumentace v repozitáři je omezena na README a TODO. Sestavení a testy probíhají místně; CI se nyní nepřidává.
 
 P0 znamená nutný základ nebo podmínku správnosti, P1 další základní funkci a P2 samostatné rozšíření. Role je budoucí odpovědnost, nikoli již přidělený člověk. Každá položka obsahuje závislost a podmínku dokončení. T01–T48 a T54 tvoří základní rozsah, T49–T53 rozšíření. Celkem je 54 implementačních úkolů.
 
+## Požadavky a přijímací podmínky
+
+- Windows 10/11 x64; správa procesů x64 i WOW64. Win7 ani hlavní aplikace pro x86 OS nejsou požadované.
+- Vzhled vychází z Windows 11 Task Manageru s vlastními prvky. Výkon má vlevo jednotlivé prostředky s minigrafy a vpravo detail vybraného zařízení.
+- V seznamu jsou vidět všechny disky, GPU a adaptéry včetně odpojených či nepodporovaných; nedostupný údaj není platná nula.
+- Kandidáti UI: C++/WinUI, C#/WinUI s Native AOT a C++/Win32/DirectComposition. T06 je porovná nad stejným nativním jádrem a stejným ovládáním.
+- Identita procesu obsahuje boot, PID a druh i hodnotu generace. Měnící akce znovu ověřují stejný cíl na stejném handlu.
+- CPU používá skutečný monotónní interval a počet logických procesorů napříč skupinami; pracovní sada, soukromá paměť, procesové I/O, fyzický disk a síť jsou odlišené.
+- Sběr běží mimo UI; výběr a scroll se při dávkované aktualizaci neztrácejí. Blokující podrobnosti patří do zrušitelného pracovního procesu.
+- Běžný vzorek je po 1 s, rychlý pohled po 250 ms. Historie má rozpočet 64 MiB a ukazuje skutečně uchovaný rozsah a mezery.
+- Výkonový referenční scénář je Release bez debuggeru, 500 živých procesů a odděleně 10 000 přehrávaných řádků. Hardware a OS se zaznamenávají s měřením mimo Git.
+- Cíle: teplý start p95 do 400 ms, studený do 1,2 s, výběr p95 do 50 ms, hledání p95 do 100 ms, rolování p95 do 16,7 ms a stáří dat p95 do 1,25 s.
+- Cíle za 60 s po zahřátí: vlastní CPU nejvýše 0,5 % celého PC při zobrazení a 0,1 % při minimalizaci; soukromá paměť do 220 MiB včetně výchozí historie a všech vlastních pracovníků.
+- Přijetí vyžaduje funkční klávesnici, čtečku, kontrast, DPI 100/150/200 %, RDP, obnovu po ztrátě GPU a 24 hodin bez trvalého růstu paměti a handlů.
+- Správní scénáře se ověřují na vlastních cílech ve VM. Součástí dokončení jsou oprávnění, odmítnutí UAC, export bez testovacích tajemství, podpis a návrat aktualizace.
+- Podpora Windows 10, více skupin procesorů a WOW64 se považuje za ověřenou až po příslušném skutečném testu; lokální Windows 11 test ji nenahrazuje.
+
 ## Hotové podklady
 
-- [x] R01 Stáhnout oficiální PH2 2.39 a zdroje; archiv, podpisy, verze a SHA-256 jsou uložené.
-- [x] R02 Prověřit místní Taskmgr.exe; kopie, verze, podpis a SHA-256 jsou uložené.
-- [x] R03 Ověřit REA a aktualizaci; běží 6.8.0, stejná verze je na npm a v posledním GitHub vydání.
-- [x] R04 Rozebrat oba cíle přes REA; uložené importy, ochranné deklarace, dvě těla PH2 a tři těla Task Manageru.
-- [x] R05 Prozkoumat sběr PH2, služby, síť, ETW, podrobnosti, pluginy a správní akce; konkrétní zdroje jsou v evidenci.
-- [x] R06 Připravit analýzu, audit, návrh UI, plán a úkoly; omezení běhové a uživatelské zkoušky jsou přiznaná.
-- [x] R07 Porovnat jazyky a vytvořit čtyři pracovní pohledy třetí iterace; 56 kontrol ukázky prošlo a výsledky jsou v design/overeni.json.
+- [x] R01 Uzavřít základní požadavky na správce procesů a systémových prostředků.
+- [x] R02 Potvrdit cílovou platformu Windows 10/11 x64 se správou WOW64.
+- [x] R03 Vybrat připnutou zdrojovou revizi a prověřit licenční varianty základu.
+- [x] R04 Připravit požadavky na pohledy a jejich ovládání.
+- [x] R05 Rozebrat rozhraní sběru, obnovy a správních akcí; podklady jsou archivované mimo Git.
+- [x] R06 Připravit plán 54 implementačních úkolů a podmínky přijetí.
+- [x] R07 Ověřit proklikávací návrh procesů, výkonu, služeb a detailu; tento návrh není hotová nativní aplikace.
+
+## Průběžné nálezy a review
+
+- [x] F01 Sestavení: MSBuild x64 načítal jiný kořen UCRT než SDK; místní build skript ověřuje skutečný SDK a nastavuje UCRTContentRoot jen pro podřízené procesy.
+- [ ] F02 Výkon: rychle opakované sběry vykazují proměnlivé špičky; oddělit cenu nativního dotazu, parseru, systémových čítačů a výpočtů. Výsledek burst testu není důkaz klidové spotřeby ani výkonu UI.
+- [x] F03 Review: systémové CPU nyní používá NtQuerySystemInformationEx pro každou skupinu; dvě skupiny a selhání jedné z nich pokrývají testy. Skutečný víceskupinový stroj zůstává v T41.
+- [ ] F04 Identita: v T09 doplnit neměnnou identitu bootu a ověřit exporty přes změnu systémových hodin; nynější sběrač drží BootTime jen po dobu svého běhu.
+
+## Průběžné ověření
+
+- První Release a Debug sestavení prošla; 30 kontrol parseru a výpočtů a živý test vlastní CPU zátěže a alokace 32 MiB prošly.
+- Benchmark má 10 zahřívacích a 200 měřených sběrů. Původní výstupy a údaje o sestavě zůstávají mimo Git; přijímací limity aplikace nejsou označené za splněné.
+- Nezávislé read-only review nativního základu našlo chybějící větev pro více skupin CPU a doporučilo typový wrapper nativního dotazu. Opravy prošly opakovaným review bez dalšího konkrétního nálezu; testy skupin používají mock.
 
 ## Etapa 0: Základ a měřený prototyp
 
-- [ ] T01 P0 · Architekt: připnout MIT zdroj System Informeru a licence částí; závisí na R05; hotovo při doloženém původu každé přebírané části a oddělení GPL podkladů PH2.
-- [ ] T02 P0 · Vývoj: zprovoznit a připnout C++20 sestavení; závisí na T01; hotovo při opakovatelném x64 Release sestavení s verzemi nástrojů a samostatném x86 pomocníku, pokud ho vyžaduje ověřovaná funkce.
+- [x] T01 P0 · Architekt: připnout MIT zdroj System Informeru a licence částí; závisí na R05; hotovo při doloženém původu každé přebírané části a oddělení GPL podkladů PH2.
+- [x] T02 P0 · Vývoj: zprovoznit a připnout C++20 sestavení; závisí na T01; hotovo při opakovatelném x64 Release sestavení s verzemi nástrojů a samostatném x86 pomocníku, pokud ho vyžaduje ověřovaná funkce.
 - [ ] T03 P0 · Architekt: upřesnit buildy Windows 10/11 x64 a schopnosti pro x64 i WOW64 procesy; závisí na T01; hotovo při ověřitelné matici oprávnění, čítačů, ovladače a referenční sestavě bez slibu Win7 či x86 OS.
 - [ ] T04 P0 · UX/QA: projít viditelné PH2, Task Manager a výchozí System Informer; závisí na R04; hotovo při protokolu hledání, řazení, detailů, grafů, klávesnice a DPI s verzemi.
-- [ ] T05 P0 · Vývoj: oddělit použitelný sběr System Informeru od starých oken; závisí na T02; hotovo při běžícím čtení skutečných procesů bez původního hlavního okna a seznamu zbývajících vazeb.
+- [x] T05 P0 · Vývoj: oddělit použitelný sběr System Informeru od starých oken; závisí na T02; hotovo: upravená enumerace a phnt běží samostatně, zbývají jen vazby na NT API a procesovou haldu; původní UI se nelinkuje.
 - [ ] T54 P0 · Vývoj: připravit společný nativní zdroj dat a C#/WinUI 3 Native AOT prototyp; závisí na T02,T04,T05; hotovo při stejných datech, vzhledu a funkcích jako C++ kandidát a ověřeném AOT sestavení.
 - [ ] T06 P0 · UI/výkon: porovnat C++/WinUI 3, C#/WinUI 3 AOT a C++/Win32/DirectComposition; závisí na T02,T04,T05,T54; hotovo při měření celého scénáře a stabilní tabulce s více výběry, klávesnicí a přístupností.
 
@@ -72,7 +102,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] T41 P0 · QA: ověřit Windows 10/11 x64 s cíli x64 i WOW64, práva a RDP; závisí na T03,T30,T40; hotovo při výsledcích každé slíbené varianty a pravdivém označení nedostupných funkcí.
 - [ ] T42 P0 · UI/QA: ověřit klávesnici, čtečku, kontrast a DPI; závisí na T14,T17,T29,T35; hotovo při přístupných tabulkách i grafech a použitelném okně při 100/150/200% DPI.
 - [ ] T43 P0 · QA/výkon: ověřit správnost CPU, RAM, GPU, disku a sítě; závisí na T10,T11,T22,T23,T25; hotovo při známých zátěžích, stanovených tolerancích a vysvětlených rozdílech referencí.
-- [ ] T44 P0 · Výkon: splnit současně cíle startu, odezvy, CPU, paměti a grafů; závisí na T15,T16,T19,T29,T43; hotovo při měření referenční sestavy, přetížení a 24h běhu podle NAVRH_UI.md.
+- [ ] T44 P0 · Výkon: splnit současně cíle startu, odezvy, CPU, paměti a grafů; závisí na T15,T16,T19,T29,T43; hotovo při měření referenční sestavy, přetížení a 24h běhu podle přijímacích podmínek v tomto souboru.
 - [ ] T45 P0 · Bezpečnost/QA: ověřit export, logy a síťové chování; závisí na T27,T38,T39; hotovo při skrytí testovacích tajemství a absenci nevyžádaného uploadu.
 - [ ] T46 P0 · Vydání: připravit podpis, přenosný balíček a licenční texty; závisí na T01,T02,T41; hotovo při ověřeném původu všech součástí a spuštění na čistém testovacím systému.
 - [ ] T47 P0 · Vydání: zajistit obnovu po pádu, aktualizaci a návrat verze; závisí na T32,T46; hotovo při ověření podpisu aktualizace, odmítnutí cizího balíčku a návratu bez ztráty nastavení.
