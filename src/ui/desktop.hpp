@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/history.hpp"
+#include "core/monitor.hpp"
 #include "core/resource.hpp"
 #include "process_table.hpp"
 #include "performance_layout.hpp"
@@ -9,35 +10,8 @@
 #include <dwrite.h>
 #include <dwrite_1.h>
 #include <wrl/client.h>
-#include <atomic>
-#include <condition_variable>
-#include <mutex>
-#include <thread>
-#include <utility>
 
 namespace nks {
-
-template<class T>
-struct SnapshotSlot {
-    std::mutex mutex;
-    std::shared_ptr<const T> latest;
-    std::wstring error;
-    void publish(T snapshot) {
-        auto value = std::make_shared<const T>(std::move(snapshot));
-        std::lock_guard lock(mutex);
-        latest = std::move(value);
-        error.clear();
-    }
-    void fail(const std::string& message) {
-        std::lock_guard lock(mutex);
-        error.assign(message.begin(), message.end());
-    }
-    std::shared_ptr<const T> take(std::wstring& failure) {
-        std::lock_guard lock(mutex);
-        failure = error;
-        return std::exchange(latest, {});
-    }
-};
 
 class Desktop {
 public:
@@ -49,7 +23,6 @@ private:
     void setFonts();
     void layout();
     void tick();
-    void startCollection();
     void changeView(bool performance);
     void paint(HDC destination = nullptr);
     void paintPerformance(float width, float height);
@@ -97,13 +70,7 @@ private:
     std::shared_ptr<const ResourceSnapshot> hardware;
     std::vector<ResourceRecord> resources;
     ResourceHistory history;
-    SnapshotSlot<ProcessSnapshot> processSlot;
-    SnapshotSlot<ResourceSnapshot> resourceSlot;
-    std::atomic<bool> paused{};
-    std::atomic<unsigned> interval{1000};
-    std::jthread processThread, resourceThread;
-    std::condition_variable_any wake;
-    std::mutex waitMutex;
+    Monitor monitor;
     Microsoft::WRL::ComPtr<ID2D1Factory> factory;
     Microsoft::WRL::ComPtr<IDWriteFactory> writing;
     Microsoft::WRL::ComPtr<IDWriteRenderingParams> textRendering;

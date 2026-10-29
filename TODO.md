@@ -48,6 +48,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] F13 UI: uživatel odmítl dosavadní vzhled; dokončit pixelové porovnání fontů, ikon, rozměrů a mezer s HTML. Ověřený sběr a funkční grafy nejsou přijetí vzhledu.
 - [x] F14 UI: pod kurzorem se drží pořadí i identity řádků, živé hodnoty se obnovují; nové položky se doplní po opuštění seznamu a skončený proces zůstává označený bez živého výběru. Ověřeno testy i skutečným pohybem myši.
 - [x] F15 Review: skrytý ListView vrací úspěch LVM_SCROLL bez posunutí; identita horního řádku se nyní uchovává přes aktualizace v jiném pohledu a obnoví se po zobrazení. První řádek se při živém řazení neukotvuje ke starému procesu.
+- [ ] F16 Historie: předávací schránka správně drží jen poslední vzorek, ale při zablokování UI může zahodit krátkou špičku; v T16 ukládat historii při sběru před nahrazením čekajícího vzorku.
 
 ## Průběžné ověření
 
@@ -64,6 +65,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - Procesy mají přehled prostředků, vlastní řádky po 52 DIP, ukazatele CPU a paměti, hledání v záhlaví, filtry Všechny/Aktivní/Strom a panel výběru; společné vykreslování přes DC řeší výpadek hlavní plochy při kombinaci s nativní tabulkou.
 - Pět místních testů prošlo; 20 kontrol tabulky zahrnuje generace rodičů, záměnu PID, cyklus, sbalení větve, diakritiku, výběr přes obnovu a přesunutý sloupec. Živě ověřené filtry zachovaly počet procesů ve stromu a vybraly vlastní PID.
 - Tabulka má nyní 34 kontrol včetně živých hodnot při přidrženém pořadí, skončeného řádku, odmítnutí nové generace stejného PID a návratu k posunu po dvou skrytých obnovách; všech pět testů i test nativního okna prošlo.
+- Společný Monitor odděluje sběr od okna; šest testů ověřuje také přepis posledního vzorku, start v pauze, obnovení, skutečný vlastní proces a zastavení. Srovnání WinUI/AOT v T54 a izolace poskytovatelů v T12 zůstávají otevřené.
 - Release, čtyři testy sběru a výpočtů a test nativního okna prošly; při čtyřech velikostech od 720 × 500 do 1440 × 920 jsou karty procesů dosažitelné posunem a ovládání nepřekrývá záhlaví ani patičku. Skutečné 150/200% DPI zbývá ověřit.
 - Historie má nejvýše 512 řad po 2 401 bodech včetně logických CPU; samotné bodové buffery zůstávají pod 64 MiB. Rozsah lze přepnout mezi 60 s a 10 min; nejde o záruku uchování celé délky při každém intervalu.
 

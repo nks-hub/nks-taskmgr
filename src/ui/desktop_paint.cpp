@@ -107,7 +107,7 @@ void Desktop::graph(const HistorySeries* series, D2D1_RECT_F box, D2D1_COLOR_F c
         }
     }
     if (!series || !series->size() || maximum <= 0) return;
-    const auto end = paused.load() ? series->at(series->size() - 1).time : std::chrono::steady_clock::now();
+    const auto end = monitor.paused() ? series->at(series->size() - 1).time : std::chrono::steady_clock::now();
     const auto start = end - std::chrono::seconds(rangeSeconds);
     std::vector<D2D1_POINT_2F> segment;
     const auto flush = [&] {
@@ -210,7 +210,7 @@ void Desktop::paint(HDC destination)
     text(performance ? L"Výkon" : L"Procesy", rect(headerX, 72, 300, 38), 28, ink, 600, -.7f);
     text(performance ? L"Živý přehled všech prostředků" : L"Aplikace, prostředky a jejich souvislosti.", rect(headerX + 1, 117, width - headerX - 220, 19), width <= 1000 ? 10.f : 11.f, muted);
     if (performance) paintPerformance(width, height); else paintProcesses(width, height);
-    auto status = paused.load() ? L"Pozastaveno" : processes ? L"Živá data" : L"Načítám procesy";
+    auto status = monitor.paused() ? L"Pozastaveno" : processes ? L"Živá data" : L"Načítám procesy";
     std::wstring footer = status;
     if (!performance && width <= 780 && table.holding()) footer += L" · pořadí přidrženo pod kurzorem";
     if (processes) footer += L"  ·  " + std::to_wstring(processes->processes.size()) + L" procesů  ·  stáří "

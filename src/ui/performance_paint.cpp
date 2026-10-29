@@ -18,7 +18,7 @@ void Desktop::paintPerformance(float width, float height)
     card(rect(frame.inventoryX, frame.top, frame.inventoryWidth, frame.bottom - frame.top), 10);
     text(L"Prostředky", rect(frame.inventoryX + 19, 170.59375f, 110, 22), 13, ink, 600);
     text(std::to_wstring(resources.size()) + L" prostředků", rect(frame.inventoryX + frame.inventoryWidth - 91, 173.59375f, 71, 18), 9, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
-    text(paused.load() ? L"Pozastavený přehled" : L"Živá data · všechny prostředky", rect(frame.inventoryX + 19, height - 76, frame.inventoryWidth - 38, 18), 9, muted);
+    text(monitor.paused() ? L"Pozastavený přehled" : L"Živá data · všechny prostředky", rect(frame.inventoryX + 19, height - 76, frame.inventoryWidth - 38, 18), 9, muted);
     const auto* item = selectedResource();
     if (!item) { text(L"Načítám prostředky…", rect(433, 190, 400, 40), 20, muted); return; }
     const auto color = resourceColor(item->kind);
@@ -125,7 +125,7 @@ void Desktop::paintPerformance(float width, float height)
     std::vector<std::pair<std::wstring, std::wstring>> stats;
     const auto measured = [&](Metric<double> value, double scaleBy, const wchar_t* suffix) { return value.valid() ? decimal(value.value / scaleBy, suffix) : L"Nezměřeno"; };
     if (item->kind == ResourceKind::cpu && processes) {
-        facts = {{L"Logické procesory", std::to_wstring(processes->logicalProcessors)}, {L"Skupiny CPU", processes->processors.empty() ? L"Nezměřeno" : std::to_wstring(processes->processors.back().group + 1)}, {L"Obnova", interval.load() == 1000 ? L"1 s" : L"250 ms"}};
+        facts = {{L"Logické procesory", std::to_wstring(processes->logicalProcessors)}, {L"Skupiny CPU", processes->processors.empty() ? L"Nezměřeno" : std::to_wstring(processes->processors.back().group + 1)}, {L"Obnova", monitor.interval() == 1000 ? L"1 s" : L"250 ms"}};
         std::uint64_t threads = 0, handles = 0;
         for (const auto& process : processes->processes) { threads += process.counters.threads; handles += process.counters.handles; }
         stats = {{L"Procesy", std::to_wstring(processes->processes.size())}, {L"Vlákna", std::to_wstring(threads)}, {L"Popisovače", std::to_wstring(handles)}, {L"Sběr", decimal(std::chrono::duration<double, std::milli>(processes->collectionTime).count(), L" ms")}};

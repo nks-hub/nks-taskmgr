@@ -115,7 +115,7 @@ void Desktop::drawButton(const DRAWITEMSTRUCT& item)
         drawBrush->SetColor(line);
         surface->DrawRoundedRectangle(D2D1::RoundedRect(rect(.5f, .5f, w - 1, h - 1), 6, 6), drawBrush);
         if (item.CtlID == 3) {
-            icon(paused.load() ? 4 : 3, 12, 11, 13, muted);
+            icon(monitor.paused() ? 4 : 3, 12, 11, 13, muted);
             text(label, rect(31, 9, w - 40, 18), 11, ink);
         } else text(label, rect(0, 9, w, 18), 11, ink, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
     }

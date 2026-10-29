@@ -24,6 +24,7 @@ add_library(nks_native STATIC
     src/collectors/processor_query.cpp
     src/core/process_sampler.cpp
     src/core/resource.cpp
+    src/core/monitor.cpp
     src/collectors/pdh_counters.cpp
     src/collectors/resource_collector.cpp
 )
@@ -65,6 +66,11 @@ if(BUILD_TESTING)
     target_link_libraries(nks-process-view-tests PRIVATE nks_native comctl32 uxtheme)
     target_compile_options(nks-process-view-tests PRIVATE /W4 /WX /utf-8 /permissive-)
     add_test(NAME process-view COMMAND nks-process-view-tests)
+    add_executable(nks-monitor-tests tests/monitor_tests.cpp)
+    target_link_libraries(nks-monitor-tests PRIVATE nks_native)
+    target_compile_options(nks-monitor-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    add_test(NAME monitor COMMAND nks-monitor-tests)
+    set_tests_properties(monitor PROPERTIES TIMEOUT 20)
 endif()
 
 add_executable(nks-collect-bench benchmarks/collect_bench.cpp)

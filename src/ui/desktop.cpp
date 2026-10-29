@@ -1,7 +1,4 @@
 #include "desktop.hpp"
-#include "collectors/process_collector.hpp"
-#include "collectors/resource_collector.hpp"
-#include "core/process_sampler.hpp"
 #include <dwmapi.h>
 #include <windowsx.h>
 #include <uxtheme.h>
@@ -86,11 +83,7 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
         }
         if (!IsDialogMessageW(window, &event)) { TranslateMessage(&event); DispatchMessageW(&event); }
     }
-    processThread.request_stop();
-    resourceThread.request_stop();
-    wake.notify_all();
-    processThread.join();
-    resourceThread.join();
+    monitor.stop();
     if (font) DeleteObject(font);
     if (searchFont) DeleteObject(searchFont);
     return smokeMode ? (smokeChecks == 15 ? 0 : 3) : static_cast<int>(event.wParam);
@@ -136,7 +129,7 @@ void Desktop::create()
     BOOL dark = TRUE;
     DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
     SetTimer(window, refreshTimer, 100, nullptr);
-    startCollection();
+    monitor.start();
     layout();
 }
 
@@ -148,12 +141,12 @@ void Desktop::setFonts()
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
     searchFont = CreateFontW(-static_cast<int>(11 * scale), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
-    Microsoft::WRL::ComPtr<IDWriteRenderingParams> monitor;
-    if (SUCCEEDED(writing->CreateMonitorRenderingParams(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor))) {
+    Microsoft::WRL::ComPtr<IDWriteRenderingParams> rendering;
+    if (SUCCEEDED(writing->CreateMonitorRenderingParams(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &rendering))) {
         textRendering.Reset();
         // Match the HTML reference coverage while retaining monitor contrast and pixel geometry.
-        writing->CreateCustomRenderingParams(3.6f, monitor->GetEnhancedContrast(), monitor->GetClearTypeLevel(),
-            monitor->GetPixelGeometry(), monitor->GetRenderingMode(), &textRendering);
+        writing->CreateCustomRenderingParams(3.6f, rendering->GetEnhancedContrast(), rendering->GetClearTypeLevel(),
+            rendering->GetPixelGeometry(), rendering->GetRenderingMode(), &textRendering);
         if (target) target->SetTextRenderingParams(textRendering.Get());
         if (controlTarget) controlTarget->SetTextRenderingParams(textRendering.Get());
     }
@@ -170,39 +163,6 @@ void Desktop::setFonts()
     }
     if (previousFont) DeleteObject(previousFont);
     if (previousSearchFont) DeleteObject(previousSearchFont);
-}
-
-void Desktop::startCollection()
-{
-    const auto wait = [&](std::stop_token stop) {
-        std::unique_lock lock(waitMutex);
-        wake.wait_for(lock, stop, std::chrono::milliseconds(interval.load()), [] { return false; });
-    };
-    processThread = std::jthread([this, wait](std::stop_token stop) {
-        try {
-            ProcessCollector collector;
-            ProcessSampler sampler;
-            while (!stop.stop_requested()) {
-                if (!paused.load()) {
-                    try { auto sample = collector.collect(); sampler.apply(sample); processSlot.publish(std::move(sample)); }
-                    catch (const std::exception& error) { processSlot.fail(error.what()); }
-                }
-                wait(stop);
-            }
-        } catch (const std::exception& error) { processSlot.fail(error.what()); }
-    });
-    resourceThread = std::jthread([this, wait](std::stop_token stop) {
-        try {
-            ResourceCollector collector;
-            while (!stop.stop_requested()) {
-                if (!paused.load()) {
-                    try { resourceSlot.publish(collector.collect()); }
-                    catch (const std::exception& error) { resourceSlot.fail(error.what()); }
-                }
-                wait(stop);
-            }
-        } catch (const std::exception& error) { resourceSlot.fail(error.what()); }
-    });
 }
 
 void Desktop::changeView(bool value)
@@ -284,7 +244,7 @@ void Desktop::layout()
 void Desktop::tick()
 {
     bool changed = false;
-    if (auto sample = processSlot.take(processError)) {
+    if (auto sample = monitor.takeProcesses(processError)) {
         processes = std::move(sample);
         table.update(processes);
         for (const auto& item : systemResources(*processes)) history.append(item.id, {processes->measuredAt, item.primary});
@@ -293,7 +253,7 @@ void Desktop::tick()
         history.append(L"pagefile", {processes->measuredAt, {static_cast<double>(processes->memory.pageFileUsedBytes), processes->memory.pageFileState, MetricSource::performanceInfo}});
         changed = true;
     }
-    if (auto sample = resourceSlot.take(resourceError)) {
+    if (auto sample = monitor.takeResources(resourceError)) {
         hardware = std::move(sample);
         for (const auto& item : hardware->devices) {
             history.append(item.id, {hardware->measuredAt, item.primary});
@@ -302,8 +262,8 @@ void Desktop::tick()
         changed = true;
     }
     const auto now = std::chrono::steady_clock::now();
-    const auto staleProcesses = !paused.load() && processes && now - processes->measuredAt > std::chrono::seconds(3);
-    const auto staleResources = !paused.load() && hardware && now - hardware->measuredAt > std::chrono::seconds(3);
+    const auto staleProcesses = !monitor.paused() && processes && now - processes->measuredAt > std::chrono::seconds(3);
+    const auto staleResources = !monitor.paused() && hardware && now - hardware->measuredAt > std::chrono::seconds(3);
     if (processStale != staleProcesses || resourceStale != staleResources) {
         processStale = staleProcesses;
         resourceStale = staleResources;
@@ -332,7 +292,7 @@ void Desktop::tick()
             changeView(true);
         }
         if (ticks == 70) {
-            processThread.request_stop(); resourceThread.request_stop(); wake.notify_all();
+            monitor.stop();
         }
         if (ticks == 115 && processStale && resourceStale) {
             const auto stale = std::all_of(resources.begin(), resources.end(), [](const auto& item) { return item.primary.state == SampleState::stale; });
@@ -408,10 +368,10 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
     case WM_GETMINMAXINFO: {
         auto* bounds = reinterpret_cast<MINMAXINFO*>(lp);
         bounds->ptMinTrackSize = {static_cast<LONG>(720 * scale), static_cast<LONG>(500 * scale)};
-        MONITORINFO monitor{sizeof(monitor)};
-        if (GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor)) {
-            bounds->ptMaxPosition = {monitor.rcWork.left - monitor.rcMonitor.left, monitor.rcWork.top - monitor.rcMonitor.top};
-            bounds->ptMaxSize = {monitor.rcWork.right - monitor.rcWork.left, monitor.rcWork.bottom - monitor.rcWork.top};
+        MONITORINFO monitorInfo{sizeof(monitorInfo)};
+        if (GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitorInfo)) {
+            bounds->ptMaxPosition = {monitorInfo.rcWork.left - monitorInfo.rcMonitor.left, monitorInfo.rcWork.top - monitorInfo.rcMonitor.top};
+            bounds->ptMaxSize = {monitorInfo.rcWork.right - monitorInfo.rcWork.left, monitorInfo.rcWork.bottom - monitorInfo.rcWork.top};
         }
         return 0;
     }
@@ -495,8 +455,8 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         switch (LOWORD(wp)) {
         case 1: changeView(false); break;
         case 2: changeView(true); break;
-        case 3: paused.store(!paused.load()); SetWindowTextW(pauseButton, paused.load() ? L"Pokračovat" : L"Pozastavit"); InvalidateRect(window, nullptr, FALSE); break;
-        case 4: interval.store(interval.load() == 1000 ? 250 : 1000); SetWindowTextW(intervalButton, interval.load() == 1000 ? L"1 s" : L"250 ms"); break;
+        case 3: monitor.setPaused(!monitor.paused()); SetWindowTextW(pauseButton, monitor.paused() ? L"Pokračovat" : L"Pozastavit"); InvalidateRect(window, nullptr, FALSE); break;
+        case 4: monitor.setInterval(monitor.interval() == 1000 ? 250 : 1000); SetWindowTextW(intervalButton, monitor.interval() == 1000 ? L"1 s" : L"250 ms"); break;
         case 10: ShowWindow(window, SW_MINIMIZE); break;
         case 11: ShowWindow(window, IsZoomed(window) ? SW_RESTORE : SW_MAXIMIZE); break;
         case 12: DestroyWindow(window); break;
