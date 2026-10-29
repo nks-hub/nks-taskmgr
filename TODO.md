@@ -34,6 +34,14 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 ## Průběžné nálezy a review
 
 - [x] F24 GPU: DXGI při vzdáleném zobrazení vracelo kopii fyzické karty bez software příznaku. Inventář nově ověřuje typ přes D3DKMT a vynechá potvrzený nepřímý adaptér bez renderování; názvy karet neslučuje. Živý test po opravě zachoval dvě fyzické GPU, 24 enginů a platné obě paměti.
+- [ ] F25 Řazení WinUI: původní odezva hlavičky činila 645–2505 ms; první dávková pracovní verze naměřila 2,5–6,2 ms. Ověřit také dokončení vykreslení, 10 000 řádků, více výběrů a posun po konečné opravě obnovy.
+- [ ] F26 Obnova procesů: nahrazení celé kolekce způsobovalo blikání. Pracovní verze zachovává pozice a vizuální řádky a mění jejich datové vazby; ověřit živé řazení, ikony, výběr a opětovné použití stejných kontejnerů.
+- [ ] F27 Grafy: pracovní verze má měřítka s jednotkami, automatický/plný rozsah, hodnoty pod kurzorem, připnutí času a klávesnici. Kompaktní hodnota je v záhlaví; dokončit běhové a vizuální ověření CPU, GPU, paměti, swapu a sítě i mřížky se čtyřmi procesory.
+- [ ] F28 Údaje sestavy: doplnit rychlost a sloty RAM ze SMBIOS, topologii a cache CPU a rychlosti síťové linky. Jedenáct nativních testů včetně poškozené tabulky, vyloučení grafické paměti a životnosti nového rozšíření C ABI prošlo; UI a další počítače dosud neověřené.
+- [ ] F29 Ikona aplikace: ikona je vložená v obou EXE a nastavuje se pro okno WinUI; dokončit kontrolu titulku a hlavního panelu i na Windows 10.
+- [ ] F30 Další stroje: stejnou přesně ověřenou verzi otestovat na fyzickém Windows 10 a virtualizovaném Windows 11. První Windows 10 běh prošel startem a minimalizací, ale skončil na kontrole procesové ikony; celý test tedy zatím neprošel.
+- [ ] F31 Další hardware: doplnit dostupné údaje podobné CPU-Z, výrobce a model základní desky a BIOS; zjistit podporu skutečně připojené UPS a zobrazit pouze hodnoty poskytované jejím ovladačem.
+- [ ] F32 REA: tabulka importů Správce úloh potvrzuje rozhraní SMBIOS, topologie, PDH a síťových adaptérů; jde o statickou evidenci, ne o důkaz konkrétního běhu. Hlubší dekompilaci zatím blokuje chybějící podporovaný poskytovatel Ghidra/IDA.
 - [x] F01 Sestavení: MSBuild x64 načítal jiný kořen UCRT než SDK; místní build skript ověřuje skutečný SDK a nastavuje UCRTContentRoot jen pro podřízené procesy.
 - [x] F20 Služby: změna výběru nyní zruší čekající detail i jeho chybu a odmítne dokončení předchozího dotazu podle verze výběru. Test rychlého přepnutí ověřil správný nový detail a nezávislou životnost starého snímku.
 - [x] F21 WinUI: vodorovný posuvník služeb dával tabulce neomezenou šířku; dlouhé názvy potom zbytečně odsouvaly stav a další sloupce. Šířka tabulky nyní vychází z viditelné plochy a pevného minima pro posuvník.
