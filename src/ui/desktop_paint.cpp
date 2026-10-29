@@ -200,23 +200,31 @@ void Desktop::paint(HDC destination)
     fill(rect(frame.sidebar - 1, 49, 1, height - 49), line);
     fill(rect(frame.sidebar, height - 30, width - frame.sidebar, 1), line);
     icon(2, 23, 16, 18, amber);
-    text(L"NKS", rect(51, 16, 35, 22), 12, ink, 700);
-    text(L"Task Manager", rect(82, 16, 110, 22), 12, muted);
+    text(L"NKS", rect(51, 16, 35, 22), 12, ink, 700, .2f);
+    text(L"Task Manager", rect(83.109375f, 16, 110, 22), 12, muted, 400, .2f);
     fill(rect(194, 17, 1, 14), line);
     text(L"Lokální počítač", rect(218, 18, 180, 20), 10, muted);
     text(L"n", rect(frame.sidebar / 2 - 13, 62, 30, 40), 32, ink, 700);
     text(L".", rect(frame.sidebar / 2 + 2, 62, 18, 40), 32, amber, 700);
-    fill(rect(0, performance ? 220.f : 150.f, 3, 20), amber, 1);
-    text(performance ? L"Výkon" : L"Procesy", rect(headerX, 72, 300, 38), 28, ink, 600, -.7f);
-    text(performance ? L"Živý přehled všech prostředků" : L"Aplikace, prostředky a jejich souvislosti.", rect(headerX + 1, 117, width - headerX - 220, 19), width <= 1000 ? 10.f : 11.f, muted);
-    if (performance) paintPerformance(width, height); else paintProcesses(width, height);
+    fill(rect(0, view == DesktopView::performance ? 220.f : view == DesktopView::services ? 290.f : 150.f, 3, 20), amber, 1);
+    text(view == DesktopView::performance ? L"Výkon" : view == DesktopView::services ? L"Služby" : L"Procesy", rect(headerX, 72, 300, 38), 28, ink, 600, -.7f);
+    text(view == DesktopView::performance ? L"Živý přehled všech prostředků" : view == DesktopView::services ? L"Stav služby, její proces a závislosti." : L"Aplikace, prostředky a jejich souvislosti.", rect(headerX + 1, 117, width - headerX - 220, 19), width <= 1000 ? 10.f : 11.f, muted);
+    if (view == DesktopView::performance) paintPerformance(width, height);
+    else if (view == DesktopView::services) paintServices(width, height);
+    else paintProcesses(width, height);
     auto status = monitor.paused() ? L"Pozastaveno" : processes ? L"Živá data" : L"Načítám procesy";
     std::wstring footer = status;
-    if (!performance && width <= 780 && table.holding()) footer += L" · pořadí přidrženo pod kurzorem";
+    if (view == DesktopView::processes && width <= 780 && table.holding()) footer += L" · pořadí přidrženo pod kurzorem";
     if (processes) footer += L"  ·  " + std::to_wstring(processes->processes.size()) + L" procesů  ·  stáří "
         + decimal(std::chrono::duration<double>(std::chrono::steady_clock::now() - processes->measuredAt).count(), L" s");
     if (!processError.empty()) footer = L"Sběr procesů selhal: " + processError;
     else if (!resourceError.empty()) footer += L"  ·  Sběr zařízení: " + resourceError;
+    if (view == DesktopView::services) {
+        footer = monitor.paused() ? L"Pozastaveno" : L"Služby dostupné tomuto účtu";
+        if (services) footer += L"  ·  " + std::to_wstring(services->services.size()) + L" služeb  ·  stáří "
+            + decimal(std::chrono::duration<double>(std::chrono::steady_clock::now() - services->measuredAt).count(), L" s");
+        if (!serviceError.empty()) footer += L"  ·  Sběr selhal: " + serviceError;
+    }
     text(footer, rect(frame.inventoryX, height - 21, width - frame.inventoryX - 25, 18), 9, muted);
     if (target->EndDraw() == D2DERR_RECREATE_TARGET) { brush.Reset(); target.Reset(); }
     if (saved) RestoreDC(dc, saved);

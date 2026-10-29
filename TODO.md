@@ -39,7 +39,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] F04 Identita: v T09 doplnit neměnnou identitu bootu a ověřit exporty přes změnu systémových hodin; nynější sběrač drží BootTime jen po dobu svého běhu.
 - [x] F05 Review sběru: chyba obnovy inventáře už nemaže zařízení ani nepřiřazuje čítače k nejisté identitě; chybějící registrace PDH se opakuje nejvýše jednou za 15 s.
 - [x] F06 Review UI: opravit dvojí vlastnictví seznamu obrázků, vyhodnocovat stáří i bez nových vzorků, kontrolovat vytvoření štětce a nezobrazovat neplatnou paměť jako nulu.
-- [ ] F07 Izolace sběru: získání diskového čísla používá synchronní systémový dotaz v odděleném vlákně; v T12 doplnit pracovní proces pro možnost ukončit zaseknutého poskytovatele i při zavírání aplikace.
+- [ ] F07 Izolace sběru: získání diskového čísla a čtení SCM používají synchronní dotazy v oddělených vláknech; v T12 doplnit pracovní proces pro možnost ukončit zaseknutého poskytovatele i při zavírání aplikace.
 - [ ] F08 Sítě: přidat přepínač pro virtuální rozhraní; nyní jsou vidět všechny fyzické adaptéry včetně odpojených.
 - [ ] F09 Výkon: za 60 s zobrazení a 60 s minimalizace naměřila revize 4dbbbfd v Procesy 0,122/0,067 % CPU a nejvýše 69,8 MiB; revize 6ac1f11 ve Výkon 0,163/0,084 % a 68,0 MiB. CPU je za celé PC; předepsaných 500 procesů a dlouhý běh v T44 zbývá ověřit.
 - [x] F10 GPU: PDH vrací hexadecimální písmena LUID jinou velikostí než DXGI; porovnání už velikost písmen ignoruje a test zahrnuje A–F. Živý test nyní načítá obě GPU.
@@ -67,6 +67,10 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - Tabulka má nyní 34 kontrol včetně živých hodnot při přidrženém pořadí, skončeného řádku, odmítnutí nové generace stejného PID a návratu k posunu po dvou skrytých obnovách; všech pět testů i test nativního okna prošlo.
 - Společný Monitor odděluje sběr od okna; šest testů ověřuje také přepis posledního vzorku, start v pauze, obnovení, skutečný vlastní proces a zastavení. Srovnání WinUI/AOT v T54 a izolace poskytovatelů v T12 zůstávají otevřené.
 - Sdílená DLL má verzované C rozhraní a C# vazby; sedm místních testů včetně skutečného C volajícího prošlo. Publikovaný .NET 10 Native AOT klient bez varování načetl oba živé proudy, identity zařízení a snímek zachovaný po ukončení monitoru i úklidu paměti; nejde o WinUI prototyp ani dokončení T54.
+- Pohled Služby má skutečná data SCM, vlastní řádky po 57 DIP, filtry stavů, hledání názvu/účtu/PID, konfiguraci a proklikávací závislosti. Hostitelský proces se otevírá po shodě PID i času vzniku; odmítnuté čtení ponechá proklik vypnutý. Správní akce v T37 zůstávají otevřené.
+- Devět Release a Debug testů prošlo včetně záměny PID hostitele, rozlišení pozastavené služby, Unicode, změny stavu, výběru, řazení a posunu přes skryté obnovy. Živý test prošel hledáním, závislostmi, jejich otevřením klávesou Enter a přechodem do ověřeného procesu; test okna ověřuje také sběr a detail služby.
+- Review služeb opravilo limit popisu na 8 KiB a po změně DPI obnovuje výšku řádků závislostí na 44 DIP. Rozhraní rozlišuje závislosti od minigrafů prostředků po 59 DIP; celý vzhled a skutečná DPI matice v T42 nejsou přijaté.
+- Služby se vejdou do pěti ověřených rozměrů od 720 × 500 do 1440 × 920; malý pohled má vlastní posuvníky seznamu i detailu. Čtyři statické oblasti mají v pixelovém porovnání shodné hranice znaků s HTML; nejde o přijetí celého UI.
 - Release, čtyři testy sběru a výpočtů a test nativního okna prošly; při čtyřech velikostech od 720 × 500 do 1440 × 920 jsou karty procesů dosažitelné posunem a ovládání nepřekrývá záhlaví ani patičku. Skutečné 150/200% DPI zbývá ověřit.
 - Historie má nejvýše 512 řad po 2 401 bodech včetně logických CPU; samotné bodové buffery zůstávají pod 64 MiB. Rozsah lze přepnout mezi 60 s a 10 min; nejde o záruku uchování celé délky při každém intervalu.
 

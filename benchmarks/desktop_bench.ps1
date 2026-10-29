@@ -1,6 +1,6 @@
 param(
     [ValidateRange(10, 3600)][int]$Seconds = 60,
-    [ValidateSet('Performance', 'Processes')][string]$View = 'Performance',
+    [ValidateSet('Performance', 'Processes', 'Services')][string]$View = 'Performance',
     [string]$OutputPath = (Join-Path ([IO.Path]::GetTempPath()) 'nks-taskmgr-performance.json')
 )
 
@@ -13,6 +13,9 @@ using System.Runtime.InteropServices;
 public static class NksDesktopBench {
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
     [DllImport("user32.dll")] public static extern IntPtr SendMessageW(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
+    [DllImport("user32.dll")] public static extern bool PostMessageW(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
+    [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr window, int id);
+    [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr window);
     [DllImport("kernel32.dll")] public static extern uint GetActiveProcessorCount(ushort group);
     [DllImport("user32.dll")] public static extern uint GetGuiResources(IntPtr process, uint flags);
 }
@@ -28,6 +31,17 @@ try {
     if ($app.HasExited -or $app.MainWindowHandle -eq 0) { throw 'The desktop window did not start.' }
     $window = $app.MainWindowHandle
     if ($View -eq 'Processes') { [NksDesktopBench]::SendMessageW($window, 0x111, [IntPtr]1, [IntPtr]::Zero) | Out-Null; Start-Sleep -Seconds 2 }
+    if ($View -eq 'Services') {
+        [NksDesktopBench]::SendMessageW($window, 0x111, [IntPtr]7, [IntPtr]::Zero) | Out-Null
+        Start-Sleep -Seconds 2
+        $list = [NksDesktopBench]::GetDlgItem($window, 102)
+        $dpi = [NksDesktopBench]::GetDpiForWindow($window)
+        $point = [IntPtr](([int](20 * $dpi / 96)) -bor (([int](65 * $dpi / 96)) -shl 16))
+        [NksDesktopBench]::PostMessageW($list, 0x201, [IntPtr]1, $point) | Out-Null
+        [NksDesktopBench]::PostMessageW($list, 0x202, [IntPtr]::Zero, $point) | Out-Null
+        Start-Sleep -Seconds 2
+        if ([NksDesktopBench]::SendMessageW($list, 0x1032, [IntPtr]::Zero, [IntPtr]::Zero).ToInt32() -ne 1) { throw 'The service detail was not selected.' }
+    }
     $results = @()
     foreach ($phase in @('visible', 'minimized')) {
         if ($phase -eq 'minimized') { [NksDesktopBench]::ShowWindow($window, 6) | Out-Null; Start-Sleep -Seconds 2 }

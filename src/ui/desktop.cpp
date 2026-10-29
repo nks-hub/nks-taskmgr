@@ -49,7 +49,7 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
     UpdateWindow(window);
     MSG event{};
     while (GetMessageW(&event, nullptr, 0, 0) > 0) {
-        if (performance && event.message == WM_MOUSEWHEEL) {
+        if (view == DesktopView::performance && event.message == WM_MOUSEWHEEL) {
             POINT pointer{GET_X_LPARAM(event.lParam), GET_Y_LPARAM(event.lParam)}; ScreenToClient(window, &pointer);
             const auto frame = performanceLayout();
             if (pointer.x / scale >= frame.detailX && pointer.y / scale >= frame.top) {
@@ -57,7 +57,7 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
             }
         }
         if (event.message == WM_MOUSEMOVE && GetParent(event.hwnd) == window) {
-            if (!performance && event.hwnd == table.handle()) {
+            if (view == DesktopView::processes && event.hwnd == table.handle()) {
                 LVHITTESTINFO hit{}; hit.pt = {GET_X_LPARAM(event.lParam), GET_Y_LPARAM(event.lParam)};
                 const auto held = table.holding();
                 table.setHeld(ListView_HitTest(table.handle(), &hit) >= 0);
@@ -79,14 +79,17 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
             RedrawWindow(window, nullptr, nullptr, RDW_INVALIDATE | RDW_ALLCHILDREN);
         }
         if (event.message == WM_KEYDOWN && event.wParam == 'F' && (GetKeyState(VK_CONTROL) & 0x8000)) {
-            changeView(false); SetFocus(search); continue;
+            if (view != DesktopView::services) changeView(DesktopView::processes);
+            SetFocus(search); continue;
         }
         if (!IsDialogMessageW(window, &event)) { TranslateMessage(&event); DispatchMessageW(&event); }
     }
     monitor.stop();
+    serviceMonitor.stop();
+    if (richEditModule) FreeLibrary(richEditModule);
     if (font) DeleteObject(font);
     if (searchFont) DeleteObject(searchFont);
-    return smokeMode ? (smokeChecks == 15 ? 0 : 3) : static_cast<int>(event.wParam);
+    return smokeMode ? (smokeChecks == 63 ? 0 : 3) : static_cast<int>(event.wParam);
 }
 
 void Desktop::create()
@@ -126,6 +129,7 @@ void Desktop::create()
     SendMessageW(search, WM_SETFONT, reinterpret_cast<WPARAM>(searchFont), FALSE);
     SendMessageW(search, EM_SETCUEBANNER, TRUE, reinterpret_cast<LPARAM>(L"Hledat název nebo PID"));
     table.create(window, font);
+    createServices();
     BOOL dark = TRUE;
     DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
     SetTimer(window, refreshTimer, 100, nullptr);
@@ -154,6 +158,9 @@ void Desktop::setFonts()
         if (child) SendMessageW(child, WM_SETFONT, reinterpret_cast<WPARAM>(font), FALSE);
     if (search) SendMessageW(search, WM_SETFONT, reinterpret_cast<WPARAM>(searchFont), FALSE);
     if (table.handle()) table.setFont(font);
+    if (serviceTable.handle()) serviceTable.setFont(font);
+    if (serviceBody) SendMessageW(serviceBody, WM_SETFONT, reinterpret_cast<WPARAM>(searchFont), FALSE);
+    if (serviceDependencies) SendMessageW(serviceDependencies, LB_SETITEMHEIGHT, 0, std::lround(44 * scale));
     if (resourceList) {
         const auto count = SendMessageW(resourceList, LB_GETCOUNT, 0, 0);
         for (LRESULT i = 0; i < count; ++i) {
@@ -165,17 +172,20 @@ void Desktop::setFonts()
     if (previousSearchFont) DeleteObject(previousSearchFont);
 }
 
-void Desktop::changeView(bool value)
+void Desktop::changeView(DesktopView value)
 {
     table.setHeld(false);
-    performance = value;
-    ShowWindow(resourceList, value ? SW_SHOW : SW_HIDE);
-    table.setVisible(!value);
-    ShowWindow(search, value ? SW_HIDE : SW_SHOW);
+    view = value;
+    serviceMonitor.setActive(view == DesktopView::services && !IsIconic(window));
+    ShowWindow(resourceList, view == DesktopView::performance ? SW_SHOW : SW_HIDE);
+    table.setVisible(view == DesktopView::processes);
+    serviceTable.setVisible(view == DesktopView::services);
+    SetWindowTextW(search, (view == DesktopView::services ? serviceQuery : processQuery).c_str());
+    SendMessageW(search, EM_SETCUEBANNER, TRUE, reinterpret_cast<LPARAM>(view == DesktopView::services
+        ? L"Hledat službu, účet nebo PID" : L"Hledat název nebo PID"));
+    ShowWindow(search, view == DesktopView::performance ? SW_HIDE : SW_SHOW);
     layout();
-    InvalidateRect(window, nullptr, FALSE);
-    InvalidateRect(processButton, nullptr, FALSE);
-    InvalidateRect(performanceButton, nullptr, FALSE);
+    RedrawWindow(window, nullptr, nullptr, RDW_INVALIDATE | RDW_ALLCHILDREN);
 }
 
 void Desktop::layout()
@@ -197,9 +207,11 @@ void Desktop::layout()
     const auto navWidth = frame.sidebar - navX * 2 - 1;
     move(processButton, navX, 127, navWidth, 66);
     move(performanceButton, navX, 197, navWidth, 66);
+    move(servicesButton, navX, 267, navWidth, 66);
     const auto headerPadding = width <= 1000 ? 22.f : 30.f;
     move(intervalButton, width - headerPadding - 170, 84, 65, 35);
     move(pauseButton, width - headerPadding - 96, 84, 96, 35);
+    ShowWindow(intervalButton, view == DesktopView::services ? SW_HIDE : SW_SHOW);
     move(resourceList, frame.inventoryX + 10, 202, frame.inventoryWidth - 20,
         std::max(30.f, std::min(height - 290, static_cast<float>(resources.size()) * 59)));
     const auto page = ProcessLayout::calculate(width, height);
@@ -210,7 +222,7 @@ void Desktop::layout()
     const std::array filterWidths{112.f, 67.f, 61.f};
     for (std::size_t i = 0; i < processFilters.size(); ++i) {
         move(processFilters[i], page.left + filterX[i], page.toolbarTop + 4, filterWidths[i], 29);
-        ShowWindow(processFilters[i], performance ? SW_HIDE : SW_SHOW);
+        ShowWindow(processFilters[i], view == DesktopView::processes ? SW_SHOW : SW_HIDE);
     }
     const auto captionWidth = page.compact ? 0.f : (page.width - 46 - 100) / 5.3f * 1.3f;
     const auto gap = page.compact ? 13.f : width <= 1250 ? 17.f : 25.f;
@@ -218,13 +230,13 @@ void Desktop::layout()
     const auto overviewWidth = (page.left + page.width - 23 - overviewStart - gap * 3) / 4;
     for (std::size_t i = 0; i < overviewButtons.size(); ++i) {
         move(overviewButtons[i], overviewStart + static_cast<float>(i) * (overviewWidth + gap), page.overviewTop + 20, overviewWidth, page.overviewHeight - 40);
-        ShowWindow(overviewButtons[i], !performance && page.overview ? SW_SHOW : SW_HIDE);
+        ShowWindow(overviewButtons[i], view == DesktopView::processes && page.overview ? SW_SHOW : SW_HIDE);
     }
     const auto scrolled = [&](HWND child, float x, float y, float w, float h, bool visible) {
         const auto shiftedY = y - detailScroll;
         move(child, x, shiftedY, w, h);
         const bool inside = shiftedY >= frame.top && shiftedY + h <= frame.bottom;
-        ShowWindow(child, visible && performance && inside ? SW_SHOW : SW_HIDE);
+        ShowWindow(child, visible && view == DesktopView::performance && inside ? SW_SHOW : SW_HIDE);
     };
     scrolled(range60Button, frame.detailX + frame.chartWidth - 135, 183, 46, 27, true);
     scrolled(range600Button, frame.detailX + frame.chartWidth - 85, 183, 59, 27, true);
@@ -238,11 +250,13 @@ void Desktop::layout()
     for (std::size_t i = 0; i < consumerButtons.size(); ++i)
         scrolled(consumerButtons[i], frame.detailX + static_cast<float>(i) * (consumerWidth + frame.consumerGap),
             frame.rowY, consumerWidth, 74, consumers[i].has_value());
+    layoutServices();
     InvalidateRect(window, nullptr, FALSE);
 }
 
 void Desktop::tick()
 {
+    tickServices();
     bool changed = false;
     if (auto sample = monitor.takeProcesses(processError)) {
         processes = std::move(sample);
@@ -278,7 +292,7 @@ void Desktop::tick()
     if (smokeMode) {
         if (ticks == 40 && processes && !resources.empty()) {
             smokeChecks |= 1;
-            changeView(false);
+            changeView(DesktopView::processes);
             const auto match = std::find_if(processes->processes.begin(), processes->processes.end(), [](const auto& item) { return item.identity.pid == GetCurrentProcessId(); });
             if (match != processes->processes.end()) table.select(match->identity);
         }
@@ -289,10 +303,18 @@ void Desktop::tick()
             SetWindowTextW(search, L"");
             selectedId = L"memory";
             rebuildResources();
-            changeView(true);
+            changeView(DesktopView::performance);
         }
         if (ticks == 70) {
             monitor.stop();
+        }
+        if (ticks == 80) changeView(DesktopView::services);
+        if (ticks == 95 && services && !services->services.empty()) {
+            smokeChecks |= 16;
+            serviceTable.select(services->services.front().name); selectService();
+        }
+        if (ticks == 110 && serviceDetail && serviceDetail->name == selectedService) {
+            smokeChecks |= 32; changeView(DesktopView::performance);
         }
         if (ticks == 115 && processStale && resourceStale) {
             const auto stale = std::all_of(resources.begin(), resources.end(), [](const auto& item) { return item.primary.state == SampleState::stale; });
@@ -356,7 +378,7 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
     switch (msg) {
     case WM_CREATE: create(); return 0;
     case WM_NCCALCSIZE: if (wp) return 0; break;
-    case WM_SIZE: layout(); return 0;
+    case WM_SIZE: serviceMonitor.setActive(view == DesktopView::services && !IsIconic(window)); layout(); return 0;
     case WM_DPICHANGED: {
         scale = HIWORD(wp) / 96.f;
         setFonts();
@@ -398,11 +420,14 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
     }
     case WM_TIMER: if (wp == refreshTimer) tick(); return 0;
     case WM_ERASEBKGND: return 1;
+    case WM_VKEYTOITEM:
+        if (reinterpret_cast<HWND>(lp) == serviceDependencies && LOWORD(wp) == VK_RETURN) { serviceCommand(103); return -2; }
+        break;
     case WM_MOUSEWHEEL:
-        if (performance) { scrollDetail(detailScroll - GET_WHEEL_DELTA_WPARAM(wp) / static_cast<float>(WHEEL_DELTA) * 48); return 0; }
+        if (view == DesktopView::performance) { scrollDetail(detailScroll - GET_WHEEL_DELTA_WPARAM(wp) / static_cast<float>(WHEEL_DELTA) * 48); return 0; }
         break;
     case WM_LBUTTONDOWN:
-        if (performance) {
+        if (view == DesktopView::performance) {
             const auto frame = performanceLayout();
             const auto x = GET_X_LPARAM(lp) / scale, y = GET_Y_LPARAM(lp) / scale;
             if (frame.maxScroll > 0 && x >= frame.detailRight - 17 && x <= frame.detailRight && y >= frame.top && y <= frame.bottom) {
@@ -427,7 +452,9 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
     case WM_PRINTCLIENT: paint(reinterpret_cast<HDC>(wp)); return 0;
     case WM_DRAWITEM: {
         const auto& item = *reinterpret_cast<DRAWITEMSTRUCT*>(lp);
-        if (item.CtlType == ODT_LISTBOX) drawResource(item);
+        if (item.CtlID == 103) drawDependency(item);
+        else if (item.CtlType == ODT_LISTBOX) drawResource(item);
+        else if (item.CtlID >= 120 && item.CtlID <= 123) drawServiceCounter(item);
         else if (item.CtlID >= 60 && item.CtlID <= 62) drawConsumer(item);
         else if (item.CtlID >= 80 && item.CtlID <= 83) drawOverview(item);
         else drawButton(item);
@@ -435,6 +462,7 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
     }
     case WM_MEASUREITEM: {
         auto& item = *reinterpret_cast<MEASUREITEMSTRUCT*>(lp);
+        if (item.CtlID == 103) { item.itemHeight = static_cast<UINT>(44 * scale); return TRUE; }
         if (item.CtlType == ODT_LISTBOX && item.CtlID == 5) {
             const auto index = item.itemID < resources.size() ? item.itemID : 0;
             item.itemHeight = static_cast<UINT>(std::lround((index + 1) * 59 * scale) - std::lround(index * 59 * scale));
@@ -452,10 +480,14 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         SetDCBrushColor(reinterpret_cast<HDC>(wp), RGB(18, 24, 28));
         return reinterpret_cast<LRESULT>(GetStockObject(DC_BRUSH));
     case WM_COMMAND:
+        if (LOWORD(wp) == 7 || (LOWORD(wp) >= 103 && LOWORD(wp) <= 132)) {
+            if (LOWORD(wp) != 103 || HIWORD(wp) == LBN_DBLCLK) serviceCommand(LOWORD(wp));
+            return 0;
+        }
         switch (LOWORD(wp)) {
-        case 1: changeView(false); break;
-        case 2: changeView(true); break;
-        case 3: monitor.setPaused(!monitor.paused()); SetWindowTextW(pauseButton, monitor.paused() ? L"Pokračovat" : L"Pozastavit"); InvalidateRect(window, nullptr, FALSE); break;
+        case 1: changeView(DesktopView::processes); break;
+        case 2: changeView(DesktopView::performance); break;
+        case 3: monitor.setPaused(!monitor.paused()); serviceMonitor.setPaused(monitor.paused()); SetWindowTextW(pauseButton, monitor.paused() ? L"Pokračovat" : L"Pozastavit"); InvalidateRect(window, nullptr, FALSE); break;
         case 4: monitor.setInterval(monitor.interval() == 1000 ? 250 : 1000); SetWindowTextW(intervalButton, monitor.interval() == 1000 ? L"1 s" : L"250 ms"); break;
         case 10: ShowWindow(window, SW_MINIMIZE); break;
         case 11: ShowWindow(window, IsZoomed(window) ? SW_RESTORE : SW_MAXIMIZE); break;
@@ -467,7 +499,7 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         case 30: case 31:
             rangeSeconds = LOWORD(wp) == 30 ? 60 : 600; InvalidateRect(window, nullptr, FALSE);
             InvalidateRect(range60Button, nullptr, FALSE); InvalidateRect(range600Button, nullptr, FALSE); break;
-        case 40: changeView(false); break;
+        case 40: changeView(DesktopView::processes); break;
         case 70: case 71: case 72:
             table.setMode(static_cast<ProcessMode>(LOWORD(wp) - 70));
             for (auto filter : processFilters) InvalidateRect(filter, nullptr, FALSE);
@@ -477,14 +509,14 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
             const auto kind = kinds[LOWORD(wp) - 80];
             auto match = std::find_if(resources.begin(), resources.end(), [&](const auto& item) { return item.kind == kind && item.primary.valid(); });
             if (match == resources.end()) match = std::find_if(resources.begin(), resources.end(), [&](const auto& item) { return item.kind == kind; });
-            if (match != resources.end()) { selectedId = match->id; detailScroll = 0; rebuildResources(); changeView(true); }
+            if (match != resources.end()) { selectedId = match->id; detailScroll = 0; rebuildResources(); changeView(DesktopView::performance); }
             break;
         }
         case 60: case 61: case 62: {
             const auto index = LOWORD(wp) - 60;
             if (consumers[index]) {
                 SetWindowTextW(search, L""); table.setMode(ProcessMode::all);
-                changeView(false); table.select(*consumers[index]); SetFocus(table.handle());
+                changeView(DesktopView::processes); table.select(*consumers[index]); SetFocus(table.handle());
             }
             break;
         }
@@ -498,11 +530,23 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
             InvalidateRect(window, nullptr, FALSE);
         } break;
         case 6: if (HIWORD(wp) == EN_CHANGE) {
-            wchar_t value[512]{}; GetWindowTextW(search, value, 512); table.filter(value);
+            wchar_t value[512]{}; GetWindowTextW(search, value, 512);
+            if (view == DesktopView::services) {
+                serviceQuery = value; serviceTable.filter(serviceTable.filterMode(), value); selectService();
+            } else { processQuery = value; table.filter(value); }
         } break;
         }
         return 0;
     case WM_NOTIFY:
+        if (reinterpret_cast<NMHDR*>(lp)->hwndFrom == serviceTable.header() && reinterpret_cast<NMHDR*>(lp)->code == NM_CUSTOMDRAW)
+            return drawServiceHeader(*reinterpret_cast<NMCUSTOMDRAW*>(lp));
+        if (reinterpret_cast<NMHDR*>(lp)->hwndFrom == serviceTable.handle()) {
+            const auto code = reinterpret_cast<NMHDR*>(lp)->code;
+            if (code == NM_CUSTOMDRAW) return drawServiceRow(*reinterpret_cast<NMLVCUSTOMDRAW*>(lp));
+            const auto result = serviceTable.notify(reinterpret_cast<NMHDR*>(lp));
+            if (!serviceTable.updating() && (code == LVN_ITEMCHANGED || code == LVN_COLUMNCLICK)) selectService();
+            return result;
+        }
         if (reinterpret_cast<NMHDR*>(lp)->hwndFrom == table.header() && reinterpret_cast<NMHDR*>(lp)->code == NM_CUSTOMDRAW)
             return drawProcessHeader(*reinterpret_cast<NMCUSTOMDRAW*>(lp));
         if (reinterpret_cast<NMHDR*>(lp)->hwndFrom == table.handle()) {

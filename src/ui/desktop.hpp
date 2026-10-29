@@ -6,12 +6,17 @@
 #include "process_table.hpp"
 #include "performance_layout.hpp"
 #include "process_layout.hpp"
+#include "service_table.hpp"
+#include "service_layout.hpp"
+#include "core/service_monitor.hpp"
 #include <d2d1.h>
 #include <dwrite.h>
 #include <dwrite_1.h>
 #include <wrl/client.h>
 
 namespace nks {
+
+enum class DesktopView { processes, performance, services };
 
 class Desktop {
 public:
@@ -23,10 +28,23 @@ private:
     void setFonts();
     void layout();
     void tick();
-    void changeView(bool performance);
+    void changeView(DesktopView value);
     void paint(HDC destination = nullptr);
     void paintPerformance(float width, float height);
     void paintProcesses(float width, float height);
+    void paintSearch(float x, float y, float width, bool shortcut);
+    void createServices();
+    void layoutServices();
+    void tickServices();
+    void selectService();
+    void updateServiceDetail();
+    void serviceCommand(unsigned id);
+    void paintServices(float width, float height);
+    void drawServiceCounter(const DRAWITEMSTRUCT& item);
+    void drawDependency(const DRAWITEMSTRUCT& item);
+    LRESULT drawServiceRow(const NMLVCUSTOMDRAW& item);
+    LRESULT drawServiceHeader(const NMCUSTOMDRAW& item);
+    std::optional<ProcessIdentity> serviceHost() const;
     LRESULT drawProcessRow(const NMLVCUSTOMDRAW& item);
     LRESULT drawProcessHeader(const NMCUSTOMDRAW& item);
     void drawOverview(const DRAWITEMSTRUCT& item);
@@ -48,6 +66,10 @@ private:
     PerformanceLayout performanceLayout() const;
     const ResourceRecord* selectedResource() const;
     HWND window{}, resourceList{}, search{}, processButton{}, performanceButton{}, pauseButton{}, intervalButton{};
+    HWND servicesButton{}, serviceBody{}, serviceDependencies{}, serviceHostButton{};
+    HMODULE richEditModule{};
+    std::array<HWND, 4> serviceFilters{}, serviceCounters{};
+    std::array<HWND, 2> serviceTabs{};
     HWND hoveredControl{};
     int hoveredResource{-1};
     bool focusFromKeyboard{};
@@ -58,7 +80,8 @@ private:
     std::array<std::optional<ProcessIdentity>, 3> consumers{};
     HFONT font{}, searchFont{};
     float scale{1};
-    bool performance{true}, smokeMode{};
+    DesktopView view{DesktopView::performance};
+    bool smokeMode{};
     bool processStale{}, resourceStale{};
     int ticks{}, smokeChecks{};
     int cpuView{}, rangeSeconds{60};
@@ -71,6 +94,13 @@ private:
     std::vector<ResourceRecord> resources;
     ResourceHistory history;
     Monitor monitor;
+    ServiceTable serviceTable;
+    ServiceMonitor serviceMonitor;
+    std::shared_ptr<const ServiceSnapshot> services;
+    std::shared_ptr<const ServiceDetail> serviceDetail;
+    std::wstring selectedService, serviceError, serviceDetailError, processQuery, serviceQuery, serviceBodyText;
+    std::vector<std::pair<std::wstring, bool>> dependencyRows;
+    int serviceTab{};
     Microsoft::WRL::ComPtr<ID2D1Factory> factory;
     Microsoft::WRL::ComPtr<IDWriteFactory> writing;
     Microsoft::WRL::ComPtr<IDWriteRenderingParams> textRendering;

@@ -25,13 +25,16 @@ add_library(nks_native STATIC
     src/core/process_sampler.cpp
     src/core/resource.cpp
     src/core/monitor.cpp
+    src/core/service.cpp
+    src/core/service_monitor.cpp
+    src/collectors/service_collector.cpp
     src/collectors/pdh_counters.cpp
     src/collectors/resource_collector.cpp
 )
 target_include_directories(nks_native PUBLIC src)
 target_include_directories(nks_native SYSTEM PRIVATE third_party/phnt/include)
 target_compile_definitions(nks_native PRIVATE PHNT_VERSION=117)
-target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid)
+target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32)
 target_compile_options(nks_native PRIVATE /W4 /WX /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
 
 add_library(nks-monitor SHARED src/interop/monitor_api.cpp)
@@ -48,7 +51,7 @@ add_executable(nks-resource-sample src/app/resource_sample.cpp)
 target_link_libraries(nks-resource-sample PRIVATE nks_native)
 target_compile_options(nks-resource-sample PRIVATE /W4 /WX /utf-8 /permissive-)
 
-add_executable(nks-taskmgr WIN32 src/app/desktop_main.cpp src/ui/desktop.cpp src/ui/desktop_paint.cpp src/ui/control_paint.cpp src/ui/performance_paint.cpp src/ui/process_paint.cpp src/ui/process_table.cpp)
+add_executable(nks-taskmgr WIN32 src/app/desktop_main.cpp src/ui/desktop.cpp src/ui/desktop_paint.cpp src/ui/control_paint.cpp src/ui/performance_paint.cpp src/ui/process_paint.cpp src/ui/process_table.cpp src/ui/service_table.cpp src/ui/service_view.cpp src/ui/service_paint.cpp)
 target_link_libraries(nks-taskmgr PRIVATE nks_native d2d1 dwrite dwmapi comctl32 uxtheme)
 target_compile_options(nks-taskmgr PRIVATE /W4 /WX /utf-8 /permissive-)
 
@@ -83,6 +86,15 @@ if(BUILD_TESTING)
     target_compile_options(nks-api-tests PRIVATE /W4 /WX /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
     add_test(NAME monitor-c-api COMMAND nks-api-tests)
     set_tests_properties(monitor-c-api PROPERTIES TIMEOUT 20)
+    add_executable(nks-service-tests tests/service_tests.cpp)
+    target_link_libraries(nks-service-tests PRIVATE nks_native)
+    target_compile_options(nks-service-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    add_test(NAME services COMMAND nks-service-tests)
+    set_tests_properties(services PROPERTIES TIMEOUT 20)
+    add_executable(nks-service-view-tests tests/service_view_tests.cpp src/ui/service_table.cpp)
+    target_link_libraries(nks-service-view-tests PRIVATE nks_native comctl32 uxtheme)
+    target_compile_options(nks-service-view-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    add_test(NAME service-view COMMAND nks-service-view-tests)
 endif()
 
 add_executable(nks-collect-bench benchmarks/collect_bench.cpp)

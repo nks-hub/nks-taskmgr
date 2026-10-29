@@ -34,8 +34,9 @@ bool Desktop::beginControl(const DRAWITEMSTRUCT& item, D2D1_COLOR_F background)
         offset = D2D1::Point2F(bounds.left - std::floor(bounds.left * scale) / scale, bounds.top - std::floor(bounds.top * scale) / scale);
         controlSize = D2D1::SizeF(bounds.right - bounds.left, bounds.bottom - bounds.top);
         if (item.CtlType == ODT_LISTBOX) {
-            controlSize.height = 59;
-            const auto logicalStart = static_cast<float>(item.itemID) * 59;
+            const auto itemHeight = item.CtlID == 103 ? 44.f : 59.f;
+            controlSize.height = itemHeight;
+            const auto logicalStart = static_cast<float>(item.itemID) * itemHeight;
             offset.y += logicalStart - std::round(logicalStart * scale) / scale;
         } else if (item.CtlType == ODT_LISTVIEW) {
             controlSize = D2D1::SizeF((item.rcItem.right - item.rcItem.left) / scale, (item.rcItem.bottom - item.rcItem.top) / scale);
@@ -77,19 +78,28 @@ void Desktop::icon(unsigned kind, float x, float y, float size, D2D1_COLOR_F col
         const std::array points{p(14, 7), p(19, 12), p(14, 17)};
         drawPolyline(points, stroke); break;
     }
+    case 6:
+        for (float row : {4.f, 14.f}) {
+            surface->DrawRoundedRectangle(D2D1::RoundedRect(D2D1::RectF(p(4, row).x, p(4, row).y, p(20, row + 6).x, p(20, row + 6).y), size / 12, size / 12), drawBrush, stroke);
+            segment(7, row + 3, 8, row + 3); segment(13, row + 3, 17, row + 3);
+        }
+        break;
     }
 }
 
 void Desktop::drawButton(const DRAWITEMSTRUCT& item)
 {
-    const bool navigation = item.CtlID == 1 || item.CtlID == 2;
+    const bool navigation = item.CtlID == 1 || item.CtlID == 2 || item.CtlID == 7;
     const bool caption = item.CtlID >= 10 && item.CtlID <= 12;
     const auto background = navigation || caption ? D2D1::ColorF(0x12181c) : item.CtlID == 40 ? D2D1::ColorF(0x171d21) : panel;
     if (!beginControl(item, background)) return;
     const auto w = controlSize.width, h = controlSize.height;
     const bool segmented = (item.CtlID >= 20 && item.CtlID <= 22) || item.CtlID == 30 || item.CtlID == 31
-        || (item.CtlID >= 70 && item.CtlID <= 72);
-    const bool selected = (item.CtlID == 1 && !performance) || (item.CtlID == 2 && performance)
+        || (item.CtlID >= 70 && item.CtlID <= 72) || (item.CtlID >= 110 && item.CtlID <= 113) || item.CtlID == 130 || item.CtlID == 131;
+    const bool selected = (item.CtlID == 1 && view == DesktopView::processes) || (item.CtlID == 2 && view == DesktopView::performance)
+        || (item.CtlID == 7 && view == DesktopView::services)
+        || (item.CtlID >= 110 && item.CtlID <= 113 && static_cast<int>(item.CtlID) - 110 == static_cast<int>(serviceTable.filterMode()))
+        || (item.CtlID >= 130 && item.CtlID <= 131 && static_cast<int>(item.CtlID) - 130 == serviceTab)
         || (item.CtlID >= 20 && item.CtlID <= 22 && static_cast<int>(item.CtlID) - 20 == cpuView)
         || (item.CtlID == 30 && rangeSeconds == 60) || (item.CtlID == 31 && rangeSeconds == 600);
     const bool processFilter = item.CtlID >= 70 && item.CtlID <= 72;
@@ -99,7 +109,7 @@ void Desktop::drawButton(const DRAWITEMSTRUCT& item)
     if (navigation) {
         if (selected) fill(rect(0, 0, w, h), D2D1::ColorF(0x3b3024), 9);
         if (!selected && hoveredControl == item.hwndItem) fill(rect(0, 0, w, h), D2D1::ColorF(0x232d34), 9);
-        icon(item.CtlID, (w - 20) / 2, 13, 20, selected ? amber : muted);
+        icon(item.CtlID == 7 ? 6 : item.CtlID, (w - 20) / 2, 13, 20, selected ? amber : muted);
         text(label, rect(0, 41, w, 16), 9, selected ? amber : muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
     } else if (caption) {
         const auto left = item.CtlID == 12 ? .5f : 0;
@@ -117,7 +127,7 @@ void Desktop::drawButton(const DRAWITEMSTRUCT& item)
         if (item.CtlID == 3) {
             icon(monitor.paused() ? 4 : 3, 12, 11, 13, muted);
             text(label, rect(31, 9, w - 40, 18), 11, ink);
-        } else text(label, rect(0, 9, w, 18), 11, ink, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
+        } else text(label, rect(0, 9, w, 18), 11, (item.itemState & ODS_DISABLED) ? muted : ink, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
     }
     if ((item.itemState & ODS_FOCUS) && focusFromKeyboard) {
         drawBrush->SetColor(amber);

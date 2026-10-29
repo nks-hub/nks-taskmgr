@@ -27,12 +27,7 @@ void Desktop::paintProcesses(float width, float height)
         drawBrush->SetColor(line);
         surface->DrawRoundedRectangle(D2D1::RoundedRect(D2D1::RectF(box.left + .5f, box.top + .5f, box.right - .5f, box.bottom - .5f), radius, radius), drawBrush, 1);
     };
-    card(rect(page.searchX, page.searchY, page.searchWidth, 35), 7);
-    fill(rect(page.searchX + 1, page.searchY + 1, page.searchWidth - 2, 33), D2D1::ColorF(0x12181c), 6);
-    drawBrush->SetColor(muted);
-    surface->DrawEllipse(D2D1::Ellipse(D2D1::Point2F(page.searchX + 18, page.searchY + 16), 4, 4), drawBrush, 1);
-    surface->DrawLine(D2D1::Point2F(page.searchX + 21, page.searchY + 19), D2D1::Point2F(page.searchX + 25, page.searchY + 23), drawBrush, 1);
-    if (width > 1000) text(L"Ctrl F", rect(page.searchX + page.searchWidth - 38, page.searchY + 12, 30, 17), 9, muted);
+    paintSearch(page.searchX, page.searchY, page.searchWidth, width > 1000);
     if (page.overview) {
         card(rect(page.left, page.overviewTop, page.width, page.overviewHeight), 10);
         if (!page.compact) {

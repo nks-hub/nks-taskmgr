@@ -15,6 +15,7 @@ The current desktop prototype displays live processes and individual system devi
 - 🖥️ **Desktop prototype** - Provides a system overview, virtual process table, CPU and memory bars, name/PID search, column sorting, multiple selection, and a selection detail panel.
 - 🌳 **Process views** - Switches between all processes, measured CPU or I/O activity, and a collapsible tree that checks parent creation times before linking processes.
 - 📊 **Device view** - Lists individual disks, hardware GPUs, and physical network adapters, including disconnected adapters. Each item opens a graph and current counters.
+- 🛠️ **Services** - Lists accessible Windows services with state filters and name, account, or PID search. The selected detail shows configuration, dependencies, and a link to a host process whose creation time has been verified.
 - ⏱️ **History** - Stores up to 2,401 samples for each of 512 series, draws gaps, and shows the retained duration. Collection runs on separate process and device threads with one pending snapshot each.
 - 🧩 **CPU graphs** - Switches between total CPU, a graph for each logical processor, and overlaid processor graphs. Processor groups retain separate identities.
 - ↕️ **Network traffic** - Shows receive and transmit rates in the resource list, selected chart, and device details.
@@ -62,7 +63,9 @@ While the pointer is over a process row, the table keeps its row order and updat
 
 The memory page separates physical memory, commit, and pagefile usage. Pagefile usage comes from `EnumPageFilesW`; it is not a measure of paging I/O activity. Network graphs show receive and transmit values in bits per second.
 
-The current UI implements the dark appearance. Services, administrative actions, accessibility acceptance, and the light appearance are not yet implemented. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
+Services runs in read-only mode. Its collector starts when the view opens and refreshes state once per second; polling pauses while the window is minimized. List configuration is cached for up to 15 seconds. The selected configuration is queried again with its detail. The dependency list opens a known service on double-click or Enter. Windows may omit services that the current account cannot query; denied configuration and host identity queries remain unavailable.
+
+The current UI implements the dark appearance. Administrative actions, accessibility acceptance, and the light appearance are not yet implemented. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
 
 Capture two real process samples one second apart:
 
@@ -111,11 +114,12 @@ Measure desktop CPU, private memory, working set, handles, and GDI objects:
 ```powershell
 pwsh -NoProfile -File benchmarks/desktop_bench.ps1
 pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -View Processes
+pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -View Services
 ```
 
 This local benchmark opens its own application instance, warms it up for 10 seconds, then measures 60 seconds visible and 60 seconds minimized. Results, including the executable hash, are written to the system temporary directory. CPU is normalized to the whole machine. Acceptance targets and open findings are maintained in TODO.md; these measurements do not replace the planned OS, UI candidate, or 24-hour tests.
 
-The desktop `--smoke` option runs a local check of view switching, retained process selection, PID filtering, and stale data after stopping both collectors, then exits with code 0 on success.
+The desktop `--smoke` option checks view switching, retained process selection, PID filtering, service collection and detail, and stale data after stopping both process and device collectors. It exits with code 0 on success.
 
 The build script discovers Visual Studio and the installed Windows SDK. It sets the CRT root only for its child build processes and restores the previous environment afterward.
 
