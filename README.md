@@ -54,7 +54,7 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Release -WinUI -Test
 ./build/winui-aot/NksTaskMgr.WinUI.exe
 ```
 
-Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, and CPU chart layout. Visual checks require an active display; captures made while the display is off can contain a black client area. The WinUI candidate does not yet include Services or establish the UI framework choice.
+Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, collection while minimized, and CPU chart layout. Visual checks require an active display; captures made while the display is off can contain a black client area. The WinUI candidate does not yet include Services or establish the UI framework choice.
 
 ## Usage
 

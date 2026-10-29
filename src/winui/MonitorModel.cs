@@ -11,7 +11,7 @@ public sealed class MonitorModel : IDisposable
     private readonly Dictionary<ProcessKey, ProcessRow> processes = [];
     private readonly Dictionary<string, ResourceRow> resources = [];
     private readonly HashSet<ProcessKey> collapsed = [];
-    private bool held;
+    private bool held, visualUpdates = true;
     private string query = string.Empty;
     private int sortColumn;
     private bool descending;
@@ -46,20 +46,28 @@ public sealed class MonitorModel : IDisposable
         ? processes.Values.Where(row => row.Key.Pid != 0).OrderByDescending(row => row.WorkingBytes).Take(3)
         : processes.Values.Where(row => row.Key.Pid != 0 && row.Cpu.State == SampleState.Valid).OrderByDescending(row => row.Cpu.Value).Take(3);
 
-    public bool Tick()
+    public bool Tick(bool updateView = true)
     {
-        bool changed = false;
+        bool resumed = updateView && !visualUpdates;
+        visualUpdates = updateView;
+        bool changed = resumed;
         using var frame = monitor.Read();
         if (frame is not null) { frame.Read(Apply); changed = true; }
         bool stale = !Paused && ProcessTime > 0 && NativeMonitor.MonotonicNowNs - ProcessTime > 3_000_000_000;
         if (stale != Stale) {
             Stale = stale;
-            foreach (var row in processes.Values) row.SetStatus(false, stale);
+            foreach (var row in processes.Values) row.SetStatus(false, stale, visualUpdates);
             changed = true;
         }
         foreach (var resource in resources.Values) {
             long measured = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory ? ProcessTime : ResourceTime;
-            if (resource.SetStale(!Paused && measured > 0 && NativeMonitor.MonotonicNowNs - measured > 3_000_000_000)) changed = true;
+            if (resource.SetStale(!Paused && measured > 0 && NativeMonitor.MonotonicNowNs - measured > 3_000_000_000, visualUpdates)) changed = true;
+        }
+        if (resumed) {
+            SyncResources();
+            Rebuild();
+            foreach (var row in VisibleProcesses) row.NotifyUpdated();
+            foreach (var resource in resources.Values) resource.RefreshPreview();
         }
         return changed;
     }
@@ -79,14 +87,14 @@ public sealed class MonitorModel : IDisposable
                 var key = new ProcessKey(source.BootTime, source.Pid, source.GenerationKind, source.Generation);
                 seen.Add(key);
                 if (!processes.TryGetValue(key, out var row)) processes.Add(key, row = new ProcessRow(key));
-                row.Update(source);
+                row.Update(source, visualUpdates);
             }
             foreach (var key in processes.Keys.Where(key => !seen.Contains(key)).ToArray()) {
-                processes[key].SetStatus(true, false); processes.Remove(key);
+                processes[key].SetStatus(true, false, visualUpdates); processes.Remove(key);
             }
-            Resource("cpu", ResourceKind.Cpu).Update("Procesor", CpuModel, string.Empty, view.Processes.CpuPercent, default, default, 100, ProcessTime);
+            Resource("cpu", ResourceKind.Cpu).Update("Procesor", CpuModel, string.Empty, view.Processes.CpuPercent, default, default, 100, ProcessTime, visualUpdates);
             var memory = new Metric { Value = Memory.PhysicalBytes - Math.Min(Memory.PhysicalBytes, Memory.AvailableBytes), State = Memory.State, Source = MetricSource.PerformanceInfo };
-            Resource("memory", ResourceKind.Memory).Update("Paměť", "Fyzická paměť", string.Empty, memory, default, default, Memory.PhysicalBytes, ProcessTime);
+            Resource("memory", ResourceKind.Memory).Update("Paměť", "Fyzická paměť", string.Empty, memory, default, default, Memory.PhysicalBytes, ProcessTime, visualUpdates);
             PageFile.Append(ProcessTime, new Metric { Value = Memory.PageFileUsedBytes, State = Memory.PageFileState, Source = MetricSource.PerformanceInfo });
             var processorKeys = new HashSet<(uint, uint)>();
             for (uint i = 0; i < view.Processes.ProcessorCount; ++i) {
@@ -95,7 +103,7 @@ public sealed class MonitorModel : IDisposable
                 series.Append(ProcessTime, processor.CpuPercent);
             }
             foreach (var key in Processors.Keys.Where(key => !processorKeys.Contains(key)).ToArray()) Processors.Remove(key);
-            if (!held) Rebuild();
+            if (!held && visualUpdates) Rebuild();
         }
         if ((view.Flags & FrameFlags.ResourceData) != 0) {
             ResourceTime = view.Resources.MeasuredAtNs;
@@ -103,10 +111,11 @@ public sealed class MonitorModel : IDisposable
             for (uint i = 0; i < view.Resources.ResourceCount; ++i) {
                 var source = view.Resources.Resources[i]; var id = source.Id.Copy(); seen.Add(id);
                 Resource(id, source.Kind).Update(source.Title.Copy(), source.Description.Copy(), source.Status.Copy(),
-                    source.Primary, source.Secondary, source.Tertiary, source.Capacity, ResourceTime);
+                    source.Primary, source.Secondary, source.Tertiary, source.Capacity, ResourceTime, visualUpdates);
             }
             foreach (var id in resources.Keys.Where(id => !seen.Contains(id)).ToArray()) {
-                Resources.Remove(resources[id]); resources.Remove(id);
+                if (visualUpdates) Resources.Remove(resources[id]);
+                resources.Remove(id);
             }
         }
     }
@@ -115,11 +124,25 @@ public sealed class MonitorModel : IDisposable
     {
         if (!resources.TryGetValue(id, out var row)) {
             resources.Add(id, row = new ResourceRow(id, kind));
-            if (kind == ResourceKind.Cpu) Resources.Insert(0, row);
-            else if (kind == ResourceKind.Memory) Resources.Insert(Math.Min(1, Resources.Count), row);
-            else Resources.Add(row);
+            if (visualUpdates) {
+                if (kind == ResourceKind.Cpu) Resources.Insert(0, row);
+                else if (kind == ResourceKind.Memory) Resources.Insert(Math.Min(1, Resources.Count), row);
+                else Resources.Add(row);
+            }
         }
         return row;
+    }
+
+    private void SyncResources()
+    {
+        var wanted = resources.Values.ToHashSet();
+        for (int i = Resources.Count - 1; i >= 0; --i) if (!wanted.Contains(Resources[i])) Resources.RemoveAt(i);
+        var rows = resources.Values.OrderBy(row => row.Kind == ResourceKind.Cpu ? 0 : row.Kind == ResourceKind.Memory ? 1 : 2).ToArray();
+        for (int i = 0; i < rows.Length; ++i) {
+            if (i < Resources.Count && ReferenceEquals(Resources[i], rows[i])) continue;
+            int found = Resources.IndexOf(rows[i]);
+            if (found >= 0) Resources.Move(found, i); else Resources.Insert(i, rows[i]);
+        }
     }
 
     private List<ProcessRow> Ordered()

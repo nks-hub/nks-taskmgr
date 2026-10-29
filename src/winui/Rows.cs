@@ -53,20 +53,22 @@ public sealed partial class ProcessRow : INotifyPropertyChanged
     public string WriteText => Ended ? "Ukončeno" : Stale ? "Zastaralé" : Display.Metric(WriteIo, " MiB/s", 1048576);
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public unsafe void Update(in ProcessInfo source)
+    public unsafe void Update(in ProcessInfo source, bool notify = true)
     {
         if (!new ReadOnlySpan<char>(source.Name.Data, checked((int)source.Name.Length)).SequenceEqual(Name.AsSpan())) Name = source.Name.Copy();
         ParentPid = source.ParentPid; Threads = source.Threads; Handles = source.Handles;
         WorkingBytes = source.WorkingSetBytes; PrivateBytes = source.PrivateBytes;
         Cpu = source.CpuPercent; ReadIo = source.ReadIoBytesPerSecond; WriteIo = source.WriteIoBytesPerSecond;
         Ended = Stale = false;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        if (notify) NotifyUpdated();
     }
 
-    public void SetStatus(bool ended, bool stale)
+    public void NotifyUpdated() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+
+    public void SetStatus(bool ended, bool stale, bool notify = true)
     {
         if (Ended == ended && Stale == stale) return;
-        Ended = ended; Stale = stale; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        Ended = ended; Stale = stale; if (notify) NotifyUpdated();
     }
 
     public void SetTree(int depth, bool children, bool collapsed)
@@ -82,7 +84,7 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
 {
     public ResourceRow(string id, ResourceKind kind)
     {
-        Id = id; Kind = kind; Color = Display.Brush(Display.ResourceColor(kind));
+        Id = id; Kind = kind;
     }
     public string Id { get; }
     public ResourceKind Kind { get; }
@@ -94,31 +96,38 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     public Metric Tertiary { get; private set; }
     public double Capacity { get; private set; }
     public bool Stale { get; private set; }
-    public SolidColorBrush Color { get; }
+    private SolidColorBrush? color;
+    public SolidColorBrush Color => color ??= Display.Brush(Display.ResourceColor(Kind));
     public HistorySeries History { get; } = new();
     public HistorySeries Upload { get; } = new();
-    public Geometry Preview { get; private set; } = new PathGeometry();
-    public Geometry UploadPreview { get; private set; } = new PathGeometry();
+    public Geometry? Preview { get; private set; }
+    public Geometry? UploadPreview { get; private set; }
     public string Value => Stale ? "Zastaralá data" : Kind == ResourceKind.Network && Primary.State == SampleState.Valid
         ? "↓ " + Display.Metric(Primary, "", 1_000_000) + "  ↑ " + Display.Metric(Secondary, " Mbit/s", 1_000_000)
         : Kind == ResourceKind.Network && Status == "Odpojeno" ? Status
         : Display.Metric(Primary, Kind == ResourceKind.Memory ? " GiB" : " %", Kind == ResourceKind.Memory ? 1073741824 : 1);
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public bool SetStale(bool value)
+    public bool SetStale(bool value, bool notify = true)
     {
         if (Stale == value) return false;
-        Stale = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value))); return true;
+        Stale = value; if (notify) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value))); return true;
     }
 
-    public void Update(string title, string description, string status, Metric primary, Metric secondary, Metric tertiary, double capacity, long time)
+    public void Update(string title, string description, string status, Metric primary, Metric secondary, Metric tertiary, double capacity, long time, bool notify = true)
     {
         Title = title; Description = description; Status = status;
         Primary = primary; Secondary = secondary; Tertiary = tertiary; Capacity = capacity;
         History.Append(time, primary);
         if (Kind == ResourceKind.Network) Upload.Append(time, secondary);
+        if (notify) RefreshPreview();
+    }
+
+    public void RefreshPreview()
+    {
+        long time = History.LastTime;
         Preview = History.Build(50, 31, time, 60, Maximum(time, 60));
-        UploadPreview = Kind == ResourceKind.Network ? Upload.Build(50, 31, time, 60, Maximum(time, 60)) : new PathGeometry();
+        if (Kind == ResourceKind.Network) UploadPreview = Upload.Build(50, 31, time, 60, Maximum(time, 60));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
     }
 

@@ -6,6 +6,22 @@ public static class WinUiChecks
 {
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 
+    public static Action BeginMinimizedCollection(MonitorModel model)
+    {
+        var own = model.Processes.Single(row => row.Key.Pid == Environment.ProcessId);
+        var cpu = model.Resources.Single(row => row.Kind == ResourceKind.Cpu);
+        long before = model.ProcessTime;
+        int history = cpu.History.Count, notifications = 0;
+        System.ComponentModel.PropertyChangedEventHandler changed = (_, _) => ++notifications;
+        System.Collections.Specialized.NotifyCollectionChangedEventHandler reordered = (_, _) => ++notifications;
+        own.PropertyChanged += changed; cpu.PropertyChanged += changed; model.VisibleProcesses.CollectionChanged += reordered; model.Resources.CollectionChanged += reordered;
+        return () => {
+            own.PropertyChanged -= changed; cpu.PropertyChanged -= changed; model.VisibleProcesses.CollectionChanged -= reordered; model.Resources.CollectionChanged -= reordered;
+            Require(model.ProcessTime > before && cpu.History.Count > history, "Minimized collection or history stopped.");
+            Require(notifications == 0, "Minimized model still updated the UI.");
+        };
+    }
+
     public static void ModelInvariants(MonitorModel model)
     {
         Require(!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported, "WinUI probe is not Native AOT.");

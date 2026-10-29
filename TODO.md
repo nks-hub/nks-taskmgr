@@ -51,6 +51,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] F16 Historie: předávací schránka správně drží jen poslední vzorek, ale při zablokování UI může zahodit krátkou špičku; v T16 ukládat historii při sběru před nahrazením čekajícího vzorku.
 - [x] F17 UI: po zrušení filtru služeb se mění šířka posuvníku; sloupce se nyní přepočítají hned s počtem řádků a nečekají na další vzorek.
 - [x] F18 Snímání WinUI: černou plochu způsoboval zhasnutý displej, ačkoli relace zůstala aktivní. Systémové oznámení potvrdilo stav 0; po vstupu myši stav 1 a běžný start AOT kandidáta vykreslují celé UI v GDI i Windows.Graphics.Capture bez RenderTargetBitmap či ručního potvrzování kompozice. Pomocné zásahy byly odstraněny; přijetí vzhledu a srovnání T06 zůstávají otevřené.
+- [ ] F19 Výkon WinUI: měření revize 205f114 zjistilo CPU 0,184 % při zobrazení a 0,186 % při minimalizaci, soukromou paměť až 237,4 MiB. AOT vracel základní AppWindowPresenter, takže kontrola odvozeného typu minimalizaci nerozpoznala. Stav nyní čte IsIconic; model při minimalizaci drží sběr a historii, odkládá inventář a netvoří geometrie ani neposílá změny do UI. Skutečný běhový test minimalizace a obnovy prošel; zopakovat měření spotřeby.
 
 ## Průběžné ověření
 

@@ -9,11 +9,19 @@ using NksTaskMgr.Native;
 using Windows.Graphics;
 using Windows.System;
 using WinRT;
+using System.Runtime.InteropServices;
 
 namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow : Window
 {
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool IsIconic(nint window);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool ShowWindow(nint window, int command);
+    private readonly nint windowHandle;
     private readonly MonitorModel model = new();
     private readonly Grid root = new() { Background = Display.Brush(0x171d21), RequestedTheme = ElementTheme.Dark };
     private readonly Grid page = new();
@@ -49,10 +57,15 @@ public sealed partial class MainWindow : Window
     private int cpuMode, rangeSeconds = 60, ticks;
     private string? smokePath;
     private bool smokeModelsChecked;
+    private bool smokeMinimizedChecked;
+    private Action? verifyMinimized;
+    private int smokeMinimizedAt, smokeReadyAt;
 
     public MainWindow()
     {
         App.Trace("Window objects created");
+        windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        if (App.SmokePath is not null) App.Trace("Presenter=" + AppWindow.Presenter.GetType().FullName + ";overlapped=" + (AppWindow.Presenter is OverlappedPresenter));
         Title = "NKS Task Manager · WinUI";
         AppWindow.Resize(new SizeInt32(1440, 920));
         ExtendsContentIntoTitleBar = true;
@@ -272,6 +285,7 @@ public sealed partial class MainWindow : Window
 
     private void Resize()
     {
+        if (IsIconic(windowHandle)) return;
         if (root.ActualWidth <= 0) return;
         double width = root.ActualWidth;
         root.ColumnDefinitions[0].Width = new GridLength(width <= 1000 ? 68 : 88); sidebar.Width = width <= 1000 ? 68 : 88;
@@ -288,17 +302,20 @@ public sealed partial class MainWindow : Window
     private void Tick()
     {
         try {
-            bool changed = model.Tick();
-            bool minimized = AppWindow.Presenter is OverlappedPresenter presenter && presenter.State == OverlappedPresenterState.Minimized;
+            bool minimized = IsIconic(windowHandle);
+            bool changed = model.Tick(!minimized);
             if (changed && !minimized) {
                 if (selectedResource is null || !model.Resources.Contains(selectedResource)) resourceList.SelectedItem = model.Resources.FirstOrDefault();
                 if (performance) RefreshPerformance(); else RefreshProcesses();
             }
-            if (++ticks % 10 == 0) footer.Text = (model.Paused ? "Pozastaveno" : "Živá data") + $" · {model.Processes.Count} procesů · stáří "
+            if (++ticks % 10 == 0 && !minimized) footer.Text = (model.Paused ? "Pozastaveno" : "Živá data") + $" · {model.Processes.Count} procesů · stáří "
                 + Display.Number((NativeMonitor.MonotonicNowNs - model.ProcessTime) / 1_000_000_000d, " s")
                 + (model.ProcessError.Length == 0 ? "" : " · " + model.ProcessError) + (model.ResourceError.Length == 0 ? "" : " · " + model.ResourceError);
             RunSmoke();
-        } catch (NativeMonitorException error) { footer.Text = error.Message; }
+        } catch (NativeMonitorException error) {
+            if (smokePath is not null) { App.Trace(error.ToString()); throw; }
+            footer.Text = error.Message;
+        } catch (Exception error) when (smokePath is not null) { App.Trace(error.ToString()); throw; }
     }
 
     private void HoldRows(object sender, PointerRoutedEventArgs args)
@@ -334,21 +351,41 @@ public sealed partial class MainWindow : Window
 
     private void RunSmoke()
     {
-        if (smokePath is null || ticks < 50) return;
+        if (smokePath is null) return;
         bool ready = model.Processes.Any(row => row.Key.Pid == Environment.ProcessId && row.Key.Generation != 0)
-            && model.Resources.Count > 2 && resourceList.ActualHeight > 0 && selectedResource is not null;
+            && model.Resources.Count > 2 && model.Resources.Any(row => row.Kind == ResourceKind.Cpu)
+            && resourceList.ActualHeight > 0 && selectedResource is not null;
+        if ((smokeMinimizedAt == 0 && ticks > 150) || (smokeMinimizedAt > 0 && ticks - smokeMinimizedAt > 100))
+            throw new TimeoutException($"WinUI runtime check timed out: ready={ready};minimized={smokeMinimizedChecked};models={smokeModelsChecked}.");
+        if (smokeMinimizedAt == 0 && ready && ticks >= 20) {
+            verifyMinimized = WinUiChecks.BeginMinimizedCollection(model);
+            smokeMinimizedAt = ticks;
+            App.Trace("Minimizing window");
+            ShowWindow(windowHandle, 6);
+            return;
+        }
+        if (smokeMinimizedAt == 0) return;
+        if (!smokeMinimizedChecked && ticks - smokeMinimizedAt >= 20) {
+            verifyMinimized!(); smokeMinimizedChecked = true;
+            App.Trace("Minimized collection passed; restoring window");
+            ShowWindow(windowHandle, 9);
+            return;
+        }
+        if (!smokeMinimizedChecked) return;
         if (ready && !smokeModelsChecked) {
             WinUiChecks.ModelInvariants(model); smokeModelsChecked = true;
+            smokeReadyAt = ticks;
             ShowView(false); processList.SelectedItem = model.Processes.First(row => row.Key.Pid == Environment.ProcessId);
         }
-        if (smokeModelsChecked && ticks == 60) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true); }
-        if (smokeModelsChecked && ticks == 70) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
-        if (smokeModelsChecked && ticks == 80) {
+        int elapsed = ticks - smokeReadyAt;
+        if (smokeModelsChecked && elapsed == 10) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true); }
+        if (smokeModelsChecked && elapsed == 20) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
+        if (smokeModelsChecked && elapsed == 30) {
             if (coreCharts.Count != model.Processors.Count || coreCharts.Values.Any(core => core.ActualWidth <= 0)) throw new InvalidOperationException("Logical CPU charts did not render.");
             cpuMode = 2; RefreshPerformance();
         }
-        if ((smokeModelsChecked && ticks >= 90) || ticks > 150) {
-            App.Trace($"aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported};ready={ready};models={smokeModelsChecked};processes={model.Processes.Count};resources={model.Resources.Count};charts={coreCharts.Count}");
+        if (smokeModelsChecked && elapsed >= 40) {
+            App.Trace($"aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported};ready={ready};models={smokeModelsChecked};minimized={smokeMinimizedChecked};processes={model.Processes.Count};resources={model.Resources.Count};charts={coreCharts.Count}");
             Close();
         }
     }
