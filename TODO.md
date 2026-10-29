@@ -7,6 +7,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 ## Požadavky a přijímací podmínky
 
 - Windows 10/11 x64; správa procesů x64 i WOW64. Win7 ani hlavní aplikace pro x86 OS nejsou požadované.
+- Běžný provoz bez práv správce a bez automatického UAC. Každý sběrač používá nejnižší potřebná oprávnění; odmítnutý přístup k senzoru či chráněnému procesu nesmí blokovat ostatní funkce. Případné zvýšení oprávnění je samostatná vědomá akce uživatele.
 - Vzhled vychází z Windows 11 Task Manageru s vlastními prvky. Výkon má vlevo jednotlivé prostředky s minigrafy a vpravo detail vybraného zařízení.
 - V seznamu jsou vidět všechny disky, GPU a adaptéry včetně odpojených či nepodporovaných; nedostupný údaj není platná nula.
 - Kandidáti UI: C++/WinUI, C#/WinUI s Native AOT a C++/Win32/DirectComposition. T06 je porovná nad stejným nativním jádrem a stejným ovládáním.
@@ -47,6 +48,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] F35 Aktuální dlouhé měření CPU/RAM: běh balíčku 87fb498 se zastavil, protože Windows vrací nulové aktivní okno i po požadavku na fokus. Výsledek se nepovažuje za naměřený. Čeká se na dostupné popředí relace; starší čísla z 8e95e66 neprokazují spotřebu současné verze.
 - [ ] F36 Disky: doplnit odezvu čtení/zápisu, frontu a počet operací, kapacitu, rozhraní, teplotu a dostupné údaje SMART/NVMe. Sběr zdravotních údajů má běžet pomaleji mimo UI; nepodporovaný údaj nesmí vypadat jako platná nula.
 - [ ] F37 Teploty CPU: prověřit skutečná čidla čipu a jader přes dostupný ovladač; teplotní zóny ACPI nezaměňovat za teplotu CPU. Zatím není implementováno ani ověřeno čtení čidel.
+- [ ] F38 Oprávnění: WinUI používá asInvoker a dosavadní testy na dalších strojích běžely jako běžný uživatel. Nové diskové a senzorové dotazy ověřit také bez zvýšení oprávnění; ovladač pro rozšířené senzory nesmí být povinný pro spuštění aplikace.
 - [x] F01 Sestavení: MSBuild x64 načítal jiný kořen UCRT než SDK; místní build skript ověřuje skutečný SDK a nastavuje UCRTContentRoot jen pro podřízené procesy.
 - [x] F20 Služby: změna výběru nyní zruší čekající detail i jeho chybu a odmítne dokončení předchozího dotazu podle verze výběru. Test rychlého přepnutí ověřil správný nový detail a nezávislou životnost starého snímku.
 - [x] F21 WinUI: vodorovný posuvník služeb dával tabulce neomezenou šířku; dlouhé názvy potom zbytečně odsouvaly stav a další sloupce. Šířka tabulky nyní vychází z viditelné plochy a pevného minima pro posuvník.
