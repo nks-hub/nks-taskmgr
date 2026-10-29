@@ -3,6 +3,7 @@ param(
     [ValidateSet('Performance', 'Processes', 'Services')][string]$View = 'Performance',
     [ValidateSet('Win32', 'WinUI')][string]$Candidate = 'Win32',
     [string]$Resource = '',
+    [ValidateRange(0, 300)][int]$ForegroundTimeoutSeconds = 30,
     [string]$OutputPath = (Join-Path ([IO.Path]::GetTempPath()) 'nks-taskmgr-performance.json')
 )
 
@@ -111,6 +112,17 @@ try {
         Start-Sleep -Seconds 2
     }
     $results = @()
+    $focusWait = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        $app.Refresh()
+        if ($app.HasExited) { throw 'Desktop application exited while waiting for foreground.' }
+        [uint32]$foregroundPid = 0
+        [void][NksDesktopBench]::GetWindowThreadProcessId([NksDesktopBench]::GetForegroundWindow(), [ref]$foregroundPid)
+        if ($foregroundPid -eq $app.Id) { break }
+        if ($focusWait.Elapsed.TotalSeconds -ge $ForegroundTimeoutSeconds) { throw "The measured application could not obtain foreground; active process is $foregroundPid." }
+        Start-Sleep -Milliseconds 250
+    } while ($true)
+    Write-Output "Foreground verified; measuring $Seconds-second phases."
     foreach ($phase in @('visible', 'minimized')) {
         if ($phase -eq 'minimized') { [NksDesktopBench]::ShowWindow($window, 6) | Out-Null; Start-Sleep -Seconds 2 }
         $app.Refresh()
@@ -152,6 +164,7 @@ try {
         selectedService = $selectedService
         selectedResource = $Resource
         executableSha256 = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash
+        executableProductVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($executable).ProductVersion
         nativeMonitorSha256 = if ($Candidate -eq 'WinUI') { (Get-FileHash -LiteralPath (Join-Path (Split-Path -Parent $executable) 'nks-monitor.dll') -Algorithm SHA256).Hash } else { '' }
         logicalProcessors = $logicalProcessors
         osVersion = [Environment]::OSVersion.Version.ToString()
