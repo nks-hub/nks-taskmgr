@@ -47,6 +47,15 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Release
 
 The executables are placed in `build/msvc/Release`. The desktop uses Win32 and Direct2D as the first UI candidate. The planned WinUI 3 and Native AOT comparison remains open.
 
+The experimental C#/WinUI candidate shares the native DLL. Build it with .NET SDK 10.0.403:
+
+```powershell
+pwsh -NoProfile -File scripts/build.ps1 -Configuration Release -WinUI -Test
+./build/winui-aot/NksTaskMgr.WinUI.exe
+```
+
+Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, and CPU chart layout. Visual acceptance is still open: the current machine captures a black WinUI client area even for a separate red-grid test. The WinUI candidate does not yet include Services or establish the UI framework choice.
+
 ## Usage
 
 Open the desktop prototype:

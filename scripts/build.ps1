@@ -2,7 +2,9 @@ param(
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [switch]$Test,
     [switch]$Benchmark,
-    [switch]$Fresh
+    [switch]$Fresh,
+    [switch]$WinUI,
+    [string]$DotNet = 'dotnet'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,6 +47,24 @@ try {
     if ($Benchmark) {
         & (Join-Path $projectRoot "build\msvc\$Configuration\nks-collect-bench.exe")
         if ($LASTEXITCODE) { throw "Collection benchmark failed: $LASTEXITCODE" }
+    }
+    if ($WinUI) {
+        $winuiOutput = Join-Path $projectRoot 'build\winui-aot'
+        $nativeMonitor = Join-Path $projectRoot "build\msvc\$Configuration\nks-monitor.dll"
+        & $DotNet publish src\winui\NksTaskMgr.WinUI.csproj -c $Configuration -r win-x64 -o $winuiOutput "-p:NativeMonitorPath=$nativeMonitor"
+        if ($LASTEXITCODE) { throw "WinUI Native AOT publication failed: $LASTEXITCODE" }
+        if ($Test) {
+            $resultPath = Join-Path ([IO.Path]::GetTempPath()) ("nks-winui-" + [guid]::NewGuid().ToString('N') + '.txt')
+            $candidate = Start-Process -FilePath (Join-Path $winuiOutput 'NksTaskMgr.WinUI.exe') -ArgumentList "--smoke=$resultPath" -WindowStyle Hidden -PassThru
+            try {
+                if (-not $candidate.WaitForExit(30000)) { $candidate.Kill(); throw 'WinUI runtime check exceeded 30 seconds.' }
+                $result = if (Test-Path -LiteralPath $resultPath) { Get-Content -LiteralPath $resultPath -Raw } else { '' }
+                if ($candidate.ExitCode -ne 0 -or $result -notmatch 'aot=True;ready=True;models=True;') {
+                    throw "WinUI runtime check failed: exit $($candidate.ExitCode). Output: $resultPath"
+                }
+                Write-Output "WinUI Native AOT runtime check passed. Output: $resultPath"
+            } finally { $candidate.Dispose() }
+        }
     }
 } finally {
     Pop-Location

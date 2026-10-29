@@ -50,6 +50,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [x] F15 Review: skrytý ListView vrací úspěch LVM_SCROLL bez posunutí; identita horního řádku se nyní uchovává přes aktualizace v jiném pohledu a obnoví se po zobrazení. První řádek se při živém řazení neukotvuje ke starému procesu.
 - [ ] F16 Historie: předávací schránka správně drží jen poslední vzorek, ale při zablokování UI může zahodit krátkou špičku; v T16 ukládat historii při sběru před nahrazením čekajícího vzorku.
 - [x] F17 UI: po zrušení filtru služeb se mění šířka posuvníku; sloupce se nyní přepočítají hned s počtem řádků a nečekají na další vzorek.
+- [ ] F18 WinUI: AOT kandidát sbírá data a prochází modelovými kontrolami, ale klientská plocha je v GDI i Windows.Graphics.Capture černá. Totéž vykazuje samostatný červený Grid bez sběru, varianta bez AOT i předchozí SDK; relace je aktivní, host viditelný a barva i rozměry jsou správné. Vyřešit vykreslení před přijetím T54 a porovnáním spotřeby v T06.
 
 ## Průběžné ověření
 
@@ -73,6 +74,8 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - Review služeb opravilo limit popisu na 8 KiB a po změně DPI obnovuje výšku řádků závislostí na 44 DIP. Rozhraní rozlišuje závislosti od minigrafů prostředků po 59 DIP; celý vzhled a skutečná DPI matice v T42 nejsou přijaté.
 - Služby se vejdou do pěti ověřených rozměrů od 720 × 500 do 1440 × 920; malý pohled má vlastní posuvníky seznamu i detailu. Čtyři statické oblasti mají v pixelovém porovnání shodné hranice znaků s HTML; nejde o přijetí celého UI.
 - Měření služeb odhalilo zbytečné dotazy při minimalizaci; jejich sběr se nyní zastaví a po návratu obnoví. Opakovaný 60s/60s test revize 305d397 splnil místní cíle CPU a paměti; výsledek nenahrazuje celé T44 ani 24h běh.
+- C#/WinUI kandidát má samostatné sestavení Native AOT nad stejnou DLL, procesové pohledy a jednotlivé prostředky s grafy. Běhové kontroly ověřily vlastní PID/generaci, hledání přes přidržené pořadí, skládání, cyklus a hloubku 10 000 modelových řádků a rozložení 24 CPU grafů; nejde o test tabulky s 10 000 přehrávanými řádky ani přijetí vzhledu.
+- Review WinUI opravilo blokované explicitní ovládání při přidrženém pořadí, respektuje nedostupný swap místo číselné nuly a nahrazuje rekurzi stromu zásobníkem. Chybí služby v tomto kandidátu, shodné ovládání sloupců, vizuální přijetí a C++/WinUI kandidát; T54 a T06 zůstávají otevřené.
 - Release, čtyři testy sběru a výpočtů a test nativního okna prošly; při čtyřech velikostech od 720 × 500 do 1440 × 920 jsou karty procesů dosažitelné posunem a ovládání nepřekrývá záhlaví ani patičku. Skutečné 150/200% DPI zbývá ověřit.
 - Historie má nejvýše 512 řad po 2 401 bodech včetně logických CPU; samotné bodové buffery zůstávají pod 64 MiB. Rozsah lze přepnout mezi 60 s a 10 min; nejde o záruku uchování celé délky při každém intervalu.
 
