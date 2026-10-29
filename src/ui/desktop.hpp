@@ -4,6 +4,7 @@
 #include "core/resource.hpp"
 #include "process_table.hpp"
 #include "performance_layout.hpp"
+#include "process_layout.hpp"
 #include <d2d1.h>
 #include <dwrite.h>
 #include <dwrite_1.h>
@@ -50,9 +51,13 @@ private:
     void tick();
     void startCollection();
     void changeView(bool performance);
-    void paint();
+    void paint(HDC destination = nullptr);
     void paintPerformance(float width, float height);
     void paintProcesses(float width, float height);
+    LRESULT drawProcessRow(const NMLVCUSTOMDRAW& item);
+    LRESULT drawProcessHeader(const NMCUSTOMDRAW& item);
+    void drawOverview(const DRAWITEMSTRUCT& item);
+    void processIcon(const std::wstring& name, float x, float y, float size);
     void drawResource(const DRAWITEMSTRUCT& item);
     void drawButton(const DRAWITEMSTRUCT& item);
     void drawConsumer(const DRAWITEMSTRUCT& item);
@@ -74,9 +79,11 @@ private:
     int hoveredResource{-1};
     bool focusFromKeyboard{};
     HWND minimizeButton{}, maximizeButton{}, closeButton{}, cpuTotalButton{}, cpuEachButton{}, cpuOverlayButton{}, range60Button{}, range600Button{}, allProcessesButton{};
+    std::array<HWND, 3> processFilters{};
+    std::array<HWND, 4> overviewButtons{};
     std::array<HWND, 3> consumerButtons{};
     std::array<std::optional<ProcessIdentity>, 3> consumers{};
-    HFONT font{};
+    HFONT font{}, searchFont{};
     float scale{1};
     bool performance{true}, smokeMode{};
     bool processStale{}, resourceStale{};
@@ -100,7 +107,7 @@ private:
     Microsoft::WRL::ComPtr<ID2D1Factory> factory;
     Microsoft::WRL::ComPtr<IDWriteFactory> writing;
     Microsoft::WRL::ComPtr<IDWriteRenderingParams> textRendering;
-    Microsoft::WRL::ComPtr<ID2D1HwndRenderTarget> target;
+    Microsoft::WRL::ComPtr<ID2D1DCRenderTarget> target;
     Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> brush;
     Microsoft::WRL::ComPtr<ID2D1DCRenderTarget> controlTarget;
     Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> controlBrush;

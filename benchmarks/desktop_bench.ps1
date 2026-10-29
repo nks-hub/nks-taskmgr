@@ -1,5 +1,6 @@
 param(
     [ValidateRange(10, 3600)][int]$Seconds = 60,
+    [ValidateSet('Performance', 'Processes')][string]$View = 'Performance',
     [string]$OutputPath = (Join-Path ([IO.Path]::GetTempPath()) 'nks-taskmgr-performance.json')
 )
 
@@ -11,6 +12,7 @@ using System;
 using System.Runtime.InteropServices;
 public static class NksDesktopBench {
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
+    [DllImport("user32.dll")] public static extern IntPtr SendMessageW(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
     [DllImport("kernel32.dll")] public static extern uint GetActiveProcessorCount(ushort group);
     [DllImport("user32.dll")] public static extern uint GetGuiResources(IntPtr process, uint flags);
 }
@@ -25,6 +27,7 @@ try {
     $app.Refresh()
     if ($app.HasExited -or $app.MainWindowHandle -eq 0) { throw 'The desktop window did not start.' }
     $window = $app.MainWindowHandle
+    if ($View -eq 'Processes') { [NksDesktopBench]::SendMessageW($window, 0x111, [IntPtr]1, [IntPtr]::Zero) | Out-Null; Start-Sleep -Seconds 2 }
     $results = @()
     foreach ($phase in @('visible', 'minimized')) {
         if ($phase -eq 'minimized') { [NksDesktopBench]::ShowWindow($window, 6) | Out-Null; Start-Sleep -Seconds 2 }
@@ -53,7 +56,7 @@ try {
         }
     }
     [ordered]@{
-        scenario = 'desktop_default_1s_performance_view'
+        scenario = 'desktop_default_1s_' + $View.ToLowerInvariant() + '_view'
         executableSha256 = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash
         logicalProcessors = $logicalProcessors
         osVersion = [Environment]::OSVersion.Version.ToString()

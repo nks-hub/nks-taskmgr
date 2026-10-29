@@ -46,6 +46,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [x] F11 CPU: reset jednoho logického CPU nyní zneplatní také souhrn, i když ho růst ostatních čítačů skryje; regrese ověřuje i návrat k platnému měření.
 - [x] F12 Historie: odstranit původní dokumenty, designové podklady a RE ze všech lokálních commitů. Odstraněno 19 cest; kontrola všech větví našla 0 zakázaných cest, aktuální strom zůstal totožný a záloha je mimo repo.
 - [ ] F13 UI: uživatel odmítl dosavadní vzhled; dokončit pixelové porovnání fontů, ikon, rozměrů a mezer s HTML. Ověřený sběr a funkční grafy nejsou přijetí vzhledu.
+- [ ] F14 UI: při průběžném řazení podle CPU ještě doplnit ochranu před přesunem řádku pod kurzorem; zachování identity výběru samo nesplňuje celou podmínku T15.
 
 ## Průběžné ověření
 
@@ -59,6 +60,8 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - Rozpracovaný Výkon má seznam s minigrafy, časovou osu, pravý panel sestavy a proklikávací karty procesů; vzhled ještě není přijatý. CPU nabízí celek, logické procesory a překrytí; síť oba směry, paměť samostatný graf stránkovacího souboru.
 - Pixelové porovnání při 1440 × 920 a 100% DPI: osm statických oblastí má shodné hranice znaků, dvě navigační ikony se liší nejvýše o 1 px; celé UI tím není přijaté.
 - Vykreslení celého DC odstranilo světlé stopy na hranách karet; Common Controls v6 a motiv posuvníku odstranily bílý pruh v seznamu prostředků. Ověřeno za běhu, pixelovým porovnáním a testem nativního okna.
+- Procesy mají přehled prostředků, vlastní řádky po 52 DIP, ukazatele CPU a paměti, hledání v záhlaví, filtry Všechny/Aktivní/Strom a panel výběru; společné vykreslování přes DC řeší výpadek hlavní plochy při kombinaci s nativní tabulkou.
+- Pět místních testů prošlo; 20 kontrol tabulky zahrnuje generace rodičů, záměnu PID, cyklus, sbalení větve, diakritiku, výběr přes obnovu a přesunutý sloupec. Živě ověřené filtry zachovaly počet procesů ve stromu a vybraly vlastní PID.
 - Release, čtyři testy sběru a výpočtů a test nativního okna prošly; při čtyřech velikostech od 720 × 500 do 1440 × 920 jsou karty procesů dosažitelné posunem a ovládání nepřekrývá záhlaví ani patičku. Skutečné 150/200% DPI zbývá ověřit.
 - Historie má nejvýše 512 řad po 2 401 bodech včetně logických CPU; samotné bodové buffery zůstávají pod 64 MiB. Rozsah lze přepnout mezi 60 s a 10 min; nejde o záruku uchování celé délky při každém intervalu.
 

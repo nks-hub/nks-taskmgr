@@ -37,6 +37,8 @@ bool Desktop::beginControl(const DRAWITEMSTRUCT& item, D2D1_COLOR_F background)
             controlSize.height = 59;
             const auto logicalStart = static_cast<float>(item.itemID) * 59;
             offset.y += logicalStart - std::round(logicalStart * scale) / scale;
+        } else if (item.CtlType == ODT_LISTVIEW) {
+            controlSize = D2D1::SizeF((item.rcItem.right - item.rcItem.left) / scale, (item.rcItem.bottom - item.rcItem.top) / scale);
         }
     }
     controlTarget->SetTransform(D2D1::Matrix3x2F::Translation(offset.x, offset.y));
@@ -85,10 +87,13 @@ void Desktop::drawButton(const DRAWITEMSTRUCT& item)
     const auto background = navigation || caption ? D2D1::ColorF(0x12181c) : item.CtlID == 40 ? D2D1::ColorF(0x171d21) : panel;
     if (!beginControl(item, background)) return;
     const auto w = controlSize.width, h = controlSize.height;
-    const bool segmented = (item.CtlID >= 20 && item.CtlID <= 22) || item.CtlID == 30 || item.CtlID == 31;
+    const bool segmented = (item.CtlID >= 20 && item.CtlID <= 22) || item.CtlID == 30 || item.CtlID == 31
+        || (item.CtlID >= 70 && item.CtlID <= 72);
     const bool selected = (item.CtlID == 1 && !performance) || (item.CtlID == 2 && performance)
         || (item.CtlID >= 20 && item.CtlID <= 22 && static_cast<int>(item.CtlID) - 20 == cpuView)
         || (item.CtlID == 30 && rangeSeconds == 60) || (item.CtlID == 31 && rangeSeconds == 600);
+    const bool processFilter = item.CtlID >= 70 && item.CtlID <= 72;
+    const bool activeFilter = processFilter && static_cast<int>(item.CtlID) - 70 == static_cast<int>(table.mode());
     fill(rect(0, 0, w, h), background);
     wchar_t label[80]{}; GetWindowTextW(item.hwndItem, label, 80);
     if (navigation) {
@@ -100,8 +105,8 @@ void Desktop::drawButton(const DRAWITEMSTRUCT& item)
         const auto left = item.CtlID == 12 ? .5f : 0;
         text(label, rect(left, 13, w, 28), 17, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
     } else if (segmented) {
-        fill(rect(0, 0, w, h), selected ? D2D1::ColorF(0x222d34) : D2D1::ColorF(0x12181c), 4);
-        text(label, rect(0, 6, w, 17), 11, selected ? ink : muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
+        fill(rect(0, 0, w, h), selected || activeFilter ? D2D1::ColorF(0x222d34) : D2D1::ColorF(0x12181c), 4);
+        text(label, rect(0, processFilter ? 7.f : 6.f, w, 17), 11, selected || activeFilter ? ink : muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
     } else if (item.CtlID == 40) {
         text(L"Všechny procesy", rect(0, 6, w - 25, 19), 11, amber, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
         icon(5, w - 16, 7, 13, amber);
@@ -177,17 +182,8 @@ void Desktop::drawConsumer(const DRAWITEMSTRUCT& item)
     drawBrush->SetColor(line);
     surface->DrawRoundedRectangle(D2D1::RoundedRect(rect(.5f, .5f, w - 1, h - 1), 9, 9), drawBrush);
     if (!narrow) text(L"0" + std::to_wstring(index + 1), rect(18, 28, 20, 16), 9, muted);
-    const std::array backgrounds{0xdcf2f6, 0xe1effe, 0xfcebd8, 0xe9edf2};
-    const std::array foregrounds{0x167a9c, 0x176bc4, 0xad631d, 0x526273};
-    unsigned hash = 0; for (wchar_t c : process.name) hash = hash * 31 + c;
-    const auto palette = hash % backgrounds.size();
     const auto iconX = narrow ? 13.f : 38.f;
-    auto initial = process.name.empty() ? L"?" : process.name.substr(0, 1);
-    std::transform(initial.begin(), initial.end(), initial.begin(), [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
-    if (!compact) {
-        fill(rect(iconX, 21, 30, 30), D2D1::ColorF(backgrounds[palette]), 8);
-        text(initial, rect(iconX, 27, 30, 20), 12, D2D1::ColorF(foregrounds[palette]), 700, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
-    }
+    if (!compact) processIcon(process.name, iconX, 21, 30);
     const auto textX = compact ? 13.f : narrow ? 51.f : 79.f;
     const auto valueRight = w - (narrow ? 13.f : 42.f);
     const auto nameWidth = compact ? w - 26 : valueRight - 80 - textX;

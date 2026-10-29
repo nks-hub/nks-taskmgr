@@ -147,22 +147,46 @@ void Desktop::graph(const HistorySeries* series, D2D1_RECT_F box, D2D1_COLOR_F c
     flush();
 }
 
-void Desktop::paint()
+void Desktop::paint(HDC destination)
 {
-    PAINTSTRUCT paint{}; BeginPaint(window, &paint);
+    PAINTSTRUCT paint{};
+    const auto dc = destination ? destination : BeginPaint(window, &paint);
+    const auto saved = SaveDC(dc);
+    if (destination) {
+        struct PrintContext { HWND parent; HDC dc; } context{window, dc};
+        EnumChildWindows(window, [](HWND child, LPARAM data) -> BOOL {
+            const auto& print = *reinterpret_cast<PrintContext*>(data);
+            if (GetParent(child) == print.parent && IsWindowVisible(child)) {
+                RECT bounds{}; GetWindowRect(child, &bounds);
+                MapWindowPoints(nullptr, print.parent, reinterpret_cast<POINT*>(&bounds), 2);
+                ExcludeClipRect(print.dc, bounds.left, bounds.top, bounds.right, bounds.bottom);
+            }
+            return TRUE;
+        }, reinterpret_cast<LPARAM>(&context));
+    }
     RECT client{}; GetClientRect(window, &client);
     if (!target) {
-        const auto properties = D2D1::RenderTargetProperties();
-        if (FAILED(factory->CreateHwndRenderTarget(properties,
-            D2D1::HwndRenderTargetProperties(window, D2D1::SizeU(client.right, client.bottom)), &target))) {
-            EndPaint(window, &paint); return;
+        const auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_DEFAULT,
+            D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE), 96 * scale, 96 * scale);
+        if (FAILED(factory->CreateDCRenderTarget(&properties, &target))) {
+            if (saved) RestoreDC(dc, saved);
+            if (!destination) EndPaint(window, &paint);
+            return;
         }
         target->SetDpi(96 * scale, 96 * scale);
         target->SetTextRenderingParams(textRendering.Get());
         if (FAILED(target->CreateSolidColorBrush(ink, &brush))) {
             brush.Reset(); target.Reset();
-            EndPaint(window, &paint); return;
+            if (saved) RestoreDC(dc, saved);
+            if (!destination) EndPaint(window, &paint);
+            return;
         }
+    }
+    if (FAILED(target->BindDC(dc, &client))) {
+        brush.Reset(); target.Reset();
+        if (saved) RestoreDC(dc, saved);
+        if (!destination) EndPaint(window, &paint);
+        return;
     }
     surface = target.Get(); drawBrush = brush.Get();
     target->BeginDraw();
@@ -194,26 +218,8 @@ void Desktop::paint()
     else if (!resourceError.empty()) footer += L"  ·  Sběr zařízení: " + resourceError;
     text(footer, rect(frame.inventoryX, height - 21, width - frame.inventoryX - 25, 18), 9, muted);
     if (target->EndDraw() == D2DERR_RECREATE_TARGET) { brush.Reset(); target.Reset(); }
-    EndPaint(window, &paint);
-}
-
-void Desktop::paintProcesses(float width, float height)
-{
-    const auto y = height - 130;
-    fill(rect(118, y, width - 150, 87), panel, 8);
-    const auto* item = table.selected();
-    if (!item) {
-        text(L"Vyberte proces", rect(139, y + 14, 500, 28), 20, ink);
-        text(std::to_wstring(table.count()) + L" zobrazených procesů · řazení kliknutím na sloupec · Ctrl a Shift pro více výběrů", rect(139, y + 49, width - 180, 24), 12, muted);
-        return;
-    }
-    text(item->name, rect(138, y + 13, 360, 31), 21, ink);
-    text(L"PID " + std::to_wstring(item->identity.pid) + L"  ·  " + std::to_wstring(item->counters.threads) + L" vláken  ·  "
-        + std::to_wstring(item->counters.handles) + L" popisovačů", rect(139, y + 50, 480, 23), 12, muted);
-    text(L"CPU", rect(width - 400, y + 13, 140, 23), 12, muted);
-    text(processStale ? L"Zastaralé" : item->cpuPercent.valid() ? decimal(item->cpuPercent.value, L" %") : L"Nezměřeno", rect(width - 400, y + 39, 140, 32), 23, resourceColor(ResourceKind::cpu));
-    text(L"Pracovní sada", rect(width - 220, y + 13, 160, 23), 12, muted);
-    text(processStale ? L"Zastaralé" : decimal(item->counters.workingSetBytes / 1048576., L" MiB"), rect(width - 220, y + 39, 175, 32), 23, resourceColor(ResourceKind::memory));
+    if (saved) RestoreDC(dc, saved);
+    if (!destination) EndPaint(window, &paint);
 }
 
 }

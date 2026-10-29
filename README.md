@@ -12,7 +12,8 @@ The current desktop prototype displays live processes and individual system devi
 ## Features
 
 - 🔎 **Process collection** - Reads process identities, parent PIDs, CPU times, threads, handles, and I/O counters through the Windows native API.
-- 🖥️ **Desktop prototype** - Provides a virtual process table with name/PID search, column sorting, multiple selection, and a selection detail panel.
+- 🖥️ **Desktop prototype** - Provides a system overview, virtual process table, CPU and memory bars, name/PID search, column sorting, multiple selection, and a selection detail panel.
+- 🌳 **Process views** - Switches between all processes, measured CPU or I/O activity, and a collapsible tree that checks parent creation times before linking processes.
 - 📊 **Device view** - Lists individual disks, hardware GPUs, and physical network adapters, including disconnected adapters. Each item opens a graph and current counters.
 - ⏱️ **History** - Stores up to 2,401 samples for each of 512 series, draws gaps, and shows the retained duration. Collection runs on separate process and device threads with one pending snapshot each.
 - 🧩 **CPU graphs** - Switches between total CPU, a graph for each logical processor, and overlaid processor graphs. Processor groups retain separate identities.
@@ -53,6 +54,8 @@ Open the desktop prototype:
 
 Switch between Processes and Performance using the left navigation. Performance keeps individual resource previews beside the graph, hardware facts, and process cards. Select a process card to open its row in the process table. The refresh control switches between one second and 250 milliseconds; Pause stops both collectors. Graphs switch between 60 seconds and 10 minutes. Ctrl+F opens the process search.
 
+Processes provides All, Active, and Tree views. Search accepts process names and PIDs, including case-insensitive Unicode names. Click a column heading to sort, drag headings to reorder columns, and use Ctrl or Shift to select multiple rows. Tree branches expand by clicking their arrow or pressing the left and right arrow keys. Overview cards open the corresponding system resource.
+
 The memory page separates physical memory, commit, and pagefile usage. Pagefile usage comes from `EnumPageFilesW`; it is not a measure of paging I/O activity. Network graphs show receive and transmit values in bits per second.
 
 The current UI implements the dark appearance. Services, administrative actions, accessibility acceptance, and the light appearance are not yet implemented. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
@@ -79,6 +82,8 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Debug -Test
 ```
 
 The live check allocates and touches 32 MiB in its own process and runs one CPU worker for one second. It verifies that the collector sees the resulting CPU activity, memory change, and process creation time.
+
+The process-view test uses a hidden native ListView to check selection across refresh, PID reuse, parent generations, cycles, filtering, Unicode names, column reordering, and row height.
 
 Run the collection benchmark:
 

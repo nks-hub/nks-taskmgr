@@ -13,7 +13,6 @@
 namespace nks {
 namespace {
 constexpr UINT_PTR refreshTimer = 1;
-constexpr auto background = RGB(23, 31, 36);
 }
 
 LRESULT CALLBACK Desktop::procedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
@@ -86,6 +85,7 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
     processThread.join();
     resourceThread.join();
     if (font) DeleteObject(font);
+    if (searchFont) DeleteObject(searchFont);
     return smokeMode ? (smokeChecks == 15 ? 0 : 3) : static_cast<int>(event.wParam);
 }
 
@@ -113,14 +113,18 @@ void Desktop::create()
     range600Button = button(L"10 min", 31);
     allProcessesButton = button(L"Všechny procesy  →", 40);
     for (int i = 0; i < 3; ++i) consumerButtons[i] = button(L"Proces", 60 + i);
+    const std::array filters{L"Všechny procesy", L"Aktivní", L"Strom"};
+    for (int i = 0; i < 3; ++i) processFilters[i] = button(filters[i], 70 + i);
+    const std::array overview{L"CPU", L"Paměť", L"Disky", L"Síť"};
+    for (int i = 0; i < 4; ++i) overviewButtons[i] = button(overview[i], 80 + i);
     resourceList = CreateWindowExW(0, L"LISTBOX", L"Prostředky systému", WS_CHILD | WS_VISIBLE | WS_TABSTOP
         | WS_VSCROLL | LBS_NOTIFY | LBS_OWNERDRAWVARIABLE | LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT,
         0, 0, 0, 0, window, reinterpret_cast<HMENU>(5), nullptr, nullptr);
     SetWindowTheme(resourceList, L"DarkMode_Explorer", L"Scrollbar");
-    search = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL,
+    search = CreateWindowExW(0, L"EDIT", L"", WS_CHILD | WS_TABSTOP | ES_AUTOHSCROLL,
         0, 0, 0, 0, window, reinterpret_cast<HMENU>(6), nullptr, nullptr);
-    SendMessageW(search, WM_SETFONT, reinterpret_cast<WPARAM>(font), FALSE);
-    SendMessageW(search, EM_SETCUEBANNER, TRUE, reinterpret_cast<LPARAM>(L"Hledat název nebo PID   Ctrl+F"));
+    SendMessageW(search, WM_SETFONT, reinterpret_cast<WPARAM>(searchFont), FALSE);
+    SendMessageW(search, EM_SETCUEBANNER, TRUE, reinterpret_cast<LPARAM>(L"Hledat název nebo PID"));
     table.create(window, font);
     BOOL dark = TRUE;
     DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
@@ -132,7 +136,10 @@ void Desktop::create()
 void Desktop::setFonts()
 {
     const auto previousFont = font;
+    const auto previousSearchFont = searchFont;
     font = CreateFontW(-static_cast<int>(13 * scale), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
+    searchFont = CreateFontW(-static_cast<int>(11 * scale), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
     Microsoft::WRL::ComPtr<IDWriteRenderingParams> monitor;
     if (SUCCEEDED(writing->CreateMonitorRenderingParams(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor))) {
@@ -143,8 +150,9 @@ void Desktop::setFonts()
         if (target) target->SetTextRenderingParams(textRendering.Get());
         if (controlTarget) controlTarget->SetTextRenderingParams(textRendering.Get());
     }
-    for (const auto child : {processButton, performanceButton, pauseButton, intervalButton, search})
+    for (const auto child : {processButton, performanceButton, pauseButton, intervalButton})
         if (child) SendMessageW(child, WM_SETFONT, reinterpret_cast<WPARAM>(font), FALSE);
+    if (search) SendMessageW(search, WM_SETFONT, reinterpret_cast<WPARAM>(searchFont), FALSE);
     if (table.handle()) table.setFont(font);
     if (resourceList) {
         const auto count = SendMessageW(resourceList, LB_GETCOUNT, 0, 0);
@@ -154,6 +162,7 @@ void Desktop::setFonts()
         }
     }
     if (previousFont) DeleteObject(previousFont);
+    if (previousSearchFont) DeleteObject(previousSearchFont);
 }
 
 void Desktop::startCollection()
@@ -225,9 +234,24 @@ void Desktop::layout()
     move(pauseButton, width - headerPadding - 96, 84, 96, 35);
     move(resourceList, frame.inventoryX + 10, 202, frame.inventoryWidth - 20,
         std::max(30.f, std::min(height - 290, static_cast<float>(resources.size()) * 59)));
-    const auto headerX = frame.sidebar + headerPadding;
-    move(search, headerX, 151, std::max(100.f, width - headerX - headerPadding), 35);
-    move(table.handle(), headerX, 205, std::max(100.f, width - headerX - headerPadding), std::max(60.f, height - 360));
+    const auto page = ProcessLayout::calculate(width, height);
+    move(search, page.searchX + 34, page.searchY + 9, page.searchWidth - (width > 1000 ? 77 : 45), 19);
+    move(table.handle(), page.left + 1, page.tableTop + 1, page.width - 2, page.tableHeight - 1);
+    table.resizeColumns();
+    const std::array filterX{4.f, 119.f, 189.f};
+    const std::array filterWidths{112.f, 67.f, 61.f};
+    for (std::size_t i = 0; i < processFilters.size(); ++i) {
+        move(processFilters[i], page.left + filterX[i], page.toolbarTop + 4, filterWidths[i], 29);
+        ShowWindow(processFilters[i], performance ? SW_HIDE : SW_SHOW);
+    }
+    const auto captionWidth = page.compact ? 0.f : (page.width - 46 - 100) / 5.3f * 1.3f;
+    const auto gap = page.compact ? 13.f : width <= 1250 ? 17.f : 25.f;
+    const auto overviewStart = page.left + 23 + (page.compact ? 0 : captionWidth + gap);
+    const auto overviewWidth = (page.left + page.width - 23 - overviewStart - gap * 3) / 4;
+    for (std::size_t i = 0; i < overviewButtons.size(); ++i) {
+        move(overviewButtons[i], overviewStart + static_cast<float>(i) * (overviewWidth + gap), page.overviewTop + 20, overviewWidth, page.overviewHeight - 40);
+        ShowWindow(overviewButtons[i], !performance && page.overview ? SW_SHOW : SW_HIDE);
+    }
     const auto scrolled = [&](HWND child, float x, float y, float w, float h, bool visible) {
         const auto shiftedY = y - detailScroll;
         move(child, x, shiftedY, w, h);
@@ -246,7 +270,6 @@ void Desktop::layout()
     for (std::size_t i = 0; i < consumerButtons.size(); ++i)
         scrolled(consumerButtons[i], frame.detailX + static_cast<float>(i) * (consumerWidth + frame.consumerGap),
             frame.rowY, consumerWidth, 74, consumers[i].has_value());
-    if (target) target->Resize(D2D1::SizeU(client.right, client.bottom));
     InvalidateRect(window, nullptr, FALSE);
 }
 
@@ -433,10 +456,12 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         break;
     case WM_CAPTURECHANGED: detailDragging = false; break;
     case WM_PAINT: paint(); return 0;
+    case WM_PRINTCLIENT: paint(reinterpret_cast<HDC>(wp)); return 0;
     case WM_DRAWITEM: {
         const auto& item = *reinterpret_cast<DRAWITEMSTRUCT*>(lp);
         if (item.CtlType == ODT_LISTBOX) drawResource(item);
         else if (item.CtlID >= 60 && item.CtlID <= 62) drawConsumer(item);
+        else if (item.CtlID >= 80 && item.CtlID <= 83) drawOverview(item);
         else drawButton(item);
         return TRUE;
     }
@@ -455,8 +480,8 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         return reinterpret_cast<LRESULT>(GetStockObject(DC_BRUSH));
     case WM_CTLCOLOREDIT:
         SetTextColor(reinterpret_cast<HDC>(wp), RGB(231, 240, 244));
-        SetBkColor(reinterpret_cast<HDC>(wp), background);
-        SetDCBrushColor(reinterpret_cast<HDC>(wp), background);
+        SetBkColor(reinterpret_cast<HDC>(wp), RGB(18, 24, 28));
+        SetDCBrushColor(reinterpret_cast<HDC>(wp), RGB(18, 24, 28));
         return reinterpret_cast<LRESULT>(GetStockObject(DC_BRUSH));
     case WM_COMMAND:
         switch (LOWORD(wp)) {
@@ -475,9 +500,24 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
             rangeSeconds = LOWORD(wp) == 30 ? 60 : 600; InvalidateRect(window, nullptr, FALSE);
             InvalidateRect(range60Button, nullptr, FALSE); InvalidateRect(range600Button, nullptr, FALSE); break;
         case 40: changeView(false); break;
+        case 70: case 71: case 72:
+            table.setMode(static_cast<ProcessMode>(LOWORD(wp) - 70));
+            for (auto filter : processFilters) InvalidateRect(filter, nullptr, FALSE);
+            InvalidateRect(window, nullptr, FALSE); break;
+        case 80: case 81: case 82: case 83: {
+            const std::array kinds{ResourceKind::cpu, ResourceKind::memory, ResourceKind::disk, ResourceKind::network};
+            const auto kind = kinds[LOWORD(wp) - 80];
+            auto match = std::find_if(resources.begin(), resources.end(), [&](const auto& item) { return item.kind == kind && item.primary.valid(); });
+            if (match == resources.end()) match = std::find_if(resources.begin(), resources.end(), [&](const auto& item) { return item.kind == kind; });
+            if (match != resources.end()) { selectedId = match->id; detailScroll = 0; rebuildResources(); changeView(true); }
+            break;
+        }
         case 60: case 61: case 62: {
             const auto index = LOWORD(wp) - 60;
-            if (consumers[index]) { SetWindowTextW(search, L""); changeView(false); table.select(*consumers[index]); SetFocus(table.handle()); }
+            if (consumers[index]) {
+                SetWindowTextW(search, L""); table.setMode(ProcessMode::all);
+                changeView(false); table.select(*consumers[index]); SetFocus(table.handle());
+            }
             break;
         }
         case 5: if (HIWORD(wp) == LBN_SELCHANGE) {
@@ -495,7 +535,10 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         }
         return 0;
     case WM_NOTIFY:
+        if (reinterpret_cast<NMHDR*>(lp)->hwndFrom == table.header() && reinterpret_cast<NMHDR*>(lp)->code == NM_CUSTOMDRAW)
+            return drawProcessHeader(*reinterpret_cast<NMCUSTOMDRAW*>(lp));
         if (reinterpret_cast<NMHDR*>(lp)->hwndFrom == table.handle()) {
+            if (reinterpret_cast<NMHDR*>(lp)->code == NM_CUSTOMDRAW) return drawProcessRow(*reinterpret_cast<NMLVCUSTOMDRAW*>(lp));
             InvalidateRect(window, nullptr, FALSE);
             return table.notify(reinterpret_cast<NMHDR*>(lp));
         }
