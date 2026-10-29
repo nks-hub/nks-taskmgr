@@ -155,6 +155,11 @@ public sealed partial class MainWindow : Window
 
     private void ConfigureResources()
     {
+        foreach (var state in new[] { "Checked", "CheckedPointerOver", "CheckedPressed" }) {
+            root.Resources["ToggleButtonBackground" + state] = Display.Brush(state == "CheckedPointerOver" ? 0x33414au : state == "CheckedPressed" ? 0x253039u : 0x28343bu);
+            root.Resources["ToggleButtonForeground" + state] = performanceInk;
+            root.Resources["ToggleButtonBorderBrush" + state] = Display.Brush(0x2c363d);
+        }
         foreach (var key in new[] { "ListViewItemBackgroundSelected", "ListViewItemBackgroundSelectedPointerOver", "ListViewItemBackgroundSelectedPressed" })
             root.Resources[key] = Display.Brush(0x28343b);
         root.Resources["ListViewItemBackgroundPointerOver"] = Display.Brush(0x232d34);
