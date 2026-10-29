@@ -51,7 +51,8 @@ std::vector<HardwareFact> parseMemoryHardware(std::span<const std::byte> table)
     else result.push_back({L"Rychlost RAM", L"Firmware nehlásí"});
     const std::map<unsigned, std::wstring> names{{24, L"DDR3"}, {26, L"DDR4"}, {27, L"LPDDR"}, {28, L"LPDDR2"}, {29, L"LPDDR3"}, {30, L"LPDDR4"}, {34, L"DDR5"}, {35, L"LPDDR5"}};
     if (types.size() == 1 && names.contains(*types.begin())) result.push_back({L"Typ paměti", names.at(*types.begin())});
-    if (forms.size() == 1 && (*forms.begin() == 8 || *forms.begin() == 12)) result.push_back({L"Provedení", *forms.begin() == 8 ? L"DIMM" : L"SODIMM"});
+    const std::map<unsigned, std::wstring> formNames{{9, L"DIMM"}, {12, L"RIMM"}, {13, L"SODIMM"}, {15, L"FB-DIMM"}, {17, L"CAMM"}, {18, L"CUDIMM"}, {19, L"CSODIMM"}};
+    if (forms.size() == 1 && formNames.contains(*forms.begin())) result.push_back({L"Provedení", formNames.at(*forms.begin())});
     return result;
 }
 }

@@ -42,6 +42,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] F30 Další stroje: stejnou přesně ověřenou verzi otestovat na fyzickém Windows 10 a virtualizovaném Windows 11. První Windows 10 běh prošel startem a minimalizací, ale skončil na kontrole procesové ikony; celý test tedy zatím neprošel.
 - [ ] F31 Další hardware: doplnit dostupné údaje podobné CPU-Z, výrobce a model základní desky a BIOS; zjistit podporu skutečně připojené UPS a zobrazit pouze hodnoty poskytované jejím ovladačem.
 - [ ] F32 REA: tabulka importů Správce úloh potvrzuje rozhraní SMBIOS, topologie, PDH a síťových adaptérů; jde o statickou evidenci, ne o důkaz konkrétního běhu. Hlubší dekompilaci zatím blokuje chybějící podporovaný poskytovatel Ghidra/IDA.
+- [x] F33 RAM: číslování provedení modulů v SMBIOS se liší od WMI; opraveno rozlišení DIMM, SODIMM a RIMM podle DSP0134. Regrese zahrnuje také CUDIMM.
 - [x] F01 Sestavení: MSBuild x64 načítal jiný kořen UCRT než SDK; místní build skript ověřuje skutečný SDK a nastavuje UCRTContentRoot jen pro podřízené procesy.
 - [x] F20 Služby: změna výběru nyní zruší čekající detail i jeho chybu a odmítne dokončení předchozího dotazu podle verze výběru. Test rychlého přepnutí ověřil správný nový detail a nezávislou životnost starého snímku.
 - [x] F21 WinUI: vodorovný posuvník služeb dával tabulce neomezenou šířku; dlouhé názvy potom zbytečně odsouvaly stav a další sloupce. Šířka tabulky nyní vychází z viditelné plochy a pevného minima pro posuvník.

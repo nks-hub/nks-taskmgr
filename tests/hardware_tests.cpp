@@ -20,7 +20,7 @@ int main()
             for (unsigned i = 0; i < size; ++i) table[offset + i] = static_cast<std::byte>((value >> (8 * i)) & 255);
         };
         auto array = record(16, 15); put(array + 2, 1); put(array + 5, 3, 1); put(array + 13, 4);
-        auto module = record(17, 34); put(module + 4, 1); put(module + 12, 8192); put(module + 14, 8, 1); put(module + 18, 26, 1); put(module + 32, 3200);
+        auto module = record(17, 34); put(module + 4, 1); put(module + 12, 8192); put(module + 14, 9, 1); put(module + 18, 26, 1); put(module + 32, 3200);
         auto empty = record(17, 34); put(empty + 4, 1);
         auto video = record(16, 15); put(video + 2, 2); put(video + 5, 4, 1); put(video + 13, 8);
         auto vram = record(17, 34); put(vram + 4, 2); put(vram + 12, 4096); put(vram + 32, 9000);
@@ -31,6 +31,12 @@ int main()
             return found == facts.end() ? L"" : found->value;
         };
         require(value(L"Použité sloty") == L"1 z 4" && value(L"Rychlost RAM") == L"3200 MT/s" && value(L"Typ paměti") == L"DDR4", "SMBIOS merged video RAM, empty slots or wrong speed");
+        require(value(L"Provedení") == L"DIMM", "SMBIOS form factor was confused with the WMI enumeration");
+        for (const auto& [code, expected] : std::vector<std::pair<unsigned, std::wstring>>{{12, L"RIMM"}, {13, L"SODIMM"}, {18, L"CUDIMM"}}) {
+            put(module + 14, code, 1);
+            const auto form = nks::parseMemoryHardware(table);
+            require(std::any_of(form.begin(), form.end(), [&](const auto& fact) { return fact.name == L"Provedení" && fact.value == expected; }), "SMBIOS module form factor was misidentified");
+        }
         put(module + 32, 0);
         const auto unknown = nks::parseMemoryHardware(table);
         require(std::any_of(unknown.begin(), unknown.end(), [](const auto& fact) { return fact.name == L"Rychlost RAM" && fact.value == L"Firmware nehlásí"; }), "Unknown RAM speed became zero");
