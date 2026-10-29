@@ -449,7 +449,7 @@ public sealed partial class MainWindow : Window
         }
         if (!smokeMinimizedChecked) return;
         if (ready && !smokeModelsChecked) {
-            WinUiChecks.ModelInvariants(model); smokeModelsChecked = true;
+            WinUiChecks.ModelInvariants(model); WinUiChecks.ProcessNotifications(); smokeModelsChecked = true;
             smokeReadyAt = ticks;
             ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);
             var overviewButtons = overview.Children.ToArray();

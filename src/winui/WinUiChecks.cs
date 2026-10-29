@@ -6,6 +6,28 @@ public static partial class WinUiChecks
 {
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 
+    internal static unsafe void ProcessNotifications()
+    {
+        var row = new ProcessRow(new ProcessKey(new(1, 2), 42, GenerationKind.CreationTime, 1));
+        fixed (char* name = "Example") {
+            var source = new ProcessInfo { Name = new String16 { Data = name, Length = 7 }, CpuPercent = new Metric { State = SampleState.First, Source = MetricSource.NativeProcess } };
+            row.Update(source);
+            var changed = new List<string?>();
+            row.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
+            row.Update(source);
+            Require(changed.Count == 0, "An unchanged process snapshot invalidated its bindings.");
+            source.CpuPercent = new Metric { State = SampleState.Valid, Source = MetricSource.NativeProcess };
+            row.Update(source);
+            Require(row.CpuText == "0,0 %" && changed.Contains(nameof(ProcessRow.CpuText)) && !changed.Contains(nameof(ProcessRow.WorkingText)), "First-to-zero CPU did not update only the affected cells.");
+            changed.Clear(); source.WorkingSetBytes = 64 * 1024 * 1024; row.Update(source);
+            Require(row.WorkingText == "64 MiB" && changed.Contains(nameof(ProcessRow.WorkingText)) && !changed.Contains(nameof(ProcessRow.CpuText)), "A memory update invalidated unrelated cells.");
+            row.SetStatus(false, true); changed.Clear(); row.Update(source);
+            Require(row.CpuText == "0,0 %" && changed.Any(string.IsNullOrEmpty), "Returning from stale data left stale cell text.");
+            row.SetStatus(true, false); row.Update(source);
+            Require(!row.Ended && !row.DisplayName.Contains("ukončeno", StringComparison.Ordinal), "A fresh snapshot retained ended process text.");
+        }
+    }
+
     internal static void IconWorkerIsolation(ProcessKey own)
     {
         using var worker = new IconWorker();
