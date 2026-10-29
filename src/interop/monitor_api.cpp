@@ -77,7 +77,7 @@ void NksFrame::build()
         processes.reserve(source.processes.size());
         for (const auto& item : source.processes) {
             const auto& c = item.counters;
-            processes.push_back({item.identity.bootTime, item.identity.pid, item.parentPid, item.identity.generation,
+            processes.push_back({source.bootTime, item.identity.pid, item.parentPid, item.identity.generation,
                 static_cast<uint32_t>(item.identity.generationKind), c.threads, c.handles, 0,
                 c.workingSetBytes, c.privateBytes, c.kernel100ns, c.user100ns, c.readIoBytes, c.writeIoBytes,
                 metric(item.cpuPercent), metric(item.readIoBytesPerSecond), metric(item.writeIoBytesPerSecond), string(item.name)});
@@ -189,6 +189,16 @@ NksResult __cdecl nks_frame_get_hardware_data(const NksFrame* frame, uint32_t si
     if (!frame || !result) return NKS_INVALID_ARGUMENT;
     if (size != sizeof(NksHardwareData)) return NKS_ABI_MISMATCH;
     *result = {frame->hardware.data(), count(frame->hardware.size()), 0};
+    return NKS_OK;
+}
+NksResult __cdecl nks_frame_get_boot_data(const NksFrame* frame, uint32_t size, NksBootData* result) noexcept
+{
+    if (!frame || !result) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksBootData)) return NKS_ABI_MISMATCH;
+    *result = {0, 0, NKS_SAMPLE_UNAVAILABLE, 0};
+    if (!frame->processSnapshot) return NKS_NO_DATA;
+    const auto& boot = frame->processSnapshot->boot;
+    *result = {boot.id.low, boot.id.high, static_cast<uint32_t>(boot.state), 0};
     return NKS_OK;
 }
 void __cdecl nks_frame_release(NksFrame* frame) noexcept

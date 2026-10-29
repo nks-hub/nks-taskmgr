@@ -8,7 +8,7 @@
 
 namespace nks {
 
-std::vector<ProcessRecord> parseProcesses(std::span<const std::byte> buffer, std::uint64_t bootTime)
+std::vector<ProcessRecord> parseProcesses(std::span<const std::byte> buffer, BootIdentifier boot)
 {
     constexpr auto fixedSize = offsetof(SYSTEM_PROCESS_INFORMATION, Threads);
     if (buffer.size() < fixedSize)
@@ -45,7 +45,7 @@ std::vector<ProcessRecord> parseProcesses(std::span<const std::byte> buffer, std
             throw std::runtime_error("Negative process counter");
 
         ProcessRecord record;
-        record.identity = {bootTime, static_cast<std::uint32_t>(pid),
+        record.identity = {boot, static_cast<std::uint32_t>(pid),
             raw.CreateTime.QuadPart ? GenerationKind::creationTime : GenerationKind::missing,
             static_cast<std::uint64_t>(raw.CreateTime.QuadPart)};
         record.parentPid = static_cast<std::uint32_t>(parent);

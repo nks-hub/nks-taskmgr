@@ -16,7 +16,7 @@ nks::ProcessRecord process(const wchar_t* name, std::uint32_t pid, std::uint32_t
 {
     nks::ProcessRecord value;
     value.name = name;
-    value.identity = {1, pid, nks::GenerationKind::creationTime, created};
+    value.identity = {{1, 2}, pid, nks::GenerationKind::creationTime, created};
     value.parentPid = parent;
     value.cpuPercent = {cpu, nks::SampleState::valid};
     return value;

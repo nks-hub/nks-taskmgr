@@ -15,6 +15,7 @@ internal static class Program
         Require(!RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled, "The probe must run as a published Native AOT executable.");
         Require(sizeof(FrameView) == 288 && sizeof(ProcessInfo) == 152 && sizeof(ResourceInfo) == 128, "Managed ABI layout mismatch.");
         Require(sizeof(GpuEngineInfo) == 48 && sizeof(GpuInfo) == 56 && sizeof(GpuData) == 16, "Managed GPU layout mismatch.");
+        Require(sizeof(BootIdentityInfo) == 24, "Managed boot identity layout mismatch.");
         using var monitor = NativeMonitor.Open(250, paused: true);
         Thread.Sleep(300);
         using var pausedFrame = monitor.Read();
@@ -26,6 +27,7 @@ internal static class Program
         NativeFrame? retained = null;
         string ownName = string.Empty;
         ulong generation = 0;
+        BootIdentifier boot = default;
         uint processCount = 0, logicalCount = 0, disks = 0, gpus = 0, networks = 0;
         bool resourceStream = false;
         var watch = Stopwatch.StartNew();
@@ -35,6 +37,10 @@ internal static class Program
                 frame?.Read(view => {
                     Require(view.AbiVersion == 1 && view.ProcessError.Length == 0 && view.ResourceError.Length == 0, "The native stream reported an error.");
                     if ((view.Flags & FrameFlags.ProcessData) != 0 && view.Processes.CpuPercent.State == SampleState.Valid) {
+                        var identity = frame!.ReadBootIdentity();
+                        Require(identity is { State: SampleState.Valid } && !identity.Value.Identifier.IsEmpty, "The AOT frame lost the boot GUID.");
+                        if (!boot.IsEmpty) Require(boot == identity!.Value.Identifier, "The boot GUID changed during sampling.");
+                        boot = identity!.Value.Identifier;
                         processCount = view.Processes.ProcessCount;
                         logicalCount = view.Processes.LogicalProcessors;
                         Require(view.Processes.ProcessorCount == logicalCount && view.Processes.Memory.State == SampleState.Valid
@@ -69,6 +75,7 @@ internal static class Program
             Require(retained is not null && ownName.Length > 0 && resourceStream, "Both real native streams did not arrive.");
             monitor.Dispose();
             GC.Collect(); GC.WaitForPendingFinalizers();
+            Require(retained!.ReadBootIdentity()?.Identifier == boot, "A retained AOT frame lost the boot GUID.");
             bool survived = false;
             retained!.Read(view => {
                 for (uint i = 0; i < view.Processes.ProcessCount; ++i) {

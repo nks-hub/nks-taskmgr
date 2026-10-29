@@ -5,6 +5,7 @@
 #include "process_parser.hpp"
 #include "process_query.h"
 #include "processor_query.hpp"
+#include "boot_identity.hpp"
 
 #include <stdexcept>
 #include <vector>
@@ -54,11 +55,10 @@ BOOL CALLBACK pageFiles(void* context, PENUM_PAGE_FILE_INFORMATION info, LPCWSTR
 
 ProcessCollector::ProcessCollector()
 {
+    boot = queryBootIdentity(queryProcesses);
     SYSTEM_TIMEOFDAY_INFORMATION time{};
     const auto status = NtQuerySystemInformation(SystemTimeOfDayInformation, &time, sizeof(time), nullptr);
-    if (!NT_SUCCESS(status) || time.BootTime.QuadPart <= 0)
-        throw std::runtime_error("Cannot read boot identity");
-    bootTime = static_cast<std::uint64_t>(time.BootTime.QuadPart);
+    if (NT_SUCCESS(status) && time.BootTime.QuadPart > 0) bootTime = static_cast<std::uint64_t>(time.BootTime.QuadPart);
 }
 
 ProcessCollector::~ProcessCollector() { NksFreeProcessBuffer(buffer); }
@@ -72,6 +72,8 @@ ProcessSnapshot ProcessCollector::collect()
         throw std::runtime_error("NtQuerySystemInformation process query failed: " + std::to_string(static_cast<unsigned long>(status)));
 
     ProcessSnapshot result;
+    result.boot = boot;
+    result.bootTime = bootTime;
     static const auto memoryFacts = memoryHardware(), cpuFacts = processorHardware(), boardFacts = boardHardware();
     result.memoryFacts = memoryFacts; result.cpuFacts = cpuFacts; result.boardFacts = boardFacts;
     result.measuredAt = std::chrono::steady_clock::now();
@@ -81,7 +83,7 @@ ProcessSnapshot ProcessCollector::collect()
     result.cpuModel = model;
     if (!result.logicalProcessors)
         throw std::runtime_error("No active logical processors");
-    result.processes = parseProcesses({static_cast<const std::byte*>(buffer), used}, bootTime);
+    result.processes = parseProcesses({static_cast<const std::byte*>(buffer), used}, boot.id);
     const auto parsedAt = std::chrono::steady_clock::now();
     result.queryTime = result.measuredAt - began;
     result.parseTime = parsedAt - result.measuredAt;

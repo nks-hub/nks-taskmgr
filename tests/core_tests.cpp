@@ -37,7 +37,7 @@ struct NativeEntry {
 void rejected(const std::function<void(NativeEntry&)>& corrupt) {
     NativeEntry entry;
     corrupt(entry);
-    try { (void)nks::parseProcesses(entry.bytes, 5); }
+    try { (void)nks::parseProcesses(entry.bytes, {5, 6}); }
     catch (const std::runtime_error&) { return; }
     throw std::runtime_error("Malformed kernel buffer was accepted");
 }
@@ -47,7 +47,7 @@ nks::ProcessSnapshot sample(std::int64_t seconds = 1) {
     value.measuredAt = std::chrono::steady_clock::time_point(std::chrono::seconds(seconds));
     value.logicalProcessors = 4;
     nks::ProcessRecord process;
-    process.identity = {100, 42, nks::GenerationKind::creationTime, 500};
+    process.identity = {{100, 200}, 42, nks::GenerationKind::creationTime, 500};
     value.processes.push_back(process);
     return value;
 }
@@ -100,20 +100,20 @@ int main() {
             entry.named(L"example.exe");
             entry.set([](auto& raw) { raw.UniqueProcessId = reinterpret_cast<HANDLE>(42); raw.CreateTime.QuadPart = 123;
                 raw.WorkingSetSize = 4096; raw.PrivatePageCount = 8192; });
-            const auto records = nks::parseProcesses(entry.bytes, 99);
+            const auto records = nks::parseProcesses(entry.bytes, {99, 199});
             require(records.size() == 1 && records[0].name == L"example.exe", "Name or entry count is wrong");
-            require(records[0].identity == nks::ProcessIdentity{99, 42, nks::GenerationKind::creationTime, 123}, "Wrong process identity");
+            require(records[0].identity == nks::ProcessIdentity{{99, 199}, 42, nks::GenerationKind::creationTime, 123}, "Wrong process identity");
             require(records[0].counters.workingSetBytes == 4096 && records[0].counters.privateBytes == 8192, "Working set and private memory were confused");
         }},
-        {"truncated fixed header", [] { try { (void)nks::parseProcesses({}, 0); } catch (const std::runtime_error&) { return; } throw std::runtime_error("Empty buffer accepted"); }},
+        {"truncated fixed header", [] { try { (void)nks::parseProcesses({}, {}); } catch (const std::runtime_error&) { return; } throw std::runtime_error("Empty buffer accepted"); }},
         {"next offset inside header", [] { rejected([](auto& e) { e.set([](auto& r) { r.NextEntryOffset = 8; }); }); }},
         {"next offset outside buffer", [] { rejected([](auto& e) { e.set([](auto& r) { r.NextEntryOffset = 0xfffffff8; }); }); }},
         {"thread count exceeds entry", [] { rejected([](auto& e) { e.set([](auto& r) { r.NumberOfThreads = 0xffffffff; }); }); }},
         {"odd UTF-16 byte length", [] { rejected([](auto& e) { e.set([](auto& r) { r.ImageName.Length = 1; r.ImageName.MaximumLength = 2; }); }); }},
         {"name pointer outside allocation", [] { rejected([](auto& e) { e.set([](auto& r) { r.ImageName.Buffer = reinterpret_cast<PWSTR>(1); r.ImageName.Length = r.ImageName.MaximumLength = 4; }); }); }},
         {"negative CPU counter", [] { rejected([](auto& e) { e.set([](auto& r) { r.KernelTime.QuadPart = -1; }); }); }},
-        {"missing creation time is explicit", [] { NativeEntry e; const auto rows = nks::parseProcesses(e.bytes, 1); require(rows[0].identity.generationKind == nks::GenerationKind::missing, "Missing identity was treated as known"); }},
-        {"maximum even UNICODE_STRING length", [] { NativeEntry e; e.bytes.resize(offsetof(SYSTEM_PROCESS_INFORMATION, Threads) + 65534); const std::wstring name(32767, L'x'); e.named(name.c_str()); const auto rows = nks::parseProcesses(e.bytes, 1); require(rows[0].name == name, "Maximum-length name was truncated"); }},
+        {"missing creation time is explicit", [] { NativeEntry e; const auto rows = nks::parseProcesses(e.bytes, {1, 2}); require(rows[0].identity.generationKind == nks::GenerationKind::missing, "Missing identity was treated as known"); }},
+        {"maximum even UNICODE_STRING length", [] { NativeEntry e; e.bytes.resize(offsetof(SYSTEM_PROCESS_INFORMATION, Threads) + 65534); const std::wstring name(32767, L'x'); e.named(name.c_str()); const auto rows = nks::parseProcesses(e.bytes, {1, 2}); require(rows[0].name == name, "Maximum-length name was truncated"); }},
         {"process chain requires final zero offset", [] { rejected([](auto& e) { const auto size = static_cast<ULONG>(e.bytes.size()); e.set([size](auto& raw) { raw.NextEntryOffset = size; }); }); }},
         {"query retains successful buffer", [] { queryTest(QueryCase::success, STATUS_SUCCESS, 1); }},
         {"query grows after mismatch", [] { queryTest(QueryCase::grow, STATUS_SUCCESS, 2); }},
@@ -124,7 +124,15 @@ int main() {
         {"CPU normalizes a loaded logical processor", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(2); b.processes[0].counters.user100ns = 10000000; s.apply(b); require(b.processes[0].cpuPercent.valid() && std::abs(b.processes[0].cpuPercent.value - 25) < .001, "CPU is not normalized across four logical processors"); }},
         {"unchanged counters produce a valid zero", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(2); s.apply(b); require(b.processes[0].cpuPercent.valid() && b.processes[0].cpuPercent.value == 0, "Measured idle was confused with missing data"); }},
         {"PID reuse does not inherit CPU", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(2); b.processes[0].identity.generation++; b.processes[0].counters.user100ns = 10000000; s.apply(b); require(b.processes[0].cpuPercent.state == nks::SampleState::first, "New PID generation inherited CPU"); }},
-        {"same generation from another boot is distinct", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(2); b.processes[0].identity.bootTime++; s.apply(b); require(!b.processes[0].cpuPercent.valid(), "Another boot inherited state"); }},
+        {"same generation from another boot is distinct", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(2); b.processes[0].identity.boot.high++; s.apply(b); require(!b.processes[0].cpuPercent.valid(), "Another boot inherited state"); }},
+        {"wall-clock boot timestamp is not process identity", [] {
+            nks::ProcessSampler sampler;
+            auto before = sample(); before.bootTime = 1000000; sampler.apply(before);
+            auto after = sample(2); after.bootTime = 1; after.wallTime -= std::chrono::hours(24);
+            after.processes[0].counters.user100ns = 10000000; sampler.apply(after);
+            require(before.processes[0].identity == after.processes[0].identity && after.processes[0].cpuPercent.valid()
+                && std::abs(after.processes[0].cpuPercent.value - 25) < .001, "Wall-clock correction changed process identity or CPU");
+        }},
         {"sequence number is not a creation timestamp", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(2); b.processes[0].identity.generationKind = nks::GenerationKind::sequenceNumber; s.apply(b); require(!b.processes[0].cpuPercent.valid(), "Generation kinds were merged"); }},
         {"counter reset creates a gap", [] { nks::ProcessSampler s; auto a = sample(); a.processes[0].counters.user100ns = 20; s.apply(a); auto b = sample(2); s.apply(b); require(b.processes[0].cpuPercent.state == nks::SampleState::gap, "Counter reset was not marked"); }},
         {"suspend interval creates a gap", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(100); s.apply(b); require(b.processes[0].cpuPercent.state == nks::SampleState::gap, "Suspend interval is not marked"); }},

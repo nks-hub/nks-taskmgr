@@ -29,7 +29,7 @@ public sealed partial class MainWindow
         var rows = new List<ProcessRow>(10_000);
         for (uint i = 1; i <= 10_000; ++i) {
             string name = "Process " + (i * 37 % 997).ToString("D3", CultureInfo.InvariantCulture);
-            var row = new ProcessRow(new ProcessKey(1, i, GenerationKind.CreationTime, i));
+            var row = new ProcessRow(new ProcessKey(new(1, 2), i, GenerationKind.CreationTime, i));
             fixed (char* text = name) row.Update(new ProcessInfo {
                 Name = new String16 { Data = text, Length = (uint)name.Length }, WorkingSetBytes = i * 7919 % 1_000_000,
                 PrivateBytes = i * 3571 % 1_000_000, CpuPercent = new Metric { State = SampleState.Valid, Value = i * 31 % 100 },

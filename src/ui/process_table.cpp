@@ -232,7 +232,7 @@ void ProcessTable::buildTree()
         if (parent != byPid.end() && parent->second != index) {
             const auto& a = snapshot->processes[parent->second].identity;
             const auto& b = child.identity;
-            if (a.bootTime == b.bootTime && a.generationKind == GenerationKind::creationTime
+            if (a.boot == b.boot && a.generationKind == GenerationKind::creationTime
                 && b.generationKind == GenerationKind::creationTime && a.generation && a.generation <= b.generation) {
                 children[parent->second].push_back(index); attached = true;
             }

@@ -38,7 +38,7 @@ public static partial class WinUiChecks
         AlignedColumns(table, first);
         var replay = new List<ProcessSlot>();
         for (uint i = 1; i <= 10_000; ++i) {
-            var row = new ProcessRow(new ProcessKey(1, i, GenerationKind.CreationTime, i));
+            var row = new ProcessRow(new ProcessKey(new(1, 2), i, GenerationKind.CreationTime, i));
             row.Update(new ProcessInfo { CpuPercent = new Metric { State = SampleState.Valid, Value = i % 100 } }); replay.Add(new ProcessSlot(row));
         }
         list.ItemsSource = replay; list.UpdateLayout();

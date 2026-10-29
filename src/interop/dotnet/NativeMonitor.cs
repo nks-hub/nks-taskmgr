@@ -12,6 +12,19 @@ public enum SampleState : uint { Valid, First, Unavailable, AccessDenied, Unsupp
 public enum GenerationKind : uint { Missing, CreationTime, SequenceNumber }
 public enum ResourceKind : uint { Cpu, Memory, Disk, Gpu, Network }
 public enum MetricSource : uint { NativeProcess, ProcessorTime, PerformanceInfo, PerformanceCounter, NetworkInterface, Dxgi, GpuAdapter }
+public readonly record struct BootIdentifier(ulong Low, ulong High)
+{
+    public bool IsEmpty => Low == 0 && High == 0;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct BootIdentityInfo
+{
+    public ulong Low, High;
+    public SampleState State;
+    public uint Reserved;
+    public readonly BootIdentifier Identifier => new(Low, High);
+}
 [Flags]
 public enum FrameFlags : uint { ProcessData = 1, ResourceData = 2, ProcessErrorChanged = 4, ResourceErrorChanged = 8 }
 
@@ -212,6 +225,18 @@ public sealed class NativeFrame : SafeHandleZeroOrMinusOneIsInvalid
         });
     }
 
+    public unsafe BootIdentityInfo? ReadBootIdentity()
+    {
+        BootIdentityInfo? identity = null;
+        Use(pointer => {
+            var status = NativeMethods.GetBootData(pointer, (uint)sizeof(BootIdentityInfo), out var data);
+            if (status == NativeResult.NoData) return;
+            NativeMonitor.Check(status);
+            identity = data;
+        });
+        return identity;
+    }
+
     private void Use(Action<nint> action)
     {
         bool added = false;
@@ -246,6 +271,8 @@ internal static partial class NativeMethods
     internal static partial NativeResult GetGpuData(nint frame, uint dataSize, out GpuData data);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_hardware_data")]
     internal static partial NativeResult GetHardwareData(nint frame, uint dataSize, out HardwareData data);
+    [LibraryImport(Library, EntryPoint = "nks_frame_get_boot_data")]
+    internal static partial NativeResult GetBootData(nint frame, uint dataSize, out BootIdentityInfo data);
     [LibraryImport(Library, EntryPoint = "nks_frame_retain")]
     internal static partial void Retain(nint frame);
     [LibraryImport(Library, EntryPoint = "nks_frame_release")]

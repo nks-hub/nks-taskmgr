@@ -125,6 +125,8 @@ dotnet publish tests/native_aot/NativeAotProbe.csproj -c Release -r win-x64 -o b
 
 This check reads process, device, and service snapshots, validates ABI layouts and process identity, and retains frames after stopping collectors and collecting managed memory. Services use a separate ABI in the same DLL; their worker stays inactive until requested. It is a console check; the WinUI UI comparison remains open.
 
+Process identity uses the full 128-bit Windows boot identifier with the PID and generation. `nks_frame_get_boot_data` returns both identifier halves and their availability state. The ABI v1 `boot_time` field remains wall-clock metadata and is not an identity key. Denied or unsupported boot queries report their state without stopping process collection.
+
 Run the collection benchmark:
 
 ```powershell

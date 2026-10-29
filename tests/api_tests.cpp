@@ -61,6 +61,13 @@ void verify()
         std::this_thread::sleep_for(20ms);
     }
     require(processFrame && resourceFrame, "Both ABI streams did not arrive");
+    NksBootData boot{};
+    require(nks_frame_get_boot_data(nullptr, sizeof(boot), &boot) == NKS_INVALID_ARGUMENT, "Null boot frame was accepted");
+    require(nks_frame_get_boot_data(processFrame.get(), sizeof(boot), nullptr) == NKS_INVALID_ARGUMENT, "Null boot output was accepted");
+    require(nks_frame_get_boot_data(processFrame.get(), sizeof(boot) - 1, &boot) == NKS_ABI_MISMATCH, "Wrong boot layout was accepted");
+    require(nks_frame_get_boot_data(processFrame.get(), sizeof(boot), &boot) == NKS_OK && boot.state == NKS_SAMPLE_VALID
+        && (boot.low || boot.high), "ABI boot GUID was not available");
+    const auto retainedBoot = boot;
     const auto& p = processes.processes;
     require(p.process_count > 0 && p.processes && p.processor_count == p.logical_processors && p.processors, "ABI arrays were not complete");
     require(p.cpu_percent.value >= 0 && p.cpu_percent.value <= 100, "ABI CPU normalization failed");
@@ -76,6 +83,9 @@ void verify()
         require(resource.kind <= NKS_RESOURCE_NETWORK && resource.id.length && resource.id.data, "ABI device identity was lost");
     }
     monitor.reset();
+    require(nks_frame_get_boot_data(processFrame.get(), sizeof(boot), &boot) == NKS_OK
+        && boot.low == retainedBoot.low && boot.high == retainedBoot.high && boot.state == retainedBoot.state,
+        "Boot identity depended on the destroyed monitor");
     NksHardwareData hardware{};
     require(nks_frame_get_hardware_data(nullptr, sizeof(hardware), &hardware) == NKS_INVALID_ARGUMENT, "Null hardware frame was accepted");
     require(nks_frame_get_hardware_data(processFrame.get(), sizeof(hardware) - 1, &hardware) == NKS_ABI_MISMATCH, "Wrong hardware layout was accepted");

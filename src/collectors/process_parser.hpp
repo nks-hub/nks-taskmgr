@@ -6,6 +6,6 @@
 
 namespace nks {
 
-std::vector<ProcessRecord> parseProcesses(std::span<const std::byte> buffer, std::uint64_t bootTime);
+std::vector<ProcessRecord> parseProcesses(std::span<const std::byte> buffer, BootIdentifier boot);
 
 }

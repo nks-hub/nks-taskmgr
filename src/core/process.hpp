@@ -27,8 +27,19 @@ struct Metric {
 
 enum class GenerationKind : std::uint8_t { missing, creationTime, sequenceNumber };
 
+struct BootIdentifier {
+    std::uint64_t low{}, high{};
+    bool empty() const noexcept { return low == 0 && high == 0; }
+    bool operator==(const BootIdentifier&) const = default;
+};
+
+struct BootIdentity {
+    BootIdentifier id;
+    SampleState state{SampleState::unavailable};
+};
+
 struct ProcessIdentity {
-    std::uint64_t bootTime{};
+    BootIdentifier boot;
     std::uint32_t pid{};
     GenerationKind generationKind{GenerationKind::missing};
     std::uint64_t generation{};
@@ -77,6 +88,8 @@ struct LogicalProcessor {
 };
 
 struct ProcessSnapshot {
+    BootIdentity boot;
+    std::uint64_t bootTime{};
     std::vector<HardwareFact> memoryFacts, cpuFacts, boardFacts;
     std::chrono::steady_clock::time_point measuredAt;
     std::chrono::system_clock::time_point wallTime;

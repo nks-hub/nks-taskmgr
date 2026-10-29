@@ -17,6 +17,7 @@ private:
     void* buffer{};
     ULONG capacity{};
     std::uint64_t bootTime{};
+    BootIdentity boot;
 };
 
 }

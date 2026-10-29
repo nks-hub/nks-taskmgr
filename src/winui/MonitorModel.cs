@@ -22,6 +22,7 @@ public sealed class MonitorModel : IDisposable
     public HistorySeries PageFile { get; } = new();
     public Dictionary<string, Dictionary<string, string>> Hardware { get; } = [];
     public MemoryInfo Memory { get; private set; }
+    public BootIdentityInfo BootIdentity { get; private set; } = new() { State = SampleState.Unavailable };
     public string CpuModel { get; private set; } = string.Empty;
     public uint LogicalProcessors { get; private set; }
     public long ProcessTime { get; private set; }
@@ -56,7 +57,11 @@ public sealed class MonitorModel : IDisposable
         bool changed = resumed;
         using var frame = monitor.Read();
         if (frame is not null) {
-            frame.Read(view => { Apply(view); if ((view.Flags & FrameFlags.ResourceData) != 0) frame.ReadGpu(ApplyGpu); });
+            frame.Read(view => {
+                if ((view.Flags & FrameFlags.ProcessData) != 0)
+                    BootIdentity = frame.ReadBootIdentity() ?? new BootIdentityInfo { State = SampleState.Unavailable };
+                Apply(view); if ((view.Flags & FrameFlags.ResourceData) != 0) frame.ReadGpu(ApplyGpu);
+            });
             frame.ReadHardware(ApplyHardware);
             changed = true;
         }
@@ -91,7 +96,7 @@ public sealed class MonitorModel : IDisposable
             var seen = new HashSet<ProcessKey>();
             for (uint i = 0; i < view.Processes.ProcessCount; ++i) {
                 var source = view.Processes.Processes[i];
-                var key = new ProcessKey(source.BootTime, source.Pid, source.GenerationKind, source.Generation);
+                var key = new ProcessKey(BootIdentity.Identifier, source.Pid, source.GenerationKind, source.Generation);
                 seen.Add(key);
                 if (!processes.TryGetValue(key, out var row)) processes.Add(key, row = new ProcessRow(key));
                 row.Update(source, visualUpdates);

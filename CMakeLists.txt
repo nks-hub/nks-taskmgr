@@ -21,6 +21,7 @@ add_library(nks_native STATIC
     src/collectors/process_query.c
     src/collectors/process_parser.cpp
     src/collectors/process_collector.cpp
+    src/collectors/boot_identity.cpp
     src/collectors/processor_query.cpp
     src/core/process_sampler.cpp
     src/core/resource.cpp
@@ -62,6 +63,12 @@ target_compile_options(nks-taskmgr PRIVATE /W4 /WX /utf-8 /permissive-)
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(nks-boot-identity-tests tests/boot_identity_tests.cpp)
+    target_include_directories(nks-boot-identity-tests SYSTEM PRIVATE third_party/phnt/include)
+    target_compile_definitions(nks-boot-identity-tests PRIVATE PHNT_VERSION=117)
+    target_link_libraries(nks-boot-identity-tests PRIVATE nks_native)
+    target_compile_options(nks-boot-identity-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    add_test(NAME boot-identity COMMAND nks-boot-identity-tests)
     add_executable(nks-hardware-tests tests/hardware_tests.cpp)
     target_link_libraries(nks-hardware-tests PRIVATE nks_native)
     target_compile_options(nks-hardware-tests PRIVATE /W4 /WX /utf-8 /permissive-)

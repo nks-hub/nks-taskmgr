@@ -22,7 +22,7 @@ void filtering()
     record.config.error = ERROR_ACCESS_DENIED;
     require(nks::serviceStartup(record.config) == L"Chybí oprávnění", "Access denial became a startup value");
     nks::ProcessSnapshot processes;
-    nks::ProcessRecord host; host.identity = {1, 314, nks::GenerationKind::creationTime, 11};
+    nks::ProcessRecord host; host.identity = {{1, 2}, 314, nks::GenerationKind::creationTime, 11};
     processes.processes.push_back(host);
     nks::ServiceDetail detail; detail.name = L"demosvc"; detail.state = SERVICE_RUNNING; detail.pid = 314; detail.hostCreated100ns = 10;
     record.state = SERVICE_RUNNING;

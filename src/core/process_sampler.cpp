@@ -10,7 +10,8 @@ namespace {
 struct IdentityHash {
     std::size_t operator()(const ProcessIdentity& identity) const noexcept
     {
-        auto hash = std::hash<std::uint64_t>{}(identity.bootTime);
+        auto hash = std::hash<std::uint64_t>{}(identity.boot.low);
+        hash ^= std::hash<std::uint64_t>{}(identity.boot.high) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
         hash ^= std::hash<std::uint64_t>{}(identity.generation) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
         hash ^= std::hash<std::uint32_t>{}(identity.pid) + static_cast<std::size_t>(identity.generationKind);
         return hash;
