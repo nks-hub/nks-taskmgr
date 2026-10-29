@@ -4,13 +4,15 @@ param(
     [ValidateSet('Win32', 'WinUI')][string]$Candidate = 'Win32',
     [string]$Resource = '',
     [ValidateRange(0, 300)][int]$ForegroundTimeoutSeconds = 30,
+    [string]$ExecutablePath = '',
     [string]$OutputPath = (Join-Path ([IO.Path]::GetTempPath()) 'nks-taskmgr-performance.json')
 )
 
 $ErrorActionPreference = 'Stop'
 if ($Resource -and ($Candidate -ne 'WinUI' -or $View -ne 'Performance')) { throw '-Resource requires the WinUI Performance view.' }
-$executable = Join-Path (Split-Path -Parent $PSScriptRoot) $(if ($Candidate -eq 'WinUI') { 'build\winui-aot\NksTaskMgr.WinUI.exe' } else { 'build\msvc\Release\nks-taskmgr.exe' })
+$executable = if ($ExecutablePath) { $ExecutablePath } else { Join-Path (Split-Path -Parent $PSScriptRoot) $(if ($Candidate -eq 'WinUI') { 'build\winui-aot\NksTaskMgr.WinUI.exe' } else { 'build\msvc\Release\nks-taskmgr.exe' }) }
 if (-not (Test-Path -LiteralPath $executable)) { throw 'Build the Release desktop application first.' }
+$executable = (Resolve-Path -LiteralPath $executable).Path
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -25,7 +27,8 @@ public static class NksDesktopBench {
             PowerCallback callback = (context,type,data) => { if(type == 0x8013 && data != IntPtr.Zero && Marshal.ReadInt32(data,16) == 4) { state = Marshal.ReadInt32(data,20); ready.Set(); } return 0; };
             var recipient = new PowerRecipient { callback = callback };
             var setting = new Guid(console ? "6fe69556-704a-47a0-8f24-c28d936fda47" : "2b84c20e-ad23-4ddf-93db-05ffbd7efca5");
-            if (PowerSettingRegisterNotification(ref setting,2,ref recipient,out var handle) != 0) return -1;
+            IntPtr handle;
+            if (PowerSettingRegisterNotification(ref setting,2,ref recipient,out handle) != 0) return -1;
             try { ready.WaitOne(1000); } finally { PowerSettingUnregisterNotification(handle); GC.KeepAlive(callback); }
         }
         return state;
@@ -49,6 +52,7 @@ if (-not $logicalProcessors) { throw 'Cannot read the logical processor count.' 
 $previousDisplay = [NksDesktopBench]::SetThreadExecutionState(2147483650)
 if (-not $previousDisplay) { throw 'Cannot keep the display active during measurement.' }
 $app = $null
+$iconWorkers = @()
 try {
     $app = if ($Candidate -eq 'WinUI') { Start-Process -FilePath $executable -ArgumentList "--view=$View" -WindowStyle Normal -PassThru }
         else { Start-Process -FilePath $executable -WindowStyle Normal -PassThru }
@@ -123,10 +127,17 @@ try {
         Start-Sleep -Milliseconds 250
     } while ($true)
     Write-Output "Foreground verified; measuring $Seconds-second phases."
+    $workerPath = Join-Path (Split-Path -Parent $app.Path) 'nks-icon-worker.exe'
+    $iconWorkers = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($app.Id) AND Name='nks-icon-worker.exe'" | Where-Object ExecutablePath -eq $workerPath | ForEach-Object { Get-Process -Id $_.ProcessId })
+    foreach ($worker in $iconWorkers) { $null = $worker.Handle }
+    if ($Candidate -eq 'WinUI' -and $View -eq 'Processes' -and (!(Test-Path -LiteralPath $workerPath) -or $iconWorkers.Count -ne 2)) {
+        throw 'Warm the process view until both icon workers are available before measuring.'
+    }
+    $members = @($app) + $iconWorkers
     foreach ($phase in @('visible', 'minimized')) {
         if ($phase -eq 'minimized') { [NksDesktopBench]::ShowWindow($window, 6) | Out-Null; Start-Sleep -Seconds 2 }
         $app.Refresh()
-        $beganCpu = $app.TotalProcessorTime.TotalSeconds
+        $beganCpu = ($members | ForEach-Object { $_.TotalProcessorTime.TotalSeconds } | Measure-Object -Sum).Sum
         $watch = [Diagnostics.Stopwatch]::StartNew()
         $privatePeak = 0L; $workingPeak = 0L; $handlesPeak = 0; $gdiPeak = 0
         while ($watch.Elapsed.TotalSeconds -lt $Seconds) {
@@ -141,12 +152,19 @@ try {
                     throw "The measured application lost foreground to process $foregroundPid ($foregroundName) after $([Math]::Round($watch.Elapsed.TotalSeconds, 2)) seconds."
                 }
             }
-            $privatePeak = [Math]::Max($privatePeak, $app.PrivateMemorySize64)
-            $workingPeak = [Math]::Max($workingPeak, $app.WorkingSet64)
-            $handlesPeak = [Math]::Max($handlesPeak, $app.HandleCount)
-            $gdiPeak = [Math]::Max($gdiPeak, [NksDesktopBench]::GetGuiResources($app.Handle, 0))
+            $private = 0L; $working = 0L; $handles = 0; $gdi = 0
+            foreach ($member in $members) {
+                $member.Refresh()
+                if ($member.HasExited) { throw 'A measured process exited; the resource totals would be incomplete.' }
+                $private += $member.PrivateMemorySize64; $working += $member.WorkingSet64
+                $handles += $member.HandleCount; $gdi += [NksDesktopBench]::GetGuiResources($member.Handle, 0)
+            }
+            $privatePeak = [Math]::Max($privatePeak, $private)
+            $workingPeak = [Math]::Max($workingPeak, $working)
+            $handlesPeak = [Math]::Max($handlesPeak, $handles)
+            $gdiPeak = [Math]::Max($gdiPeak, $gdi)
         }
-        $cpuSeconds = $app.TotalProcessorTime.TotalSeconds - $beganCpu
+        $cpuSeconds = ($members | ForEach-Object { $_.TotalProcessorTime.TotalSeconds } | Measure-Object -Sum).Sum - $beganCpu
         $results += [ordered]@{
             phase = $phase
             seconds = $watch.Elapsed.TotalSeconds
@@ -159,7 +177,7 @@ try {
     }
     [ordered]@{
         scenario = 'desktop_default_1s_' + $View.ToLowerInvariant() + '_view'
-        sourceRevision = (git -C (Split-Path -Parent $PSScriptRoot) rev-parse HEAD)
+        sourceRevision = if ($ExecutablePath) { [Diagnostics.FileVersionInfo]::GetVersionInfo($executable).ProductVersion.Split('+')[-1] } else { git -C (Split-Path -Parent $PSScriptRoot) rev-parse HEAD }
         candidate = $Candidate
         displayState = $displayState
         consoleDisplayState = [NksDesktopBench]::DisplayState($true)
@@ -169,6 +187,8 @@ try {
         executableSha256 = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash
         executableProductVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($executable).ProductVersion
         nativeMonitorSha256 = if ($Candidate -eq 'WinUI') { (Get-FileHash -LiteralPath (Join-Path (Split-Path -Parent $executable) 'nks-monitor.dll') -Algorithm SHA256).Hash } else { '' }
+        iconWorkerSha256 = if (Test-Path -LiteralPath $workerPath) { (Get-FileHash -LiteralPath $workerPath -Algorithm SHA256).Hash } else { '' }
+        includedWorkerPids = @($iconWorkers | ForEach-Object Id)
         logicalProcessors = $logicalProcessors
         osVersion = [Environment]::OSVersion.Version.ToString()
         results = $results
@@ -184,4 +204,5 @@ try {
         }
         $app.Dispose()
     }
+    foreach ($worker in $iconWorkers) { $worker.Dispose() }
 }
