@@ -63,4 +63,30 @@ public static class WinUiChecks
         a.Update(new ProcessInfo { ParentPid = 2 }); b.Update(new ProcessInfo { ParentPid = 1 });
         Require(ProcessTree.Order(new[] { a, b }, new HashSet<ProcessKey>()).Count == 2, "A parent cycle lost a process or hung the UI.");
     }
+
+    public static unsafe void Services(ServiceModel services)
+    {
+        var rpc = services.Find("rpcss") ?? throw new InvalidOperationException("RPC service was not enumerated.");
+        services.SetFilter(ServiceFilter.All); services.SetQuery("RPCSS"); services.Select(rpc.Name);
+        Require(services.Visible.Contains(rpc) && services.Selected == rpc, "Service search or selection lost its identity.");
+        services.SetFilter(rpc.State == 4 ? ServiceFilter.Stopped : ServiceFilter.Running);
+        Require(services.Selected is null, "Hidden service became a different selected row.");
+        services.SetFilter(ServiceFilter.All); services.SetQuery("");
+        Require(services.Selected == rpc, "Clearing the service filter lost the selection anchor.");
+        services.Sort(3); Require(services.Selected == rpc, "Service sorting changed the selection.");
+        var row = new ServiceRow("DemoSvc");
+        fixed (char* title = "Síťová služba") {
+            row.Update(new ServiceInfo { Title = new String16 { Data = title, Length = 13 }, State = 7, Pid = 314,
+                Config = new ServiceConfigInfo { StartType = 3 } });
+        }
+        Require(!row.Matches(ServiceFilter.Stopped, "") && row.Matches(ServiceFilter.Other, "SÍŤOVÁ"), "Paused service or Unicode search is incorrect.");
+        row.Update(new ServiceInfo { State = 4, Pid = 314, Config = new ServiceConfigInfo { Error = 5 } });
+        Require(row.Startup == "Chybí oprávnění (5)", "Service access denial became a startup value.");
+        var host = new ProcessRow(new ProcessKey(1, 314, GenerationKind.CreationTime, 100));
+        var detail = new ServiceDetailData(NativeMonitor.MonotonicNowNs, "demosvc", "", ServiceConfiguration.Empty, 0, 0, 0, 0, 314, 4, 100, []);
+        Require(detail.MatchesHost(row, host), "Service host lost its case-insensitive identity.");
+        Require(!detail.MatchesHost(row, new ProcessRow(new ProcessKey(1, 314, GenerationKind.CreationTime, 101))), "A recycled host PID opened a different process.");
+        Require(!(detail with { HostError = 5 }).MatchesHost(row, host), "An unverified service host became selectable.");
+        host.SetStatus(true, false); Require(!detail.MatchesHost(row, host), "An ended service host remained selectable.");
+    }
 }

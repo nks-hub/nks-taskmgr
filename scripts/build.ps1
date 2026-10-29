@@ -57,9 +57,9 @@ try {
             $resultPath = Join-Path ([IO.Path]::GetTempPath()) ("nks-winui-" + [guid]::NewGuid().ToString('N') + '.txt')
             $candidate = Start-Process -FilePath (Join-Path $winuiOutput 'NksTaskMgr.WinUI.exe') -ArgumentList "--smoke=$resultPath" -WindowStyle Hidden -PassThru
             try {
-                if (-not $candidate.WaitForExit(30000)) { $candidate.Kill(); throw 'WinUI runtime check exceeded 30 seconds.' }
+                if (-not $candidate.WaitForExit(45000)) { $candidate.Kill(); throw 'WinUI runtime check exceeded 45 seconds.' }
                 $result = if (Test-Path -LiteralPath $resultPath) { Get-Content -LiteralPath $resultPath -Raw } else { '' }
-                if ($candidate.ExitCode -ne 0 -or $result -notmatch 'aot=True;ready=True;models=True;minimized=True;') {
+                if ($candidate.ExitCode -ne 0 -or $result -notmatch 'aot=True;ready=True;models=True;minimized=True;services=True;') {
                     throw "WinUI runtime check failed: exit $($candidate.ExitCode). Output: $resultPath"
                 }
                 Write-Output "WinUI Native AOT runtime check passed. Output: $resultPath"

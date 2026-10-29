@@ -54,7 +54,7 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Release -WinUI -Test
 ./build/winui-aot/NksTaskMgr.WinUI.exe
 ```
 
-Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, collection while minimized, and CPU chart layout. Visual checks require an active display; captures made while the display is off can contain a black client area. The WinUI candidate does not yet include Services or establish the UI framework choice.
+Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, collection while minimized, CPU chart layout, and read-only Services. Visual checks require an active display; captures made while the display is off can contain a black client area. Administrative actions and the UI framework choice remain open.
 
 ## Usage
 
@@ -124,9 +124,10 @@ Measure desktop CPU, private memory, working set, handles, and GDI objects:
 pwsh -NoProfile -File benchmarks/desktop_bench.ps1
 pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -View Processes
 pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -View Services
+pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -Candidate WinUI -View Services
 ```
 
-This local benchmark opens its own application instance, warms it up for 10 seconds, then measures 60 seconds visible and 60 seconds minimized. Results, including the executable hash, are written to the system temporary directory. CPU is normalized to the whole machine. Acceptance targets and open findings are maintained in TODO.md; these measurements do not replace the planned OS, UI candidate, or 24-hour tests.
+This local benchmark opens its own application instance, warms it up for 10 seconds, then measures 60 seconds visible and 60 seconds minimized. It requires an active display and stops if the visible window loses foreground. `-Candidate WinUI` selects the AOT build; its Services scenario selects the first visible service and loads its detail. Results, including revision and binary hashes, are written to the system temporary directory. CPU is normalized to the whole machine. Acceptance targets and open findings are maintained in TODO.md; these measurements do not replace the planned OS, UI candidate, or 24-hour tests.
 
 The desktop `--smoke` option checks view switching, retained process selection, PID filtering, service collection and detail, and stale data after stopping both process and device collectors. It exits with code 0 on success.
 

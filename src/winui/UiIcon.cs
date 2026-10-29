@@ -7,7 +7,8 @@ namespace NksTaskMgr.WinUI;
 
 public static class UiIcon
 {
-    public static FrameworkElement Create(bool performance, uint color, double size = 20)
+    public static FrameworkElement Create(bool performance, uint color, double size = 20) => Create(performance ? "performance" : "processes", color, size);
+    public static FrameworkElement Create(string name, uint color, double size = 20)
     {
         var geometry = new GeometryGroup();
         void Line(params Point[] points)
@@ -16,7 +17,12 @@ public static class UiIcon
             foreach (var point in points.Skip(1)) figure.Segments.Add(new LineSegment { Point = point });
             path.Figures.Add(figure); geometry.Children.Add(path);
         }
-        if (performance) {
+        if (name == "services") {
+            geometry.Children.Add(new RectangleGeometry { Rect = new Rect(3, 4, 18, 6) });
+            geometry.Children.Add(new RectangleGeometry { Rect = new Rect(3, 14, 18, 6) });
+            Line(new Point(7, 7), new Point(8, 7)); Line(new Point(12, 7), new Point(17, 7));
+            Line(new Point(7, 17), new Point(8, 17)); Line(new Point(12, 17), new Point(17, 17));
+        } else if (name == "performance") {
             Line(new Point(3, 19), new Point(21, 19));
             Line(new Point(4, 15), new Point(8, 9), new Point(12, 13), new Point(16, 4), new Point(20, 10));
         } else {
