@@ -73,6 +73,7 @@ public sealed partial class MainWindow : Window
     private bool smokeColumnsChecked;
     private Task<byte[]?[]>? smokeIcons;
     private Task? smokeSharedIcon;
+    private Task? smokeIconIsolation;
     private int smokeIconsAt;
     private int smokeMinimizedAt, smokeReadyAt;
     private int smokeServicesStage, smokeServicesAt;
@@ -143,7 +144,7 @@ public sealed partial class MainWindow : Window
         root.SizeChanged += (_, _) => Resize();
         timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromMilliseconds(100);
         timer.Tick += (_, _) => Tick(); timer.Start();
-        Closed += (_, _) => { timer.Stop(); servicesModel?.Dispose(); model.Dispose(); };
+        Closed += (_, _) => { timer.Stop(); IconWorkers.Stop(); servicesModel?.Dispose(); model.Dispose(); };
         AppWindow.Changed += (_, _) => Resize();
         smokePath = App.SmokePath;
         ShowView(Environment.GetCommandLineArgs().Contains("--view=Services", StringComparer.OrdinalIgnoreCase) ? DesktopView.Services
@@ -445,18 +446,23 @@ public sealed partial class MainWindow : Window
             smokeReadyAt = ticks;
             ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);
             smokeIcons = Task.WhenAll(Task.Run(() => ProcessIcons.Read(own.Key)), Task.Run(() => ProcessIcons.Read(own.Key with { Generation = own.Key.Generation + 1 })));
+            smokeIconIsolation = Task.Run(() => WinUiChecks.IconWorkerIsolation(own.Key));
             smokeIconsAt = ticks;
         }
         int elapsed = ticks - smokeReadyAt;
         if (smokeModelsChecked && elapsed == 10) {
             if (!smokeIcons!.IsCompleted && ticks - smokeIconsAt < 100) { ++smokeReadyAt; return; }
             if (!smokeIcons!.IsCompletedSuccessfully || smokeIcons.Result[0] is not { Length: > 54 } || smokeIcons.Result[1] is not null)
-                throw new InvalidOperationException("Process icons did not validate the process generation.");
+                throw new InvalidOperationException("Process icons did not validate the process generation. " + IconWorkers.LastFailure, smokeIconIsolation?.Exception);
             smokeSharedIcon = WinUiChecks.SharedIconDecode(smokeIcons.Result[0]!);
             App.Trace("Process icons passed: own executable; recycled PID rejected");
             verifyProcessTable = WinUiChecks.BeginProcessTableReplay(processTable, processList);
         }
         if (smokeModelsChecked && elapsed == 20) {
+            if (smokeIconIsolation is { IsCompleted: false } && ticks - smokeIconsAt < 100) { ++smokeReadyAt; return; }
+            if (smokeIconIsolation is not { IsCompletedSuccessfully: true })
+                throw new InvalidOperationException("Executable icon worker isolation checks failed.", smokeIconIsolation?.Exception);
+            App.Trace("Icon worker isolation passed: timeout, restart, generation, shutdown");
             if (smokeSharedIcon is not { IsCompletedSuccessfully: true })
                 throw new InvalidOperationException("Shared executable icon checks did not pass.", smokeSharedIcon?.Exception);
             verifyProcessTable!(); model.VisibleProcesses.RefreshView(); smokeColumnsChecked = true; resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true);

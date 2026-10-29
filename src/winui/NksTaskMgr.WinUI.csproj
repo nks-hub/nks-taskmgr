@@ -15,16 +15,19 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
     <NativeMonitorPath Condition="'$(NativeMonitorPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-monitor.dll</NativeMonitorPath>
+    <IconWorkerPath Condition="'$(IconWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-icon-worker.exe</IconWorkerPath>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.261008100" />
     <ProjectReference Include="..\interop\dotnet\NksTaskMgr.Native.csproj" />
     <None Include="$(NativeMonitorPath)" Link="nks-monitor.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="$(IconWorkerPath)" Link="nks-icon-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\..\assets\app.ico" Link="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\..\assets\app.png" Link="app.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
   <Target Name="RequireNativeMonitor" BeforeTargets="PrepareForBuild">
     <Error Condition="!Exists('$(NativeMonitorPath)')" Text="Build the native Release library before publishing the WinUI candidate." />
+    <Error Condition="!Exists('$(IconWorkerPath)')" Text="Build the native Release icon worker before publishing the WinUI candidate." />
   </Target>
 </Project>

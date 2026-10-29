@@ -51,7 +51,8 @@ try {
     if ($WinUI) {
         $winuiOutput = Join-Path $projectRoot 'build\winui-aot'
         $nativeMonitor = Join-Path $projectRoot "build\msvc\$Configuration\nks-monitor.dll"
-        & $DotNet publish src\winui\NksTaskMgr.WinUI.csproj -c $Configuration -r win-x64 -o $winuiOutput "-p:NativeMonitorPath=$nativeMonitor"
+        $iconWorker = Join-Path $projectRoot "build\msvc\$Configuration\nks-icon-worker.exe"
+        & $DotNet publish src\winui\NksTaskMgr.WinUI.csproj -c $Configuration -r win-x64 -o $winuiOutput "-p:NativeMonitorPath=$nativeMonitor" "-p:IconWorkerPath=$iconWorker"
         if ($LASTEXITCODE) { throw "WinUI Native AOT publication failed: $LASTEXITCODE" }
         if ($Test) {
             $resultPath = Join-Path ([IO.Path]::GetTempPath()) ("nks-winui-" + [guid]::NewGuid().ToString('N') + '.txt')

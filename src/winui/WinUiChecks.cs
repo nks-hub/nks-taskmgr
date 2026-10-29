@@ -6,6 +6,27 @@ public static partial class WinUiChecks
 {
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 
+    internal static void IconWorkerIsolation(ProcessKey own)
+    {
+        using var worker = new IconWorker();
+        worker.Start();
+        using var stalled = System.Diagnostics.Process.GetProcessById(worker.ProcessId);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        bool timedOut = false;
+        try { worker.ReadResponse(TimeSpan.FromMilliseconds(100)); } catch (TimeoutException) { timedOut = true; }
+        Require(timedOut && watch.Elapsed < TimeSpan.FromSeconds(2), "A silent icon worker did not time out.");
+        Require(stalled.WaitForExit(2000), "The timed-out icon worker remained alive.");
+        var bytes = worker.Request(own);
+        Require(bytes is { Length: 1350 } && bytes[0] == (byte)'B' && bytes[1] == (byte)'M', "The icon worker did not recover after a timeout. " + worker.Failure);
+        Require(worker.ProcessId != stalled.Id, "A timed-out icon worker was reused.");
+        Require(worker.Request(own with { Generation = own.Generation + 1 }) is null, "The icon worker accepted a reused PID.");
+        using var running = System.Diagnostics.Process.GetProcessById(worker.ProcessId);
+        watch.Restart(); worker.Stop();
+        Require(watch.Elapsed < TimeSpan.FromMilliseconds(200), "Stopping the icon worker blocked its owner.");
+        Require(running.WaitForExit(2000), "The stopped icon worker remained alive.");
+        Require(worker.Request(own) is null, "A stopped icon worker restarted during shutdown.");
+    }
+
     internal static async Task SharedIconDecode(byte[] bytes)
     {
         var first = ProcessIconView.DecodeShared(bytes);

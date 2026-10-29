@@ -73,7 +73,7 @@ Processes provides All, Active, and Tree views. Search accepts process names and
 
 The WinUI candidate also resizes columns by dragging their edges and hides optional columns through the Columns menu. A heading's context menu offers move and resize commands for keyboard use. The menu restores the default layout; the process name remains visible.
 
-Process rows are 34 DIP high with 13 DIP text. The UI uses Segoe UI Variable when installed and Segoe UI otherwise. WinUI loads executable icons on background workers after verifying process creation time; unavailable icons use a generic symbol. Its icon cache holds up to 128 images. The Win32 candidate currently uses letter icons.
+Process rows are 34 DIP high with 13 DIP text. The UI uses Segoe UI Variable when installed and Segoe UI otherwise. WinUI reads executable icons through up to two child processes after verifying process creation time. Waiting for a response is limited to three seconds; a silent worker is terminated and restarted for the next request. The workers inherit the user's permissions and exit with the application. Unavailable icons use a generic symbol, and the cache holds up to 128 images. The Win32 candidate currently uses letter icons.
 
 While the pointer is over a process row, the table keeps its row order and updates the counters. New processes appear after the pointer leaves. A finished process remains marked until then and cannot become a live selection. Switching to Performance and back preserves the scrolled process position.
 
