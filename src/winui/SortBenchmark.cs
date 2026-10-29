@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Controls;
 using NksTaskMgr.Native;
@@ -9,6 +10,17 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class MainWindow
 {
     private bool sortBenchmarkRunning;
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetThreadTimes(nint thread, out ulong created, out ulong exited, out ulong kernel, out ulong user);
+
+    private static ulong UiThreadCpu100Ns()
+    {
+        if (!GetThreadTimes(new nint(-2), out _, out _, out ulong kernel, out ulong user))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError());
+        return kernel + user;
+    }
 
     private void SortProcesses(int column)
     {
@@ -48,7 +60,7 @@ public sealed partial class MainWindow
         try {
             model.SetPaused(true); model.SetMode(ProcessMode.All); model.SetQuery(""); ShowView(false);
             using var output = new StreamWriter(path, false);
-            await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started");
+            await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc");
             foreach (string scenario in new[] { "live", "replay" }) {
                 if (scenario == "replay") model.ReplayForBenchmark(ReplayRows());
                 SortProcesses(0); processList.UpdateLayout(); await NextRenderedFrame(); await NextRenderedFrame();
@@ -56,12 +68,18 @@ public sealed partial class MainWindow
                 foreach (var row in selected) processList.SelectedItems.Add(slotsByRow[row]);
                 var primary = SelectedProcess;
                 for (int round = 0; round < 2; ++round) for (int column = 0; column < 7; ++column) for (int direction = 0; direction < 2; ++direction) {
-                    int decodedBefore = ProcessIconView.DecodedImagesCreated;
-                    var watch = Stopwatch.StartNew();
                     var container = processList.ContainerFromIndex(0) as ListViewItem;
                     var visual = container is null ? null : Descendant<ProcessRowGrid>(container);
+                    int decodedBefore = ProcessIconView.DecodedImagesCreated;
+                    int gen0 = GC.CollectionCount(0), gen1 = GC.CollectionCount(1), gen2 = GC.CollectionCount(2);
+                    long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+                    ulong cpuBefore = UiThreadCpu100Ns();
+                    var watch = Stopwatch.StartNew();
                     SortProcesses(column); double handler = watch.Elapsed.TotalMilliseconds;
                     processList.UpdateLayout(); double layout = watch.Elapsed.TotalMilliseconds;
+                    double uiCpu = (UiThreadCpu100Ns() - cpuBefore) / 10_000d;
+                    long allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+                    int gen0Collections = GC.CollectionCount(0) - gen0, gen1Collections = GC.CollectionCount(1) - gen1, gen2Collections = GC.CollectionCount(2) - gen2;
                     if (container is not null && (!ReferenceEquals(container, processList.ContainerFromIndex(0))
                         || !ReferenceEquals(visual, Descendant<ProcessRowGrid>(container)))) throw new InvalidOperationException("Sorting recreated a visible process row.");
                     await NextRenderedFrame(); await NextRenderedFrame(); watch.Stop();
@@ -69,7 +87,8 @@ public sealed partial class MainWindow
                     if (SelectedProcess != primary) throw new InvalidOperationException("Sorting changed the primary selected process.");
                     await output.WriteLineAsync(string.Join(',', scenario, model.VisibleProcesses.Count, column, model.SortDescending,
                         handler.ToString("F3", CultureInfo.InvariantCulture), layout.ToString("F3", CultureInfo.InvariantCulture), watch.Elapsed.TotalMilliseconds.ToString("F3", CultureInfo.InvariantCulture),
-                        ProcessIconView.DecodedImagesCreated - decodedBefore));
+                        ProcessIconView.DecodedImagesCreated - decodedBefore, uiCpu.ToString("F3", CultureInfo.InvariantCulture), allocated,
+                        gen0Collections, gen1Collections, gen2Collections));
                     await output.FlushAsync();
                 }
                 processList.ScrollIntoView(slotsByRow[selected[0]], ScrollIntoViewAlignment.Leading);

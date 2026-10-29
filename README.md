@@ -159,6 +159,8 @@ Measure WinUI process sorting with live rows and a 10,000-row replay:
 
 This check covers every column in both directions, retains multiple selections and the primary process, preserves the scrolled identity, and checks reuse of visible row visuals. The CSV separates handler and layout time from two subsequent rendering callbacks and counts icon decodes started during each case. Those callbacks do not prove hardware presentation time. The benchmark closes its own window when finished; failures produce a sibling `.error.txt` file and a nonzero exit code.
 
+UI thread CPU time and managed allocation counters cover the handler and explicit layout call. Windows CPU accounting can be coarser than the elapsed timer, so short CPU samples can exceed the measured elapsed interval. Garbage collection counts are process-wide and recorded separately for each generation. Native XAML and graphics allocations are outside the managed allocation counter.
+
 The build script discovers Visual Studio and the installed Windows SDK. It sets the CRT root only for its child build processes and restores the previous environment afterward.
 
 ## Contributing
