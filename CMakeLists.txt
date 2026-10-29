@@ -23,6 +23,7 @@ add_library(nks_native STATIC
     src/collectors/process_collector.cpp
     src/collectors/boot_identity.cpp
     src/collectors/processor_query.cpp
+    src/collectors/memory_query.cpp
     src/core/process_sampler.cpp
     src/core/resource.cpp
     src/core/hardware.cpp
@@ -68,6 +69,12 @@ target_compile_options(nks-taskmgr PRIVATE /W4 /WX /utf-8 /permissive-)
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(nks-memory-query-tests tests/memory_query_tests.cpp)
+    target_include_directories(nks-memory-query-tests SYSTEM PRIVATE third_party/phnt/include)
+    target_compile_definitions(nks-memory-query-tests PRIVATE PHNT_VERSION=117)
+    target_compile_options(nks-memory-query-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    target_link_libraries(nks-memory-query-tests PRIVATE nks_native)
+    add_test(NAME memory-statistics COMMAND nks-memory-query-tests)
     add_executable(nks-icon-worker-tests tests/icon_worker_tests.cpp)
     target_link_libraries(nks-icon-worker-tests PRIVATE advapi32)
     target_compile_options(nks-icon-worker-tests PRIVATE /W4 /WX /utf-8 /permissive-)

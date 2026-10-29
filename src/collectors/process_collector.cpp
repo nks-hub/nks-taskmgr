@@ -5,6 +5,7 @@
 #include "process_parser.hpp"
 #include "process_query.h"
 #include "processor_query.hpp"
+#include "memory_query.hpp"
 #include "boot_identity.hpp"
 
 #include <stdexcept>
@@ -99,13 +100,7 @@ ProcessSnapshot ProcessCollector::collect()
     result.systemUser100ns = times.user100ns;
     result.processors = times.processors;
 
-    PERFORMANCE_INFORMATION memory{sizeof(PERFORMANCE_INFORMATION)};
-    if (GetPerformanceInfo(&memory, sizeof(memory))) {
-        const auto page = static_cast<std::uint64_t>(memory.PageSize);
-        result.memory = {memory.PhysicalTotal * page, memory.PhysicalAvailable * page, memory.CommitTotal * page,
-            memory.CommitLimit * page, memory.SystemCache * page, memory.KernelPaged * page,
-            memory.KernelNonpaged * page, SampleState::valid};
-    }
+    result.memory = querySystemMemory(queryProcesses);
     if (EnumPageFilesW(pageFiles, &result.memory)) result.memory.pageFileState = SampleState::valid;
     static const auto installed = [] { ULONGLONG kilobytes = 0; GetPhysicallyInstalledSystemMemory(&kilobytes); return kilobytes * 1024; }();
     result.memory.installedBytes = installed;
