@@ -1,4 +1,5 @@
 #pragma once
+#include "hardware.hpp"
 
 #include <chrono>
 #include <cstdint>
@@ -76,6 +77,7 @@ struct LogicalProcessor {
 };
 
 struct ProcessSnapshot {
+    std::vector<HardwareFact> memoryFacts, cpuFacts, boardFacts;
     std::chrono::steady_clock::time_point measuredAt;
     std::chrono::system_clock::time_point wallTime;
     std::chrono::nanoseconds collectionTime{};

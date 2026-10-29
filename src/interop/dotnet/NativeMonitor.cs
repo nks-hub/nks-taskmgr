@@ -129,6 +129,12 @@ public unsafe struct GpuData
     public uint GpuCount, Reserved;
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct HardwareFactInfo { public String16 ResourceId, Name, Value; }
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public unsafe struct HardwareData { public HardwareFactInfo* Facts; public uint FactCount, Reserved; }
+
 public sealed class NativeMonitorException(NativeResult result) : Exception($"Native monitor returned {result}.")
 {
     public NativeResult Result { get; } = result;
@@ -197,6 +203,15 @@ public sealed class NativeFrame : SafeHandleZeroOrMinusOneIsInvalid
         });
     }
 
+    public unsafe void ReadHardware(Action<HardwareData> visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+        Use(pointer => {
+            NativeMonitor.Check(NativeMethods.GetHardwareData(pointer, (uint)sizeof(HardwareData), out var data));
+            visitor(data);
+        });
+    }
+
     private void Use(Action<nint> action)
     {
         bool added = false;
@@ -229,6 +244,8 @@ internal static partial class NativeMethods
     internal static partial NativeResult GetView(nint frame, uint viewSize, out FrameView view);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_gpu_data")]
     internal static partial NativeResult GetGpuData(nint frame, uint dataSize, out GpuData data);
+    [LibraryImport(Library, EntryPoint = "nks_frame_get_hardware_data")]
+    internal static partial NativeResult GetHardwareData(nint frame, uint dataSize, out HardwareData data);
     [LibraryImport(Library, EntryPoint = "nks_frame_retain")]
     internal static partial void Retain(nint frame);
     [LibraryImport(Library, EntryPoint = "nks_frame_release")]

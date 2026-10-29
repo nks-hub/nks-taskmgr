@@ -15,6 +15,7 @@ struct GpuEngine {
 };
 
 struct ResourceRecord {
+    std::vector<HardwareFact> facts;
     std::wstring id;
     ResourceKind kind{};
     std::wstring title;
@@ -30,6 +31,7 @@ struct ResourceRecord {
 };
 
 struct ResourceSnapshot {
+    std::vector<HardwareFact> upsFacts;
     std::chrono::steady_clock::time_point measuredAt;
     std::vector<ResourceRecord> devices;
     bool diskCountersAvailable{};

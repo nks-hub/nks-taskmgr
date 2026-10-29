@@ -171,6 +171,8 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
         network.capacity = static_cast<double>(std::max(row.TransmitLinkSpeed, row.ReceiveLinkSpeed));
         const bool connected = row.OperStatus == IfOperStatusUp;
         network.status = connected ? L"Připojeno" : L"Odpojeno";
+        network.facts = {{L"Rychlost linky ↓", hardwareRate(row.ReceiveLinkSpeed)}, {L"Rychlost linky ↑", hardwareRate(row.TransmitLinkSpeed)},
+            {L"MTU", std::to_wstring(row.Mtu) + L" B"}, {L"Připojení", row.Type == IF_TYPE_IEEE80211 ? L"Wi-Fi" : row.Type == IF_TYPE_ETHERNET_CSMACD ? L"Ethernet" : L"Jiné"}};
         network.primary = {0, connected ? SampleState::first : SampleState::unavailable, MetricSource::networkInterface};
         network.secondary = network.primary;
         const auto before = previousNetworks.find(row.InterfaceLuid.Value);
@@ -193,6 +195,8 @@ ResourceSnapshot ResourceCollector::collect()
         inventory();
     const auto collected = counters.collect();
     ResourceSnapshot result;
+    if (now - upsAt >= std::chrono::seconds(5)) { upsFacts = upsHardware(); upsAt = now; }
+    result.upsFacts = upsFacts;
     result.measuredAt = std::chrono::steady_clock::now();
     result.diskCountersAvailable = counters.available(0);
     result.gpuCountersAvailable = counters.available(3);

@@ -72,6 +72,8 @@ ProcessSnapshot ProcessCollector::collect()
         throw std::runtime_error("NtQuerySystemInformation process query failed: " + std::to_string(static_cast<unsigned long>(status)));
 
     ProcessSnapshot result;
+    static const auto memoryFacts = memoryHardware(), cpuFacts = processorHardware(), boardFacts = boardHardware();
+    result.memoryFacts = memoryFacts; result.cpuFacts = cpuFacts; result.boardFacts = boardFacts;
     result.measuredAt = std::chrono::steady_clock::now();
     result.wallTime = std::chrono::system_clock::now();
     result.logicalProcessors = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);

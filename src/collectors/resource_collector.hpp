@@ -23,6 +23,8 @@ private:
     std::map<std::wstring, LUID> gpuLuidValues;
     std::map<std::uint64_t, NetworkBefore> previousNetworks;
     std::vector<ResourceRecord> lastNetworks;
+    std::vector<HardwareFact> upsFacts;
+    std::chrono::steady_clock::time_point upsAt{};
     std::chrono::steady_clock::time_point inventoryAt{};
     std::chrono::steady_clock::time_point telemetryAt{};
     bool disksFresh{}, gpusFresh{};

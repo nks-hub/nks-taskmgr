@@ -24,6 +24,9 @@ add_library(nks_native STATIC
     src/collectors/processor_query.cpp
     src/core/process_sampler.cpp
     src/core/resource.cpp
+    src/core/hardware.cpp
+    src/collectors/hardware_windows.cpp
+    src/collectors/ups_hardware.cpp
     src/core/monitor.cpp
     src/core/service.cpp
     src/core/service_monitor.cpp
@@ -52,12 +55,16 @@ add_executable(nks-resource-sample src/app/resource_sample.cpp)
 target_link_libraries(nks-resource-sample PRIVATE nks_native)
 target_compile_options(nks-resource-sample PRIVATE /W4 /WX /utf-8 /permissive-)
 
-add_executable(nks-taskmgr WIN32 src/app/desktop_main.cpp src/ui/desktop.cpp src/ui/desktop_paint.cpp src/ui/control_paint.cpp src/ui/performance_paint.cpp src/ui/process_paint.cpp src/ui/process_table.cpp src/ui/service_table.cpp src/ui/service_view.cpp src/ui/service_paint.cpp)
+add_executable(nks-taskmgr WIN32 src/app/desktop_main.cpp src/app/app.rc src/ui/desktop.cpp src/ui/desktop_paint.cpp src/ui/control_paint.cpp src/ui/performance_paint.cpp src/ui/process_paint.cpp src/ui/process_table.cpp src/ui/service_table.cpp src/ui/service_view.cpp src/ui/service_paint.cpp)
 target_link_libraries(nks-taskmgr PRIVATE nks_native d2d1 dwrite dwmapi comctl32 uxtheme)
 target_compile_options(nks-taskmgr PRIVATE /W4 /WX /utf-8 /permissive-)
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(nks-hardware-tests tests/hardware_tests.cpp)
+    target_link_libraries(nks-hardware-tests PRIVATE nks_native)
+    target_compile_options(nks-hardware-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    add_test(NAME hardware COMMAND nks-hardware-tests)
     add_executable(nks-core-tests tests/core_tests.cpp)
     target_include_directories(nks-core-tests SYSTEM PRIVATE third_party/phnt/include)
     target_compile_definitions(nks-core-tests PRIVATE PHNT_VERSION=117)

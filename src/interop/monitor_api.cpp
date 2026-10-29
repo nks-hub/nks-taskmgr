@@ -19,6 +19,7 @@ struct NksFrame {
     std::vector<NksResource> resources;
     std::vector<NksGpu> gpus;
     std::vector<std::vector<NksGpuEngine>> gpuEngines;
+    std::vector<NksHardwareFact> hardware;
     NksFrameView view{};
     void build();
 };
@@ -51,6 +52,7 @@ static_assert(sizeof(NksProcess) == 152 && sizeof(NksProcessor) == 48);
 static_assert(sizeof(NksMemory) == 96 && sizeof(NksProcessData) == 208);
 static_assert(sizeof(NksResource) == 128 && sizeof(NksResourceData) == 32 && sizeof(NksFrameView) == 288);
 static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGpuData) == 16);
+static_assert(sizeof(NksHardwareFact) == 48 && sizeof(NksHardwareData) == 16);
 static_assert(static_cast<unsigned>(nks::SampleState::valid) == NKS_SAMPLE_VALID && static_cast<unsigned>(nks::SampleState::gap) == NKS_SAMPLE_GAP);
 static_assert(static_cast<unsigned>(nks::GenerationKind::creationTime) == NKS_GENERATION_CREATION_TIME && static_cast<unsigned>(nks::GenerationKind::sequenceNumber) == NKS_GENERATION_SEQUENCE_NUMBER);
 static_assert(static_cast<unsigned>(nks::ResourceKind::cpu) == NKS_RESOURCE_CPU && static_cast<unsigned>(nks::ResourceKind::network) == NKS_RESOURCE_NETWORK);
@@ -58,6 +60,10 @@ static_assert(static_cast<unsigned>(nks::MetricSource::nativeProcess) == NKS_SOU
 
 void NksFrame::build()
 {
+    const auto facts = [&](const std::wstring& id, const std::vector<nks::HardwareFact>& values) {
+        for (const auto& fact : values) hardware.push_back({string(id), string(fact.name), string(fact.value)});
+    };
+    static const std::wstring memoryId = L"memory", cpuId = L"cpu", boardId = L"board", upsId = L"ups";
     view.abi_version = NKS_MONITOR_ABI_VERSION;
     view.read_at_ns = nks_monotonic_now_ns();
     view.process_error = string(processError);
@@ -67,6 +73,7 @@ void NksFrame::build()
     view.processes.memory.state = view.processes.memory.page_file_state = NKS_SAMPLE_UNAVAILABLE;
     if (processSnapshot) {
         const auto& source = *processSnapshot;
+        facts(memoryId, source.memoryFacts); facts(cpuId, source.cpuFacts); facts(boardId, source.boardFacts);
         processes.reserve(source.processes.size());
         for (const auto& item : source.processes) {
             const auto& c = item.counters;
@@ -88,9 +95,11 @@ void NksFrame::build()
     }
     if (resourceSnapshot) {
         const auto& source = *resourceSnapshot;
+        facts(upsId, source.upsFacts);
         resources.reserve(source.devices.size());
         gpuEngines.reserve(source.devices.size());
         for (const auto& item : source.devices) {
+            facts(item.id, item.facts);
             resources.push_back({static_cast<uint32_t>(item.kind), 0, string(item.id), string(item.title), string(item.description), string(item.status),
                 metric(item.primary), metric(item.secondary), metric(item.tertiary), item.capacity});
             if (item.kind == nks::ResourceKind::gpu) {
@@ -173,6 +182,13 @@ NksResult __cdecl nks_frame_get_gpu_data(const NksFrame* frame, uint32_t size, N
     if (!frame || !result) return NKS_INVALID_ARGUMENT;
     if (size != sizeof(NksGpuData)) return NKS_ABI_MISMATCH;
     *result = {frame->gpus.data(), count(frame->gpus.size()), 0};
+    return NKS_OK;
+}
+NksResult __cdecl nks_frame_get_hardware_data(const NksFrame* frame, uint32_t size, NksHardwareData* result) noexcept
+{
+    if (!frame || !result) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksHardwareData)) return NKS_ABI_MISMATCH;
+    *result = {frame->hardware.data(), count(frame->hardware.size()), 0};
     return NKS_OK;
 }
 void __cdecl nks_frame_release(NksFrame* frame) noexcept

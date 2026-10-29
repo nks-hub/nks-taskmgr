@@ -36,7 +36,9 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
     type.lpfnWndProc = procedure;
     type.lpszClassName = L"NksTaskManagerDesktop";
     type.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    type.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    type.hIcon = LoadIconW(instance, MAKEINTRESOURCEW(101));
+    type.hIconSm = static_cast<HICON>(LoadImageW(instance, MAKEINTRESOURCEW(101), IMAGE_ICON,
+        GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_SHARED));
     const auto stroke = D2D1::StrokeStyleProperties(D2D1_CAP_STYLE_ROUND, D2D1_CAP_STYLE_ROUND,
         D2D1_CAP_STYLE_ROUND, D2D1_LINE_JOIN_ROUND);
     factory->CreateStrokeStyle(stroke, nullptr, 0, &roundedStroke);

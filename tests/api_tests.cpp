@@ -76,6 +76,11 @@ void verify()
         require(resource.kind <= NKS_RESOURCE_NETWORK && resource.id.length && resource.id.data, "ABI device identity was lost");
     }
     monitor.reset();
+    NksHardwareData hardware{};
+    require(nks_frame_get_hardware_data(nullptr, sizeof(hardware), &hardware) == NKS_INVALID_ARGUMENT, "Null hardware frame was accepted");
+    require(nks_frame_get_hardware_data(processFrame.get(), sizeof(hardware) - 1, &hardware) == NKS_ABI_MISMATCH, "Wrong hardware layout was accepted");
+    require(nks_frame_get_hardware_data(processFrame.get(), sizeof(hardware), &hardware) == NKS_OK && hardware.fact_count > 0, "Hardware data depended on the destroyed monitor");
+    for (uint32_t i = 0; i < hardware.fact_count; ++i) require(hardware.facts[i].resource_id.length && hardware.facts[i].name.length && hardware.facts[i].value.length, "Hardware strings were invalidated");
     NksGpuData gpuData{};
     require(nks_frame_get_gpu_data(nullptr, sizeof(gpuData), &gpuData) == NKS_INVALID_ARGUMENT, "Null GPU frame was accepted");
     require(nks_frame_get_gpu_data(resourceFrame.get(), sizeof(gpuData) - 1, &gpuData) == NKS_ABI_MISMATCH, "Wrong GPU layout was accepted");

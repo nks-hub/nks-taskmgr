@@ -138,6 +138,15 @@ typedef struct NksGpuData {
     const NksGpu* gpus;
     uint32_t gpu_count, reserved;
 } NksGpuData;
+
+typedef struct NksHardwareFact {
+    NksString16 resource_id, name, value;
+} NksHardwareFact;
+
+typedef struct NksHardwareData {
+    const NksHardwareFact* facts;
+    uint32_t fact_count, reserved;
+} NksHardwareData;
 #pragma pack(pop)
 
 // String lengths count UTF-16 code units. Arrays and strings live until the final frame release.
@@ -149,6 +158,7 @@ NKS_MONITOR_API NksResult __cdecl nks_monitor_set_interval(NksMonitor* monitor, 
 NKS_MONITOR_API NksResult __cdecl nks_monitor_read(NksMonitor* monitor, NksFrame** result) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_view(const NksFrame* frame, uint32_t view_size, NksFrameView* result) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_gpu_data(const NksFrame* frame, uint32_t data_size, NksGpuData* result) NKS_NOEXCEPT;
+NKS_MONITOR_API NksResult __cdecl nks_frame_get_hardware_data(const NksFrame* frame, uint32_t data_size, NksHardwareData* result) NKS_NOEXCEPT;
 NKS_MONITOR_API void __cdecl nks_frame_retain(NksFrame* frame) NKS_NOEXCEPT;
 NKS_MONITOR_API void __cdecl nks_frame_release(NksFrame* frame) NKS_NOEXCEPT;
 // measured_at_ns and read_at_ns use this clock; wall_time_unix_ns uses the Unix epoch.
