@@ -32,6 +32,7 @@ public static class NksDesktopBench {
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr window);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
     [DllImport("user32.dll")] public static extern IntPtr SendMessageW(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
     [DllImport("user32.dll")] public static extern bool PostMessageW(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
     [DllImport("user32.dll")] public static extern IntPtr GetDlgItem(IntPtr window, int id);
@@ -58,6 +59,14 @@ try {
     $displayState = [NksDesktopBench]::DisplayState()
     if ($displayState -ne 1 -and $displayState -ne 2) { throw 'Wake the display before measuring UI rendering.' }
     [NksDesktopBench]::SetForegroundWindow($window) | Out-Null
+    if ($Candidate -eq 'WinUI') {
+        Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,WindowsBase
+        $root = [Windows.Automation.AutomationElement]::FromHandle($window)
+        $name = if ($View -eq 'Processes') { 'Procesy' } elseif ($View -eq 'Services') { 'Služby' } else { 'Výkon' }
+        $navigation = $root.FindFirst([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $name))
+        if (-not $navigation) { throw 'The measurement view could not obtain keyboard focus.' }
+        $navigation.SetFocus()
+    }
     if ($Candidate -eq 'Win32' -and $View -eq 'Processes') { [NksDesktopBench]::SendMessageW($window, 0x111, [IntPtr]1, [IntPtr]::Zero) | Out-Null; Start-Sleep -Seconds 2 }
     if ($Candidate -eq 'Win32' -and $View -eq 'Services') {
         [NksDesktopBench]::SendMessageW($window, 0x111, [IntPtr]7, [IntPtr]::Zero) | Out-Null
@@ -112,7 +121,11 @@ try {
             Start-Sleep -Milliseconds 250
             $app.Refresh()
             if ($app.HasExited) { throw 'Desktop application exited during measurement.' }
-            if ($phase -eq 'visible' -and [NksDesktopBench]::GetForegroundWindow() -ne $window) { throw 'The measured window lost foreground.' }
+            if ($phase -eq 'visible') {
+                [uint32]$foregroundPid = 0
+                [void][NksDesktopBench]::GetWindowThreadProcessId([NksDesktopBench]::GetForegroundWindow(), [ref]$foregroundPid)
+                if ($foregroundPid -ne $app.Id) { throw "The measured application lost foreground to process $foregroundPid." }
+            }
             $privatePeak = [Math]::Max($privatePeak, $app.PrivateMemorySize64)
             $workingPeak = [Math]::Max($workingPeak, $app.WorkingSet64)
             $handlesPeak = [Math]::Max($handlesPeak, $app.HandleCount)
