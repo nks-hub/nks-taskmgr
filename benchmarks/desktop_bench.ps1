@@ -136,7 +136,10 @@ try {
             if ($phase -eq 'visible') {
                 [uint32]$foregroundPid = 0
                 [void][NksDesktopBench]::GetWindowThreadProcessId([NksDesktopBench]::GetForegroundWindow(), [ref]$foregroundPid)
-                if ($foregroundPid -ne $app.Id) { throw "The measured application lost foreground to process $foregroundPid." }
+                if ($foregroundPid -ne $app.Id) {
+                    $foregroundName = (Get-Process -Id $foregroundPid -ErrorAction SilentlyContinue).ProcessName
+                    throw "The measured application lost foreground to process $foregroundPid ($foregroundName) after $([Math]::Round($watch.Elapsed.TotalSeconds, 2)) seconds."
+                }
             }
             $privatePeak = [Math]::Max($privatePeak, $app.PrivateMemorySize64)
             $workingPeak = [Math]::Max($workingPeak, $app.WorkingSet64)
