@@ -212,6 +212,7 @@ void Desktop::paint(HDC destination)
     if (performance) paintPerformance(width, height); else paintProcesses(width, height);
     auto status = paused.load() ? L"Pozastaveno" : processes ? L"Živá data" : L"Načítám procesy";
     std::wstring footer = status;
+    if (!performance && width <= 780 && table.holding()) footer += L" · pořadí přidrženo pod kurzorem";
     if (processes) footer += L"  ·  " + std::to_wstring(processes->processes.size()) + L" procesů  ·  stáří "
         + decimal(std::chrono::duration<double>(std::chrono::steady_clock::now() - processes->measuredAt).count(), L" s");
     if (!processError.empty()) footer = L"Sběr procesů selhal: " + processError;

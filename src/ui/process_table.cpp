@@ -98,20 +98,71 @@ void ProcessTable::resizeColumns()
 
 void ProcessTable::setMode(ProcessMode value)
 {
+    setHeld(false);
     displayMode = value;
     update(snapshot);
 }
 
+void ProcessTable::setHeld(bool value)
+{
+    if (held == value) return;
+    if (value) {
+        heldRows.reserve(rows.size());
+        for (auto index : rows) heldRows.push_back(snapshot->processes[index]);
+        endedRows.assign(rows.size(), false);
+        held = true;
+    } else {
+        held = false;
+        update(snapshot);
+    }
+}
+
+void ProcessTable::setVisible(bool value)
+{
+    if (!value && (GetWindowLongPtrW(window, GWL_STYLE) & WS_VISIBLE)) {
+        topAnchorIndex = ListView_GetTopIndex(window);
+        topAnchor.reset();
+        if (topAnchorIndex > 0) if (const auto* item = record(topAnchorIndex)) topAnchor = item->identity;
+    }
+    ShowWindow(window, value ? SW_SHOWNA : SW_HIDE);
+    if (value) restoreScroll();
+}
+
+void ProcessTable::restoreScroll()
+{
+    if (!topAnchor || !(GetWindowLongPtrW(window, GWL_STYLE) & WS_VISIBLE)) return;
+    auto index = std::min(topAnchorIndex, std::max(0, static_cast<int>(rows.size()) - 1));
+    for (std::size_t i = 0; i < rows.size(); ++i)
+        if (const auto* item = record(i); item && item->identity == *topAnchor) { index = static_cast<int>(i); break; }
+    RECT bounds{};
+    if (ListView_GetItemRect(window, index, &bounds, LVIR_BOUNDS))
+        ListView_Scroll(window, 0, (index - ListView_GetTopIndex(window)) * (bounds.bottom - bounds.top));
+    topAnchor.reset();
+}
+
 void ProcessTable::update(std::shared_ptr<const ProcessSnapshot> value)
 {
+    if (held) {
+        snapshot = std::move(value);
+        std::unordered_map<std::uint32_t, const ProcessRecord*> current;
+        if (snapshot) for (const auto& process : snapshot->processes) current.emplace(process.identity.pid, &process);
+        for (std::size_t i = 0; i < heldRows.size(); ++i) {
+            const auto found = current.find(heldRows[i].identity.pid);
+            endedRows[i] = found == current.end() || found->second->identity != heldRows[i].identity;
+            if (!endedRows[i]) heldRows[i] = *found->second;
+        }
+        InvalidateRect(window, nullptr, FALSE);
+        return;
+    }
     std::vector<ProcessIdentity> selectedIds;
     for (int i = ListView_GetNextItem(window, -1, LVNI_SELECTED); i >= 0; i = ListView_GetNextItem(window, i, LVNI_SELECTED))
-        if (snapshot && static_cast<std::size_t>(i) < rows.size()) selectedIds.push_back(snapshot->processes[rows[i]].identity);
-    std::optional<ProcessIdentity> topId, focusId;
+        if (const auto* item = record(i); item && !ended(i)) selectedIds.push_back(item->identity);
+    std::optional<ProcessIdentity> focusId;
     const int top = ListView_GetTopIndex(window);
     const int focus = ListView_GetNextItem(window, -1, LVNI_FOCUSED);
-    if (snapshot && top >= 0 && static_cast<std::size_t>(top) < rows.size()) topId = snapshot->processes[rows[top]].identity;
-    if (snapshot && focus >= 0 && static_cast<std::size_t>(focus) < rows.size()) focusId = snapshot->processes[rows[focus]].identity;
+    if (!topAnchor && top > 0) if (const auto* item = record(top)) { topAnchor = item->identity; topAnchorIndex = top; }
+    if (focus >= 0) if (const auto* item = record(focus)) focusId = item->identity;
+    heldRows.clear(); endedRows.clear();
     snapshot = std::move(value);
     rebuild();
     resizeColumns();
@@ -122,17 +173,12 @@ void ProcessTable::update(std::shared_ptr<const ProcessSnapshot> value)
             ListView_SetItemState(window, static_cast<int>(i), LVIS_SELECTED, LVIS_SELECTED);
         if (focusId && id == *focusId)
             ListView_SetItemState(window, static_cast<int>(i), LVIS_FOCUSED, LVIS_FOCUSED);
-        if (topId && id == *topId) {
-            const auto currentTop = ListView_GetTopIndex(window);
-            RECT rect{};
-            if (ListView_GetItemRect(window, static_cast<int>(i), &rect, LVIR_BOUNDS))
-                ListView_Scroll(window, 0, (static_cast<int>(i) - currentTop) * (rect.bottom - rect.top));
-        }
     }
+    restoreScroll();
     InvalidateRect(window, nullptr, FALSE);
 }
 
-void ProcessTable::filter(std::wstring text) { search = std::move(text); update(snapshot); }
+void ProcessTable::filter(std::wstring text) { setHeld(false); search = std::move(text); update(snapshot); }
 
 void ProcessTable::rebuild()
 {
@@ -217,6 +263,7 @@ void ProcessTable::buildTree()
 
 const ProcessRecord* ProcessTable::record(std::size_t row) const
 {
+    if (!heldRows.empty()) return row < heldRows.size() ? &heldRows[row] : nullptr;
     return snapshot && row < rows.size() ? &snapshot->processes[rows[row]] : nullptr;
 }
 
@@ -231,6 +278,9 @@ void ProcessTable::toggle(std::size_t row)
     const auto* item = record(row);
     if (displayMode != ProcessMode::tree || !item || !hasChildren(row)) return;
     const auto identity = item->identity;
+    if (ended(row)) return;
+    setHeld(false);
+    if (!snapshot || std::none_of(snapshot->processes.begin(), snapshot->processes.end(), [&](const auto& process) { return process.identity == identity; })) return;
     const auto found = std::find(collapsed.begin(), collapsed.end(), identity);
     if (found == collapsed.end()) collapsed.push_back(identity); else collapsed.erase(found);
     update(snapshot);
@@ -244,9 +294,11 @@ std::wstring ProcessTable::sortDescription() const
 
 std::wstring ProcessTable::cell(std::size_t row, int column) const
 {
-    if (!snapshot || row >= rows.size()) return {};
+    const auto* item = record(row);
+    if (!item) return {};
+    if (ended(row) && column > 1) return L"Ukončeno";
     if (stale && column > 1) return L"Zastaralé";
-    const auto& process = snapshot->processes[rows[row]];
+    const auto& process = *item;
     switch (column) {
     case 0: return process.name;
     case 1: return std::to_wstring(process.identity.pid);
@@ -273,6 +325,7 @@ LRESULT ProcessTable::notify(NMHDR* notification)
             wcsncpy_s(item.pszText, item.cchTextMax, text.c_str(), _TRUNCATE);
         }
     } else if (notification->code == LVN_COLUMNCLICK) {
+        setHeld(false);
         const auto column = reinterpret_cast<NMLISTVIEW*>(notification)->iSubItem;
         descending = column == sortColumn ? !descending : column > 0;
         sortColumn = column;
@@ -297,14 +350,20 @@ LRESULT ProcessTable::notify(NMHDR* notification)
 const ProcessRecord* ProcessTable::selected() const
 {
     const auto row = ListView_GetNextItem(window, -1, LVNI_SELECTED);
-    return !snapshot || row < 0 || static_cast<std::size_t>(row) >= rows.size() ? nullptr : &snapshot->processes[rows[row]];
+    return row < 0 || ended(row) ? nullptr : record(row);
+}
+
+bool ProcessTable::selectionEnded() const
+{
+    const auto row = ListView_GetNextItem(window, -1, LVNI_SELECTED);
+    return row >= 0 && ended(row);
 }
 
 void ProcessTable::select(const ProcessIdentity& identity)
 {
     if (!snapshot) return;
     for (std::size_t i = 0; i < rows.size(); ++i)
-        if (snapshot->processes[rows[i]].identity == identity) {
+        if (const auto* item = record(i); item && !ended(i) && item->identity == identity) {
             ListView_SetItemState(window, -1, 0, LVIS_SELECTED | LVIS_FOCUSED);
             ListView_SetItemState(window, static_cast<int>(i), LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
             ListView_EnsureVisible(window, static_cast<int>(i), FALSE);

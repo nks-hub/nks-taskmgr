@@ -41,12 +41,13 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [x] F06 Review UI: opravit dvojí vlastnictví seznamu obrázků, vyhodnocovat stáří i bez nových vzorků, kontrolovat vytvoření štětce a nezobrazovat neplatnou paměť jako nulu.
 - [ ] F07 Izolace sběru: získání diskového čísla používá synchronní systémový dotaz v odděleném vlákně; v T12 doplnit pracovní proces pro možnost ukončit zaseknutého poskytovatele i při zavírání aplikace.
 - [ ] F08 Sítě: přidat přepínač pro virtuální rozhraní; nyní jsou vidět všechny fyzické adaptéry včetně odpojených.
-- [ ] F09 Výkon: revize 6c81228 za 60 s zobrazení a 60 s minimalizace naměřila 0,165 % a 0,069 % CPU celého PC, soukromá paměť nejvýše 75,7 MiB; ověřit také předepsaných 500 procesů a dlouhý běh v T44.
+- [ ] F09 Výkon: revize 6ac1f11 za 60 s zobrazení a 60 s minimalizace naměřila Procesy 0,137/0,084 % a Výkon 0,163/0,084 % CPU celého PC, soukromá paměť nejvýše 68,1 MiB; ověřit také předepsaných 500 procesů a dlouhý běh v T44.
 - [x] F10 GPU: PDH vrací hexadecimální písmena LUID jinou velikostí než DXGI; porovnání už velikost písmen ignoruje a test zahrnuje A–F. Živý test nyní načítá obě GPU.
 - [x] F11 CPU: reset jednoho logického CPU nyní zneplatní také souhrn, i když ho růst ostatních čítačů skryje; regrese ověřuje i návrat k platnému měření.
 - [x] F12 Historie: odstranit původní dokumenty, designové podklady a RE ze všech lokálních commitů. Odstraněno 19 cest; kontrola všech větví našla 0 zakázaných cest, aktuální strom zůstal totožný a záloha je mimo repo.
 - [ ] F13 UI: uživatel odmítl dosavadní vzhled; dokončit pixelové porovnání fontů, ikon, rozměrů a mezer s HTML. Ověřený sběr a funkční grafy nejsou přijetí vzhledu.
-- [ ] F14 UI: při průběžném řazení podle CPU ještě doplnit ochranu před přesunem řádku pod kurzorem; zachování identity výběru samo nesplňuje celou podmínku T15.
+- [x] F14 UI: pod kurzorem se drží pořadí i identity řádků, živé hodnoty se obnovují; nové položky se doplní po opuštění seznamu a skončený proces zůstává označený bez živého výběru. Ověřeno testy i skutečným pohybem myši.
+- [x] F15 Review: skrytý ListView vrací úspěch LVM_SCROLL bez posunutí; identita horního řádku se nyní uchovává přes aktualizace v jiném pohledu a obnoví se po zobrazení. První řádek se při živém řazení neukotvuje ke starému procesu.
 
 ## Průběžné ověření
 
@@ -62,6 +63,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - Vykreslení celého DC odstranilo světlé stopy na hranách karet; Common Controls v6 a motiv posuvníku odstranily bílý pruh v seznamu prostředků. Ověřeno za běhu, pixelovým porovnáním a testem nativního okna.
 - Procesy mají přehled prostředků, vlastní řádky po 52 DIP, ukazatele CPU a paměti, hledání v záhlaví, filtry Všechny/Aktivní/Strom a panel výběru; společné vykreslování přes DC řeší výpadek hlavní plochy při kombinaci s nativní tabulkou.
 - Pět místních testů prošlo; 20 kontrol tabulky zahrnuje generace rodičů, záměnu PID, cyklus, sbalení větve, diakritiku, výběr přes obnovu a přesunutý sloupec. Živě ověřené filtry zachovaly počet procesů ve stromu a vybraly vlastní PID.
+- Tabulka má nyní 34 kontrol včetně živých hodnot při přidrženém pořadí, skončeného řádku, odmítnutí nové generace stejného PID a návratu k posunu po dvou skrytých obnovách; všech pět testů i test nativního okna prošlo.
 - Release, čtyři testy sběru a výpočtů a test nativního okna prošly; při čtyřech velikostech od 720 × 500 do 1440 × 920 jsou karty procesů dosažitelné posunem a ovládání nepřekrývá záhlaví ani patičku. Skutečné 150/200% DPI zbývá ověřit.
 - Historie má nejvýše 512 řad po 2 401 bodech včetně logických CPU; samotné bodové buffery zůstávají pod 64 MiB. Rozsah lze přepnout mezi 60 s a 10 min; nejde o záruku uchování celé délky při každém intervalu.
 

@@ -56,6 +56,8 @@ Switch between Processes and Performance using the left navigation. Performance 
 
 Processes provides All, Active, and Tree views. Search accepts process names and PIDs, including case-insensitive Unicode names. Click a column heading to sort, drag headings to reorder columns, and use Ctrl or Shift to select multiple rows. Tree branches expand by clicking their arrow or pressing the left and right arrow keys. Overview cards open the corresponding system resource.
 
+While the pointer is over a process row, the table keeps its row order and updates the counters. New processes appear after the pointer leaves. A finished process remains marked until then and cannot become a live selection. Switching to Performance and back preserves the scrolled process position.
+
 The memory page separates physical memory, commit, and pagefile usage. Pagefile usage comes from `EnumPageFilesW`; it is not a measure of paging I/O activity. Network graphs show receive and transmit values in bits per second.
 
 The current UI implements the dark appearance. Services, administrative actions, accessibility acceptance, and the light appearance are not yet implemented. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
@@ -97,6 +99,7 @@ Measure desktop CPU, private memory, working set, handles, and GDI objects:
 
 ```powershell
 pwsh -NoProfile -File benchmarks/desktop_bench.ps1
+pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -View Processes
 ```
 
 This local benchmark opens its own application instance, warms it up for 10 seconds, then measures 60 seconds visible and 60 seconds minimized. Results, including the executable hash, are written to the system temporary directory. CPU is normalized to the whole machine. Acceptance targets and open findings are maintained in TODO.md; these measurements do not replace the planned OS, UI candidate, or 24-hour tests.

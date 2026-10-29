@@ -21,6 +21,11 @@ public:
     void setFont(HFONT font);
     void resizeColumns();
     void setMode(ProcessMode value);
+    void setHeld(bool value);
+    void setVisible(bool value);
+    bool holding() const { return held; }
+    bool ended(std::size_t row) const { return row < endedRows.size() && endedRows[row]; }
+    bool selectionEnded() const;
     ProcessMode mode() const { return displayMode; }
     const ProcessRecord* record(std::size_t row) const;
     unsigned depth(std::size_t row) const { return row < depths.size() ? depths[row] : 0; }
@@ -38,6 +43,7 @@ public:
 private:
     void rebuild();
     void buildTree();
+    void restoreScroll();
     static LRESULT CALLBACK procedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR id, DWORD_PTR data);
     static LRESULT CALLBACK headerProcedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR id, DWORD_PTR data);
     std::wstring cell(std::size_t row, int column) const;
@@ -48,10 +54,15 @@ private:
     std::vector<unsigned> depths;
     std::vector<bool> branches;
     std::vector<ProcessIdentity> collapsed;
+    std::vector<ProcessRecord> heldRows;
+    std::vector<bool> endedRows;
+    std::optional<ProcessIdentity> topAnchor;
+    int topAnchorIndex{};
     std::wstring search;
     int sortColumn{};
     bool descending{};
     bool stale{};
+    bool held{};
     ProcessMode displayMode{ProcessMode::all};
     UINT lastDpi{};
     int sizedClientWidth{};

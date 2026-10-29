@@ -60,6 +60,12 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
             }
         }
         if (event.message == WM_MOUSEMOVE && GetParent(event.hwnd) == window) {
+            if (!performance && event.hwnd == table.handle()) {
+                LVHITTESTINFO hit{}; hit.pt = {GET_X_LPARAM(event.lParam), GET_Y_LPARAM(event.lParam)};
+                const auto held = table.holding();
+                table.setHeld(ListView_HitTest(table.handle(), &hit) >= 0);
+                if (held != table.holding()) InvalidateRect(window, nullptr, FALSE);
+            }
             const auto row = event.hwnd == resourceList ? static_cast<int>(LOWORD(SendMessageW(resourceList, LB_ITEMFROMPOINT, 0, event.lParam))) : -1;
             if (hoveredControl != event.hwnd || hoveredResource != row) {
                 if (hoveredControl) InvalidateRect(hoveredControl, nullptr, FALSE);
@@ -68,6 +74,7 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
                 InvalidateRect(event.hwnd, nullptr, FALSE);
             }
         } else if (event.message == WM_MOUSELEAVE && event.hwnd == hoveredControl) {
+            if (event.hwnd == table.handle()) { table.setHeld(false); InvalidateRect(window, nullptr, FALSE); }
             InvalidateRect(hoveredControl, nullptr, FALSE); hoveredControl = nullptr; hoveredResource = -1;
         }
         if ((event.message == WM_LBUTTONDOWN && focusFromKeyboard) || (event.message == WM_KEYDOWN && !focusFromKeyboard)) {
@@ -200,9 +207,10 @@ void Desktop::startCollection()
 
 void Desktop::changeView(bool value)
 {
+    table.setHeld(false);
     performance = value;
     ShowWindow(resourceList, value ? SW_SHOW : SW_HIDE);
-    ShowWindow(table.handle(), value ? SW_HIDE : SW_SHOW);
+    table.setVisible(!value);
     ShowWindow(search, value ? SW_HIDE : SW_SHOW);
     layout();
     InvalidateRect(window, nullptr, FALSE);

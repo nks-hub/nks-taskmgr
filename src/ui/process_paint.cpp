@@ -44,15 +44,15 @@ void Desktop::paintProcesses(float width, float height)
     fill(rect(page.left, page.toolbarTop, 254, 37), D2D1::ColorF(0x12181c), 7);
     drawBrush->SetColor(line);
     surface->DrawRoundedRectangle(D2D1::RoundedRect(rect(page.left + .5f, page.toolbarTop + .5f, 253, 36), 7, 7), drawBrush, 1);
-    if (!page.compact) text(std::to_wstring(table.count()) + L" položek · podle " + table.sortDescription(),
+    if (!page.compact) text(std::to_wstring(table.count()) + (table.holding() ? L" položek · pořadí přidrženo pod kurzorem" : L" položek · podle " + table.sortDescription()),
         rect(page.left + 280, page.toolbarTop + 12, page.width - 280, 17), 9, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
     card(rect(page.left, page.tableTop, page.width, page.tableHeight + page.dockHeight), 10);
     fill(rect(page.left + 1, page.dockTop, page.width - 2, page.dockHeight - 10), panel);
     fill(rect(page.left, page.dockTop, page.width, 1), line);
     const auto* item = table.selected();
     if (!item) {
-        text(L"Vyberte proces", rect(page.left + 21, page.dockTop + 20, page.width - 42, 24), 14, ink, 600);
-        text(L"Ctrl a Shift vyberou více řádků · kliknutí na záhlaví změní řazení",
+        text(table.selectionEnded() ? L"Vybraný proces již skončil" : L"Vyberte proces", rect(page.left + 21, page.dockTop + 20, page.width - 42, 24), 14, ink, 600);
+        text(table.selectionEnded() ? L"Po opuštění seznamu se ukončený řádek odebere." : L"Ctrl a Shift vyberou více řádků · kliknutí na záhlaví změní řazení",
             rect(page.left + 21, page.dockTop + 49, page.width - 42, 20), 10, muted);
         return;
     }
@@ -181,6 +181,7 @@ LRESULT Desktop::drawProcessRow(const NMLVCUSTOMDRAW& item)
     entry.CtlType = ODT_LISTVIEW; entry.hwndItem = table.handle(); entry.hDC = item.nmcd.hdc; entry.rcItem = bounds;
     const auto state = ListView_GetItemState(table.handle(), row, LVIS_SELECTED | LVIS_FOCUSED);
     const bool selected = (state & LVIS_SELECTED) != 0;
+    const bool ended = table.ended(row);
     if (!beginControl(entry, selected ? D2D1::ColorF(0x28343b) : panel)) return CDRF_DODEFAULT;
     const auto h = controlSize.height, w = controlSize.width;
     if (selected) fill(rect(0, 0, 3, h), amber);
@@ -191,16 +192,17 @@ LRESULT Desktop::drawProcessRow(const NMLVCUSTOMDRAW& item)
         const auto x = (cell.left - bounds.left) / scale, cw = (cell.right - cell.left) / scale;
         if (column == 0) {
             const auto indent = table.mode() == ProcessMode::tree ? static_cast<float>(std::min(12U, table.depth(row))) * 14 : 0;
-            if (table.mode() == ProcessMode::tree && table.hasChildren(row))
+            if (!ended && table.mode() == ProcessMode::tree && table.hasChildren(row))
                 text(table.isCollapsed(row) ? L"›" : L"⌄", rect(x + 13 + indent, 14, 20, 24), 15, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
             processIcon(process->name, x + 40 + indent, 11, 29);
-            text(process->name, rect(x + 80 + indent, 8, cw - 93 - indent, 20), 12, ink, 600);
-            text(L"PID " + std::to_wstring(process->identity.pid) + L"  ·  " + std::to_wstring(process->counters.threads) + L" vláken",
+            text(process->name, rect(x + 80 + indent, 8, cw - 93 - indent, 20), 12, ended ? muted : ink, 600);
+            text(L"PID " + std::to_wstring(process->identity.pid) + (ended ? L"  ·  ukončeno" : L"  ·  " + std::to_wstring(process->counters.threads) + L" vláken"),
                 rect(x + 80 + indent, 30, cw - 93 - indent, 16), 9, muted);
             continue;
         }
         std::wstring value;
         if (column == 1) value = std::to_wstring(process->identity.pid);
+        else if (ended) value = L"Ukončeno";
         else if (processStale) value = L"Zastaralé";
         else if (column == 2) value = process->cpuPercent.valid() ? decimal(process->cpuPercent.value, L" %") : L"—";
         else if (column == 3) value = decimal(process->counters.workingSetBytes / 1048576., L" MiB", 0);
@@ -209,8 +211,8 @@ LRESULT Desktop::drawProcessRow(const NMLVCUSTOMDRAW& item)
             const auto metric = column == 5 ? process->readIoBytesPerSecond : process->writeIoBytesPerSecond;
             value = metric.valid() ? decimal(metric.value / 1048576., L" MiB/s") : L"—";
         }
-        text(value, rect(x + 8, 13, cw - 21, 21), 11, processStale && column > 1 ? muted : ink, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
-        if ((column == 2 || column == 3) && !processStale) {
+        text(value, rect(x + 8, 13, cw - 21, 21), 11, (processStale || ended) && column > 1 ? muted : ink, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
+        if ((column == 2 || column == 3) && !processStale && !ended) {
             const auto color = resourceColor(column == 2 ? ResourceKind::cpu : ResourceKind::memory);
             const auto amount = column == 2 ? process->cpuPercent.valid() ? process->cpuPercent.value / 100 : -1
                 : processes && processes->memory.state == SampleState::valid && processes->memory.physicalBytes
