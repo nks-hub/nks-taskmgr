@@ -13,6 +13,7 @@ public sealed class GpuEngineRow(string id, string name)
 public sealed class GpuModel
 {
     public Dictionary<string, GpuEngineRow> Engines { get; } = [];
+    public int TopologyVersion { get; private set; }
     public double SharedCapacity { get; private set; }
     public Metric Temperature { get; private set; } = new() { State = SampleState.Unavailable, Source = MetricSource.GpuAdapter };
     public HistorySeries Dedicated { get; } = new();
@@ -26,7 +27,9 @@ public sealed class GpuModel
         var seen = new HashSet<string>();
         for (uint i = 0; i < info.EngineCount; ++i) {
             var engine = info.Engines[i]; var id = engine.Id.Copy(); seen.Add(id);
-            if (!Engines.TryGetValue(id, out var row) && Engines.Count < 64) Engines.Add(id, row = new GpuEngineRow(id, engine.Name.Copy()));
+            if (!Engines.TryGetValue(id, out var row) && Engines.Count < 64) {
+                Engines.Add(id, row = new GpuEngineRow(id, engine.Name.Copy())); ++TopologyVersion;
+            }
             row?.History.Append(time, engine.Utilization);
         }
         foreach (var row in Engines.Values)

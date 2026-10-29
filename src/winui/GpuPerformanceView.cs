@@ -12,7 +12,8 @@ public sealed partial class MainWindow
     private readonly List<(StackPanel Tile, ComboBox Choice, ChartView Chart, TextBlock Value)> gpuTiles = [];
     private readonly ChartView gpuDedicated = new() { Height = 72 }, gpuShared = new() { Height = 72 };
     private readonly TextBlock gpuDedicatedLabel = Label("", 10, 0x95a4ad), gpuSharedLabel = Label("", 10, 0x95a4ad);
-    private string gpuLayout = "";
+    private GpuModel? shownGpu;
+    private int shownGpuColumns, shownGpuVersion = -1;
     private bool rebuildingGpu;
 
     private Grid BuildGpu()
@@ -42,12 +43,11 @@ public sealed partial class MainWindow
     private void RefreshGpu(ResourceRow resource, long now)
     {
         var gpu = resource.Gpu!;
-        var engines = gpu.OrderedEngines().ToArray();
-        var defaults = engines.GroupBy(engine => engine.Name).Select(group => group.First()).Take(4).ToArray();
         int columns = root.ActualWidth <= 1000 ? 1 : 2;
-        string layout = resource.Id + ":" + columns + ":" + string.Join('|', engines.Select(engine => engine.Id));
-        if (layout != gpuLayout) {
-            gpuLayout = layout;
+        if (!ReferenceEquals(shownGpu, gpu) || shownGpuColumns != columns || shownGpuVersion != gpu.TopologyVersion) {
+            shownGpu = gpu; shownGpuColumns = columns; shownGpuVersion = gpu.TopologyVersion;
+            var engines = gpu.OrderedEngines().ToArray();
+            var defaults = engines.GroupBy(engine => engine.Name).Select(group => group.First()).Take(4).ToArray();
             rebuildingGpu = true;
             gpuEngines.ColumnDefinitions.Clear(); gpuEngines.RowDefinitions.Clear();
             for (int i = 0; i < columns; ++i) gpuEngines.ColumnDefinitions.Add(new ColumnDefinition());
@@ -93,10 +93,19 @@ public sealed partial class MainWindow
             if (gpuPanel.Visibility != Visibility.Visible || chart.Visibility != Visibility.Collapsed || gpuDedicated.ActualWidth <= 0 || gpuShared.ActualWidth <= 0)
                 throw new InvalidOperationException("GPU graphs did not render within their detail.");
             var gpu = resource.Gpu!;
+            var cells = facts.Children.ToArray();
+            RefreshPerformance();
+            if (!cells.SequenceEqual(facts.Children)) throw new InvalidOperationException("Repeated GPU refresh recreated facts.");
             if (gpu.Engines.Count > 0) {
                 var choice = gpuTiles[0].Choice; choice.SelectedIndex = choice.Items.Count - 1;
                 var id = (string)((ComboBoxItem)choice.SelectedItem).Tag;
                 if (!gpu.Engines.ContainsKey(id) || gpu.Engines[id].History.Count == 0) throw new InvalidOperationException("GPU engine selection lost its history.");
+                var tile = gpuTiles[0]; long time = NativeMonitor.MonotonicNowNs;
+                tile.Chart.Set(gpu.Engines[id].History, null, time, rangeSeconds, 100, 0xcc9bb6);
+                var geometry = ((Canvas)tile.Chart.Children[0]).Children.OfType<Microsoft.UI.Xaml.Shapes.Path>().Select(path => path.Data).ToArray();
+                tile.Chart.Set(gpu.Engines[id].History, null, time + 1_000_000, rangeSeconds, 100, 0xcc9bb6);
+                if (!geometry.SequenceEqual(((Canvas)tile.Chart.Children[0]).Children.OfType<Microsoft.UI.Xaml.Shapes.Path>().Select(path => path.Data)))
+                    throw new InvalidOperationException("GPU refresh without a new sample recreated geometry.");
             }
             App.Trace($"GPU graphs passed: {resource.Description};engines={gpu.Engines.Count};dedicated={resource.Secondary.State};shared={resource.Tertiary.State}");
             var unavailable = new ResourceRow("unavailable-gpu", ResourceKind.Gpu);

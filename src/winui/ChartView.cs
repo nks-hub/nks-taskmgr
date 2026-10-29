@@ -20,6 +20,10 @@ public sealed partial class ChartView : Grid
     private uint color = 0x80c5c0;
     private uint? paintedColor;
     private bool grid = true, filled = true;
+    private readonly record struct ChartState(HistorySeries? Series, HistorySeries? Secondary, long Last, long SecondaryLast,
+        int Seconds, double Width, double Height, double Maximum, uint Color, bool Grid, bool Filled);
+    private ChartState? rendered;
+    private long renderedAt;
 
     public ChartView()
     {
@@ -49,6 +53,9 @@ public sealed partial class ChartView : Grid
     {
         double width = ActualWidth, height = ActualHeight;
         if (width <= 0 || height <= 0) return;
+        var state = new ChartState(series, secondary, series?.LastTime ?? 0, secondary?.LastTime ?? 0, seconds, width, height, maximum, color, grid, filled);
+        if (rendered == state && now >= renderedAt && now - renderedAt < 1_000_000_000) return;
+        rendered = state; renderedAt = now;
         foreach (var line in horizontal) line.Visibility = grid ? Visibility.Visible : Visibility.Collapsed;
         foreach (var line in vertical) line.Visibility = grid ? Visibility.Visible : Visibility.Collapsed;
         if (series is null) { areaPath.Data = linePath.Data = secondaryPath.Data = null; return; }

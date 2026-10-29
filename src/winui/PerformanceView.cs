@@ -10,6 +10,10 @@ public sealed partial class MainWindow
 {
     private readonly Dictionary<(uint, uint), ChartView> coreCharts = [];
     private string coreLayout = string.Empty;
+    private string factsKey = "";
+    private TextBlock? hardwareFact;
+    private readonly Dictionary<string, TextBlock> factValues = [];
+    private readonly Microsoft.UI.Xaml.Media.SolidColorBrush performanceInk = Display.Brush(0xe9eef0), performanceMuted = Display.Brush(0x95a4ad), choiceSelected = Display.Brush(0x28343b), choiceIdle = Display.Brush(0x1d252a);
 
     private void RefreshPerformance()
     {
@@ -24,12 +28,12 @@ public sealed partial class MainWindow
                 ? Display.Number(model.Memory.PhysicalBytes / 1073741824d, " GiB celkem") : resource.Description;
         bool valid = !resource.Stale && resource.Primary.State == SampleState.Valid;
         resourceValue.FontSize = valid ? 42 : 20;
-        resourceValue.Foreground = Display.Brush(0xe9eef0);
+        resourceValue.Foreground = performanceInk;
         resourceValue.Text = valid ? Display.Number(resource.Primary.Value / (resource.Kind == ResourceKind.Memory ? 1073741824d : resource.Kind == ResourceKind.Network ? 1_000_000d : 1), "") : resource.Value;
         resourceUnit.Text = valid ? resource.Kind == ResourceKind.Memory ? "GiB" : resource.Kind == ResourceKind.Network ? "Mbit/s ↓" : "%" : "";
         void SelectChoice(ToggleButton button, bool selected) {
-            button.IsChecked = selected; button.Background = Display.Brush(selected ? 0x28343bu : 0x1d252au);
-            button.Foreground = Display.Brush(selected ? 0xe9eef0u : 0x95a4adu);
+            button.IsChecked = selected; button.Background = selected ? choiceSelected : choiceIdle;
+            button.Foreground = selected ? performanceInk : performanceMuted;
         }
         for (int i = 0; i < rangeButtons.Count; ++i) SelectChoice(rangeButtons[i], rangeSeconds == (i == 0 ? 60 : 600));
         for (int i = 0; i < cpuButtons.Count; ++i) SelectChoice(cpuButtons[i], cpuMode == i);
@@ -43,7 +47,7 @@ public sealed partial class MainWindow
         chart.Visibility = gpu || (cpu && cpuMode > 0) ? Visibility.Collapsed : Visibility.Visible;
         gpuPanel.Visibility = gpu ? Visibility.Visible : Visibility.Collapsed;
         if (gpu) RefreshGpu(resource, now);
-        chart.Set(resource.History, resource.Kind == ResourceKind.Network ? resource.Upload : null, now, rangeSeconds, resource.Maximum(now, rangeSeconds), color);
+        if (chart.Visibility == Visibility.Visible) chart.Set(resource.History, resource.Kind == ResourceKind.Network ? resource.Upload : null, now, rangeSeconds, resource.Maximum(now, rangeSeconds), color);
         if (cpu && cpuMode > 0) RefreshProcessors(now);
         pageFile.Visibility = pageFileTitle.Visibility = memory ? Visibility.Visible : Visibility.Collapsed;
         if (memory) {
@@ -54,15 +58,21 @@ public sealed partial class MainWindow
         }
         double duration = resource.History.Count == 0 ? 0 : Math.Min(rangeSeconds, (resource.History.LastTime - resource.History.FirstTime) / 1_000_000_000d);
         retained.Text = Display.Number(duration, " s uchováno") + " · " + resource.History.Count + " vzorků · okno " + rangeSeconds + " s";
-        facts.Children.Clear(); var factsHeading = Label("SESTAVA", 9, 0x95a4ad); factsHeading.CharacterSpacing = 178; facts.Children.Add(factsHeading);
+        string nextFacts = resource.Id + ":" + (memory ? model.Memory.State.ToString() : "");
+        if (factsKey != nextFacts) {
+            factsKey = nextFacts; facts.Children.Clear(); factValues.Clear(); hardwareFact = null;
+            var factsHeading = Label("SESTAVA", 9, 0x95a4ad); factsHeading.CharacterSpacing = 178; facts.Children.Add(factsHeading);
+        }
         void Fact(string name, string value) {
+            if (factValues.TryGetValue(name, out var existing)) { if (existing.Text != value) existing.Text = value; return; }
             var block = new Grid { ColumnSpacing = 12 };
             block.ColumnDefinitions.Add(new ColumnDefinition()); block.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var caption = Label(name, 10, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; block.Children.Add(caption);
-            var text = Label(value, 10, 0xe9eef0); text.TextAlignment = TextAlignment.Right; Grid.SetColumn(text, 1); block.Children.Add(text); facts.Children.Add(block);
+            var text = Label(value, 10, 0xe9eef0); text.TextAlignment = TextAlignment.Right; Grid.SetColumn(text, 1); block.Children.Add(text); facts.Children.Add(block); factValues.Add(name, text);
         }
         void Hardware(string value) {
-            var name = Label(value, 17, 0xe9eef0); name.TextWrapping = TextWrapping.Wrap; name.Margin = new Thickness(0, 0, 0, 7); facts.Children.Add(name);
+            if (hardwareFact is not null) { if (hardwareFact.Text != value) hardwareFact.Text = value; return; }
+            hardwareFact = Label(value, 17, 0xe9eef0); hardwareFact.TextWrapping = TextWrapping.Wrap; hardwareFact.Margin = new Thickness(0, 0, 0, 7); facts.Children.Add(hardwareFact);
         }
         if (cpu) {
             Hardware(model.CpuModel);

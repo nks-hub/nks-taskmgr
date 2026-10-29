@@ -41,15 +41,16 @@ public sealed class HistorySeries
         if (width <= 0 || height <= 0 || maximum <= 0) return geometry;
         long duration = seconds * 1_000_000_000L, start = now - duration, prior = 0;
         PathFigure? figure = null;
+        PolyLineSegment? line = null;
         Point last = default;
         void Close()
         {
             if (figure is null) return;
             if (fill) {
-                figure.Segments.Add(new LineSegment { Point = new Point(last.X, height) });
+                line!.Points.Add(new Point(last.X, height));
                 figure.IsClosed = true;
             }
-            geometry.Figures.Add(figure); figure = null;
+            geometry.Figures.Add(figure); figure = null; line = null;
         }
         for (int i = 0; i < count; ++i) {
             int slot = (first + i) % Capacity;
@@ -62,8 +63,9 @@ public sealed class HistorySeries
                 height * (1 - Math.Clamp(value.Value / maximum, 0, 1)));
             if (figure is null) {
                 figure = new PathFigure { StartPoint = fill ? new Point(last.X, height) : last, IsFilled = fill };
-                if (fill) figure.Segments.Add(new LineSegment { Point = last });
-            } else figure.Segments.Add(new LineSegment { Point = last });
+                line = new PolyLineSegment(); figure.Segments.Add(line);
+                if (fill) line.Points.Add(last);
+            } else line!.Points.Add(last);
         }
         Close();
         return geometry;
