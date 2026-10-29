@@ -5,9 +5,11 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Windowing;
+using Microsoft.UI.Input;
 using NksTaskMgr.Native;
 using Windows.Graphics;
 using Windows.System;
+using Windows.UI.Core;
 using WinRT;
 using System.Runtime.InteropServices;
 
@@ -127,11 +129,17 @@ public sealed partial class MainWindow : Window
         performanceNav.Click += (_, _) => ShowView(true);
         servicesNav.Click += (_, _) => ShowView(DesktopView.Services);
         hardwareNav.Click += (_, _) => ShowView(DesktopView.Hardware);
-        var find = new KeyboardAccelerator { Key = VirtualKey.F, Modifiers = VirtualKeyModifiers.Control };
-        find.Invoked += (_, args) => { if (view != DesktopView.Services) ShowView(false); search.Focus(FocusState.Keyboard); args.Handled = true; };
-        root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
+        root.PreviewKeyDown += (_, args) => {
+            if (args.Handled || args.Key != VirtualKey.F) return;
+            static bool IsDown(VirtualKey key) => (InputKeyboardSource.GetKeyStateForCurrentThread(key) & CoreVirtualKeyStates.Down) != 0;
+            if (!IsDown(VirtualKey.Control) || IsDown(VirtualKey.Shift) || IsDown(VirtualKey.Menu)
+                || IsDown(VirtualKey.LeftWindows) || IsDown(VirtualKey.RightWindows)) return;
+            if (view is DesktopView.Performance or DesktopView.Hardware) ShowView(false);
+            search.Focus(FocusState.Keyboard);
+            args.Handled = true;
+        };
+        AutomationProperties.SetAcceleratorKey(search, "Ctrl+F");
         ToolTipService.SetToolTip(search, "Hledat (Ctrl+F)");
-        root.KeyboardAccelerators.Add(find);
         root.SizeChanged += (_, _) => Resize();
         timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromMilliseconds(100);
         timer.Tick += (_, _) => Tick(); timer.Start();
