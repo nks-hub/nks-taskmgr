@@ -59,6 +59,7 @@ public sealed partial class MainWindow : Window
     private readonly StackPanel consumers = new() { Spacing = 9 };
     private readonly TextBlock processCount = Label("", 10, 0x95a4ad), selectionTitle = Label("Vyberte proces", 14, 0xe9eef0), selectionFacts = Label("", 10, 0x95a4ad);
     private readonly StackPanel overview = new() { Orientation = Orientation.Horizontal, Spacing = 24 };
+    private readonly Dictionary<ResourceKind, (TextBlock Caption, TextBlock Value)> overviewValues = [];
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer timer;
     private ResourceRow? selectedResource;
     private DesktopView view = DesktopView.Performance;
@@ -400,12 +401,18 @@ public sealed partial class MainWindow : Window
     private void RefreshProcesses()
     {
         processCount.Text = model.VisibleProcesses.Count + (model.Held ? " položek · pořadí přidrženo" : " položek");
-        overview.Children.Clear();
         foreach (var resource in model.Resources.Where(row => row.Kind is ResourceKind.Cpu or ResourceKind.Memory)) {
-            var stack = new StackPanel { Spacing = 8 };
-            stack.Children.Add(Label(resource.Title, 10, 0x95a4ad)); stack.Children.Add(Label(resource.Value, 20, Display.ResourceColor(resource.Kind)));
-            var button = Button(""); button.Content = stack; button.Height = 68; button.MinWidth = 180;
-            button.Click += (_, _) => { resourceList.SelectedItem = resource; ShowView(true); }; overview.Children.Add(button);
+            if (!overviewValues.TryGetValue(resource.Kind, out var value)) {
+                value = (Label(resource.Title, 10, 0x95a4ad), Label(resource.Value, 20, Display.ResourceColor(resource.Kind)));
+                var stack = new StackPanel { Spacing = 8 };
+                stack.Children.Add(value.Caption); stack.Children.Add(value.Value);
+                var button = Button(""); button.Content = stack; button.Height = 68; button.MinWidth = 180;
+                var kind = resource.Kind;
+                AutomationProperties.SetAutomationId(button, kind == ResourceKind.Cpu ? "process-overview-cpu" : "process-overview-memory");
+                button.Click += (_, _) => { resourceList.SelectedItem = model.Resources.FirstOrDefault(row => row.Kind == kind); ShowView(true); };
+                overview.Children.Add(button); overviewValues.Add(kind, value);
+            }
+            value.Caption.Text = resource.Title; value.Value.Text = resource.Value;
         }
         RefreshSelection();
     }
@@ -445,6 +452,10 @@ public sealed partial class MainWindow : Window
             WinUiChecks.ModelInvariants(model); smokeModelsChecked = true;
             smokeReadyAt = ticks;
             ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);
+            var overviewButtons = overview.Children.ToArray();
+            RefreshProcesses();
+            if (overviewButtons.Length != 2 || !overviewButtons.SequenceEqual(overview.Children))
+                throw new InvalidOperationException("A process refresh recreated its overview controls.");
             smokeIcons = Task.WhenAll(Task.Run(() => ProcessIcons.Read(own.Key)), Task.Run(() => ProcessIcons.Read(own.Key with { Generation = own.Key.Generation + 1 })));
             smokeIconIsolation = Task.Run(() => WinUiChecks.IconWorkerIsolation(own.Key));
             smokeIconsAt = ticks;

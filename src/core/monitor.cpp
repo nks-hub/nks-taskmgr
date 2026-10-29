@@ -2,6 +2,7 @@
 #include "collectors/process_collector.hpp"
 #include "collectors/resource_collector.hpp"
 #include "process_sampler.hpp"
+#include <windows.h>
 #include <stdexcept>
 
 namespace nks {
@@ -14,6 +15,7 @@ void Monitor::start()
     started = true;
     try {
         processThread = std::jthread([this](std::stop_token stop) {
+            SetThreadDescription(GetCurrentThread(), L"NKS process collector");
             try {
                 ProcessCollector collector;
                 ProcessSampler sampler;
@@ -27,6 +29,7 @@ void Monitor::start()
             } catch (const std::exception& error) { processSlot.fail(error.what()); }
         });
         resourceThread = std::jthread([this](std::stop_token stop) {
+            SetThreadDescription(GetCurrentThread(), L"NKS resource collector");
             try {
                 ResourceCollector collector;
                 while (!stop.stop_requested()) {
