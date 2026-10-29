@@ -161,6 +161,8 @@ This check covers every column in both directions, retains multiple selections a
 
 UI thread CPU time and managed allocation counters cover the handler and explicit layout call. Windows CPU accounting can be coarser than the elapsed timer, so short CPU samples can exceed the measured elapsed interval. Garbage collection counts are process-wide and recorded separately for each generation. Native XAML and graphics allocations are outside the managed allocation counter.
 
+Adding `--bench-sort-no-icons` suppresses icon loading only during this diagnostic benchmark. The CSV records the selected mode; results without icons do not validate the normal UI performance target.
+
 The build script discovers Visual Studio and the installed Windows SDK. It sets the CRT root only for its child build processes and restores the previous environment afterward.
 
 ## Contributing

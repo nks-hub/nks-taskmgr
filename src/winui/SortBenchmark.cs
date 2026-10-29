@@ -65,11 +65,13 @@ public sealed partial class MainWindow
     private async void RunSortBenchmark()
     {
         sortBenchmarkRunning = true;
+        bool iconsEnabled = !Environment.GetCommandLineArgs().Contains("--bench-sort-no-icons", StringComparer.Ordinal);
+        ProcessIconView.SuppressForBenchmark = !iconsEnabled;
         string path = App.SortBenchmarkPath!;
         try {
             model.SetPaused(true); model.SetMode(ProcessMode.All); model.SetQuery(""); ShowView(false);
             using var output = new StreamWriter(path, false);
-            await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc,sort_model_ms,sort_header_ms,sort_overview_ms,slots_assign_ms,slots_restore_ms,slots_focus_ms");
+            await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc,sort_model_ms,sort_header_ms,sort_overview_ms,slots_assign_ms,slots_restore_ms,slots_focus_ms,icons_enabled");
             foreach (string scenario in new[] { "live", "replay" }) {
                 if (scenario == "replay") model.ReplayForBenchmark(ReplayRows());
                 SortProcesses(0); processList.UpdateLayout(); await NextRenderedFrame(); await NextRenderedFrame();
@@ -99,7 +101,7 @@ public sealed partial class MainWindow
                         ProcessIconView.DecodedImagesCreated - decodedBefore, uiCpu.ToString("F3", CultureInfo.InvariantCulture), allocated,
                         gen0Collections, gen1Collections, gen2Collections, sortModelMs.ToString("F3", CultureInfo.InvariantCulture),
                         sortHeaderMs.ToString("F3", CultureInfo.InvariantCulture), sortOverviewMs.ToString("F3", CultureInfo.InvariantCulture),
-                        slotsAssignMs.ToString("F3", CultureInfo.InvariantCulture), slotsRestoreMs.ToString("F3", CultureInfo.InvariantCulture), slotsFocusMs.ToString("F3", CultureInfo.InvariantCulture)));
+                        slotsAssignMs.ToString("F3", CultureInfo.InvariantCulture), slotsRestoreMs.ToString("F3", CultureInfo.InvariantCulture), slotsFocusMs.ToString("F3", CultureInfo.InvariantCulture), iconsEnabled));
                     await output.FlushAsync();
                 }
                 processList.ScrollIntoView(slotsByRow[selected[0]], ScrollIntoViewAlignment.Leading);

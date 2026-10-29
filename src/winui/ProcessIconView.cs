@@ -13,6 +13,7 @@ public sealed partial class ProcessIconView : Grid
     private static readonly Queue<ProcessKey> decodedOrder = [];
     private static readonly ConditionalWeakTable<byte[], Task<BitmapImage>> sharedBitmaps = new();
     internal static int DecodedImagesCreated { get; private set; }
+    internal static bool SuppressForBenchmark { get; set; }
 
     internal static Task<BitmapImage> DecodeShared(byte[] bytes)
     {
@@ -54,7 +55,7 @@ public sealed partial class ProcessIconView : Grid
     private async void Load()
     {
         Cancel();
-        if (row is null) { image.Source = null; fallback.Visibility = Visibility.Visible; return; }
+        if (row is null || SuppressForBenchmark) { image.Source = null; fallback.Visibility = Visibility.Visible; return; }
         var key = row.Key;
         if (decoded.TryGetValue(key, out var cached)) { image.Source = cached; fallback.Visibility = Visibility.Collapsed; return; }
         image.Source = null; fallback.Visibility = Visibility.Visible;
