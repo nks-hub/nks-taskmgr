@@ -50,7 +50,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [x] F15 Review: skrytý ListView vrací úspěch LVM_SCROLL bez posunutí; identita horního řádku se nyní uchovává přes aktualizace v jiném pohledu a obnoví se po zobrazení. První řádek se při živém řazení neukotvuje ke starému procesu.
 - [ ] F16 Historie: předávací schránka správně drží jen poslední vzorek, ale při zablokování UI může zahodit krátkou špičku; v T16 ukládat historii při sběru před nahrazením čekajícího vzorku.
 - [x] F17 UI: po zrušení filtru služeb se mění šířka posuvníku; sloupce se nyní přepočítají hned s počtem řádků a nečekají na další vzorek.
-- [ ] F18 WinUI: AOT kandidát sbírá data a prochází modelovými kontrolami, ale klientská plocha je v GDI i Windows.Graphics.Capture černá. Totéž vykazuje samostatný červený Grid bez sběru, varianta bez AOT i předchozí SDK; relace je aktivní, host viditelný a barva i rozměry jsou správné. Vyřešit vykreslení před přijetím T54 a porovnáním spotřeby v T06.
+- [ ] F18 WinUI: AOT kandidát sbírá data a prochází modelovými kontrolami, ale klientská plocha je v GDI i Windows.Graphics.Capture černá. Totéž vykazuje samostatný červený Grid bez sběru, varianta bez AOT i předchozí SDK; relace je aktivní, host viditelný a barva i rozměry jsou správné. RenderTargetBitmap vrací správnou červenou, takže zbývá ověřit prezentaci do okna a zachycení obrazu před přijetím T54 a porovnáním spotřeby v T06.
 
 ## Průběžné ověření
 
