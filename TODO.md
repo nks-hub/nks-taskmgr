@@ -43,6 +43,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] F31 Další hardware: doplnit dostupné údaje podobné CPU-Z, výrobce a model základní desky a BIOS; zjistit podporu skutečně připojené UPS a zobrazit pouze hodnoty poskytované jejím ovladačem.
 - [ ] F32 REA: tabulka importů Správce úloh potvrzuje rozhraní SMBIOS, topologie, PDH a síťových adaptérů; jde o statickou evidenci, ne o důkaz konkrétního běhu. Hlubší dekompilaci zatím blokuje chybějící podporovaný poskytovatel Ghidra/IDA.
 - [x] F33 RAM: číslování provedení modulů v SMBIOS se liší od WMI; opraveno rozlišení DIMM, SODIMM a RIMM podle DSP0134. Regrese zahrnuje také CUDIMM.
+- [x] F34 Měření: skript chybně odmítal aktivní RDP při zhasnutém fyzickém monitoru. Nově kontroluje GUID_SESSION_DISPLAY_STATUS; stav konzole a číslo relace zapisuje odděleně. Ověřeno proti současnému stavu relace 1 a konzole 0.
 - [x] F01 Sestavení: MSBuild x64 načítal jiný kořen UCRT než SDK; místní build skript ověřuje skutečný SDK a nastavuje UCRTContentRoot jen pro podřízené procesy.
 - [x] F20 Služby: změna výběru nyní zruší čekající detail i jeho chybu a odmítne dokončení předchozího dotazu podle verze výběru. Test rychlého přepnutí ověřil správný nový detail a nezávislou životnost starého snímku.
 - [x] F21 WinUI: vodorovný posuvník služeb dával tabulce neomezenou šířku; dlouhé názvy potom zbytečně odsouvaly stav a další sloupce. Šířka tabulky nyní vychází z viditelné plochy a pevného minima pro posuvník.

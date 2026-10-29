@@ -18,11 +18,12 @@ public static class NksDesktopBench {
     [StructLayout(LayoutKind.Sequential)] public struct PowerRecipient { public PowerCallback callback; public IntPtr context; }
     [DllImport("powrprof.dll")] public static extern uint PowerSettingRegisterNotification(ref Guid setting, uint flags, ref PowerRecipient recipient, out IntPtr handle);
     [DllImport("powrprof.dll")] public static extern uint PowerSettingUnregisterNotification(IntPtr handle);
-    public static int DisplayState() {
+    public static int DisplayState(bool console = false) {
         int state = -1;
         using (var ready = new System.Threading.ManualResetEvent(false)) {
             PowerCallback callback = (context,type,data) => { if(type == 0x8013 && data != IntPtr.Zero && Marshal.ReadInt32(data,16) == 4) { state = Marshal.ReadInt32(data,20); ready.Set(); } return 0; };
-            var recipient = new PowerRecipient { callback = callback }; var setting = new Guid("6fe69556-704a-47a0-8f24-c28d936fda47");
+            var recipient = new PowerRecipient { callback = callback };
+            var setting = new Guid(console ? "6fe69556-704a-47a0-8f24-c28d936fda47" : "2b84c20e-ad23-4ddf-93db-05ffbd7efca5");
             if (PowerSettingRegisterNotification(ref setting,2,ref recipient,out var handle) != 0) return -1;
             try { ready.WaitOne(1000); } finally { PowerSettingUnregisterNotification(handle); GC.KeepAlive(callback); }
         }
@@ -133,6 +134,8 @@ try {
         sourceRevision = (git -C (Split-Path -Parent $PSScriptRoot) rev-parse HEAD)
         candidate = $Candidate
         displayState = $displayState
+        consoleDisplayState = [NksDesktopBench]::DisplayState($true)
+        sessionId = [Diagnostics.Process]::GetCurrentProcess().SessionId
         selectedService = $selectedService
         selectedResource = $Resource
         executableSha256 = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash

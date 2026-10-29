@@ -143,6 +143,8 @@ This local benchmark opens its own application instance, warms it up for 10 seco
 
 The desktop `--smoke` option checks view switching, retained process selection, PID filtering, service collection and detail, and stale data after stopping both process and device collectors. It exits with code 0 on success.
 
+Display checks use the current interactive session. The console display state is recorded separately, since a remote desktop can be active while the physical monitor is off.
+
 Measure WinUI process sorting with live rows and a 10,000-row replay:
 
 ```powershell
