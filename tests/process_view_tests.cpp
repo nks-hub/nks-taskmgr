@@ -29,7 +29,7 @@ void verify(nks::ProcessTable& table)
     table.update(snapshot);
     check(table.count() == 3, "Flat view lost a process");
     RECT rowBounds{}; ListView_GetItemRect(table.handle(), 0, &rowBounds, LVIR_BOUNDS);
-    check(rowBounds.bottom - rowBounds.top == MulDiv(52, GetDpiForWindow(table.handle()), 96), "Native row height differs from the UI layout");
+    check(rowBounds.bottom - rowBounds.top == MulDiv(34, GetDpiForWindow(table.handle()), 96), "Native row height differs from the UI layout");
     table.select(snapshot->processes[0].identity);
     table.setHeld(true);
     auto moving = std::make_shared<nks::ProcessSnapshot>(*snapshot);
@@ -67,11 +67,14 @@ void verify(nks::ProcessTable& table)
     MapWindowPoints(table.header(), table.handle(), reinterpret_cast<POINT*>(&nameColumn), 2);
     NMITEMACTIVATE click{};
     click.hdr.code = NM_CLICK; click.iItem = 0; click.iSubItem = 0;
-    click.ptAction.x = nameColumn.left + MulDiv(23, GetDpiForWindow(table.handle()), 96);
+    click.ptAction.x = nameColumn.left + MulDiv(12, GetDpiForWindow(table.handle()), 96);
     table.notify(&click.hdr);
     check(table.count() == 2, "Reordered process column broke the collapse hit target");
     table.notify(&click.hdr);
     check(table.count() == 3, "Reordered process column broke the expand hit target");
+    click.ptAction.x = nameColumn.left + MulDiv(34, GetDpiForWindow(table.handle()), 96);
+    table.notify(&click.hdr);
+    check(table.count() == 3, "Clicking the process icon toggled the branch");
     table.select(snapshot->processes[1].identity);
     auto reused = std::make_shared<nks::ProcessSnapshot>(*snapshot);
     reused->processes[1].identity.generation = 30;

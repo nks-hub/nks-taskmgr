@@ -30,7 +30,7 @@ public sealed partial class ProcessRow : INotifyPropertyChanged
     public ProcessKey Key { get; }
     public string PidText { get; }
     public string Name { get; private set; } = string.Empty;
-    public string DisplayName => HasChildren ? (Collapsed ? "› " : "⌄ ") + Name : Name;
+    public string DisplayName => (HasChildren ? Collapsed ? "› " : "⌄ " : "") + Name + (Ended ? " · ukončeno" : Stale ? " · zastaralé" : "");
     public uint ParentPid { get; private set; }
     public uint Threads { get; private set; }
     public uint Handles { get; private set; }

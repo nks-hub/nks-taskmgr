@@ -2,10 +2,12 @@ param(
     [ValidateRange(10, 3600)][int]$Seconds = 60,
     [ValidateSet('Performance', 'Processes', 'Services')][string]$View = 'Performance',
     [ValidateSet('Win32', 'WinUI')][string]$Candidate = 'Win32',
+    [string]$Resource = '',
     [string]$OutputPath = (Join-Path ([IO.Path]::GetTempPath()) 'nks-taskmgr-performance.json')
 )
 
 $ErrorActionPreference = 'Stop'
+if ($Resource -and ($Candidate -ne 'WinUI' -or $View -ne 'Performance')) { throw '-Resource requires the WinUI Performance view.' }
 $executable = Join-Path (Split-Path -Parent $PSScriptRoot) $(if ($Candidate -eq 'WinUI') { 'build\winui-aot\NksTaskMgr.WinUI.exe' } else { 'build\msvc\Release\nks-taskmgr.exe' })
 if (-not (Test-Path -LiteralPath $executable)) { throw 'Build the Release desktop application first.' }
 Add-Type @'
@@ -81,6 +83,23 @@ try {
         $item.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()
         Start-Sleep -Seconds 2
     }
+    if ($Resource) {
+        Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,WindowsBase
+        $root = [Windows.Automation.AutomationElement]::FromHandle($window)
+        $name = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, 'Jednotlivé prostředky systému')
+        $inventory = $root.FindFirst([Windows.Automation.TreeScope]::Descendants, $name)
+        if (-not $inventory) { throw 'The resource inventory was not found.' }
+        $name = [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::NameProperty, $Resource)
+        $item = $inventory.FindFirst([Windows.Automation.TreeScope]::Descendants, $name)
+        $pattern = $null
+        while ($item -and -not $item.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern, [ref]$pattern)) {
+            $item = [Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($item)
+        }
+        if (-not $pattern) { throw 'The requested resource is not available for measurement.' }
+        $pattern.Select()
+        if (-not $pattern.Current.IsSelected) { throw 'The resource was not selected.' }
+        Start-Sleep -Seconds 2
+    }
     $results = @()
     foreach ($phase in @('visible', 'minimized')) {
         if ($phase -eq 'minimized') { [NksDesktopBench]::ShowWindow($window, 6) | Out-Null; Start-Sleep -Seconds 2 }
@@ -115,6 +134,7 @@ try {
         candidate = $Candidate
         displayState = $displayState
         selectedService = $selectedService
+        selectedResource = $Resource
         executableSha256 = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash
         nativeMonitorSha256 = if ($Candidate -eq 'WinUI') { (Get-FileHash -LiteralPath (Join-Path (Split-Path -Parent $executable) 'nks-monitor.dll') -Algorithm SHA256).Hash } else { '' }
         logicalProcessors = $logicalProcessors

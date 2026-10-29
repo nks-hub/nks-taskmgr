@@ -23,7 +23,7 @@ public sealed partial class MainWindow
             var tile = new StackPanel { Spacing = 5 };
             var line = new Grid();
             line.ColumnDefinitions.Add(new ColumnDefinition()); line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-            var choice = new ComboBox { FontSize = 10, MinHeight = 27, Padding = new Thickness(6, 1, 22, 1), HorizontalAlignment = HorizontalAlignment.Stretch };
+            var choice = new ComboBox { FontSize = 11, FontFamily = UiTypography.Font, MinHeight = 27, Padding = new Thickness(6, 1, 22, 1), HorizontalAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetName(choice, "GPU engine " + (i + 1));
             var value = Label("", 10, 0xcc9bb6); value.HorizontalAlignment = HorizontalAlignment.Right; value.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(value, 1); line.Children.Add(choice); line.Children.Add(value); tile.Children.Add(line);

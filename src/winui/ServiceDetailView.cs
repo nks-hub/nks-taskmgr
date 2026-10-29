@@ -21,7 +21,7 @@ public sealed partial class MainWindow
     private bool dependenciesSelected;
 
     private static TextBlock DetailLabel(string value, double size) => new() {
-        Text = value, FontSize = size, FontFamily = new FontFamily("Segoe UI"), Foreground = Display.Brush(size < 12 ? 0x95a4adu : 0xe9eef0u),
+        Text = value, FontSize = Math.Max(12, size), FontFamily = UiTypography.Font, Foreground = Display.Brush(size < 12 ? 0x95a4adu : 0xe9eef0u),
         FontWeight = size >= 14 ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
         TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true
     };

@@ -46,9 +46,10 @@ std::wstring resourceValue(const ResourceRecord& item)
 DWRITE_TEXT_METRICS Desktop::text(const std::wstring& value, D2D1_RECT_F box, float size, D2D1_COLOR_F color,
     int weight, float spacing, DWRITE_TEXT_ALIGNMENT alignment)
 {
+    size = std::max(11.f, size);
     if (!weight) weight = size == 42 || size == 34 ? 400 : size >= 16 ? 600 : 400;
     auto& format = formats[{size, weight}];
-    if (!format && FAILED(writing->CreateTextFormat(size == 42 || size == 34 ? L"Bahnschrift" : L"Segoe UI", nullptr,
+    if (!format && FAILED(writing->CreateTextFormat(fontFamily.c_str(), nullptr,
         static_cast<DWRITE_FONT_WEIGHT>(weight), DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, size, L"cs-CZ", &format))) return {};
     format->SetWordWrapping(box.bottom - box.top > size * 2.2f ? DWRITE_WORD_WRAPPING_WRAP : DWRITE_WORD_WRAPPING_NO_WRAP);
     format->SetTextAlignment(alignment);

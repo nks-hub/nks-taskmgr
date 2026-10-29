@@ -48,7 +48,7 @@ public sealed partial class MainWindow
         var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         foreach (var filter in filters) {
             var button = Button(filter == ServiceFilter.All ? "Všechny" : filter == ServiceFilter.Running ? "Běžící" : filter == ServiceFilter.Stopped ? "Zastavené" : "Ostatní");
-            button.Height = 27; button.Padding = new Thickness(8, 0, 8, 0); button.FontSize = 10;
+            button.Height = 27; button.Padding = new Thickness(8, 0, 8, 0); button.FontSize = 11;
             button.Click += (_, _) => UpdateServices(() => servicesModel!.SetFilter(filter)); serviceFilters.Add(button); controls.Children.Add(button);
         }
         toolbar.Children.Add(controls); serviceCount.HorizontalAlignment = HorizontalAlignment.Right; serviceCount.VerticalAlignment = VerticalAlignment.Center; toolbar.Children.Add(serviceCount); inventory.Children.Add(toolbar);
@@ -58,7 +58,7 @@ public sealed partial class MainWindow
         columns.ColumnDefinitions[0].MinWidth = 210;
         string[] headings = ["Služba", "Stav", "Spouštění", "PID", "Účet"];
         for (int i = 0; i < headings.Length; ++i) {
-            int column = i; var button = Button(headings[i]); button.BorderThickness = new Thickness(0); button.Padding = new Thickness(0); button.FontSize = 10;
+            int column = i; var button = Button(headings[i]); button.BorderThickness = new Thickness(0); button.Padding = new Thickness(0); button.FontSize = 11;
             button.HorizontalContentAlignment = i == 3 ? HorizontalAlignment.Right : HorizontalAlignment.Left; button.HorizontalAlignment = HorizontalAlignment.Stretch;
             if (i == 3) button.Margin = new Thickness(0, 0, 15, 0);
             button.Click += (_, _) => UpdateServices(() => servicesModel!.Sort(column)); Grid.SetColumn(button, i); columns.Children.Add(button);

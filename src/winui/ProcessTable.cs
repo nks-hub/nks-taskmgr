@@ -25,7 +25,7 @@ public sealed partial class ProcessTable : Grid
         foreach (var column in Columns.Items) {
             var cell = new Grid();
             var button = new Button {
-                Content = column.Title, FontSize = 9, Height = 38, MinHeight = 0, Padding = new Thickness(0, 0, 12, 0),
+                Content = column.Title, FontSize = 12, FontFamily = UiTypography.Font, Height = 38, MinHeight = 0, Padding = new Thickness(0, 0, 12, 0),
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = column.Id == 0 ? HorizontalAlignment.Left : HorizontalAlignment.Right,
                 Background = Display.Brush(0x1d252a), BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(0), CanDrag = true, AllowDrop = true
             };

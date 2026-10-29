@@ -71,6 +71,8 @@ Processes provides All, Active, and Tree views. Search accepts process names and
 
 The WinUI candidate also resizes columns by dragging their edges and hides optional columns through the Columns menu. A heading's context menu offers move and resize commands for keyboard use. The menu restores the default layout; the process name remains visible.
 
+Process rows are 34 DIP high with 13 DIP text. The UI uses Segoe UI Variable when installed and Segoe UI otherwise. WinUI loads executable icons on background workers after verifying process creation time; unavailable icons use a generic symbol. Its icon cache holds up to 128 images. The Win32 candidate currently uses letter icons.
+
 While the pointer is over a process row, the table keeps its row order and updates the counters. New processes appear after the pointer leaves. A finished process remains marked until then and cannot become a live selection. Switching to Performance and back preserves the scrolled process position.
 
 The memory page separates physical memory, commit, and pagefile usage. Pagefile usage comes from `EnumPageFilesW`; it is not a measure of paging I/O activity. Network graphs show receive and transmit values in bits per second.
@@ -130,6 +132,7 @@ pwsh -NoProfile -File benchmarks/desktop_bench.ps1
 pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -View Processes
 pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -View Services
 pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -Candidate WinUI -View Services
+pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -Candidate WinUI -View Performance -Resource 'GPU 0'
 ```
 
 This local benchmark opens its own application instance, warms it up for 10 seconds, then measures 60 seconds visible and 60 seconds minimized. It requires an active display and stops if the visible window loses foreground. `-Candidate WinUI` selects the AOT build; its Services scenario selects the first visible service and loads its detail. Results, including revision and binary hashes, are written to the system temporary directory. CPU is normalized to the whole machine. Acceptance targets and open findings are maintained in TODO.md; these measurements do not replace the planned OS, UI candidate, or 24-hour tests.

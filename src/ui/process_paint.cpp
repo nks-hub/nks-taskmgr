@@ -188,11 +188,9 @@ LRESULT Desktop::drawProcessRow(const NMLVCUSTOMDRAW& item)
         if (column == 0) {
             const auto indent = table.mode() == ProcessMode::tree ? static_cast<float>(std::min(12U, table.depth(row))) * 14 : 0;
             if (!ended && table.mode() == ProcessMode::tree && table.hasChildren(row))
-                text(table.isCollapsed(row) ? L"›" : L"⌄", rect(x + 13 + indent, 14, 20, 24), 15, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
-            processIcon(process->name, x + 40 + indent, 11, 29);
-            text(process->name, rect(x + 80 + indent, 8, cw - 93 - indent, 20), 12, ended ? muted : ink, 600);
-            text(L"PID " + std::to_wstring(process->identity.pid) + (ended ? L"  ·  ukončeno" : L"  ·  " + std::to_wstring(process->counters.threads) + L" vláken"),
-                rect(x + 80 + indent, 30, cw - 93 - indent, 16), 9, muted);
+                text(table.isCollapsed(row) ? L"›" : L"⌄", rect(x + 3 + indent, 6, 18, 22), 15, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_CENTER);
+            processIcon(process->name, x + 25 + indent, 7, 20);
+            text(process->name + (ended ? L" · ukončeno" : L""), rect(x + 53 + indent, 8, cw - 66 - indent, 20), 13, ended ? muted : ink);
             continue;
         }
         std::wstring value;
@@ -206,15 +204,15 @@ LRESULT Desktop::drawProcessRow(const NMLVCUSTOMDRAW& item)
             const auto metric = column == 5 ? process->readIoBytesPerSecond : process->writeIoBytesPerSecond;
             value = metric.valid() ? decimal(metric.value / 1048576., L" MiB/s") : L"—";
         }
-        text(value, rect(x + 8, 13, cw - 21, 21), 11, (processStale || ended) && column > 1 ? muted : ink, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
+        text(value, rect(x + 8, 7, cw - 21, 21), 13, (processStale || ended) && column > 1 ? muted : ink, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
         if ((column == 2 || column == 3) && !processStale && !ended) {
             const auto color = resourceColor(column == 2 ? ResourceKind::cpu : ResourceKind::memory);
             const auto amount = column == 2 ? process->cpuPercent.valid() ? process->cpuPercent.value / 100 : -1
                 : processes && processes->memory.state == SampleState::valid && processes->memory.physicalBytes
                     ? static_cast<double>(process->counters.workingSetBytes) / processes->memory.physicalBytes : -1;
             const auto barWidth = std::min(70.f, cw - 26);
-            fill(rect(x + cw - 13 - barWidth, 35, barWidth, 3), line, 1);
-            if (amount >= 0) fill(rect(x + cw - 13 - barWidth, 35, barWidth * static_cast<float>(std::clamp(amount, 0., 1.)), 3), color);
+            fill(rect(x + cw - 13 - barWidth, 27, barWidth, 2), line, 1);
+            if (amount >= 0) fill(rect(x + cw - 13 - barWidth, 27, barWidth * static_cast<float>(std::clamp(amount, 0., 1.)), 2), color);
         }
     }
     if ((state & LVIS_FOCUSED) && focusFromKeyboard && GetFocus() == table.handle()) {

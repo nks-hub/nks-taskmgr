@@ -65,6 +65,8 @@ public sealed partial class MainWindow : Window
     private Action? verifyMinimized;
     private Action? verifyProcessTable;
     private bool smokeColumnsChecked;
+    private Task<byte[]?[]>? smokeIcons;
+    private int smokeIconsAt;
     private int smokeMinimizedAt, smokeReadyAt;
     private int smokeServicesStage, smokeServicesAt;
     private long smokeServiceTime;
@@ -81,6 +83,8 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         AppWindow.TitleBar.ButtonBackgroundColor = Windows.UI.Color.FromArgb(255, 18, 24, 28);
         AppWindow.TitleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 149, 164, 173);
+        Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
+        Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
         ConfigureResources(); BuildShell(); BuildPerformance(); BuildProcesses(); BuildServices();
         App.Trace("Window layout created");
         Content = root;
@@ -96,6 +100,9 @@ public sealed partial class MainWindow : Window
         App.Trace("Templates assigned");
         resourceList.SelectionChanged += (_, _) => { selectedResource = resourceList.SelectedItem as ResourceRow; RefreshPerformance(); };
         processList.SelectionChanged += (_, _) => RefreshSelection();
+        processList.ContainerContentChanging += (_, args) => {
+            if (!args.InRecycleQueue && args.Item is ProcessRow row) AutomationProperties.SetName(args.ItemContainer, row.Name + ", PID " + row.PidText);
+        };
         processList.PointerMoved += HoldRows;
         processList.PointerExited += (_, _) => model.SetHeld(false);
         processList.DoubleTapped += (_, _) => { if (model.Mode == ProcessMode.Tree && processList.SelectedItem is ProcessRow row) model.Toggle(row); };
@@ -129,12 +136,12 @@ public sealed partial class MainWindow : Window
     }
 
     private static TextBlock Label(string text, double size, uint color) => new() {
-        Text = text, FontSize = size, Foreground = Display.Brush(color), FontFamily = new FontFamily(size == 42 ? "Bahnschrift" : "Segoe UI"),
+        Text = text, FontSize = Math.Max(11, size), Foreground = Display.Brush(color), FontFamily = UiTypography.Font,
         FontWeight = size >= 14 && size != 42 ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
         TextTrimming = TextTrimming.CharacterEllipsis
     };
     private static Button Button(string text) => new() {
-        Content = text, MinHeight = 0, Height = 35, FontSize = 11, Padding = new Thickness(12, 0, 12, 0),
+        Content = text, MinHeight = 0, Height = 35, FontSize = 12, FontFamily = UiTypography.Font, Padding = new Thickness(12, 0, 12, 0),
         Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6)
     };
     private static Border Card(UIElement child, Thickness padding = default) => new() {
@@ -142,7 +149,7 @@ public sealed partial class MainWindow : Window
         BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10)
     };
     private static ToggleButton Choice(string text) => new() {
-        Content = text, MinHeight = 0, Height = 27, FontSize = 11, Padding = new Thickness(12, 0, 12, 0),
+        Content = text, MinHeight = 0, Height = 27, FontSize = 11, FontFamily = UiTypography.Font, Padding = new Thickness(12, 0, 12, 0),
         Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6)
     };
 
@@ -154,14 +161,16 @@ public sealed partial class MainWindow : Window
         var itemStyle = new Style { TargetType = typeof(ListViewItem) };
         itemStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0)));
         itemStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
-        itemStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 52d));
+        itemStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 34d));
         processList.ItemContainerStyle = itemStyle;
         var resourceStyle = new Style { TargetType = typeof(ListViewItem), BasedOn = itemStyle };
         resourceStyle.Setters.Add(new Setter(FrameworkElement.HeightProperty, 59d));
         resourceList.ItemContainerStyle = resourceStyle;
         AutomationProperties.SetName(resourceList, "Jednotlivé prostředky systému");
         AutomationProperties.SetName(processList, "Živé procesy");
+        AutomationProperties.SetAutomationId(processList, "processes-list");
         AutomationProperties.SetName(search, "Hledat název procesu nebo PID");
+        search.FontFamily = UiTypography.Font; search.FontSize = 12;
     }
 
     private void BuildShell()
@@ -402,9 +411,18 @@ public sealed partial class MainWindow : Window
             WinUiChecks.ModelInvariants(model); smokeModelsChecked = true;
             smokeReadyAt = ticks;
             ShowView(false); processList.SelectedItem = model.Processes.First(row => row.Key.Pid == Environment.ProcessId);
+            var own = (ProcessRow)processList.SelectedItem;
+            smokeIcons = Task.WhenAll(ProcessIcons.Load(own.Key, CancellationToken.None), Task.Run(() => ProcessIcons.Read(own.Key with { Generation = own.Key.Generation + 1 })));
+            smokeIconsAt = ticks;
         }
         int elapsed = ticks - smokeReadyAt;
-        if (smokeModelsChecked && elapsed == 10) verifyProcessTable = WinUiChecks.BeginProcessTableReplay(processTable, processList);
+        if (smokeModelsChecked && elapsed == 10) {
+            if (!smokeIcons!.IsCompleted && ticks - smokeIconsAt < 100) { ++smokeReadyAt; return; }
+            if (!smokeIcons!.IsCompletedSuccessfully || smokeIcons.Result[0] is not { Length: > 54 } || smokeIcons.Result[1] is not null)
+                throw new InvalidOperationException("Process icons did not validate the process generation.");
+            App.Trace("Process icons passed: own executable; recycled PID rejected");
+            verifyProcessTable = WinUiChecks.BeginProcessTableReplay(processTable, processList);
+        }
         if (smokeModelsChecked && elapsed == 20) { verifyProcessTable!(); smokeColumnsChecked = true; resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true); }
         if (smokeModelsChecked && elapsed == 30) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
         if (smokeModelsChecked && elapsed == 40) {

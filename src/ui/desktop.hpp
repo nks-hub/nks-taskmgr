@@ -79,6 +79,7 @@ private:
     std::array<HWND, 3> consumerButtons{};
     std::array<std::optional<ProcessIdentity>, 3> consumers{};
     HFONT font{}, searchFont{};
+    std::wstring fontFamily{L"Segoe UI"};
     float scale{1};
     DesktopView view{DesktopView::performance};
     bool smokeMode{};

@@ -53,7 +53,7 @@ void ProcessTable::setFont(HFONT font)
     lastDpi = dpi;
     SendMessageW(window, WM_SETFONT, reinterpret_cast<WPARAM>(font), FALSE);
     // ListView adds one physical pixel to the image height.
-    auto next = ImageList_Create(1, MulDiv(52, GetDpiForWindow(window), 96) - 1, ILC_COLOR32, 1, 0);
+    auto next = ImageList_Create(1, MulDiv(34, GetDpiForWindow(window), 96) - 1, ILC_COLOR32, 1, 0);
     ListView_SetImageList(window, next, LVSIL_SMALL);
     if (images) ImageList_Destroy(images);
     images = next;
@@ -336,8 +336,8 @@ LRESULT ProcessTable::notify(NMHDR* notification)
         RECT name{};
         Header_GetItemRect(header(), 0, &name);
         MapWindowPoints(header(), window, reinterpret_cast<POINT*>(&name), 2);
-        const auto left = name.left + MulDiv(13 + static_cast<int>(indent) * 14, GetDpiForWindow(window), 96);
-        if (click->iItem >= 0 && click->iSubItem == 0 && click->ptAction.x >= left && click->ptAction.x <= left + MulDiv(20, GetDpiForWindow(window), 96))
+        const auto left = name.left + MulDiv(3 + static_cast<int>(indent) * 14, GetDpiForWindow(window), 96);
+        if (click->iItem >= 0 && click->iSubItem == 0 && click->ptAction.x >= left && click->ptAction.x <= left + MulDiv(18, GetDpiForWindow(window), 96))
             toggle(static_cast<std::size_t>(click->iItem));
     } else if (notification->code == LVN_KEYDOWN && displayMode == ProcessMode::tree) {
         const auto key = reinterpret_cast<NMLVKEYDOWN*>(notification)->wVKey;

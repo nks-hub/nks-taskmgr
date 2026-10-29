@@ -141,16 +141,17 @@ void Desktop::setFonts()
 {
     const auto previousFont = font;
     const auto previousSearchFont = searchFont;
+    Microsoft::WRL::ComPtr<IDWriteFontCollection> systemFonts;
+    UINT32 familyIndex{}; BOOL available{};
+    if (SUCCEEDED(writing->GetSystemFontCollection(&systemFonts))
+        && SUCCEEDED(systemFonts->FindFamilyName(L"Segoe UI Variable", &familyIndex, &available)) && available) fontFamily = L"Segoe UI Variable";
     font = CreateFontW(-static_cast<int>(13 * scale), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
-    searchFont = CreateFontW(-static_cast<int>(11 * scale), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
+        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, fontFamily.c_str());
+    searchFont = CreateFontW(-static_cast<int>(13 * scale), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, fontFamily.c_str());
     Microsoft::WRL::ComPtr<IDWriteRenderingParams> rendering;
     if (SUCCEEDED(writing->CreateMonitorRenderingParams(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &rendering))) {
-        textRendering.Reset();
-        // Match the HTML reference coverage while retaining monitor contrast and pixel geometry.
-        writing->CreateCustomRenderingParams(3.6f, rendering->GetEnhancedContrast(), rendering->GetClearTypeLevel(),
-            rendering->GetPixelGeometry(), rendering->GetRenderingMode(), &textRendering);
+        textRendering = rendering;
         if (target) target->SetTextRenderingParams(textRendering.Get());
         if (controlTarget) controlTarget->SetTextRenderingParams(textRendering.Get());
     }
