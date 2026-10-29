@@ -120,6 +120,7 @@ void ServiceTable::rebuild()
     });
     ListView_SetItemState(window, -1, 0, LVIS_SELECTED | LVIS_FOCUSED);
     ListView_SetItemCountEx(window, static_cast<int>(rows.size()), LVSICF_NOSCROLL);
+    resizeColumns();
     InvalidateRect(window, nullptr, FALSE);
 }
 

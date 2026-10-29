@@ -49,6 +49,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [x] F14 UI: pod kurzorem se drží pořadí i identity řádků, živé hodnoty se obnovují; nové položky se doplní po opuštění seznamu a skončený proces zůstává označený bez živého výběru. Ověřeno testy i skutečným pohybem myši.
 - [x] F15 Review: skrytý ListView vrací úspěch LVM_SCROLL bez posunutí; identita horního řádku se nyní uchovává přes aktualizace v jiném pohledu a obnoví se po zobrazení. První řádek se při živém řazení neukotvuje ke starému procesu.
 - [ ] F16 Historie: předávací schránka správně drží jen poslední vzorek, ale při zablokování UI může zahodit krátkou špičku; v T16 ukládat historii při sběru před nahrazením čekajícího vzorku.
+- [x] F17 UI: po zrušení filtru služeb se mění šířka posuvníku; sloupce se nyní přepočítají hned s počtem řádků a nečekají na další vzorek.
 
 ## Průběžné ověření
 
