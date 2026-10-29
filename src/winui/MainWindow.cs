@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Automation;
@@ -18,7 +19,7 @@ public sealed partial class MainWindow : Window
     private readonly Grid page = new();
     private readonly Grid sidebar = new() { Background = Display.Brush(0x12181c), Width = 88 };
     private readonly TextBlock heading = Label("Výkon", 28, 0xe9eef0);
-    private readonly TextBlock subtitle = Label("Živý přehled všech prostředků", 11, 0x95a4ad);
+    private readonly TextBlock subtitle = Label("Jeden pohled. Společná časová osa.", 11, 0x95a4ad);
     private readonly TextBlock footer = Label("Načítám živá data…", 9, 0x95a4ad);
     private readonly TextBox search = new() { Width = 235, Height = 35, MinHeight = 0, FontSize = 11, PlaceholderText = "Hledat název nebo PID", Visibility = Visibility.Collapsed };
     private readonly Button pause = Button("Pozastavit"), interval = Button("1 s");
@@ -30,12 +31,15 @@ public sealed partial class MainWindow : Window
     private readonly TextBlock resourceEyebrow = Label("PROCESOR", 9, 0x95a4ad);
     private readonly TextBlock resourceTitle = Label("Procesor", 20, 0xe9eef0), resourceDescription = Label("", 10, 0x95a4ad);
     private readonly TextBlock resourceValue = Label("Načítám…", 42, 0x80c5c0);
+    private readonly TextBlock resourceUnit = Label("", 13, 0x95a4ad);
+    private readonly List<ToggleButton> rangeButtons = [], cpuButtons = [];
     private readonly TextBlock retained = Label("", 9, 0x95a4ad);
+    private readonly TextBlock resourceCount = Label("", 9, 0x95a4ad);
     private readonly StackPanel cpuModes = new() { Orientation = Orientation.Horizontal, Spacing = 3 };
     private readonly Grid processors = new();
     private readonly ChartView chart = new() { Height = 236 }, pageFile = new() { Height = 62 };
     private readonly TextBlock pageFileTitle = Label("", 10, 0x95a4ad);
-    private readonly StackPanel facts = new() { Spacing = 16, Padding = new Thickness(22) };
+    private readonly StackPanel facts = new() { Spacing = 13, Padding = new Thickness(22) };
     private readonly StackPanel consumers = new() { Spacing = 9 };
     private readonly TextBlock processCount = Label("", 10, 0x95a4ad), selectionTitle = Label("Vyberte proces", 14, 0xe9eef0), selectionFacts = Label("", 10, 0x95a4ad);
     private readonly StackPanel overview = new() { Orientation = Orientation.Horizontal, Spacing = 24 };
@@ -110,6 +114,10 @@ public sealed partial class MainWindow : Window
         Child = child, Padding = padding, Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x2c363d),
         BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10)
     };
+    private static ToggleButton Choice(string text) => new() {
+        Content = text, MinHeight = 0, Height = 27, FontSize = 11, Padding = new Thickness(12, 0, 12, 0),
+        Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6)
+    };
 
     private void ConfigureResources()
     {
@@ -143,9 +151,12 @@ public sealed partial class MainWindow : Window
         TitleText("NKS", 51, 12, 0xe9eef0, true); TitleText("Task Manager", 83.109375, 12, 0x95a4ad); TitleText("Lokální počítač", 218, 10, 0x95a4ad);
         Grid.SetColumnSpan(title, 2); root.Children.Add(title); SetTitleBar(title);
         var nav = new StackPanel { Spacing = 4, Margin = new Thickness(8, 14, 8, 0) };
-        var mark = Label("n.", 32, 0xedc08b); mark.Margin = new Thickness(18, 0, 0, 24); nav.Children.Add(mark);
+        var mark = Label("n", 32, 0xe9eef0); mark.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
+        mark.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = ".", Foreground = Display.Brush(0xedc08b) });
+        mark.CharacterSpacing = -125; mark.Margin = new Thickness(23, -1, 0, 18); nav.Children.Add(mark);
         foreach (var button in new[] { processesNav, performanceNav }) {
             button.Height = 66; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 10; button.BorderThickness = new Thickness(0);
+            button.Padding = new Thickness(4, 0, 4, 0);
             var content = new StackPanel { Spacing = 10, HorizontalAlignment = HorizontalAlignment.Center };
             content.Children.Add(UiIcon.Create(button == performanceNav, 0x95a4ad)); content.Children.Add(Label(button == performanceNav ? "Výkon" : "Procesy", 9, 0x95a4ad));
             button.Content = content;
@@ -153,7 +164,8 @@ public sealed partial class MainWindow : Window
         }
         sidebar.Children.Add(nav); Grid.SetRow(sidebar, 1); Grid.SetRowSpan(sidebar, 3); root.Children.Add(sidebar);
         var header = new Grid { Padding = new Thickness(30, 24, 30, 0) };
-        var labels = new StackPanel { Spacing = 6 }; labels.Children.Add(heading); labels.Children.Add(subtitle); header.Children.Add(labels);
+        heading.CharacterSpacing = -25;
+        var labels = new StackPanel { Spacing = 6, Margin = new Thickness(1, -2, 0, 0) }; labels.Children.Add(heading); labels.Children.Add(subtitle); header.Children.Add(labels);
         var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 9, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 11, 0, 0) };
         tools.Children.Add(search); tools.Children.Add(interval); tools.Children.Add(pause); header.Children.Add(tools);
         Grid.SetRow(header, 1); Grid.SetColumn(header, 1); root.Children.Add(header);
@@ -168,7 +180,10 @@ public sealed partial class MainWindow : Window
         performancePage.ColumnDefinitions.Add(new ColumnDefinition()); performancePage.ColumnSpacing = 20;
         var inventory = new Grid { Padding = new Thickness(10, 18, 10, 10) };
         inventory.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) }); inventory.RowDefinitions.Add(new RowDefinition());
-        var inventoryLabel = Label("Prostředky", 13, 0xe9eef0); inventoryLabel.Margin = new Thickness(9, 0, 0, 0); inventory.Children.Add(inventoryLabel);
+        var inventoryHeader = new Grid { Margin = new Thickness(8, 1, 9, 0) };
+        var inventoryLabel = Label("Prostředky", 13, 0xe9eef0); inventoryLabel.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+        resourceCount.HorizontalAlignment = HorizontalAlignment.Right; resourceCount.VerticalAlignment = VerticalAlignment.Center;
+        inventoryHeader.Children.Add(inventoryLabel); inventoryHeader.Children.Add(resourceCount); inventory.Children.Add(inventoryHeader);
         Grid.SetRow(resourceList, 1); inventory.Children.Add(resourceList); performancePage.Children.Add(Card(inventory));
         var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = performanceBody };
         performanceBody.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -177,20 +192,34 @@ public sealed partial class MainWindow : Window
         Grid.SetColumn(scroll, 1); performancePage.Children.Add(scroll);
         chartGrid.ColumnDefinitions.Add(new ColumnDefinition()); chartGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(242) }); chartGrid.ColumnSpacing = 14;
         chartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); chartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var content = new StackPanel { Spacing = 12, Padding = new Thickness(22, 22, 22, 18) };
-        var resourceHeading = new Grid(); resourceHeading.Children.Add(resourceEyebrow);
+        var content = new StackPanel { Padding = new Thickness(22, 20, 22, 16) };
+        var resourceHeading = new Grid { ColumnSpacing = 15 };
+        resourceHeading.ColumnDefinitions.Add(new ColumnDefinition()); resourceHeading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        resourceEyebrow.CharacterSpacing = 178;
+        var headingText = new StackPanel { Spacing = 6 };
+        headingText.Children.Add(resourceEyebrow);
+        var titleLine = new Grid { ColumnSpacing = 12 };
+        titleLine.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); titleLine.ColumnDefinitions.Add(new ColumnDefinition());
+        resourceTitle.CharacterSpacing = -15; titleLine.Children.Add(resourceTitle);
+        resourceDescription.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(resourceDescription, 1); titleLine.Children.Add(resourceDescription);
+        headingText.Children.Add(titleLine); resourceHeading.Children.Add(headingText);
         var range = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, HorizontalAlignment = HorizontalAlignment.Right };
         foreach (int seconds in new[] { 60, 600 }) {
-            var button = Button(seconds == 60 ? "60 s" : "10 min"); button.Height = 27;
+            var button = Choice(seconds == 60 ? "60 s" : "10 min"); rangeButtons.Add(button);
             button.Click += (_, _) => { rangeSeconds = seconds; RefreshPerformance(); }; range.Children.Add(button);
         }
-        resourceHeading.Children.Add(range); content.Children.Add(resourceHeading);
-        content.Children.Add(resourceTitle); content.Children.Add(resourceDescription); content.Children.Add(resourceValue);
+        Grid.SetColumn(range, 1); resourceHeading.Children.Add(range); content.Children.Add(resourceHeading);
+        var reading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 17, 0, 11) };
+        resourceValue.CharacterSpacing = -24; reading.Children.Add(resourceValue);
+        resourceUnit.VerticalAlignment = VerticalAlignment.Bottom; resourceUnit.Margin = new Thickness(0, 0, 0, 10); reading.Children.Add(resourceUnit); content.Children.Add(reading);
         foreach (var mode in new[] { "Celkem", "Logické", "Překrytí" }) {
-            int index = cpuModes.Children.Count; var button = Button(mode); button.Height = 25;
+            int index = cpuModes.Children.Count; var button = Choice(mode); button.Height = 25; cpuButtons.Add(button);
             button.Click += (_, _) => { cpuMode = index; RefreshPerformance(); }; cpuModes.Children.Add(button);
         }
-        content.Children.Add(cpuModes); content.Children.Add(chart); content.Children.Add(processors); content.Children.Add(retained);
+        cpuModes.Margin = new Thickness(0, 0, 0, 12);
+        content.Children.Add(cpuModes); content.Children.Add(chart); content.Children.Add(processors);
+        retained.Margin = new Thickness(0, 7, 0, 0); content.Children.Add(retained);
+        pageFileTitle.Margin = new Thickness(0, 18, 0, 8);
         content.Children.Add(pageFileTitle); content.Children.Add(pageFile);
         chartGrid.Children.Add(Card(content));
         var factCard = Card(facts); Grid.SetColumn(factCard, 1); chartGrid.Children.Add(factCard);
@@ -231,12 +260,13 @@ public sealed partial class MainWindow : Window
     private void ShowView(bool value)
     {
         model.SetHeld(false); performance = value;
-        heading.Text = value ? "Výkon" : "Procesy"; subtitle.Text = value ? "Živý přehled všech prostředků" : "Aplikace, prostředky a jejich souvislosti.";
+        heading.Text = value ? "Výkon" : "Procesy"; subtitle.Text = value ? "Jeden pohled. Společná časová osa." : "Aplikace, prostředky a jejich souvislosti.";
         performancePage.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
         processPage.Visibility = value ? Visibility.Collapsed : Visibility.Visible;
         search.Visibility = value ? Visibility.Collapsed : Visibility.Visible;
         performanceNav.Background = Display.Brush(value ? 0x3b3024u : 0x12181cu);
         processesNav.Background = Display.Brush(value ? 0x12181cu : 0x3b3024u);
+        Resize();
         if (value) RefreshPerformance(); else RefreshProcesses();
     }
 
@@ -245,7 +275,8 @@ public sealed partial class MainWindow : Window
         if (root.ActualWidth <= 0) return;
         double width = root.ActualWidth;
         root.ColumnDefinitions[0].Width = new GridLength(width <= 1000 ? 68 : 88); sidebar.Width = width <= 1000 ? 68 : 88;
-        page.Margin = new Thickness(width <= 1000 ? 20 : 30, 0, width <= 1000 ? 20 : 30, 22);
+        double margin = width <= 1000 ? 20 : performance ? 25 : 30;
+        page.Margin = new Thickness(margin, 0, margin, 22);
         performancePage.ColumnDefinitions[0].Width = new GridLength(width <= 780 ? 180 : width <= 1000 ? 225 : 278);
         var factCard = (FrameworkElement)chartGrid.Children[1];
         Grid.SetColumn(factCard, width <= 1250 ? 0 : 1); Grid.SetRow(factCard, width <= 1250 ? 1 : 0);

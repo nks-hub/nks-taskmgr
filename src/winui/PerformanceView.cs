@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Automation;
 using NksTaskMgr.Native;
 
@@ -16,8 +17,22 @@ public sealed partial class MainWindow
         if (resource is null) return;
         long now = model.Paused ? Math.Max(model.ProcessTime, model.ResourceTime) : NativeMonitor.MonotonicNowNs;
         uint color = Display.ResourceColor(resource.Kind);
-        resourceTitle.Text = resource.Title; resourceDescription.Text = resource.Description;
-        resourceValue.Text = resource.Value; resourceValue.Foreground = Display.Brush(color);
+        resourceCount.Text = model.Resources.Count + " zařízení";
+        resourceTitle.Text = resource.Title;
+        resourceDescription.Text = resource.Kind == ResourceKind.Cpu ? model.LogicalProcessors + " logických procesorů"
+            : resource.Kind == ResourceKind.Memory && model.Memory.State == SampleState.Valid
+                ? Display.Number(model.Memory.PhysicalBytes / 1073741824d, " GiB celkem") : resource.Description;
+        bool valid = !resource.Stale && resource.Primary.State == SampleState.Valid;
+        resourceValue.FontSize = valid ? 42 : 20;
+        resourceValue.Foreground = Display.Brush(0xe9eef0);
+        resourceValue.Text = valid ? Display.Number(resource.Primary.Value / (resource.Kind == ResourceKind.Memory ? 1073741824d : resource.Kind == ResourceKind.Network ? 1_000_000d : 1), "") : resource.Value;
+        resourceUnit.Text = valid ? resource.Kind == ResourceKind.Memory ? "GiB" : resource.Kind == ResourceKind.Network ? "Mbit/s ↓" : "%" : "";
+        void SelectChoice(ToggleButton button, bool selected) {
+            button.IsChecked = selected; button.Background = Display.Brush(selected ? 0x28343bu : 0x1d252au);
+            button.Foreground = Display.Brush(selected ? 0xe9eef0u : 0x95a4adu);
+        }
+        for (int i = 0; i < rangeButtons.Count; ++i) SelectChoice(rangeButtons[i], rangeSeconds == (i == 0 ? 60 : 600));
+        for (int i = 0; i < cpuButtons.Count; ++i) SelectChoice(cpuButtons[i], cpuMode == i);
         resourceEyebrow.Text = resource.Kind switch {
             ResourceKind.Cpu => "VYUŽITÍ PROCESORU", ResourceKind.Memory => "FYZICKÁ PAMĚŤ", ResourceKind.Disk => "AKTIVITA DISKU",
             ResourceKind.Gpu => "GRAFICKÝ ADAPTÉR", _ => "SÍŤOVÝ ADAPTÉR"
@@ -37,17 +52,22 @@ public sealed partial class MainWindow
         }
         double duration = resource.History.Count == 0 ? 0 : Math.Min(rangeSeconds, (resource.History.LastTime - resource.History.FirstTime) / 1_000_000_000d);
         retained.Text = Display.Number(duration, " s uchováno") + " · " + resource.History.Count + " vzorků · okno " + rangeSeconds + " s";
-        facts.Children.Clear(); facts.Children.Add(Label("SESTAVA", 9, 0x95a4ad));
+        facts.Children.Clear(); var factsHeading = Label("SESTAVA", 9, 0x95a4ad); factsHeading.CharacterSpacing = 178; facts.Children.Add(factsHeading);
         void Fact(string name, string value) {
-            var block = new StackPanel { Spacing = 6 };
-            block.Children.Add(Label(name, 9, 0x95a4ad)); block.Children.Add(Label(value, 12, 0xe9eef0)); facts.Children.Add(block);
+            var block = new Grid { ColumnSpacing = 12 };
+            block.ColumnDefinitions.Add(new ColumnDefinition()); block.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var caption = Label(name, 10, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; block.Children.Add(caption);
+            var text = Label(value, 10, 0xe9eef0); text.TextAlignment = TextAlignment.Right; Grid.SetColumn(text, 1); block.Children.Add(text); facts.Children.Add(block);
+        }
+        void Hardware(string value) {
+            var name = Label(value, 17, 0xe9eef0); name.TextWrapping = TextWrapping.Wrap; name.Margin = new Thickness(0, 0, 0, 7); facts.Children.Add(name);
         }
         if (cpu) {
-            facts.Children.Add(Label(model.CpuModel, 14, 0xe9eef0));
+            Hardware(model.CpuModel);
             Fact("Logické procesory", model.LogicalProcessors.ToString()); Fact("Procesy", model.Processes.Count.ToString());
             Fact("Doba sběru", Display.Number(model.CollectionMs, " ms")); Fact("Vlákna", model.Processes.Sum(row => (long)row.Threads).ToString());
         } else if (memory && model.Memory.State == SampleState.Valid) {
-            facts.Children.Add(Label(Display.Number((model.Memory.InstalledBytes > 0 ? model.Memory.InstalledBytes : model.Memory.PhysicalBytes) / 1073741824d, " GiB"), 16, 0xe9eef0));
+            Hardware(Display.Number((model.Memory.InstalledBytes > 0 ? model.Memory.InstalledBytes : model.Memory.PhysicalBytes) / 1073741824d, " GiB"));
             Fact("Dostupná paměť", Display.Number(model.Memory.AvailableBytes / 1073741824d, " GiB"));
             Fact("Potvrzeno / limit", Display.Number(model.Memory.CommittedBytes / 1073741824d, " / ") + Display.Number(model.Memory.CommitLimitBytes / 1073741824d, " GiB"));
             Fact("Stránkovaný fond", Display.Number(model.Memory.PagedPoolBytes / 1073741824d, " GiB"));
@@ -58,7 +78,7 @@ public sealed partial class MainWindow
         } else if (memory) {
             Fact("Dostupnost", Display.Metric(new Metric { State = model.Memory.State }, string.Empty));
         } else {
-            facts.Children.Add(Label(resource.Description, 14, 0xe9eef0));
+            Hardware(resource.Description);
             Fact("Stav", resource.Status.Length > 0 ? resource.Status : resource.Value);
             if (resource.Kind == ResourceKind.Network) {
                 Fact("Příjem", Display.Metric(resource.Primary, " Mbit/s", 1_000_000));
@@ -71,19 +91,31 @@ public sealed partial class MainWindow
         }
         consumers.Children.Clear(); consumers.Children.Add(Label("SOUVISLOSTI", 9, 0x95a4ad));
         consumers.Children.Add(Label(memory ? "Procesy podle pracovní sady" : "Procesy podle CPU", 15, 0xe9eef0));
-        var ranked = memory ? model.Processes.OrderByDescending(row => row.WorkingBytes) : model.Processes.Where(row => row.Cpu.State == SampleState.Valid).OrderByDescending(row => row.Cpu.Value);
+        var ranked = model.TopConsumers(memory);
         var cards = new Grid { ColumnSpacing = 14 };
-        foreach (var row in ranked.Take(3)) {
-            int column = cards.ColumnDefinitions.Count; cards.ColumnDefinitions.Add(new ColumnDefinition());
-            var content = new StackPanel { Spacing = 9 };
-            content.Children.Add(Label(row.Name, 11, 0xe9eef0)); content.Children.Add(Label("PID " + row.PidText + " · " + (memory ? row.WorkingText : row.CpuText), 10, color));
-            var button = Button(""); button.Content = content; button.Height = 74; button.HorizontalAlignment = HorizontalAlignment.Stretch;
+        int count = 0;
+        bool stacked = root.ActualWidth <= 1000;
+        foreach (var row in ranked) {
+            int index = count++;
+            if (stacked) cards.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); else cards.ColumnDefinitions.Add(new ColumnDefinition());
+            var content = new Grid { ColumnSpacing = 10 };
+            foreach (var width in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto }) content.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
+            var order = Label(count.ToString("00"), 9, 0x95a4ad); order.VerticalAlignment = VerticalAlignment.Center; content.Children.Add(order);
+            var icon = new Border { Child = UiIcon.Create(false, color, 18), Background = Display.Brush(0x28343b), Width = 30, Height = 30, CornerRadius = new CornerRadius(7) };
+            Grid.SetColumn(icon, 1); content.Children.Add(icon);
+            var name = new StackPanel { Spacing = 5, VerticalAlignment = VerticalAlignment.Center };
+            var title = Label(row.Name, 11, 0xe9eef0); title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold; name.Children.Add(title);
+            name.Children.Add(Label("PID " + row.PidText, 9, 0x95a4ad)); Grid.SetColumn(name, 2); content.Children.Add(name);
+            var value = Label(memory ? row.WorkingText : row.CpuText, 12, 0xe9eef0); value.VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(value, 3); content.Children.Add(value);
+            var button = Button(""); button.Content = content; button.Height = 74; button.Padding = new Thickness(17, 12, 17, 12);
+            button.HorizontalAlignment = HorizontalAlignment.Stretch; button.HorizontalContentAlignment = HorizontalAlignment.Stretch; button.Margin = new Thickness(0, 0, 0, stacked ? 8 : 0);
             button.Click += (_, _) => {
                 if (!model.IsCurrent(row)) return;
                 search.Text = string.Empty; model.SetMode(ProcessMode.All); ShowView(false);
                 processList.SelectedItems.Clear(); processList.SelectedItem = row; processList.ScrollIntoView(row, ScrollIntoViewAlignment.Leading);
             };
-            Grid.SetColumn(button, column); cards.Children.Add(button);
+            if (stacked) Grid.SetRow(button, index); else Grid.SetColumn(button, index); cards.Children.Add(button);
         }
         consumers.Children.Add(cards);
     }

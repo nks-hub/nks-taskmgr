@@ -42,6 +42,9 @@ public sealed class MonitorModel : IDisposable
     public void Sort(int column) { held = false; descending = sortColumn == column ? !descending : column > 1; sortColumn = column; Rebuild(); }
     public void Toggle(ProcessRow row) { held = false; if (!collapsed.Add(row.Key)) collapsed.Remove(row.Key); Rebuild(); }
     public bool IsCurrent(ProcessRow row) => !row.Ended && processes.TryGetValue(row.Key, out var current) && ReferenceEquals(row, current);
+    public IEnumerable<ProcessRow> TopConsumers(bool memory) => memory
+        ? processes.Values.Where(row => row.Key.Pid != 0).OrderByDescending(row => row.WorkingBytes).Take(3)
+        : processes.Values.Where(row => row.Key.Pid != 0 && row.Cpu.State == SampleState.Valid).OrderByDescending(row => row.Cpu.Value).Take(3);
 
     public bool Tick()
     {
