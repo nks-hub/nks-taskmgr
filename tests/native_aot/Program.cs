@@ -11,6 +11,7 @@ internal static class Program
 
     private static unsafe void Verify()
     {
+        ServiceChecks.Verify();
         Require(!RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled, "The probe must run as a published Native AOT executable.");
         Require(sizeof(FrameView) == 288 && sizeof(ProcessInfo) == 152 && sizeof(ResourceInfo) == 128, "Managed ABI layout mismatch.");
         using var monitor = NativeMonitor.Open(250, paused: true);

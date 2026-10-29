@@ -23,6 +23,8 @@ void latestSample()
     require(!slot.take(error) && error == L"Collection failed", "Mailbox lost its error");
     slot.publish(nks::ProcessSnapshot{});
     require(slot.take(error) && error.empty(), "A successful sample did not clear its collection error");
+    slot.publish(nks::ProcessSnapshot{}); slot.fail("Old selection"); slot.clear();
+    require(!slot.take(error) && error.empty(), "Invalidation retained the old selection or error");
 }
 
 void liveMonitor()

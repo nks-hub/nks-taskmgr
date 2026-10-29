@@ -21,6 +21,7 @@ private:
     std::mutex mutex;
     std::condition_variable_any wake;
     std::wstring selected;
+    std::uint64_t selectionVersion{};
     bool active{}, paused{}, changed{};
     std::jthread worker;
 };

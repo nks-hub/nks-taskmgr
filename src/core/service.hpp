@@ -28,6 +28,7 @@ struct ServiceSnapshot {
 };
 
 struct ServiceDetail {
+    std::chrono::steady_clock::time_point measuredAt;
     std::wstring name, description;
     ServiceConfig config;
     DWORD statusError{}, descriptionError{}, dependentsError{}, hostError{};

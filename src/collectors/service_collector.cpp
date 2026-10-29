@@ -121,7 +121,7 @@ ServiceDetail ServiceCollector::detail(const std::wstring& name)
 {
     if (name.empty() || name.size() > 256 || name.find(L'\0') != std::wstring::npos)
         throw std::invalid_argument("Invalid service name");
-    ServiceDetail result; result.name = name;
+    ServiceDetail result; result.measuredAt = std::chrono::steady_clock::now(); result.name = name;
     ServiceHandle manager(OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT));
     if (!manager.value) fail("OpenSCManagerW");
     result.config = configFor(manager.value, name);

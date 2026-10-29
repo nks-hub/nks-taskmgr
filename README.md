@@ -108,7 +108,7 @@ dotnet publish tests/native_aot/NativeAotProbe.csproj -c Release -r win-x64 -o b
 ./build/native-aot-probe/NativeAotProbe.exe
 ```
 
-This check reads both live streams, validates the ABI layout and process identity, and retains a snapshot after stopping the monitor and collecting managed memory. It is a console check; the WinUI UI comparison remains open.
+This check reads process, device, and service snapshots, validates ABI layouts and process identity, and retains frames after stopping collectors and collecting managed memory. Services use a separate ABI in the same DLL; their worker stays inactive until requested. It is a console check; the WinUI UI comparison remains open.
 
 Run the collection benchmark:
 

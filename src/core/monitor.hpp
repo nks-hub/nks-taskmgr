@@ -32,6 +32,10 @@ struct SnapshotSlot {
         failure = error;
         return std::exchange(latest, {});
     }
+    void clear() {
+        std::lock_guard lock(mutex);
+        latest.reset(); error.clear();
+    }
 };
 
 class Monitor {

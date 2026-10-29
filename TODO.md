@@ -34,6 +34,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 ## Průběžné nálezy a review
 
 - [x] F01 Sestavení: MSBuild x64 načítal jiný kořen UCRT než SDK; místní build skript ověřuje skutečný SDK a nastavuje UCRTContentRoot jen pro podřízené procesy.
+- [x] F20 Služby: změna výběru nyní zruší čekající detail i jeho chybu a odmítne dokončení předchozího dotazu podle verze výběru. Test rychlého přepnutí ověřil správný nový detail a nezávislou životnost starého snímku.
 - [ ] F02 Výkon: měření nyní odděluje nativní dotaz, parser, systémové čítače a výpočty; lokální špičky převládají v systémových dotazech. Omezit jejich dopad a ověřit přijímací scénáře; burst test není důkaz klidové spotřeby ani výkonu UI.
 - [x] F03 Review: systémové CPU nyní používá NtQuerySystemInformationEx pro každou skupinu; dvě skupiny a selhání jedné z nich pokrývají testy. Skutečný víceskupinový stroj zůstává v T41.
 - [ ] F04 Identita: v T09 doplnit neměnnou identitu bootu a ověřit exporty přes změnu systémových hodin; nynější sběrač drží BootTime jen po dobu svého běhu.
@@ -56,6 +57,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 ## Průběžné ověření
 
 - První Release a Debug sestavení prošla; 30 kontrol parseru a výpočtů a živý test vlastní CPU zátěže a alokace 32 MiB prošly.
+- Stejná DLL nyní poskytuje také služby a jejich detail přes samostatné C rozhraní. Deset nativních testů a konzolový Native AOT klient ověřily živý seznam, konfiguraci, závislosti, změnu výběru a životnost snímku po ukončení sběrače; nejde ještě o WinUI pohled služeb.
 - Benchmark má 10 zahřívacích a 200 měřených sběrů. Původní výstupy a údaje o sestavě zůstávají mimo Git; přijímací limity aplikace nejsou označené za splněné.
 - Nezávislé read-only review nativního základu našlo chybějící větev pro více skupin CPU a doporučilo typový wrapper nativního dotazu. Opravy prošly opakovaným review bez dalšího konkrétního nálezu; testy skupin používají mock.
 - První C++/Win32/Direct2D kandidát běží nad živými daty; má virtualizovanou tabulku, hledání, řazení, více výběrů, detail procesu a samostatný pohled Výkon se seznamem jednotlivých prostředků, minigrafy a velkým grafem.
