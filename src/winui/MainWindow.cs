@@ -246,7 +246,7 @@ public sealed partial class MainWindow : Window
             button.Click += (_, _) => { cpuMode = index; RefreshPerformance(); }; cpuModes.Children.Add(button);
         }
         cpuModes.Margin = new Thickness(0, 0, 0, 12);
-        content.Children.Add(cpuModes); content.Children.Add(chart); content.Children.Add(processors);
+        content.Children.Add(cpuModes); content.Children.Add(chart); content.Children.Add(processors); content.Children.Add(BuildGpu());
         retained.Margin = new Thickness(0, 7, 0, 0); content.Children.Add(retained);
         pageFileTitle.Margin = new Thickness(0, 18, 0, 8);
         content.Children.Add(pageFileTitle); content.Children.Add(pageFile);
@@ -410,6 +410,7 @@ public sealed partial class MainWindow : Window
         if (smokeModelsChecked && elapsed == 40) {
             if (coreCharts.Count != model.Processors.Count || coreCharts.Values.Any(core => core.ActualWidth <= 0)) throw new InvalidOperationException("Logical CPU charts did not render.");
             cpuMode = 2; RefreshPerformance();
+            CheckResourceViews();
         }
         if (smokeModelsChecked && elapsed == 50) { ShowView(DesktopView.Services); smokeServicesStage = 1; }
         if (smokeServicesStage == 1 && servicesModel!.Time > 0 && servicesModel.Find("RpcSs") is not null) {

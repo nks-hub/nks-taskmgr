@@ -84,10 +84,11 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
 {
     public ResourceRow(string id, ResourceKind kind)
     {
-        Id = id; Kind = kind;
+        Id = id; Kind = kind; Gpu = kind == ResourceKind.Gpu ? new GpuModel() : null;
     }
     public string Id { get; }
     public ResourceKind Kind { get; }
+    public GpuModel? Gpu { get; }
     public string Title { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
     public string Status { get; private set; } = string.Empty;

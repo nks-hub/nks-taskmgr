@@ -56,7 +56,7 @@ void Desktop::paintPerformance(float width, float height)
         }
     }
     const float graphY = item->kind == ResourceKind::cpu ? y + 179 : y + 159;
-    const float graphBottom = y + h - (item->kind == ResourceKind::memory ? 160 : 89);
+    const float graphBottom = y + h - (item->kind == ResourceKind::memory ? 160 : item->kind == ResourceKind::gpu ? 200 : 89);
     const auto plot = D2D1::RectF(x + 23, graphY, x + w - 23, graphBottom);
     const auto* series = history.find(item->id);
     double maximum = item->kind == ResourceKind::memory ? item->capacity : 100;
@@ -69,7 +69,33 @@ void Desktop::paintPerformance(float width, float height)
     text(item->kind == ResourceKind::memory ? decimal(item->capacity / divisor, L" GiB")
         : item->kind == ResourceKind::network ? decimal(maximum / 1000000, L" Mbit/s") : L"100 %",
         rect(x + w - 123, y + 115, 100, 16), 9, muted, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
-    if (item->kind == ResourceKind::cpu && cpuView == 1 && processes && !processes->processors.empty()) {
+    if (item->kind == ResourceKind::gpu) {
+        const auto rows = std::max<std::size_t>(2, (item->engines.size() + 1) / 2);
+        const auto cw = (plot.right - plot.left - 14) / 2;
+        const auto ch = (plot.bottom - plot.top) / static_cast<float>(rows);
+        for (std::size_t i = 0; i < item->engines.size(); ++i) {
+            const auto& engine = item->engines[i];
+            const auto ex = plot.left + static_cast<float>(i % 2) * (cw + 14);
+            const auto ey = plot.top + static_cast<float>(i / 2) * ch;
+            text(engine.name, rect(ex, ey, cw - 60, 17), 10, muted);
+            text(resourceStale ? L"Zastaralé" : engine.utilization.valid() ? decimal(engine.utilization.value, L" %") : L"—", rect(ex + cw - 60, ey, 60, 17), 9, color, 400, 0, DWRITE_TEXT_ALIGNMENT_TRAILING);
+            graph(history.find(item->id + engine.id), rect(ex, ey + 20, cw, ch - 30), color, 100, true);
+        }
+        if (item->engines.empty()) {
+            graph(nullptr, plot, color, 100, true);
+            text(L"Měření enginů není dostupné", rect(plot.left + 12, plot.top + 15, plot.right - plot.left - 24, 24), 12, muted);
+        }
+        const auto mw = (plot.right - plot.left - 14) / 2;
+        const std::array labels{L"Vyhrazená paměť GPU", L"Sdílená paměť GPU"};
+        const std::array metrics{item->secondary, item->tertiary};
+        const std::array capacities{item->capacity, item->sharedCapacity};
+        for (std::size_t i = 0; i < labels.size(); ++i) {
+            const auto mx = plot.left + static_cast<float>(i) * (mw + 14);
+            text(labels[i], rect(mx, plot.bottom + 34, mw, 17), 10, muted);
+            text(metrics[i].valid() && !resourceStale ? decimal(metrics[i].value / 1073741824., L" / ") + decimal(capacities[i] / 1073741824., L" GiB") : L"Měření nedostupné", rect(mx, plot.bottom + 54, mw, 17), 10, color);
+            graph(history.find(item->id + (i == 0 ? L":dedicated" : L":shared")), rect(mx, plot.bottom + 77, mw, 64), color, std::max(1., capacities[i]), true);
+        }
+    } else if (item->kind == ResourceKind::cpu && cpuView == 1 && processes && !processes->processors.empty()) {
         const auto count = processes->processors.size();
         const auto columns = count <= 8 ? 4U : count <= 24 ? 6U : 8U;
         const auto rows = (count + columns - 1) / columns;
@@ -143,8 +169,10 @@ void Desktop::paintPerformance(float width, float height)
         facts = {{L"Připojení", item->title}, {L"Rychlost linky", decimal(item->capacity / 1000000000, L" Gbit/s")}, {L"Stav", item->status}};
         stats = {{L"↓ Příjem", measured(item->primary, 1000000, L" Mbit/s")}, {L"↑ Odesílání", measured(item->secondary, 1000000, L" Mbit/s")}};
     } else {
-        facts = {{L"Adaptér", item->title}, {L"Vyhrazená paměť", decimal(item->capacity / 1073741824., L" GiB")}, {L"Zobrazené využití", L"Nejvyšší engine"}};
-        stats = {{L"Aktivita", measured(item->primary, 1, L" %")}, {L"Zdroj", L"GPU Engine"}};
+        facts = {{L"Adaptér", item->title}, {L"Kapacita VRAM", decimal(item->capacity / 1073741824., L" GiB")}, {L"Limit sdílené", decimal(item->sharedCapacity / 1073741824., L" GiB")}};
+        stats = {{L"Využití GPU", measured(item->primary, 1, L" %")}, {L"Enginy", std::to_wstring(item->engines.size())},
+            {L"Vyhrazená", measured(item->secondary, 1073741824., L" GiB")}, {L"Sdílená", measured(item->tertiary, 1073741824., L" GiB")},
+            {L"Teplota GPU", measured(item->temperature, 1, L" °C")}};
     }
     const auto factsColumnWidth = frame.stacked ? (factsWidth - 66) / 2 : factsWidth - 46;
     float fy = frame.stacked ? factsY + 98 : factsY + 50 + modelSize.height + 20;
@@ -164,9 +192,11 @@ void Desktop::paintPerformance(float width, float height)
         text(stats[i].first, rect(sx, sy, columnWidth, 17), 9, muted);
         text(stats[i].second, rect(sx, sy + 19, columnWidth, 24), 14, ink, 600);
     }
-    const auto rowY = frame.rowY;
-    text(L"S O U V I S L O S T I", rect(x, rowY - 49, 250, 18), 9, muted);
-    text(item->kind == ResourceKind::memory ? L"Procesy podle pracovní sady" : L"Procesy podle CPU · celý systém", rect(x, rowY - 33, available - 180, 27), 16, ink, 600);
+    if (item->kind == ResourceKind::cpu || item->kind == ResourceKind::memory) {
+        const auto rowY = frame.rowY;
+        text(L"S O U V I S L O S T I", rect(x, rowY - 49, 250, 18), 9, muted);
+        text(item->kind == ResourceKind::memory ? L"Procesy podle pracovní sady" : L"Procesy podle CPU · celý systém", rect(x, rowY - 33, available - 180, 27), 16, ink, 600);
+    }
     surface->SetTransform(D2D1::Matrix3x2F::Identity());
     surface->PopAxisAlignedClip();
     if (frame.maxScroll > 0) {
@@ -181,6 +211,7 @@ void Desktop::updateConsumers()
     consumers.fill(std::nullopt);
     if (!processes || processStale) return;
     const auto* resource = selectedResource();
+    if (!resource || (resource->kind != ResourceKind::cpu && resource->kind != ResourceKind::memory)) return;
     const bool memory = resource && resource->kind == ResourceKind::memory;
     std::vector<const ProcessRecord*> candidates;
     for (const auto& process : processes->processes)

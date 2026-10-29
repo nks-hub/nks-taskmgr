@@ -76,6 +76,15 @@ void verify()
         require(resource.kind <= NKS_RESOURCE_NETWORK && resource.id.length && resource.id.data, "ABI device identity was lost");
     }
     monitor.reset();
+    NksGpuData gpuData{};
+    require(nks_frame_get_gpu_data(nullptr, sizeof(gpuData), &gpuData) == NKS_INVALID_ARGUMENT, "Null GPU frame was accepted");
+    require(nks_frame_get_gpu_data(resourceFrame.get(), sizeof(gpuData) - 1, &gpuData) == NKS_ABI_MISMATCH, "Wrong GPU layout was accepted");
+    require(nks_frame_get_gpu_data(resourceFrame.get(), sizeof(gpuData), &gpuData) == NKS_OK, "GPU frame depended on the destroyed monitor");
+    for (uint32_t i = 0; i < gpuData.gpu_count; ++i) {
+        const auto& gpu = gpuData.gpus[i];
+        require(gpu.resource_id.length > 0 && gpu.shared_capacity >= 0, "GPU capacity or identity was lost");
+        for (uint32_t j = 0; j < gpu.engine_count; ++j) require(gpu.engines[j].id.length > 0 && gpu.engines[j].name.length > 0, "GPU engine string was invalidated");
+    }
     require(own->generation == generation && std::wstring(own->name.data, own->name.length) == name, "A frame depended on a destroyed monitor");
     NksFrameView retained{};
     require(nks_frame_get_view(processFrame.get(), sizeof(retained), &retained) == NKS_OK && retained.processes.process_count == p.process_count, "A retained frame was invalidated");

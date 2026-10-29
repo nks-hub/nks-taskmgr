@@ -12,7 +12,7 @@ struct PerformanceLayout {
     float rowY{}, consumerGap{}, contentHeight{}, maxScroll{};
     bool stacked{}, compact{};
 
-    static PerformanceLayout calculate(float width, float height, ResourceKind kind) {
+    static PerformanceLayout calculate(float width, float height, ResourceKind kind, std::size_t engines = 0) {
         PerformanceLayout frame;
         frame.sidebar = width <= 1000 ? 68.f : 88.f;
         frame.padding = width <= 780 ? 15.f : width <= 1000 ? 20.f : 25.f;
@@ -23,10 +23,11 @@ struct PerformanceLayout {
         frame.detailRight = width - frame.padding;
         frame.bottom = std::max(frame.top + 1, height - 52);
         frame.stacked = width <= 1250;
-        frame.factsHeight = !frame.stacked ? frame.chartHeight : kind == ResourceKind::memory ? 264.f
+        if (kind == ResourceKind::gpu) frame.chartHeight = 360 + static_cast<float>(std::max<std::size_t>(2, (engines + 1) / 2)) * 130;
+        frame.factsHeight = !frame.stacked ? std::min(frame.chartHeight, 475.f) : kind == ResourceKind::memory ? 264.f : kind == ResourceKind::gpu ? 264.f
             : kind == ResourceKind::cpu || kind == ResourceKind::disk ? 207.f : 166.f;
         const auto workspace = frame.chartHeight + (frame.stacked ? frame.factsHeight + 14 : 0);
-        frame.contentHeight = workspace + 148;
+        frame.contentHeight = workspace + (kind == ResourceKind::cpu || kind == ResourceKind::memory ? 148.f : 0.f);
         frame.maxScroll = std::max(0.f, frame.contentHeight - (frame.bottom - frame.top));
         frame.available = frame.detailRight - frame.detailX - (frame.maxScroll > 0 ? 17.f : 0);
         frame.factsWidth = frame.stacked ? frame.available : 242.f;

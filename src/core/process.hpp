@@ -12,7 +12,7 @@ enum class SampleState : std::uint8_t {
 };
 
 enum class MetricSource : std::uint8_t {
-    nativeProcess, processorTime, performanceInfo, performanceCounter, networkInterface, dxgi
+    nativeProcess, processorTime, performanceInfo, performanceCounter, networkInterface, dxgi, gpuAdapter
 };
 
 template<class T>

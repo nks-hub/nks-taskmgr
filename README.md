@@ -18,6 +18,7 @@ The current desktop prototype displays live processes and individual system devi
 - 🛠️ **Services** - Lists accessible Windows services with state filters and name, account, or PID search. The selected detail shows configuration, dependencies, and a link to a host process whose creation time has been verified.
 - ⏱️ **History** - Stores up to 2,401 samples for each of 512 series, draws gaps, and shows the retained duration. Collection runs on separate process and device threads with one pending snapshot each.
 - 🧩 **CPU graphs** - Switches between total CPU, a graph for each logical processor, and overlaid processor graphs. Processor groups retain separate identities.
+- 🎮 **GPU detail** - Charts individual GPU engines, dedicated memory, and shared memory. Adapter memory counters provide usage; DXGI provides capacities. Supported drivers also provide temperature through D3DKMT, refreshed every five seconds.
 - ↕️ **Network traffic** - Shows receive and transmit rates in the resource list, selected chart, and device details.
 - 💾 **Pagefile usage** - Displays the current and peak pagefile allocation, its capacity, and a usage graph beside physical memory and commit values.
 - 🧮 **Sample states** - Distinguishes a first sample, measured zero, unavailable data, and gaps after counter or topology changes.
@@ -73,6 +74,8 @@ The WinUI candidate also resizes columns by dragging their edges and hides optio
 While the pointer is over a process row, the table keeps its row order and updates the counters. New processes appear after the pointer leaves. A finished process remains marked until then and cannot become a live selection. Switching to Performance and back preserves the scrolled process position.
 
 The memory page separates physical memory, commit, and pagefile usage. Pagefile usage comes from `EnumPageFilesW`; it is not a measure of paging I/O activity. Network graphs show receive and transmit values in bits per second.
+
+GPU details use the busiest engine for overall utilization. The WinUI view selects four engine graphs independently; the Win32 view lists all available engines. Memory graphs separate dedicated and shared usage. Process cards appear under CPU and physical memory; disk, network, and GPU details do not substitute CPU rankings for device activity.
 
 Services runs in read-only mode. Its collector starts when the view opens and refreshes state once per second; polling pauses while the window is minimized. List configuration is cached for up to 15 seconds. The selected configuration is queried again with its detail. The dependency list opens a known service on double-click or Enter. Windows may omit services that the current account cannot query; denied configuration and host identity queries remain unavailable.
 

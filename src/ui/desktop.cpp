@@ -245,7 +245,7 @@ void Desktop::layout()
     scrolled(cpuTotalButton, frame.detailX + 22, 302, 64, 25, cpu);
     scrolled(cpuEachButton, frame.detailX + 87, 302, 64, 25, cpu);
     scrolled(cpuOverlayButton, frame.detailX + 152, 302, 64, 25, cpu);
-    scrolled(allProcessesButton, frame.detailX + frame.available - 165, frame.rowY - 46, 165, 30, true);
+    scrolled(allProcessesButton, frame.detailX + frame.available - 165, frame.rowY - 46, 165, 30, selected && (cpu || selected->kind == ResourceKind::memory));
     const auto consumerWidth = (frame.available - frame.consumerGap * 2) / 3;
     for (std::size_t i = 0; i < consumerButtons.size(); ++i)
         scrolled(consumerButtons[i], frame.detailX + static_cast<float>(i) * (consumerWidth + frame.consumerGap),
@@ -272,6 +272,9 @@ void Desktop::tick()
         for (const auto& item : hardware->devices) {
             history.append(item.id, {hardware->measuredAt, item.primary});
             if (item.kind == ResourceKind::network) history.append(item.id + L":up", {hardware->measuredAt, item.secondary});
+            if (item.kind == ResourceKind::gpu) {
+                history.appendGpu(item, hardware->measuredAt);
+            }
         }
         changed = true;
     }
@@ -364,7 +367,7 @@ PerformanceLayout Desktop::performanceLayout() const
 {
     RECT bounds{}; GetClientRect(window, &bounds);
     const auto* resource = selectedResource();
-    return PerformanceLayout::calculate(bounds.right / scale, bounds.bottom / scale, resource ? resource->kind : ResourceKind::cpu);
+    return PerformanceLayout::calculate(bounds.right / scale, bounds.bottom / scale, resource ? resource->kind : ResourceKind::cpu, resource ? resource->engines.size() : 0);
 }
 
 void Desktop::scrollDetail(float position)

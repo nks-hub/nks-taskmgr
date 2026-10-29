@@ -11,7 +11,7 @@ public enum NativeResult { Ok, NoData, InvalidArgument, AbiMismatch, OutOfMemory
 public enum SampleState : uint { Valid, First, Unavailable, AccessDenied, Unsupported, Stale, Error, Gap }
 public enum GenerationKind : uint { Missing, CreationTime, SequenceNumber }
 public enum ResourceKind : uint { Cpu, Memory, Disk, Gpu, Network }
-public enum MetricSource : uint { NativeProcess, ProcessorTime, PerformanceInfo, PerformanceCounter, NetworkInterface, Dxgi }
+public enum MetricSource : uint { NativeProcess, ProcessorTime, PerformanceInfo, PerformanceCounter, NetworkInterface, Dxgi, GpuAdapter }
 [Flags]
 public enum FrameFlags : uint { ProcessData = 1, ResourceData = 2, ProcessErrorChanged = 4, ResourceErrorChanged = 8 }
 
@@ -105,6 +105,30 @@ public struct FrameView
     public ResourceData Resources;
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct GpuEngineInfo
+{
+    public String16 Id, Name;
+    public Metric Utilization;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public unsafe struct GpuInfo
+{
+    public String16 ResourceId;
+    public double SharedCapacity;
+    public Metric Temperature;
+    public GpuEngineInfo* Engines;
+    public uint EngineCount, Reserved;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public unsafe struct GpuData
+{
+    public GpuInfo* Gpus;
+    public uint GpuCount, Reserved;
+}
+
 public sealed class NativeMonitorException(NativeResult result) : Exception($"Native monitor returned {result}.")
 {
     public NativeResult Result { get; } = result;
@@ -164,6 +188,15 @@ public sealed class NativeFrame : SafeHandleZeroOrMinusOneIsInvalid
         return clone;
     }
 
+    public unsafe void ReadGpu(Action<GpuData> visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+        Use(pointer => {
+            NativeMonitor.Check(NativeMethods.GetGpuData(pointer, (uint)sizeof(GpuData), out var data));
+            visitor(data);
+        });
+    }
+
     private void Use(Action<nint> action)
     {
         bool added = false;
@@ -194,6 +227,8 @@ internal static partial class NativeMethods
     internal static partial NativeResult Read(NativeMonitor monitor, out NativeFrame frame);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_view")]
     internal static partial NativeResult GetView(nint frame, uint viewSize, out FrameView view);
+    [LibraryImport(Library, EntryPoint = "nks_frame_get_gpu_data")]
+    internal static partial NativeResult GetGpuData(nint frame, uint dataSize, out GpuData data);
     [LibraryImport(Library, EntryPoint = "nks_frame_retain")]
     internal static partial void Retain(nint frame);
     [LibraryImport(Library, EntryPoint = "nks_frame_release")]

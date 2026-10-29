@@ -17,6 +17,8 @@ struct NksFrame {
     std::vector<NksProcess> processes;
     std::vector<NksProcessor> processors;
     std::vector<NksResource> resources;
+    std::vector<NksGpu> gpus;
+    std::vector<std::vector<NksGpuEngine>> gpuEngines;
     NksFrameView view{};
     void build();
 };
@@ -48,6 +50,7 @@ static_assert(sizeof(NksString16) == 16 && sizeof(NksMetric) == 16);
 static_assert(sizeof(NksProcess) == 152 && sizeof(NksProcessor) == 48);
 static_assert(sizeof(NksMemory) == 96 && sizeof(NksProcessData) == 208);
 static_assert(sizeof(NksResource) == 128 && sizeof(NksResourceData) == 32 && sizeof(NksFrameView) == 288);
+static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGpuData) == 16);
 static_assert(static_cast<unsigned>(nks::SampleState::valid) == NKS_SAMPLE_VALID && static_cast<unsigned>(nks::SampleState::gap) == NKS_SAMPLE_GAP);
 static_assert(static_cast<unsigned>(nks::GenerationKind::creationTime) == NKS_GENERATION_CREATION_TIME && static_cast<unsigned>(nks::GenerationKind::sequenceNumber) == NKS_GENERATION_SEQUENCE_NUMBER);
 static_assert(static_cast<unsigned>(nks::ResourceKind::cpu) == NKS_RESOURCE_CPU && static_cast<unsigned>(nks::ResourceKind::network) == NKS_RESOURCE_NETWORK);
@@ -86,9 +89,16 @@ void NksFrame::build()
     if (resourceSnapshot) {
         const auto& source = *resourceSnapshot;
         resources.reserve(source.devices.size());
-        for (const auto& item : source.devices)
+        gpuEngines.reserve(source.devices.size());
+        for (const auto& item : source.devices) {
             resources.push_back({static_cast<uint32_t>(item.kind), 0, string(item.id), string(item.title), string(item.description), string(item.status),
                 metric(item.primary), metric(item.secondary), metric(item.tertiary), item.capacity});
+            if (item.kind == nks::ResourceKind::gpu) {
+                auto& engines = gpuEngines.emplace_back();
+                for (const auto& engine : item.engines) engines.push_back({string(engine.id), string(engine.name), metric(engine.utilization)});
+                gpus.push_back({string(item.id), item.sharedCapacity, metric(item.temperature), engines.data(), count(engines.size()), 0});
+            }
+        }
         view.resources = {nanos(source.measuredAt), source.diskCountersAvailable ? 1u : 0u, source.gpuCountersAvailable ? 1u : 0u,
             resources.data(), count(resources.size()), 0};
     }
@@ -158,6 +168,13 @@ NksResult __cdecl nks_frame_get_view(const NksFrame* frame, uint32_t size, NksFr
 }
 
 void __cdecl nks_frame_retain(NksFrame* frame) noexcept { if (frame) frame->references.fetch_add(1, std::memory_order_relaxed); }
+NksResult __cdecl nks_frame_get_gpu_data(const NksFrame* frame, uint32_t size, NksGpuData* result) noexcept
+{
+    if (!frame || !result) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksGpuData)) return NKS_ABI_MISMATCH;
+    *result = {frame->gpus.data(), count(frame->gpus.size()), 0};
+    return NKS_OK;
+}
 void __cdecl nks_frame_release(NksFrame* frame) noexcept
 {
     if (frame && frame->references.fetch_sub(1, std::memory_order_acq_rel) == 1) delete frame;

@@ -12,32 +12,62 @@ Metric<double> networkRate(std::uint64_t current, std::uint64_t previous, double
     return {static_cast<double>(current - previous) * 8 / seconds, SampleState::valid, MetricSource::networkInterface};
 }
 
-Metric<double> busiestGpuEngine(std::span<const NamedCounter> counters, const std::wstring& luid)
+std::vector<GpuEngine> gpuEngines(std::span<const NamedCounter> counters, const std::wstring& luid)
 {
-    std::map<std::wstring, double> engines;
-    bool invalid = false;
+    std::map<std::wstring, GpuEngine> engines;
     for (const auto& item : counters) {
         const auto adapter = std::search(item.name.begin(), item.name.end(), luid.begin(), luid.end(),
             [](wchar_t a, wchar_t b) { return std::towupper(a) == std::towupper(b); });
-        if (adapter == item.name.end())
+        if (adapter == item.name.end() || (adapter != item.name.begin() && *(adapter - 1) != L'_'))
             continue;
-        const auto engine = item.name.find(L"_phys_", static_cast<std::size_t>(adapter - item.name.begin()) + luid.size());
-        if (engine == std::wstring::npos)
+        const auto engine = static_cast<std::size_t>(adapter - item.name.begin()) + luid.size();
+        if (!item.name.substr(engine).starts_with(L"_phys_"))
             continue;
+        const auto type = item.name.find(L"_engtype_", engine);
+        if (type == std::wstring::npos || type + 9 == item.name.size()) continue;
+        const auto id = item.name.substr(engine);
+        auto [found, inserted] = engines.try_emplace(id, GpuEngine{id, item.name.substr(type + 9), {0, SampleState::valid, MetricSource::performanceCounter}});
+        (void)inserted;
+        auto& utilization = found->second.utilization;
         if (!item.metric.valid() || !std::isfinite(item.metric.value) || item.metric.value < 0) {
-            invalid = true;
+            utilization.state = SampleState::unavailable;
             continue;
         }
-        engines[item.name.substr(engine)] += item.metric.value;
+        utilization.value += item.metric.value;
     }
-    if (invalid || engines.empty())
-        return {0, SampleState::unavailable, MetricSource::performanceCounter};
+    std::vector<GpuEngine> result;
+    for (auto& [id, engine] : engines) {
+        (void)id;
+        engine.utilization.value = std::clamp(engine.utilization.value, 0.0, 100.0);
+        result.push_back(std::move(engine));
+    }
+    return result;
+}
+
+Metric<double> busiestGpuEngine(std::span<const NamedCounter> counters, const std::wstring& luid)
+{
+    const auto engines = gpuEngines(counters, luid);
     double busiest = 0;
-    for (const auto& [name, percent] : engines) {
-        (void)name;
-        busiest = std::max(busiest, percent);
+    for (const auto& engine : engines) {
+        if (!engine.utilization.valid()) return {0, SampleState::unavailable, MetricSource::performanceCounter};
+        busiest = std::max(busiest, engine.utilization.value);
     }
-    return {std::clamp(busiest, 0.0, 100.0), SampleState::valid, MetricSource::performanceCounter};
+    return {busiest, engines.empty() ? SampleState::unavailable : SampleState::valid, MetricSource::performanceCounter};
+}
+
+Metric<double> gpuMemoryUsage(std::span<const NamedCounter> counters, const std::wstring& luid)
+{
+    Metric<double> result{0, SampleState::unavailable, MetricSource::performanceCounter};
+    bool found = false;
+    for (const auto& item : counters) {
+        if (item.name.size() <= luid.size() || item.name.substr(luid.size(), 6) != L"_phys_"
+            || !std::equal(luid.begin(), luid.end(), item.name.begin(), [](wchar_t a, wchar_t b) { return std::towupper(a) == std::towupper(b); })) continue;
+        if (!item.metric.valid() || !std::isfinite(item.metric.value) || item.metric.value < 0)
+            return result;
+        result.value += item.metric.value; found = true;
+    }
+    if (found && std::isfinite(result.value)) result.state = SampleState::valid;
+    return result;
 }
 
 std::vector<ResourceRecord> systemResources(const ProcessSnapshot& snapshot)

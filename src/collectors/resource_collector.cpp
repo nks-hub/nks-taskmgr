@@ -1,6 +1,7 @@
 #include <winsock2.h>
 #include <ws2ipdef.h>
 #include "resource_collector.hpp"
+#include "gpu_telemetry.hpp"
 #include <setupapi.h>
 #include <winioctl.h>
 #include <ntddstor.h>
@@ -89,6 +90,7 @@ void ResourceCollector::inventory()
         nextNumbers = diskNumbers;
     }
     std::map<std::wstring, std::wstring> nextLuids;
+    std::map<std::wstring, LUID> nextLuidValues;
     Microsoft::WRL::ComPtr<IDXGIFactory1> factory;
     bool gpuComplete = true;
     if (SUCCEEDED(CreateDXGIFactory1(IID_PPV_ARGS(&factory)))) {
@@ -106,7 +108,9 @@ void ResourceCollector::inventory()
                 gpu.title = L"GPU " + std::to_wstring(index);
                 gpu.description = description.Description;
                 gpu.capacity = static_cast<double>(description.DedicatedVideoMemory);
+                gpu.sharedCapacity = static_cast<double>(description.SharedSystemMemory);
                 nextLuids.emplace(gpu.id, gpu.id);
+                nextLuidValues.emplace(gpu.id, description.AdapterLuid);
                 next.push_back(std::move(gpu));
             }
             adapter.Reset();
@@ -117,6 +121,7 @@ void ResourceCollector::inventory()
         for (const auto& item : devices)
             if (item.kind == ResourceKind::gpu) next.push_back(item);
         nextLuids = gpuLuids;
+        nextLuidValues = gpuLuidValues;
     }
     std::sort(next.begin(), next.end(), [&](const auto& a, const auto& b) {
         if (a.kind != b.kind) return a.kind < b.kind;
@@ -130,9 +135,11 @@ void ResourceCollector::inventory()
     devices = std::move(next);
     diskNumbers = std::move(nextNumbers);
     gpuLuids = std::move(nextLuids);
+    gpuLuidValues = std::move(nextLuidValues);
     disksFresh = diskComplete;
     gpusFresh = gpuComplete;
     inventoryAt = std::chrono::steady_clock::now();
+    telemetryAt = {};
 }
 
 void ResourceCollector::networks(ResourceSnapshot& snapshot)
@@ -193,14 +200,26 @@ ResourceSnapshot ResourceCollector::collect()
     const auto reads = collected ? counters.read(1) : std::vector<NamedCounter>{};
     const auto writes = collected ? counters.read(2) : std::vector<NamedCounter>{};
     const auto engines = collected ? counters.read(3) : std::vector<NamedCounter>{};
+    const auto dedicated = collected ? counters.read(4) : std::vector<NamedCounter>{};
+    const auto shared = collected ? counters.read(5) : std::vector<NamedCounter>{};
+    const bool telemetryDue = now - telemetryAt >= std::chrono::seconds(5);
     for (auto& item : result.devices) {
         if ((item.kind == ResourceKind::disk && !disksFresh) || (item.kind == ResourceKind::gpu && !gpusFresh)) {
             item.primary.state = item.secondary.state = item.tertiary.state = SampleState::unavailable;
             item.status = L"Inventář není aktuální";
+            item.temperature.state = SampleState::unavailable;
             continue;
         }
         if (item.kind == ResourceKind::gpu) {
             item.primary = busiestGpuEngine(engines, gpuLuids.at(item.id));
+            item.engines = gpuEngines(engines, gpuLuids.at(item.id));
+            item.secondary = gpuMemoryUsage(dedicated, item.id);
+            item.tertiary = gpuMemoryUsage(shared, item.id);
+            if (telemetryDue) {
+                item.temperature = gpuTemperature(gpuLuidValues.at(item.id));
+                const auto cached = std::find_if(devices.begin(), devices.end(), [&](const auto& device) { return device.id == item.id; });
+                cached->temperature = item.temperature;
+            }
             continue;
         }
         const auto number = diskNumbers.find(item.id);
@@ -218,6 +237,7 @@ ResourceSnapshot ResourceCollector::collect()
         item.capacity = 100;
     }
     networks(result);
+    if (telemetryDue) telemetryAt = std::chrono::steady_clock::now();
     return result;
 }
 

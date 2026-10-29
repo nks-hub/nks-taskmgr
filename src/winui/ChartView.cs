@@ -39,7 +39,7 @@ public sealed partial class ChartView : Grid
         };
     }
 
-    public void Set(HistorySeries value, HistorySeries? upload, long time, int window, double limit, uint stroke, bool showGrid = true, bool area = true)
+    public void Set(HistorySeries? value, HistorySeries? upload, long time, int window, double limit, uint stroke, bool showGrid = true, bool area = true)
     {
         series = value; secondary = upload; now = time; seconds = window; maximum = limit; color = stroke; grid = showGrid; filled = area;
         Render();
@@ -48,9 +48,10 @@ public sealed partial class ChartView : Grid
     private void Render()
     {
         double width = ActualWidth, height = ActualHeight;
-        if (width <= 0 || height <= 0 || series is null) return;
+        if (width <= 0 || height <= 0) return;
         foreach (var line in horizontal) line.Visibility = grid ? Visibility.Visible : Visibility.Collapsed;
         foreach (var line in vertical) line.Visibility = grid ? Visibility.Visible : Visibility.Collapsed;
+        if (series is null) { areaPath.Data = linePath.Data = secondaryPath.Data = null; return; }
         if (paintedColor != color) {
             var brush = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
             var rgb = Windows.UI.Color.FromArgb(65, (byte)(color >> 16), (byte)(color >> 8), (byte)color);

@@ -30,11 +30,12 @@ add_library(nks_native STATIC
     src/collectors/service_collector.cpp
     src/collectors/pdh_counters.cpp
     src/collectors/resource_collector.cpp
+    src/collectors/gpu_telemetry.cpp
 )
 target_include_directories(nks_native PUBLIC src)
 target_include_directories(nks_native SYSTEM PRIVATE third_party/phnt/include)
 target_compile_definitions(nks_native PRIVATE PHNT_VERSION=117)
-target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32)
+target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32 gdi32)
 target_compile_options(nks_native PRIVATE /W4 /WX /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
 
 add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/services_api.cpp)

@@ -20,9 +20,11 @@ private:
     std::vector<ResourceRecord> devices;
     std::map<std::wstring, std::uint32_t> diskNumbers;
     std::map<std::wstring, std::wstring> gpuLuids;
+    std::map<std::wstring, LUID> gpuLuidValues;
     std::map<std::uint64_t, NetworkBefore> previousNetworks;
     std::vector<ResourceRecord> lastNetworks;
     std::chrono::steady_clock::time_point inventoryAt{};
+    std::chrono::steady_clock::time_point telemetryAt{};
     bool disksFresh{}, gpusFresh{};
 };
 

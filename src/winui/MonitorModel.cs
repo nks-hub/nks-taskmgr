@@ -54,7 +54,10 @@ public sealed class MonitorModel : IDisposable
         visualUpdates = updateView;
         bool changed = resumed;
         using var frame = monitor.Read();
-        if (frame is not null) { frame.Read(Apply); changed = true; }
+        if (frame is not null) {
+            frame.Read(view => { Apply(view); if ((view.Flags & FrameFlags.ResourceData) != 0) frame.ReadGpu(ApplyGpu); });
+            changed = true;
+        }
         bool stale = !Paused && ProcessTime > 0 && NativeMonitor.MonotonicNowNs - ProcessTime > 3_000_000_000;
         if (stale != Stale) {
             Stale = stale;
@@ -133,6 +136,14 @@ public sealed class MonitorModel : IDisposable
             }
         }
         return row;
+    }
+
+    private unsafe void ApplyGpu(GpuData data)
+    {
+        for (uint i = 0; i < data.GpuCount; ++i) {
+            var gpu = data.Gpus[i];
+            if (resources.TryGetValue(gpu.ResourceId.Copy(), out var row)) row.Gpu?.Apply(gpu, row, ResourceTime);
+        }
     }
 
     private void SyncResources()

@@ -9,6 +9,11 @@ namespace nks {
 
 enum class ResourceKind { cpu, memory, disk, gpu, network };
 
+struct GpuEngine {
+    std::wstring id, name;
+    Metric<double> utilization{0, SampleState::unavailable, MetricSource::performanceCounter};
+};
+
 struct ResourceRecord {
     std::wstring id;
     ResourceKind kind{};
@@ -19,6 +24,9 @@ struct ResourceRecord {
     Metric<double> secondary{0, SampleState::unavailable, MetricSource::performanceCounter};
     Metric<double> tertiary{0, SampleState::unavailable, MetricSource::performanceCounter};
     double capacity{};
+    double sharedCapacity{};
+    std::vector<GpuEngine> engines;
+    Metric<double> temperature{0, SampleState::unavailable, MetricSource::gpuAdapter};
 };
 
 struct ResourceSnapshot {
@@ -35,6 +43,8 @@ struct NamedCounter {
 
 Metric<double> networkRate(std::uint64_t current, std::uint64_t previous, double seconds);
 Metric<double> busiestGpuEngine(std::span<const NamedCounter> counters, const std::wstring& luid);
+std::vector<GpuEngine> gpuEngines(std::span<const NamedCounter> counters, const std::wstring& luid);
+Metric<double> gpuMemoryUsage(std::span<const NamedCounter> counters, const std::wstring& luid);
 std::vector<ResourceRecord> systemResources(const ProcessSnapshot& snapshot);
 
 }

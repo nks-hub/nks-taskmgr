@@ -1,6 +1,6 @@
 #pragma once
 
-#include "process.hpp"
+#include "resource.hpp"
 #include <array>
 #include <map>
 #include <span>
@@ -46,6 +46,18 @@ public:
         return match == series.end() ? nullptr : &match->second;
     }
     std::size_t size() const { return series.size(); }
+    void appendGpu(const ResourceRecord& gpu, std::chrono::steady_clock::time_point time) {
+        append(gpu.id + L":dedicated", {time, gpu.secondary});
+        append(gpu.id + L":shared", {time, gpu.tertiary});
+        const auto prefix = gpu.id + L"_phys_";
+        for (auto& [id, history] : series) {
+            if (!id.starts_with(prefix)) continue;
+            bool found = false;
+            for (const auto& engine : gpu.engines) if (id == gpu.id + engine.id) { found = true; break; }
+            if (!found) history.append({time, {0, SampleState::unavailable, MetricSource::performanceCounter}});
+        }
+        for (const auto& engine : gpu.engines) append(gpu.id + engine.id, {time, engine.utilization});
+    }
 private:
     static_assert(sizeof(HistorySeries) * maximumSeries < 64 * 1024 * 1024);
     std::map<std::wstring, HistorySeries> series;

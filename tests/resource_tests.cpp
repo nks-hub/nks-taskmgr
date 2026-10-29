@@ -29,13 +29,29 @@ int main()
             engine(L"pid_1_luid_0x00000000_0x00000002_phys_0_eng_0_engtype_3D", 99)
         };
         require(nks::busiestGpuEngine(values, luid).value == 70, "GPU must sum processes per engine, then take maximum");
+        const auto separate = nks::gpuEngines(values, luid);
+        require(separate.size() == 2 && separate[0].name == L"3D" && separate[0].utilization.value == 70
+            && separate[1].name == L"Copy" && separate[1].utilization.value == 50, "GPU engine identities or independent values were lost");
         values[0].metric.value = 90;
         require(nks::busiestGpuEngine(values, luid).value == 100, "GPU above 100 percent was not capped");
         values[0].metric.state = nks::SampleState::unavailable;
         require(!nks::busiestGpuEngine(values, luid).valid(), "Partial GPU counters became valid zero");
+        require(!nks::gpuEngines(values, luid)[0].utilization.valid() && nks::gpuEngines(values, luid)[1].utilization.valid(), "One invalid GPU engine invalidated unrelated engines");
         require(!nks::busiestGpuEngine({}, luid).valid(), "Absent GPU counters became valid zero");
         const std::vector upper{engine(L"pid_1_luid_0x00000002_0xABCDEF01_phys_0_eng_0_engtype_3D", 17)};
         require(nks::busiestGpuEngine(upper, L"luid_0x00000002_0xabcdef01").value == 17, "GPU LUID comparison must ignore hex letter case");
+        const std::vector memoryCounters{engine(L"luid_0x00000002_0xABCDEF01_phys_0", 1024), engine(L"luid_0x00000002_0xABCDEF01_phys_1", 2048), engine(L"luid_0x00000002_0xABCDEF010_phys_0", 9999)};
+        require(nks::gpuMemoryUsage(memoryCounters, L"luid_0x00000002_0xabcdef01").value == 3072, "GPU adapter memory was confused with another LUID");
+        require(!nks::gpuMemoryUsage({}, luid).valid(), "Missing GPU memory became measured zero");
+        nks::ResourceHistory gpuHistory;
+        nks::ResourceRecord gpu;
+        gpu.id = luid; gpu.kind = nks::ResourceKind::gpu; gpu.engines = separate;
+        const auto gpuTime = std::chrono::steady_clock::time_point(std::chrono::seconds(1));
+        gpuHistory.appendGpu(gpu, gpuTime);
+        gpu.engines.clear(); gpuHistory.appendGpu(gpu, gpuTime + std::chrono::seconds(1));
+        gpu.engines = separate; gpuHistory.appendGpu(gpu, gpuTime + std::chrono::seconds(2));
+        const auto* engineHistory = gpuHistory.find(gpu.id + separate[0].id);
+        require(engineHistory && engineHistory->size() == 3 && !engineHistory->at(1).metric.valid() && engineHistory->at(2).metric.valid(), "GPU history joined across a missing engine sample");
         nks::ProcessSnapshot snapshot;
         snapshot.memory = {1024, 256, 2000, 3000, 0, 0, 0, nks::SampleState::valid};
         auto resources = nks::systemResources(snapshot);

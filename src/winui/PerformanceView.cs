@@ -37,10 +37,12 @@ public sealed partial class MainWindow
             ResourceKind.Cpu => "VYUŽITÍ PROCESORU", ResourceKind.Memory => "FYZICKÁ PAMĚŤ", ResourceKind.Disk => "AKTIVITA DISKU",
             ResourceKind.Gpu => "GRAFICKÝ ADAPTÉR", _ => "SÍŤOVÝ ADAPTÉR"
         };
-        bool cpu = resource.Kind == ResourceKind.Cpu, memory = resource.Kind == ResourceKind.Memory;
+        bool cpu = resource.Kind == ResourceKind.Cpu, memory = resource.Kind == ResourceKind.Memory, gpu = resource.Kind == ResourceKind.Gpu;
         cpuModes.Visibility = cpu ? Visibility.Visible : Visibility.Collapsed;
         processors.Visibility = cpu && cpuMode > 0 ? Visibility.Visible : Visibility.Collapsed;
-        chart.Visibility = cpu && cpuMode > 0 ? Visibility.Collapsed : Visibility.Visible;
+        chart.Visibility = gpu || (cpu && cpuMode > 0) ? Visibility.Collapsed : Visibility.Visible;
+        gpuPanel.Visibility = gpu ? Visibility.Visible : Visibility.Collapsed;
+        if (gpu) RefreshGpu(resource, now);
         chart.Set(resource.History, resource.Kind == ResourceKind.Network ? resource.Upload : null, now, rangeSeconds, resource.Maximum(now, rangeSeconds), color);
         if (cpu && cpuMode > 0) RefreshProcessors(now);
         pageFile.Visibility = pageFileTitle.Visibility = memory ? Visibility.Visible : Visibility.Collapsed;
@@ -87,9 +89,17 @@ public sealed partial class MainWindow
                 Fact("Čtení", Display.Metric(resource.Secondary, " MiB/s", 1048576)); Fact("Zápis", Display.Metric(resource.Tertiary, " MiB/s", 1048576));
             } else {
                 Fact("Vyhrazená paměť", Display.Metric(resource.Secondary, " MiB", 1048576)); Fact("Sdílená paměť", Display.Metric(resource.Tertiary, " MiB", 1048576));
+                Fact("Kapacita VRAM", Display.Number(resource.Capacity / 1073741824, " GiB"));
+                Fact("Limit sdílené paměti", Display.Number(resource.Gpu!.SharedCapacity / 1073741824, " GiB"));
+                Fact("Enginy", resource.Gpu.Engines.Count.ToString());
+                Fact("Teplota GPU", resource.Stale ? "Zastaralé" : Display.Metric(resource.Gpu.Temperature, " °C"));
+                Fact("Celkové vytížení", "Nejvytíženější engine");
             }
         }
-        consumers.Children.Clear(); consumers.Children.Add(Label("SOUVISLOSTI", 9, 0x95a4ad));
+        consumers.Visibility = cpu || memory ? Visibility.Visible : Visibility.Collapsed;
+        consumers.Children.Clear();
+        if (!cpu && !memory) return;
+        consumers.Children.Add(Label("SOUVISLOSTI", 9, 0x95a4ad));
         consumers.Children.Add(Label(memory ? "Procesy podle pracovní sady" : "Procesy podle CPU", 15, 0xe9eef0));
         var ranked = model.TopConsumers(memory);
         var cards = new Grid { ColumnSpacing = 14 };
