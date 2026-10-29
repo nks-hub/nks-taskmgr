@@ -33,6 +33,8 @@ public sealed class MonitorModel : IDisposable
     public uint Interval { get; private set; } = 1000;
     public ProcessMode Mode { get; private set; }
     public bool Held => held;
+    public int SortColumn => sortColumn;
+    public bool SortDescending => descending;
 
     public void SetPaused(bool value) { monitor.SetPaused(value); Paused = value; }
     public void SetInterval(uint value) { monitor.SetInterval(value); Interval = value; }

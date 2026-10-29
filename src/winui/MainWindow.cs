@@ -36,6 +36,7 @@ public sealed partial class MainWindow : Window
     private readonly ListView resourceList = new() { SelectionMode = ListViewSelectionMode.Single, IsItemClickEnabled = false, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
     private readonly ListView processList = new() { SelectionMode = ListViewSelectionMode.Extended, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
     private readonly Grid performancePage = new(), processPage = new();
+    private ProcessTable processTable = null!;
     private readonly Grid performanceBody = new(), chartGrid = new();
     private readonly TextBlock resourceEyebrow = Label("PROCESOR", 9, 0x95a4ad);
     private readonly TextBlock resourceTitle = Label("Procesor", 20, 0xe9eef0), resourceDescription = Label("", 10, 0x95a4ad);
@@ -62,6 +63,8 @@ public sealed partial class MainWindow : Window
     private bool smokeModelsChecked;
     private bool smokeMinimizedChecked;
     private Action? verifyMinimized;
+    private Action? verifyProcessTable;
+    private bool smokeColumnsChecked;
     private int smokeMinimizedAt, smokeReadyAt;
     private int smokeServicesStage, smokeServicesAt;
     private long smokeServiceTime;
@@ -256,30 +259,25 @@ public sealed partial class MainWindow : Window
 
     private void BuildProcesses()
     {
-        foreach (var height in new[] { new GridLength(108), new GridLength(51), new GridLength(39), new GridLength(1, GridUnitType.Star), new GridLength(92) })
+        foreach (var height in new[] { new GridLength(108), new GridLength(51), new GridLength(1, GridUnitType.Star), new GridLength(92) })
             processPage.RowDefinitions.Add(new RowDefinition { Height = height });
         processPage.RowSpacing = 0;
         var system = Card(overview, new Thickness(23, 20, 23, 20)); processPage.Children.Add(system);
+        var toolbar = new Grid();
         var filters = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         foreach (var mode in new[] { ProcessMode.All, ProcessMode.Active, ProcessMode.Tree }) {
             var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : "Strom"); button.Height = 29;
             button.Click += (_, _) => { model.SetMode(mode); RefreshProcesses(); }; filters.Children.Add(button);
         }
-        filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0); Grid.SetRow(filters, 1); processPage.Children.Add(filters);
-        var columns = new Grid { Background = Display.Brush(0x1d252a), Padding = new Thickness(16, 0, 16, 0) };
-        foreach (var width in new[] { new GridLength(3, GridUnitType.Star), new GridLength(70), new GridLength(86), new GridLength(120), new GridLength(126), new GridLength(108), new GridLength(108) })
-            columns.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
-        columns.ColumnDefinitions[0].MinWidth = 210;
-        var names = new[] { "Proces", "PID", "CPU", "Pracovní sada", "Soukromá paměť", "Čtení I/O", "Zápis I/O" };
-        for (int i = 0; i < names.Length; ++i) {
-            int index = i; var button = Button(names[i]); button.FontSize = 9; button.BorderThickness = new Thickness(0); button.HorizontalAlignment = HorizontalAlignment.Stretch;
-            button.Click += (_, _) => { model.Sort(index); RefreshProcesses(); }; Grid.SetColumn(button, i); columns.Children.Add(button);
-        }
-        Grid.SetRow(columns, 2); processPage.Children.Add(columns);
-        Grid.SetRow(processList, 3); processPage.Children.Add(processList);
+        filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0); toolbar.Children.Add(filters);
+        processTable = new ProcessTable(processList, column => { model.Sort(column); processTable.SetSort(model.SortColumn, model.SortDescending); RefreshProcesses(); });
+        var columns = Button("Sloupce"); columns.Height = 29; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
+        columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů"); toolbar.Children.Add(columns);
+        Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
+        Grid.SetRow(processTable, 2); processPage.Children.Add(processTable);
         var dock = new StackPanel { Padding = new Thickness(21, 18, 21, 18), Spacing = 12 };
         dock.Children.Add(selectionTitle); dock.Children.Add(selectionFacts);
-        var selection = Card(dock); Grid.SetRow(selection, 4); processPage.Children.Add(selection);
+        var selection = Card(dock); Grid.SetRow(selection, 3); processPage.Children.Add(selection);
         processPage.Visibility = Visibility.Collapsed; page.Children.Add(processPage);
     }
 
@@ -406,13 +404,14 @@ public sealed partial class MainWindow : Window
             ShowView(false); processList.SelectedItem = model.Processes.First(row => row.Key.Pid == Environment.ProcessId);
         }
         int elapsed = ticks - smokeReadyAt;
-        if (smokeModelsChecked && elapsed == 10) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true); }
-        if (smokeModelsChecked && elapsed == 20) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
-        if (smokeModelsChecked && elapsed == 30) {
+        if (smokeModelsChecked && elapsed == 10) verifyProcessTable = WinUiChecks.BeginProcessTableReplay(processTable, processList);
+        if (smokeModelsChecked && elapsed == 20) { verifyProcessTable!(); smokeColumnsChecked = true; resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true); }
+        if (smokeModelsChecked && elapsed == 30) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
+        if (smokeModelsChecked && elapsed == 40) {
             if (coreCharts.Count != model.Processors.Count || coreCharts.Values.Any(core => core.ActualWidth <= 0)) throw new InvalidOperationException("Logical CPU charts did not render.");
             cpuMode = 2; RefreshPerformance();
         }
-        if (smokeModelsChecked && elapsed == 40) { ShowView(DesktopView.Services); smokeServicesStage = 1; }
+        if (smokeModelsChecked && elapsed == 50) { ShowView(DesktopView.Services); smokeServicesStage = 1; }
         if (smokeServicesStage == 1 && servicesModel!.Time > 0 && servicesModel.Find("RpcSs") is not null) {
             UpdateServices(() => {
                 WinUiChecks.Services(servicesModel);
@@ -445,7 +444,7 @@ public sealed partial class MainWindow : Window
             App.Trace($"Services passed: count={servicesModel.All.Count};detail={servicesModel.Detail?.Name};resumed=True");
         }
         if (smokeServicesChecked) {
-            App.Trace($"aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported};ready={smokeModelsChecked};models={smokeModelsChecked};minimized={smokeMinimizedChecked};services={smokeServicesChecked};processes={model.Processes.Count};resources={model.Resources.Count};charts={coreCharts.Count}");
+            App.Trace($"aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported};ready={smokeModelsChecked};models={smokeModelsChecked};minimized={smokeMinimizedChecked};services={smokeServicesChecked};columns={smokeColumnsChecked};processes={model.Processes.Count};resources={model.Resources.Count};charts={coreCharts.Count}");
             Close();
         }
     }

@@ -68,6 +68,8 @@ Switch between Processes and Performance using the left navigation. Performance 
 
 Processes provides All, Active, and Tree views. Search accepts process names and PIDs, including case-insensitive Unicode names. Click a column heading to sort, drag headings to reorder columns, and use Ctrl or Shift to select multiple rows. Tree branches expand by clicking their arrow or pressing the left and right arrow keys. Overview cards open the corresponding system resource.
 
+The WinUI candidate also resizes columns by dragging their edges and hides optional columns through the Columns menu. A heading's context menu offers move and resize commands for keyboard use. The menu restores the default layout; the process name remains visible.
+
 While the pointer is over a process row, the table keeps its row order and updates the counters. New processes appear after the pointer leaves. A finished process remains marked until then and cannot become a live selection. Switching to Performance and back preserves the scrolled process position.
 
 The memory page separates physical memory, commit, and pagefile usage. Pagefile usage comes from `EnumPageFilesW`; it is not a measure of paging I/O activity. Network graphs show receive and transmit values in bits per second.

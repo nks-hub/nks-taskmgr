@@ -3,6 +3,13 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:NksTaskMgr.WinUI">
+      <Style x:Key="ColumnGripStyle" TargetType="Thumb">
+        <Setter Property="Template">
+          <Setter.Value><ControlTemplate TargetType="Thumb">
+            <Grid Background="Transparent"><Border Width="1" Height="14" Background="#3b4851" HorizontalAlignment="Center" /></Grid>
+          </ControlTemplate></Setter.Value>
+        </Setter>
+      </Style>
       <DataTemplate x:Key="ServiceTemplate" x:DataType="local:ServiceRow">
         <Grid Height="56" Padding="18,0" BorderBrush="#2c363d" BorderThickness="0,0,0,1">
           <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="210" /><ColumnDefinition Width="105" /><ColumnDefinition Width="140" /><ColumnDefinition Width="65" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
@@ -33,12 +40,7 @@
         </Grid>
       </DataTemplate>
       <DataTemplate x:Key="ProcessTemplate" x:DataType="local:ProcessRow">
-        <Grid Height="51" BorderBrush="#2c363d" BorderThickness="0,0,0,1" ColumnSpacing="0" Padding="16,0">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*" MinWidth="210" /><ColumnDefinition Width="70" />
-            <ColumnDefinition Width="86" /><ColumnDefinition Width="120" /><ColumnDefinition Width="126" />
-            <ColumnDefinition Width="108" /><ColumnDefinition Width="108" />
-          </Grid.ColumnDefinitions>
+        <local:ProcessRowGrid Height="51" BorderBrush="#2c363d" BorderThickness="0,0,0,1" ColumnSpacing="0" Padding="16,0">
           <StackPanel VerticalAlignment="Center" Margin="{x:Bind Indent, Mode=OneWay}">
             <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
             <TextBlock Text="{x:Bind Note, Mode=OneWay}" FontSize="9" Foreground="#95a4ad" />
@@ -49,6 +51,6 @@
           <TextBlock Grid.Column="4" Text="{x:Bind PrivateText, Mode=OneWay}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
           <TextBlock Grid.Column="5" Text="{x:Bind ReadText, Mode=OneWay}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
           <TextBlock Grid.Column="6" Text="{x:Bind WriteText, Mode=OneWay}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
-        </Grid>
+        </local:ProcessRowGrid>
       </DataTemplate>
 </ResourceDictionary>

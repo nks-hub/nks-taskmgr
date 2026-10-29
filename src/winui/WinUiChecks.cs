@@ -2,7 +2,7 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-public static class WinUiChecks
+public static partial class WinUiChecks
 {
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 

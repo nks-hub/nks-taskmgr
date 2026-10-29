@@ -59,7 +59,7 @@ try {
             try {
                 if (-not $candidate.WaitForExit(45000)) { $candidate.Kill(); throw 'WinUI runtime check exceeded 45 seconds.' }
                 $result = if (Test-Path -LiteralPath $resultPath) { Get-Content -LiteralPath $resultPath -Raw } else { '' }
-                if ($candidate.ExitCode -ne 0 -or $result -notmatch 'aot=True;ready=True;models=True;minimized=True;services=True;') {
+                if ($candidate.ExitCode -ne 0 -or $result -notmatch 'aot=True;ready=True;models=True;minimized=True;services=True;columns=True;') {
                     throw "WinUI runtime check failed: exit $($candidate.ExitCode). Output: $resultPath"
                 }
                 Write-Output "WinUI Native AOT runtime check passed. Output: $resultPath"
