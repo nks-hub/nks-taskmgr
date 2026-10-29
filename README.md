@@ -21,6 +21,7 @@ The current desktop prototype displays live processes and individual system devi
 - 💾 **Pagefile usage** - Displays the current and peak pagefile allocation, its capacity, and a usage graph beside physical memory and commit values.
 - 🧮 **Sample states** - Distinguishes a first sample, measured zero, unavailable data, and gaps after counter or topology changes.
 - 🧠 **Memory accounting** - Keeps working set, private memory, physical memory, and commit values separate.
+- 🔗 **Shared collector** - Exposes immutable process and device snapshots through a versioned C API and C# bindings for Native AOT clients.
 - 🧪 **Local verification** - Tests malformed buffers, PID reuse, CPU normalization, and a controlled CPU and memory load.
 - 📈 **Collection benchmark** - Reports median, p95, and maximum duration together with the benchmark process memory usage.
 
@@ -31,6 +32,7 @@ The current desktop prototype displays live processes and individual system devi
 - Windows SDK 10.0.26100.0, including the Universal CRT.
 - Visual Studio CMake tools, CMake 3.31 or later.
 - PowerShell 7 or later.
+- .NET SDK 10.0.403 for the optional C# bindings and Native AOT interop check.
 
 Windows 10 runtime verification and management of 32-bit processes are implementation requirements. The current native collector has been exercised on Windows 11 x64; this does not establish the final application compatibility matrix.
 
@@ -86,6 +88,15 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Debug -Test
 The live check allocates and touches 32 MiB in its own process and runs one CPU worker for one second. It verifies that the collector sees the resulting CPU activity, memory change, and process creation time.
 
 The process-view test uses a native ListView in a hidden test window to check selection across refresh, PID reuse, parent generations, cycles, filtering, Unicode names, column reordering, row height, held rows, and scroll restoration.
+
+After building the native Release targets, publish and run the Native AOT interop check:
+
+```powershell
+dotnet publish tests/native_aot/NativeAotProbe.csproj -c Release -r win-x64 -o build/native-aot-probe
+./build/native-aot-probe/NativeAotProbe.exe
+```
+
+This check reads both live streams, validates the ABI layout and process identity, and retains a snapshot after stopping the monitor and collecting managed memory. It is a console check; the WinUI UI comparison remains open.
 
 Run the collection benchmark:
 

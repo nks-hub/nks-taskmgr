@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <PublishAot>true</PublishAot>
+    <IlcTreatWarningsAsErrors>true</IlcTreatWarningsAsErrors>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <NativeMonitorPath Condition="'$(NativeMonitorPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-monitor.dll</NativeMonitorPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\interop\dotnet\NksTaskMgr.Native.csproj" />
+    <None Include="$(NativeMonitorPath)" Link="nks-monitor.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+  <Target Name="RequireNativeMonitor" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(NativeMonitorPath)')" Text="Build the native Release library before publishing the AOT probe." />
+  </Target>
+</Project>

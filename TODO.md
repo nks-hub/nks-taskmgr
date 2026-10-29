@@ -66,6 +66,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - Pět místních testů prošlo; 20 kontrol tabulky zahrnuje generace rodičů, záměnu PID, cyklus, sbalení větve, diakritiku, výběr přes obnovu a přesunutý sloupec. Živě ověřené filtry zachovaly počet procesů ve stromu a vybraly vlastní PID.
 - Tabulka má nyní 34 kontrol včetně živých hodnot při přidrženém pořadí, skončeného řádku, odmítnutí nové generace stejného PID a návratu k posunu po dvou skrytých obnovách; všech pět testů i test nativního okna prošlo.
 - Společný Monitor odděluje sběr od okna; šest testů ověřuje také přepis posledního vzorku, start v pauze, obnovení, skutečný vlastní proces a zastavení. Srovnání WinUI/AOT v T54 a izolace poskytovatelů v T12 zůstávají otevřené.
+- Sdílená DLL má verzované C rozhraní a C# vazby; sedm místních testů včetně skutečného C volajícího prošlo. Publikovaný .NET 10 Native AOT klient bez varování načetl oba živé proudy, identity zařízení a snímek zachovaný po ukončení monitoru i úklidu paměti; nejde o WinUI prototyp ani dokončení T54.
 - Release, čtyři testy sběru a výpočtů a test nativního okna prošly; při čtyřech velikostech od 720 × 500 do 1440 × 920 jsou karty procesů dosažitelné posunem a ovládání nepřekrývá záhlaví ani patičku. Skutečné 150/200% DPI zbývá ověřit.
 - Historie má nejvýše 512 řad po 2 401 bodech včetně logických CPU; samotné bodové buffery zůstávají pod 64 MiB. Rozsah lze přepnout mezi 60 s a 10 min; nejde o záruku uchování celé délky při každém intervalu.
 
