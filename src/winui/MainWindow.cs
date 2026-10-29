@@ -70,6 +70,7 @@ public sealed partial class MainWindow : Window
     private Action? verifyProcessTable;
     private bool smokeColumnsChecked;
     private Task<byte[]?[]>? smokeIcons;
+    private Task? smokeSharedIcon;
     private int smokeIconsAt;
     private int smokeMinimizedAt, smokeReadyAt;
     private int smokeServicesStage, smokeServicesAt;
@@ -443,10 +444,15 @@ public sealed partial class MainWindow : Window
             if (!smokeIcons!.IsCompleted && ticks - smokeIconsAt < 100) { ++smokeReadyAt; return; }
             if (!smokeIcons!.IsCompletedSuccessfully || smokeIcons.Result[0] is not { Length: > 54 } || smokeIcons.Result[1] is not null)
                 throw new InvalidOperationException("Process icons did not validate the process generation.");
+            smokeSharedIcon = WinUiChecks.SharedIconDecode(smokeIcons.Result[0]!);
             App.Trace("Process icons passed: own executable; recycled PID rejected");
             verifyProcessTable = WinUiChecks.BeginProcessTableReplay(processTable, processList);
         }
-        if (smokeModelsChecked && elapsed == 20) { verifyProcessTable!(); model.VisibleProcesses.RefreshView(); smokeColumnsChecked = true; resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true); }
+        if (smokeModelsChecked && elapsed == 20) {
+            if (smokeSharedIcon is not { IsCompletedSuccessfully: true })
+                throw new InvalidOperationException("Shared executable icon checks did not pass.", smokeSharedIcon?.Exception);
+            verifyProcessTable!(); model.VisibleProcesses.RefreshView(); smokeColumnsChecked = true; resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true);
+        }
         if (smokeModelsChecked && elapsed == 30) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
         if (smokeModelsChecked && elapsed == 40) {
             if (coreCharts.Count != model.Processors.Count || coreCharts.Values.Any(core => core.ActualWidth <= 0)) throw new InvalidOperationException("Logical CPU charts did not render.");

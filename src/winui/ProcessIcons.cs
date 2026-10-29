@@ -43,10 +43,9 @@ internal static partial class ProcessIcons
         } finally { if (initialized >= 0) CoUninitialize(); }
         if (bytes is null) return null;
         lock (cache) {
-            if (!cache.ContainsKey(path)) {
-                if (cache.Count == 128) cache.Remove(cachedPaths.Dequeue());
-                cache.Add(path, bytes); cachedPaths.Enqueue(path);
-            }
+            if (cache.TryGetValue(path, out var existing)) return existing;
+            if (cache.Count == 128) cache.Remove(cachedPaths.Dequeue());
+            cache.Add(path, bytes); cachedPaths.Enqueue(path);
         }
         return bytes;
     }

@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Storage.Streams;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace NksTaskMgr.WinUI;
 
@@ -10,6 +11,25 @@ public sealed partial class ProcessIconView : Grid
 {
     private static readonly Dictionary<ProcessKey, BitmapImage> decoded = [];
     private static readonly Queue<ProcessKey> decodedOrder = [];
+    private static readonly ConditionalWeakTable<byte[], Task<BitmapImage>> sharedBitmaps = new();
+    internal static int DecodedImagesCreated { get; private set; }
+
+    internal static Task<BitmapImage> DecodeShared(byte[] bytes)
+    {
+        if (sharedBitmaps.TryGetValue(bytes, out var previous) && (previous.IsFaulted || previous.IsCanceled)) sharedBitmaps.Remove(bytes);
+        return sharedBitmaps.GetValue(bytes, DecodeBitmap);
+    }
+
+    private static async Task<BitmapImage> DecodeBitmap(byte[] bytes)
+    {
+        ++DecodedImagesCreated;
+        using var stream = new InMemoryRandomAccessStream();
+        using (var writer = new DataWriter(stream)) { writer.WriteBytes(bytes); await writer.StoreAsync(); writer.DetachStream(); }
+        stream.Seek(0);
+        var bitmap = new BitmapImage { DecodePixelWidth = 18, DecodePixelHeight = 18 };
+        await bitmap.SetSourceAsync(stream);
+        return bitmap;
+    }
     private readonly Image image = new() { Width = 18, Height = 18 };
     private readonly FrameworkElement fallback = UiIcon.Create(false, 0x95a4ad, 18);
     private CancellationTokenSource? loading;
@@ -42,11 +62,7 @@ public sealed partial class ProcessIconView : Grid
         try {
             var bytes = await ProcessIcons.Load(key, cancellation);
             if (bytes is null || cancellation.IsCancellationRequested || !IsLoaded || row?.Key != key) return;
-            using var stream = new InMemoryRandomAccessStream();
-            using (var writer = new DataWriter(stream)) { writer.WriteBytes(bytes); await writer.StoreAsync(); writer.DetachStream(); }
-            stream.Seek(0);
-            var bitmap = new BitmapImage { DecodePixelWidth = 18, DecodePixelHeight = 18 };
-            await bitmap.SetSourceAsync(stream);
+            var bitmap = await DecodeShared(bytes);
             if (cancellation.IsCancellationRequested || !IsLoaded || row?.Key != key) return;
             if (!decoded.ContainsKey(key)) {
                 if (decoded.Count == 128) decoded.Remove(decodedOrder.Dequeue());

@@ -6,6 +6,22 @@ public static partial class WinUiChecks
 {
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 
+    internal static async Task SharedIconDecode(byte[] bytes)
+    {
+        var first = ProcessIconView.DecodeShared(bytes);
+        Require(ReferenceEquals(first, ProcessIconView.DecodeShared(bytes)), "Identical executable bytes started separate decodes.");
+        Require((await first).PixelWidth > 0, "The shared executable icon did not decode.");
+        var damaged = new byte[bytes.Length];
+        var failed = ProcessIconView.DecodeShared(damaged);
+        bool rejected = false;
+        try { await failed; } catch (System.Runtime.InteropServices.COMException) { rejected = true; }
+        Require(rejected, "Invalid bitmap bytes were accepted.");
+        bytes.CopyTo(damaged, 0);
+        var retried = ProcessIconView.DecodeShared(damaged);
+        Require(!ReferenceEquals(failed, retried) && (await retried).PixelWidth > 0, "A failed decode permanently poisoned the icon cache.");
+        Require(ReferenceEquals(retried, ProcessIconView.DecodeShared(damaged)), "A successful retry was not shared.");
+    }
+
     public static Action BeginMinimizedCollection(MonitorModel model)
     {
         var own = model.Processes.Single(row => row.Key.Pid == Environment.ProcessId);
