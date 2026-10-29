@@ -35,6 +35,22 @@ public sealed class HistorySeries
         return maximum;
     }
 
+    public (long Time, Metric Value)? At(long time)
+    {
+        if (count == 0 || time < FirstTime || time > LastTime + 1_250_000_000) return null;
+        int low = 0, high = count - 1;
+        while (low < high) {
+            int middle = (low + high) / 2;
+            if (times[(first + middle) % Capacity] < time) low = middle + 1; else high = middle;
+        }
+        int slot = (first + low) % Capacity;
+        if (low > 0) {
+            int previous = (slot + Capacity - 1) % Capacity;
+            if (Math.Abs(time - times[previous]) < Math.Abs(times[slot] - time)) slot = previous;
+        }
+        return Math.Abs(times[slot] - time) <= 1_250_000_000 ? (times[slot], values[slot]) : null;
+    }
+
     public Geometry Build(double width, double height, long now, int seconds, double maximum, bool fill = false)
     {
         var geometry = new PathGeometry();

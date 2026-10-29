@@ -23,6 +23,11 @@ public static partial class WinUiChecks
             Require(figure.IsClosed && figure.IsFilled && figure.StartPoint.Y == 100 && path[path.Count - 1].Y == 100,
                 "GPU fill crossed a gap or missed the baseline.");
         }
+        Require(history.At(500_000_000) is null && history.At(6_000_000_000) is null, "Graph cursor invented data before history or inside a sampling gap.");
+        Require(history.At(3_000_000_000)?.Value.State == SampleState.Unavailable
+            && history.At(1_900_000_000)?.Value.Value == 20, "Graph cursor lost invalid samples or selected a different measured value.");
+        Require(ChartView.ScaleMaximum(7.3, 100) == 10 && ChartView.ScaleMaximum(57, 100) == 100
+            && ChartView.ScaleMaximum(140, 100) == 100, "Automatic graph scale hid a peak or exceeded physical capacity.");
         App.Trace("Graph polylines passed: measured coordinates, gaps and closed fills");
     }
 }

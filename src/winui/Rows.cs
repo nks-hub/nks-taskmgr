@@ -82,6 +82,7 @@ public sealed partial class ProcessRow : INotifyPropertyChanged
 
 public sealed partial class ResourceRow : INotifyPropertyChanged
 {
+    public IReadOnlyDictionary<string, string> HardwareFacts { get; internal set; } = new Dictionary<string, string>();
     public ResourceRow(string id, ResourceKind kind)
     {
         Id = id; Kind = kind; Gpu = kind == ResourceKind.Gpu ? new GpuModel() : null;

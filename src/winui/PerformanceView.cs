@@ -9,6 +9,8 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class MainWindow
 {
     private readonly Dictionary<(uint, uint), ChartView> coreCharts = [];
+    private readonly Dictionary<(uint, uint), TextBlock> coreLabels = [];
+    private readonly ChartView coreOverlay = new() { Height = 260 };
     private string coreLayout = string.Empty;
     private string factsKey = "";
     private TextBlock? hardwareFact;
@@ -27,7 +29,7 @@ public sealed partial class MainWindow
             : resource.Kind == ResourceKind.Memory && model.Memory.State == SampleState.Valid
                 ? Display.Number(model.Memory.PhysicalBytes / 1073741824d, " GiB celkem") : resource.Description;
         bool valid = !resource.Stale && resource.Primary.State == SampleState.Valid;
-        resourceValue.FontSize = valid ? 42 : 20;
+        resourceValue.FontSize = valid ? 24 : 13;
         resourceValue.Foreground = performanceInk;
         resourceValue.Text = valid ? Display.Number(resource.Primary.Value / (resource.Kind == ResourceKind.Memory ? 1073741824d : resource.Kind == ResourceKind.Network ? 1_000_000d : 1), "") : resource.Value;
         resourceUnit.Text = valid ? resource.Kind == ResourceKind.Memory ? "GiB" : resource.Kind == ResourceKind.Network ? "Mbit/s ↓" : "%" : "";
@@ -37,6 +39,7 @@ public sealed partial class MainWindow
         }
         for (int i = 0; i < rangeButtons.Count; ++i) SelectChoice(rangeButtons[i], rangeSeconds == (i == 0 ? 60 : 600));
         for (int i = 0; i < cpuButtons.Count; ++i) SelectChoice(cpuButtons[i], cpuMode == i);
+        SelectChoice(scaleChoice, scaleChoice.IsChecked == true);
         resourceEyebrow.Text = resource.Kind switch {
             ResourceKind.Cpu => "VYUŽITÍ PROCESORU", ResourceKind.Memory => "FYZICKÁ PAMĚŤ", ResourceKind.Disk => "AKTIVITA DISKU",
             ResourceKind.Gpu => "GRAFICKÝ ADAPTÉR", _ => "SÍŤOVÝ ADAPTÉR"
@@ -47,18 +50,26 @@ public sealed partial class MainWindow
         chart.Visibility = gpu || (cpu && cpuMode > 0) ? Visibility.Collapsed : Visibility.Visible;
         gpuPanel.Visibility = gpu ? Visibility.Visible : Visibility.Collapsed;
         if (gpu) RefreshGpu(resource, now);
-        if (chart.Visibility == Visibility.Visible) chart.Set(resource.History, resource.Kind == ResourceKind.Network ? resource.Upload : null, now, rangeSeconds, resource.Maximum(now, rangeSeconds), color);
+        if (chart.Visibility == Visibility.Visible) {
+            chart.Configure(resource.Kind == ResourceKind.Network ? "Příjem ↓" : resource.Title,
+                memory ? ChartUnit.Bytes : resource.Kind == ResourceKind.Network ? ChartUnit.BitsPerSecond : ChartUnit.Percent, secondName: "Odesílání ↑");
+            double limit = resource.Kind == ResourceKind.Network ? scaleChoice.IsChecked == true ? ChartView.ScaleMaximum(resource.Maximum(now, rangeSeconds), Math.Max(resource.Capacity, 1_000_000)) : Math.Max(resource.Capacity, 1_000_000)
+                : resource.Kind == ResourceKind.Memory ? Math.Max(1, resource.Capacity) : 100;
+            chart.Set(resource.History, resource.Kind == ResourceKind.Network ? resource.Upload : null, now, rangeSeconds, limit, color,
+                autoScale: scaleChoice.IsChecked == true && resource.Kind != ResourceKind.Network);
+        }
         if (cpu && cpuMode > 0) RefreshProcessors(now);
         pageFile.Visibility = pageFileTitle.Visibility = memory ? Visibility.Visible : Visibility.Collapsed;
         if (memory) {
             pageFileTitle.Text = "Stránkovací soubor (swap)   " + (model.Memory.PageFileState == SampleState.Valid
                 ? Display.Number(model.Memory.PageFileUsedBytes / 1073741824d, " / ") + Display.Number(model.Memory.PageFileBytes / 1073741824d, " GiB")
                 : Display.Metric(new Metric { State = model.Memory.PageFileState }, string.Empty));
-            pageFile.Set(model.PageFile, null, now, rangeSeconds, Math.Max(1, model.Memory.PageFileBytes), 0xdfaf76);
+            pageFile.Configure("Použitý swap", ChartUnit.Bytes);
+            pageFile.Set(model.PageFile, null, now, rangeSeconds, Math.Max(1, model.Memory.PageFileBytes), 0xdfaf76, autoScale: scaleChoice.IsChecked == true);
         }
         double duration = resource.History.Count == 0 ? 0 : Math.Min(rangeSeconds, (resource.History.LastTime - resource.History.FirstTime) / 1_000_000_000d);
         retained.Text = Display.Number(duration, " s uchováno") + " · " + resource.History.Count + " vzorků · okno " + rangeSeconds + " s";
-        string nextFacts = resource.Id + ":" + (memory ? model.Memory.State.ToString() : "");
+        string nextFacts = resource.Id + ":" + (memory ? model.Memory.State.ToString() : "") + ":" + string.Join('|', resource.HardwareFacts.Keys);
         if (factsKey != nextFacts) {
             factsKey = nextFacts; facts.Children.Clear(); factValues.Clear(); hardwareFact = null;
             var factsHeading = Label("SESTAVA", 9, 0x95a4ad); factsHeading.CharacterSpacing = 178; facts.Children.Add(factsHeading);
@@ -106,11 +117,16 @@ public sealed partial class MainWindow
                 Fact("Celkové vytížení", "Nejvytíženější engine");
             }
         }
+        foreach (var fact in resource.HardwareFacts) {
+            if (!cpu || fact.Key == "Fyzická jádra" || fact.Key == "Patice" || fact.Key.StartsWith("Mezipaměť", StringComparison.Ordinal)) Fact(fact.Key, fact.Value);
+        }
+        if (memory && model.Memory.State == SampleState.Valid && model.Memory.InstalledBytes >= model.Memory.PhysicalBytes)
+            Fact("Rezervováno hardwarem", Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));
         consumers.Visibility = cpu || memory ? Visibility.Visible : Visibility.Collapsed;
         consumers.Children.Clear();
         if (!cpu && !memory) return;
         consumers.Children.Add(Label("SOUVISLOSTI", 9, 0x95a4ad));
-        consumers.Children.Add(Label(memory ? "Procesy podle pracovní sady" : "Procesy podle CPU", 15, 0xe9eef0));
+        consumers.Children.Add(Label(memory ? "Pracovní sada včetně sdílených stránek" : "Procesy podle CPU", 15, 0xe9eef0));
         var ranked = model.TopConsumers(memory);
         var cards = new Grid { ColumnSpacing = 14 };
         int count = 0;
@@ -133,7 +149,7 @@ public sealed partial class MainWindow
             button.Click += (_, _) => {
                 if (!model.IsCurrent(row)) return;
                 search.Text = string.Empty; model.SetMode(ProcessMode.All); ShowView(false);
-                processList.SelectedItems.Clear(); processList.SelectedItem = row; processList.ScrollIntoView(row, ScrollIntoViewAlignment.Leading);
+                SelectProcess(row);
             };
             if (stacked) Grid.SetRow(button, index); else Grid.SetColumn(button, index); cards.Children.Add(button);
         }
@@ -143,28 +159,52 @@ public sealed partial class MainWindow
     private void RefreshProcessors(long now)
     {
         var keys = model.Processors.Keys.OrderBy(key => key.Group).ThenBy(key => key.Index).ToArray();
-        int columns = root.ActualWidth <= 1000 ? 3 : 6;
+        double plotWidth = Math.Max(1, ((FrameworkElement)chartGrid.Children[0]).ActualWidth - 44);
+        int preferred = keys.Length <= 4 ? 2 : keys.Length <= 8 ? 4 : 6;
+        int columns = Math.Max(1, Math.Min(Math.Min(preferred, keys.Length), (int)(plotWidth / 112)));
+        int rows = Math.Max(1, (keys.Length + columns - 1) / columns);
+        double coreHeight = Math.Clamp(260d / rows - 20, 52, 220);
         string layout = cpuMode + ":" + columns + ":" + string.Join(',', keys.Select(key => key.Group + ":" + key.Index));
         if (layout != coreLayout) {
-            coreLayout = layout; processors.Children.Clear(); processors.ColumnDefinitions.Clear(); processors.RowDefinitions.Clear(); coreCharts.Clear();
+            coreLayout = layout; processors.Children.Clear(); processors.ColumnDefinitions.Clear(); processors.RowDefinitions.Clear(); coreCharts.Clear(); coreLabels.Clear();
             for (int i = 0; i < (cpuMode == 1 ? columns : 1); ++i) processors.ColumnDefinitions.Add(new ColumnDefinition());
             for (int i = 0; i < (cpuMode == 1 ? (keys.Length + columns - 1) / columns : 1); ++i)
                 processors.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             processors.ColumnSpacing = processors.RowSpacing = cpuMode == 1 ? 6 : 0;
+            if (cpuMode == 2) processors.Children.Add(coreOverlay);
             for (int i = 0; i < keys.Length; ++i) {
-                var core = new ChartView { Height = cpuMode == 1 ? 52 : 236 };
+                if (cpuMode == 2) break;
+                var core = new ChartView { Height = coreHeight };
+                core.Configure($"Logický procesor {keys[i].Group}:{keys[i].Index}", showAxes: false, interactive: cpuMode == 1);
                 AutomationProperties.SetName(core, $"Logický procesor {keys[i].Group}:{keys[i].Index}");
                 coreCharts.Add(keys[i], core);
                 FrameworkElement child = core;
                 if (cpuMode == 1) {
                     var tile = new StackPanel { Spacing = 3, Padding = new Thickness(4) };
-                    tile.Children.Add(Label($"{keys[i].Group}:{keys[i].Index}", 9, 0x95a4ad)); tile.Children.Add(core); child = tile;
+                    var label = Label("", 9, 0x95a4ad); coreLabels.Add(keys[i], label);
+                    tile.Children.Add(label); tile.Children.Add(core); child = tile;
                     Grid.SetColumn(child, i % columns); Grid.SetRow(child, i / columns);
                 }
                 processors.Children.Add(child);
             }
         }
-        foreach (var key in keys) coreCharts[key].Set(model.Processors[key], null, now, rangeSeconds, 100,
-            cpuMode == 1 ? 0x80c5c0u : new uint[] { 0x80c5c0, 0xabb0f1, 0x83bca0, 0xcc9bb6, 0xdfaf76 }[(key.Group + key.Index) % 5], cpuMode == 1, cpuMode == 1);
+        if (cpuMode == 2 && keys.Length == 0) {
+            coreOverlay.SetOverlays([]);
+            coreOverlay.Configure("Logické procesory · měření nedostupné");
+            coreOverlay.Set(null, null, now, rangeSeconds, 100, 0x80c5c0);
+            return;
+        }
+        if (cpuMode == 2 && keys.Length > 0) {
+            uint[] colors = [0x80c5c0, 0xabb0f1, 0x83bca0, 0xcc9bb6, 0xdfaf76];
+            coreOverlay.Configure($"CPU {keys[0].Group}:{keys[0].Index}");
+            coreOverlay.SetOverlays(keys.Skip(1).Select((key, index) => ($"CPU {key.Group}:{key.Index}", model.Processors[key], colors[(index + 1) % colors.Length])).ToArray());
+            coreOverlay.Set(model.Processors[keys[0]], null, now, rangeSeconds, 100, colors[0], area: false, autoScale: scaleChoice.IsChecked == true);
+            return;
+        }
+        double coreMaximum = scaleChoice.IsChecked == true ? ChartView.ScaleMaximum(keys.Select(key => model.Processors[key].Maximum(now - rangeSeconds * 1_000_000_000L, 1)).DefaultIfEmpty(1).Max(), 100) : 100;
+        foreach (var key in keys) {
+            coreLabels[key].Text = $"{key.Group}:{key.Index} · 0–" + Display.Number(coreMaximum, " %", 0);
+            coreCharts[key].Set(model.Processors[key], null, now, rangeSeconds, coreMaximum, 0x80c5c0);
+        }
     }
 }

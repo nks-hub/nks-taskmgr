@@ -30,16 +30,16 @@ public static partial class WinUiChecks
     public static Action BeginProcessTableReplay(ProcessTable table, ListView list)
     {
         var source = list.ItemsSource;
-        var selection = list.SelectedItems.Cast<ProcessRow>().ToArray();
+        var selection = list.SelectedItems.Cast<ProcessSlot>().ToArray();
         table.Columns.MoveTo(2, 0); table.Columns.Resize(2, 137); table.Columns.SetVisible(5, false);
         list.UpdateLayout();
-        Require(selection.SequenceEqual(list.SelectedItems.Cast<ProcessRow>()), "Changing columns lost process selection.");
+        Require(selection.SequenceEqual(list.SelectedItems.Cast<ProcessSlot>()), "Changing columns lost process selection.");
         var first = Enumerable.Range(0, list.Items.Count).Select(index => list.ContainerFromIndex(index)).OfType<ListViewItem>().First();
         AlignedColumns(table, first);
-        var replay = new List<ProcessRow>();
+        var replay = new List<ProcessSlot>();
         for (uint i = 1; i <= 10_000; ++i) {
             var row = new ProcessRow(new ProcessKey(1, i, GenerationKind.CreationTime, i));
-            row.Update(new ProcessInfo { CpuPercent = new Metric { State = SampleState.Valid, Value = i % 100 } }); replay.Add(row);
+            row.Update(new ProcessInfo { CpuPercent = new Metric { State = SampleState.Valid, Value = i % 100 } }); replay.Add(new ProcessSlot(row));
         }
         list.ItemsSource = replay; list.UpdateLayout();
         list.SelectedItem = replay[^1]; list.SelectedItems.Add(replay[^2]);

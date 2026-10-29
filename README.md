@@ -77,6 +77,10 @@ While the pointer is over a process row, the table keeps its row order and updat
 
 The memory page separates physical memory, commit, and pagefile usage. Pagefile usage comes from `EnumPageFilesW`; it is not a measure of paging I/O activity. Network graphs show receive and transmit values in bits per second.
 
+WinUI graphs label their value and time scales. Auto scale follows the highest retained sample; disabling it restores the device capacity or 100 percent. Hover reads measured samples, click pins a time, and the arrow keys move through history. Enter toggles pinning and Escape returns to the live graph. Logical CPU charts adapt to the processor count and panel width.
+
+The WinUI Hardware view (Sestava) lists CPU topology, caches and CPUID fields, SMBIOS memory speed and slots, motherboard and BIOS names, and UPS data exposed by the Windows battery driver. Firmware omissions remain unavailable. UPS polling runs on the resource collector every five seconds and uses read queries. SPD timings and vendor-specific UPS protocols are not implemented. Network details distinguish link speed from current receive and transmit traffic.
+
 GPU details use the busiest engine for overall utilization. The WinUI view selects four engine graphs independently; the Win32 view lists all available engines. Memory graphs separate dedicated and shared usage. Process cards appear under CPU and physical memory; disk, network, and GPU details do not substitute CPU rankings for device activity.
 
 Services runs in read-only mode. Its collector starts when the view opens and refreshes state once per second; polling pauses while the window is minimized. List configuration is cached for up to 15 seconds. The selected configuration is queried again with its detail. The dependency list opens a known service on double-click or Enter. Windows may omit services that the current account cannot query; denied configuration and host identity queries remain unavailable.
@@ -138,6 +142,14 @@ pwsh -NoProfile -File benchmarks/desktop_bench.ps1 -Candidate WinUI -View Perfor
 This local benchmark opens its own application instance, warms it up for 10 seconds, then measures 60 seconds visible and 60 seconds minimized. It requires an active display and stops if the visible window loses foreground. `-Candidate WinUI` selects the AOT build; its Services scenario selects the first visible service and loads its detail. Results, including revision and binary hashes, are written to the system temporary directory. CPU is normalized to the whole machine. Acceptance targets and open findings are maintained in TODO.md; these measurements do not replace the planned OS, UI candidate, or 24-hour tests.
 
 The desktop `--smoke` option checks view switching, retained process selection, PID filtering, service collection and detail, and stale data after stopping both process and device collectors. It exits with code 0 on success.
+
+Measure WinUI process sorting with live rows and a 10,000-row replay:
+
+```powershell
+./build/winui-aot/NksTaskMgr.WinUI.exe "--bench-sort=$env:TEMP\nks-sort.csv"
+```
+
+This check covers every column in both directions, retains multiple selections and the primary process, preserves the scrolled identity, and checks reuse of visible row visuals. The CSV separates handler and layout time from two subsequent rendering callbacks. Those callbacks do not prove hardware presentation time. The benchmark closes its own window when finished; failures produce a sibling `.error.txt` file and a nonzero exit code.
 
 The build script discovers Visual Studio and the installed Windows SDK. It sets the CRT root only for its child build processes and restores the previous environment afterward.
 

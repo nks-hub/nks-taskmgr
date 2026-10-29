@@ -17,7 +17,14 @@ public static class UiIcon
             foreach (var point in points.Skip(1)) figure.Segments.Add(new LineSegment { Point = point });
             path.Figures.Add(figure); geometry.Children.Add(path);
         }
-        if (name == "services") {
+        if (name == "hardware") {
+            geometry.Children.Add(new RectangleGeometry { Rect = new Rect(6, 6, 12, 12) });
+            geometry.Children.Add(new RectangleGeometry { Rect = new Rect(9, 9, 6, 6) });
+            foreach (int position in new[] { 8, 12, 16 }) {
+                Line(new Point(position, 3), new Point(position, 6)); Line(new Point(position, 18), new Point(position, 21));
+                Line(new Point(3, position), new Point(6, position)); Line(new Point(18, position), new Point(21, position));
+            }
+        } else if (name == "services") {
             geometry.Children.Add(new RectangleGeometry { Rect = new Rect(3, 4, 18, 6) });
             geometry.Children.Add(new RectangleGeometry { Rect = new Rect(3, 14, 18, 6) });
             Line(new Point(7, 7), new Point(8, 7)); Line(new Point(12, 7), new Point(17, 7));

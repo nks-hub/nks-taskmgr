@@ -10,7 +10,7 @@ public sealed partial class MainWindow
     private readonly Grid gpuPanel = new() { RowSpacing = 14, Margin = new Thickness(0, 0, 0, 10) };
     private readonly Grid gpuEngines = new() { RowSpacing = 12, ColumnSpacing = 14 };
     private readonly List<(StackPanel Tile, ComboBox Choice, ChartView Chart, TextBlock Value)> gpuTiles = [];
-    private readonly ChartView gpuDedicated = new() { Height = 72 }, gpuShared = new() { Height = 72 };
+    private readonly ChartView gpuDedicated = new() { Height = 94 }, gpuShared = new() { Height = 94 };
     private readonly TextBlock gpuDedicatedLabel = Label("", 10, 0x95a4ad), gpuSharedLabel = Label("", 10, 0x95a4ad);
     private GpuModel? shownGpu;
     private int shownGpuColumns, shownGpuVersion = -1;
@@ -28,7 +28,7 @@ public sealed partial class MainWindow
             AutomationProperties.SetName(choice, "GPU engine " + (i + 1));
             var value = Label("", 10, 0xcc9bb6); value.HorizontalAlignment = HorizontalAlignment.Right; value.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(value, 1); line.Children.Add(choice); line.Children.Add(value); tile.Children.Add(line);
-            var plot = new ChartView { Height = 104 }; tile.Children.Add(plot); gpuTiles.Add((tile, choice, plot, value));
+            var plot = new ChartView { Height = 130 }; tile.Children.Add(plot); gpuTiles.Add((tile, choice, plot, value));
             choice.SelectionChanged += (_, _) => { if (!rebuildingGpu && selectedResource?.Kind == ResourceKind.Gpu) RefreshPerformance(); };
             gpuEngines.Children.Add(tile);
         }
@@ -71,14 +71,17 @@ public sealed partial class MainWindow
             string? id = (tile.Choice.SelectedItem as ComboBoxItem)?.Tag as string;
             var engine = id is not null && gpu.Engines.TryGetValue(id, out var found) ? found : null;
             tile.Value.Text = resource.Stale ? "Zastaralé" : engine is null ? "Nedostupné" : Display.Metric(engine.Current, " %");
-            tile.Chart.Set(engine?.History, null, now, rangeSeconds, 100, 0xcc9bb6);
+            tile.Chart.Configure(resource.Title + " · " + (engine?.Name ?? "Engine"));
+            tile.Chart.Set(engine?.History, null, now, rangeSeconds, 100, 0xcc9bb6, autoScale: scaleChoice.IsChecked == true);
             AutomationProperties.SetName(tile.Chart, "Využití GPU " + (engine?.Name ?? "nedostupné") + ": " + tile.Value.Text);
         }
         string MemoryValue(Metric value, double capacity) => resource.Stale ? "Zastaralé" : Display.Metric(value, "", 1073741824) + " / " + Display.Number(capacity / 1073741824, " GiB");
         gpuDedicatedLabel.Text = "Vyhrazená paměť GPU   " + MemoryValue(resource.Secondary, resource.Capacity);
         gpuSharedLabel.Text = "Sdílená paměť GPU   " + MemoryValue(resource.Tertiary, gpu.SharedCapacity);
-        gpuDedicated.Set(gpu.Dedicated, null, now, rangeSeconds, Math.Max(1, resource.Capacity), 0xcc9bb6);
-        gpuShared.Set(gpu.Shared, null, now, rangeSeconds, Math.Max(1, gpu.SharedCapacity), 0xabb0f1);
+        gpuDedicated.Configure("Vyhrazená paměť GPU", ChartUnit.Bytes);
+        gpuShared.Configure("Sdílená paměť GPU", ChartUnit.Bytes);
+        gpuDedicated.Set(gpu.Dedicated, null, now, rangeSeconds, Math.Max(1, resource.Capacity), 0xcc9bb6, autoScale: scaleChoice.IsChecked == true);
+        gpuShared.Set(gpu.Shared, null, now, rangeSeconds, Math.Max(1, gpu.SharedCapacity), 0xabb0f1, autoScale: scaleChoice.IsChecked == true);
     }
 
     private void CheckResourceViews()

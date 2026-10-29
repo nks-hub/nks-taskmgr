@@ -15,11 +15,12 @@ public sealed class MonitorModel : IDisposable
     private string query = string.Empty;
     private int sortColumn;
     private bool descending;
-    public ObservableCollection<ProcessRow> VisibleProcesses { get; } = [];
+    public ProcessRows VisibleProcesses { get; } = [];
     public ObservableCollection<ResourceRow> Resources { get; } = [];
     public IReadOnlyCollection<ProcessRow> Processes => processes.Values;
     public Dictionary<(uint Group, uint Index), HistorySeries> Processors { get; } = [];
     public HistorySeries PageFile { get; } = new();
+    public Dictionary<string, Dictionary<string, string>> Hardware { get; } = [];
     public MemoryInfo Memory { get; private set; }
     public string CpuModel { get; private set; } = string.Empty;
     public uint LogicalProcessors { get; private set; }
@@ -38,11 +39,11 @@ public sealed class MonitorModel : IDisposable
 
     public void SetPaused(bool value) { monitor.SetPaused(value); Paused = value; }
     public void SetInterval(uint value) { monitor.SetInterval(value); Interval = value; }
-    public void SetQuery(string value) { held = false; query = value; Rebuild(); }
-    public void SetMode(ProcessMode value) { held = false; Mode = value; Rebuild(); }
+    public void SetQuery(string value) { held = false; query = value; Rebuild(true); }
+    public void SetMode(ProcessMode value) { held = false; Mode = value; Rebuild(true); }
     public void SetHeld(bool value) { if (held == value) return; held = value; if (!held) Rebuild(); }
-    public void Sort(int column) { held = false; descending = sortColumn == column ? !descending : column > 1; sortColumn = column; Rebuild(); }
-    public void Toggle(ProcessRow row) { held = false; if (!collapsed.Add(row.Key)) collapsed.Remove(row.Key); Rebuild(); }
+    public void Sort(int column) { held = false; descending = sortColumn == column ? !descending : column > 1; sortColumn = column; Rebuild(true); }
+    public void Toggle(ProcessRow row) { held = false; if (!collapsed.Add(row.Key)) collapsed.Remove(row.Key); Rebuild(true); }
     public bool IsCurrent(ProcessRow row) => !row.Ended && processes.TryGetValue(row.Key, out var current) && ReferenceEquals(row, current);
     public IEnumerable<ProcessRow> TopConsumers(bool memory) => memory
         ? processes.Values.Where(row => row.Key.Pid != 0).OrderByDescending(row => row.WorkingBytes).Take(3)
@@ -56,6 +57,7 @@ public sealed class MonitorModel : IDisposable
         using var frame = monitor.Read();
         if (frame is not null) {
             frame.Read(view => { Apply(view); if ((view.Flags & FrameFlags.ResourceData) != 0) frame.ReadGpu(ApplyGpu); });
+            frame.ReadHardware(ApplyHardware);
             changed = true;
         }
         bool stale = !Paused && ProcessTime > 0 && NativeMonitor.MonotonicNowNs - ProcessTime > 3_000_000_000;
@@ -146,6 +148,20 @@ public sealed class MonitorModel : IDisposable
         }
     }
 
+    private unsafe void ApplyHardware(HardwareData data)
+    {
+        var grouped = new Dictionary<string, Dictionary<string, string>>();
+        for (uint i = 0; i < data.FactCount; ++i) {
+            var fact = data.Facts[i]; string id = fact.ResourceId.Copy();
+            if (!grouped.TryGetValue(id, out var values)) grouped.Add(id, values = []);
+            values[fact.Name.Copy()] = fact.Value.Copy();
+        }
+        foreach (var (id, values) in grouped) {
+            Hardware[id] = values;
+            if (resources.TryGetValue(id, out var row)) row.HardwareFacts = values;
+        }
+    }
+
     private void SyncResources()
     {
         var wanted = resources.Values.ToHashSet();
@@ -181,21 +197,22 @@ public sealed class MonitorModel : IDisposable
         return rows;
     }
 
-    private void Rebuild()
+    private void Rebuild(bool explicitChange = false)
     {
-        if (held) return;
+        if (held || (!explicitChange && !visualUpdates)) return;
         var rows = Ordered();
         foreach (var row in rows) row.SetTree(0, false, false);
         if (Mode == ProcessMode.Tree && query.Length == 0) rows = ProcessTree.Order(rows, collapsed);
-        var wanted = rows.Select(row => row.Key).ToHashSet();
-        for (int i = VisibleProcesses.Count - 1; i >= 0; --i) if (!wanted.Contains(VisibleProcesses[i].Key)) VisibleProcesses.RemoveAt(i);
-        for (int i = 0; i < rows.Count; ++i) {
-            if (i < VisibleProcesses.Count && ReferenceEquals(VisibleProcesses[i], rows[i])) continue;
-            int found = VisibleProcesses.IndexOf(rows[i]);
-            if (found >= 0) VisibleProcesses.Move(found, i); else VisibleProcesses.Insert(i, rows[i]);
-        }
+        VisibleProcesses.Apply(rows);
         collapsed.RemoveWhere(key => !processes.ContainsKey(key));
     }
 
     public void Dispose() => monitor.Dispose();
+
+    internal void ReplayForBenchmark(IEnumerable<ProcessRow> rows)
+    {
+        processes.Clear();
+        foreach (var row in rows) processes.Add(row.Key, row);
+        Rebuild(true);
+    }
 }

@@ -8,6 +8,8 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class ProcessIconView : Grid
 {
+    private static readonly Dictionary<ProcessKey, BitmapImage> decoded = [];
+    private static readonly Queue<ProcessKey> decodedOrder = [];
     private readonly Image image = new() { Width = 18, Height = 18 };
     private readonly FrameworkElement fallback = UiIcon.Create(false, 0x95a4ad, 18);
     private CancellationTokenSource? loading;
@@ -31,9 +33,11 @@ public sealed partial class ProcessIconView : Grid
 
     private async void Load()
     {
-        Cancel(); image.Source = null; fallback.Visibility = Visibility.Visible;
-        if (row is null) return;
+        Cancel();
+        if (row is null) { image.Source = null; fallback.Visibility = Visibility.Visible; return; }
         var key = row.Key;
+        if (decoded.TryGetValue(key, out var cached)) { image.Source = cached; fallback.Visibility = Visibility.Collapsed; return; }
+        image.Source = null; fallback.Visibility = Visibility.Visible;
         loading = new CancellationTokenSource(); var cancellation = loading.Token;
         try {
             var bytes = await ProcessIcons.Load(key, cancellation);
@@ -44,6 +48,10 @@ public sealed partial class ProcessIconView : Grid
             var bitmap = new BitmapImage { DecodePixelWidth = 18, DecodePixelHeight = 18 };
             await bitmap.SetSourceAsync(stream);
             if (cancellation.IsCancellationRequested || !IsLoaded || row?.Key != key) return;
+            if (!decoded.ContainsKey(key)) {
+                if (decoded.Count == 128) decoded.Remove(decodedOrder.Dequeue());
+                decoded.Add(key, bitmap); decodedOrder.Enqueue(key);
+            }
             image.Source = bitmap; fallback.Visibility = Visibility.Collapsed;
         } catch (COMException) {
             if (cancellation.IsCancellationRequested || !IsLoaded || row?.Key != key) return;

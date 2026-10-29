@@ -46,7 +46,7 @@ public sealed partial class MainWindow
     {
         if (servicesModel?.Host(model) is not { } host) return;
         processQuery = ""; model.SetQuery(""); model.SetMode(ProcessMode.All); ShowView(false);
-        processList.SelectedItems.Clear(); processList.SelectedItem = host; processList.ScrollIntoView(host, ScrollIntoViewAlignment.Leading);
+        SelectProcess(host);
     }
     private void RefreshServiceDetail()
     {

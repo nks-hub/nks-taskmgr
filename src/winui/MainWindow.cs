@@ -12,7 +12,7 @@ using WinRT;
 using System.Runtime.InteropServices;
 
 namespace NksTaskMgr.WinUI;
-internal enum DesktopView { Processes, Performance, Services }
+internal enum DesktopView { Processes, Performance, Services, Hardware }
 
 public sealed partial class MainWindow : Window
 {
@@ -33,6 +33,7 @@ public sealed partial class MainWindow : Window
     private readonly TextBox search = new() { Width = 235, Height = 35, MinHeight = 0, FontSize = 11, PlaceholderText = "Hledat název nebo PID", Visibility = Visibility.Collapsed };
     private readonly Button pause = Button("Pozastavit"), interval = Button("1 s");
     private readonly Button performanceNav = Button("Výkon"), processesNav = Button("Procesy"), servicesNav = Button("Služby");
+    private readonly Button hardwareNav = Button("Sestava");
     private readonly ListView resourceList = new() { SelectionMode = ListViewSelectionMode.Single, IsItemClickEnabled = false, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
     private readonly ListView processList = new() { SelectionMode = ListViewSelectionMode.Extended, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
     private readonly Grid performancePage = new(), processPage = new();
@@ -46,8 +47,11 @@ public sealed partial class MainWindow : Window
     private readonly TextBlock retained = Label("", 9, 0x95a4ad);
     private readonly TextBlock resourceCount = Label("", 9, 0x95a4ad);
     private readonly StackPanel cpuModes = new() { Orientation = Orientation.Horizontal, Spacing = 3 };
+    private readonly ToggleButton scaleChoice = Choice("Auto měřítko");
+    private readonly Grid plotToolbar = new() { Margin = new Thickness(0, 12, 0, 12), RowSpacing = 6 };
+    private readonly StackPanel chartControls = new() { Orientation = Orientation.Horizontal, Spacing = 3, HorizontalAlignment = HorizontalAlignment.Right };
     private readonly Grid processors = new();
-    private readonly ChartView chart = new() { Height = 236 }, pageFile = new() { Height = 62 };
+    private readonly ChartView chart = new() { Height = 260 }, pageFile = new() { Height = 94 };
     private readonly TextBlock pageFileTitle = Label("", 10, 0x95a4ad);
     private readonly StackPanel facts = new() { Spacing = 13, Padding = new Thickness(22) };
     private readonly StackPanel consumers = new() { Spacing = 9 };
@@ -78,6 +82,7 @@ public sealed partial class MainWindow : Window
         windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
         if (App.SmokePath is not null) App.Trace("Presenter=" + AppWindow.Presenter.GetType().FullName + ";overlapped=" + (AppWindow.Presenter is OverlappedPresenter));
         Title = "NKS Task Manager · WinUI";
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
         AppWindow.Resize(new SizeInt32(1440, 920));
         ExtendsContentIntoTitleBar = true;
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
@@ -85,13 +90,15 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 149, 164, 173);
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); BuildShell(); BuildPerformance(); BuildProcesses(); BuildServices();
+        ConfigureResources(); BuildShell(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");
         resourceList.ItemsSource = model.Resources;
         App.Trace("Resource source assigned");
-        processList.ItemsSource = model.VisibleProcesses;
+        processList.ItemsSource = processSlots;
+        processList.ItemContainerTransitions = new Microsoft.UI.Xaml.Media.Animation.TransitionCollection();
+        PreserveProcessView();
         App.Trace("Process source assigned");
         var resourceTemplate = Application.Current.Resources["ResourceTemplate"];
         App.Trace("Resource template: " + resourceTemplate.GetType().FullName);
@@ -100,14 +107,11 @@ public sealed partial class MainWindow : Window
         App.Trace("Templates assigned");
         resourceList.SelectionChanged += (_, _) => { selectedResource = resourceList.SelectedItem as ResourceRow; RefreshPerformance(); };
         processList.SelectionChanged += (_, _) => RefreshSelection();
-        processList.ContainerContentChanging += (_, args) => {
-            if (!args.InRecycleQueue && args.Item is ProcessRow row) AutomationProperties.SetName(args.ItemContainer, row.Name + ", PID " + row.PidText);
-        };
         processList.PointerMoved += HoldRows;
-        processList.PointerExited += (_, _) => model.SetHeld(false);
-        processList.DoubleTapped += (_, _) => { if (model.Mode == ProcessMode.Tree && processList.SelectedItem is ProcessRow row) model.Toggle(row); };
+        processList.PointerExited += (_, _) => { if (!IsIconic(windowHandle)) model.SetHeld(false); };
+        processList.DoubleTapped += (_, _) => { if (model.Mode == ProcessMode.Tree && SelectedProcess is { } row) model.Toggle(row); };
         processList.KeyDown += (_, args) => {
-            if ((args.Key == VirtualKey.Left || args.Key == VirtualKey.Right) && model.Mode == ProcessMode.Tree && processList.SelectedItem is ProcessRow row && row.HasChildren) {
+            if ((args.Key == VirtualKey.Left || args.Key == VirtualKey.Right) && model.Mode == ProcessMode.Tree && SelectedProcess is { } row && row.HasChildren) {
                 if ((args.Key == VirtualKey.Left && !row.Collapsed) || (args.Key == VirtualKey.Right && row.Collapsed)) model.Toggle(row);
                 args.Handled = true;
             }
@@ -121,6 +125,7 @@ public sealed partial class MainWindow : Window
         processesNav.Click += (_, _) => ShowView(false);
         performanceNav.Click += (_, _) => ShowView(true);
         servicesNav.Click += (_, _) => ShowView(DesktopView.Services);
+        hardwareNav.Click += (_, _) => ShowView(DesktopView.Hardware);
         var find = new KeyboardAccelerator { Key = VirtualKey.F, Modifiers = VirtualKeyModifiers.Control };
         find.Invoked += (_, args) => { if (view != DesktopView.Services) ShowView(false); search.Focus(FocusState.Keyboard); args.Handled = true; };
         root.KeyboardAccelerators.Add(find);
@@ -183,7 +188,8 @@ public sealed partial class MainWindow : Window
         foreach (var height in new[] { new GridLength(49), new GridLength(101), new GridLength(1, GridUnitType.Star), new GridLength(30) }) root.RowDefinitions.Add(new RowDefinition { Height = height });
         root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(88) }); root.ColumnDefinitions.Add(new ColumnDefinition());
         var title = new Grid { Background = Display.Brush(0x12181c), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 0, 0, 1) };
-        var titleIcon = UiIcon.Create(true, 0xedc08b, 18); titleIcon.HorizontalAlignment = HorizontalAlignment.Left; titleIcon.Margin = new Thickness(23, 0, 0, 0); title.Children.Add(titleIcon);
+        var titleIcon = new Image { Width = 22, Height = 22, Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "app.png"))), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(22, 0, 0, 0) };
+        title.Children.Add(titleIcon);
         void TitleText(string value, double x, double size, uint color, bool bold = false) {
             var label = Label(value, size, color); label.HorizontalAlignment = HorizontalAlignment.Left; label.VerticalAlignment = VerticalAlignment.Center;
             label.Margin = new Thickness(x, 0, 0, 0); label.FontWeight = bold ? Microsoft.UI.Text.FontWeights.Bold : Microsoft.UI.Text.FontWeights.Normal;
@@ -195,13 +201,13 @@ public sealed partial class MainWindow : Window
         var mark = Label("n", 32, 0xe9eef0); mark.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
         mark.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = ".", Foreground = Display.Brush(0xedc08b) });
         mark.CharacterSpacing = -125; mark.Margin = new Thickness(23, -1, 0, 18); nav.Children.Add(mark);
-        foreach (var button in new[] { processesNav, performanceNav, servicesNav }) {
+        foreach (var button in new[] { processesNav, performanceNav, servicesNav, hardwareNav }) {
             button.Height = 66; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 10; button.BorderThickness = new Thickness(0);
             button.Padding = new Thickness(4, 0, 4, 0);
             var content = new StackPanel { Spacing = 10, HorizontalAlignment = HorizontalAlignment.Center };
-            string name = button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : "Procesy";
+            string name = button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : button == hardwareNav ? "Sestava" : "Procesy";
             AutomationProperties.SetName(button, name);
-            content.Children.Add(UiIcon.Create(button == performanceNav ? "performance" : button == servicesNav ? "services" : "processes", 0x95a4ad)); content.Children.Add(Label(name, 9, 0x95a4ad));
+            content.Children.Add(UiIcon.Create(button == performanceNav ? "performance" : button == servicesNav ? "services" : button == hardwareNav ? "hardware" : "processes", 0x95a4ad)); content.Children.Add(Label(name, 9, 0x95a4ad));
             button.Content = content;
             nav.Children.Add(button);
         }
@@ -238,29 +244,30 @@ public sealed partial class MainWindow : Window
         var content = new StackPanel { Padding = new Thickness(22, 20, 22, 16) };
         var resourceHeading = new Grid { ColumnSpacing = 15 };
         resourceHeading.ColumnDefinitions.Add(new ColumnDefinition()); resourceHeading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        resourceEyebrow.CharacterSpacing = 178;
-        var headingText = new StackPanel { Spacing = 6 };
-        headingText.Children.Add(resourceEyebrow);
-        var titleLine = new Grid { ColumnSpacing = 12 };
-        titleLine.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); titleLine.ColumnDefinitions.Add(new ColumnDefinition());
-        resourceTitle.CharacterSpacing = -15; titleLine.Children.Add(resourceTitle);
-        resourceDescription.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(resourceDescription, 1); titleLine.Children.Add(resourceDescription);
-        headingText.Children.Add(titleLine); resourceHeading.Children.Add(headingText);
-        var range = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, HorizontalAlignment = HorizontalAlignment.Right };
+        var headingText = new StackPanel { Spacing = 4 };
+        resourceTitle.CharacterSpacing = -15; headingText.Children.Add(resourceTitle);
+        headingText.Children.Add(resourceDescription); resourceDescription.TextTrimming = TextTrimming.CharacterEllipsis;
+        resourceHeading.Children.Add(headingText);
+        scaleChoice.IsChecked = true;
+        scaleChoice.Click += (_, _) => RefreshPerformance();
+        ToolTipService.SetToolTip(scaleChoice, "Zapnuto: měřítko podle nejvyššího vzorku. Vypnuto: 100 % nebo kapacita zařízení.");
+        chartControls.Children.Add(scaleChoice);
         foreach (int seconds in new[] { 60, 600 }) {
             var button = Choice(seconds == 60 ? "60 s" : "10 min"); rangeButtons.Add(button);
-            button.Click += (_, _) => { rangeSeconds = seconds; RefreshPerformance(); }; range.Children.Add(button);
+            button.Click += (_, _) => { rangeSeconds = seconds; RefreshPerformance(); }; chartControls.Children.Add(button);
         }
-        Grid.SetColumn(range, 1); resourceHeading.Children.Add(range); content.Children.Add(resourceHeading);
-        var reading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 17, 0, 11) };
+        var reading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 180 };
         resourceValue.CharacterSpacing = -24; reading.Children.Add(resourceValue);
-        resourceUnit.VerticalAlignment = VerticalAlignment.Bottom; resourceUnit.Margin = new Thickness(0, 0, 0, 10); reading.Children.Add(resourceUnit); content.Children.Add(reading);
+        resourceUnit.VerticalAlignment = VerticalAlignment.Bottom; resourceUnit.Margin = new Thickness(0, 0, 0, 3); reading.Children.Add(resourceUnit);
+        Grid.SetColumn(reading, 1); resourceHeading.Children.Add(reading); content.Children.Add(resourceHeading);
         foreach (var mode in new[] { "Celkem", "Logické", "Překrytí" }) {
             int index = cpuModes.Children.Count; var button = Choice(mode); button.Height = 25; cpuButtons.Add(button);
             button.Click += (_, _) => { cpuMode = index; RefreshPerformance(); }; cpuModes.Children.Add(button);
         }
-        cpuModes.Margin = new Thickness(0, 0, 0, 12);
-        content.Children.Add(cpuModes); content.Children.Add(chart); content.Children.Add(processors); content.Children.Add(BuildGpu());
+        plotToolbar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); plotToolbar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        plotToolbar.ColumnDefinitions.Add(new ColumnDefinition()); plotToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        plotToolbar.Children.Add(cpuModes); Grid.SetColumn(chartControls, 1); plotToolbar.Children.Add(chartControls);
+        content.Children.Add(plotToolbar); content.Children.Add(chart); content.Children.Add(processors); content.Children.Add(BuildGpu());
         retained.Margin = new Thickness(0, 7, 0, 0); content.Children.Add(retained);
         pageFileTitle.Margin = new Thickness(0, 18, 0, 8);
         content.Children.Add(pageFileTitle); content.Children.Add(pageFile);
@@ -284,7 +291,7 @@ public sealed partial class MainWindow : Window
             button.Click += (_, _) => { model.SetMode(mode); RefreshProcesses(); }; filters.Children.Add(button);
         }
         filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0); toolbar.Children.Add(filters);
-        processTable = new ProcessTable(processList, column => { model.Sort(column); processTable.SetSort(model.SortColumn, model.SortDescending); RefreshProcesses(); });
+        processTable = new ProcessTable(processList, SortProcesses);
         var columns = Button("Sloupce"); columns.Height = 29; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
         columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů"); toolbar.Children.Add(columns);
         Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
@@ -300,14 +307,16 @@ public sealed partial class MainWindow : Window
     {
         model.SetHeld(false); view = next;
         bool services = next == DesktopView.Services;
+        bool hardware = next == DesktopView.Hardware;
         if (services) servicesModel ??= new ServiceModel();
-        heading.Text = services ? "Služby" : performance ? "Výkon" : "Procesy";
-        subtitle.Text = services ? "Stavy, procesy a závislosti systému." : performance ? "Jeden pohled. Společná časová osa." : "Aplikace, prostředky a jejich souvislosti.";
+        heading.Text = hardware ? "Sestava" : services ? "Služby" : performance ? "Výkon" : "Procesy";
+        subtitle.Text = hardware ? "Procesor, paměť, základní deska a napájení." : services ? "Stavy, procesy a závislosti systému." : performance ? "Jeden pohled. Společná časová osa." : "Aplikace, prostředky a jejich souvislosti.";
         performancePage.Visibility = performance ? Visibility.Visible : Visibility.Collapsed;
         processPage.Visibility = next == DesktopView.Processes ? Visibility.Visible : Visibility.Collapsed;
         servicesPage.Visibility = services ? Visibility.Visible : Visibility.Collapsed;
-        search.Visibility = performance ? Visibility.Collapsed : Visibility.Visible;
-        interval.Visibility = services ? Visibility.Collapsed : Visibility.Visible;
+        hardwarePage.Visibility = hardware ? Visibility.Visible : Visibility.Collapsed;
+        search.Visibility = performance || hardware ? Visibility.Collapsed : Visibility.Visible;
+        interval.Visibility = services || hardware ? Visibility.Collapsed : Visibility.Visible;
         search.PlaceholderText = services ? "Hledat službu, účet nebo PID" : "Hledat název nebo PID";
         AutomationProperties.SetName(search, search.PlaceholderText);
         search.Text = services ? servicesModel!.Query : processQuery;
@@ -315,10 +324,11 @@ public sealed partial class MainWindow : Window
         performanceNav.Background = Display.Brush(performance ? 0x3b3024u : 0x12181cu);
         processesNav.Background = Display.Brush(next == DesktopView.Processes ? 0x3b3024u : 0x12181cu);
         servicesNav.Background = Display.Brush(services ? 0x3b3024u : 0x12181cu);
+        hardwareNav.Background = Display.Brush(hardware ? 0x3b3024u : 0x12181cu);
         servicesModel?.SetActivity(services && !IsIconic(windowHandle), model.Paused);
         if (services && serviceList.ItemsSource is null) serviceList.ItemsSource = servicesModel!.Visible;
         Resize();
-        if (services) RefreshServices(); else if (performance) RefreshPerformance(); else RefreshProcesses();
+        if (hardware) RefreshHardware(); else if (services) RefreshServices(); else if (performance) RefreshPerformance(); else RefreshProcesses();
     }
 
     private void Resize()
@@ -326,6 +336,8 @@ public sealed partial class MainWindow : Window
         if (IsIconic(windowHandle)) return;
         if (root.ActualWidth <= 0) return;
         double width = root.ActualWidth;
+        Grid.SetRow(chartControls, width <= 900 ? 1 : 0); Grid.SetColumn(chartControls, width <= 900 ? 0 : 1);
+        Grid.SetColumnSpan(chartControls, width <= 900 ? 2 : 1);
         root.ColumnDefinitions[0].Width = new GridLength(width <= 1000 ? 68 : 88); sidebar.Width = width <= 1000 ? 68 : 88;
         double margin = width <= 1000 ? 20 : performance ? 25 : 30;
         page.Margin = new Thickness(margin, view == DesktopView.Services ? 1 : 0, margin, 22);
@@ -335,23 +347,26 @@ public sealed partial class MainWindow : Window
         chartGrid.ColumnDefinitions[1].Width = width <= 1250 ? new GridLength(0) : new GridLength(242);
         processPage.RowDefinitions[0].Height = root.ActualHeight < 650 ? new GridLength(0) : new GridLength(108);
         ResizeServices();
+        ResizeHardware();
         if (performance) RefreshPerformance();
     }
 
     private void Tick()
     {
+        if (sortBenchmarkRunning) return;
         try {
             bool minimized = IsIconic(windowHandle);
             bool changed = model.Tick(!minimized && view != DesktopView.Services);
             TickServices(!minimized && view == DesktopView.Services);
             if (changed && !minimized) {
                 if (selectedResource is null || !model.Resources.Contains(selectedResource)) resourceList.SelectedItem = model.Resources.FirstOrDefault();
-                if (performance) RefreshPerformance(); else if (view == DesktopView.Processes) RefreshProcesses();
+                if (performance) RefreshPerformance(); else if (view == DesktopView.Processes) RefreshProcesses(); else if (view == DesktopView.Hardware) RefreshHardware();
             }
             if (++ticks % 10 == 0 && !minimized) footer.Text = view == DesktopView.Services ? ServicesFooter() : (model.Paused ? "Pozastaveno" : "Živá data") + $" · {model.Processes.Count} procesů · stáří "
                 + Display.Number((NativeMonitor.MonotonicNowNs - model.ProcessTime) / 1_000_000_000d, " s")
                 + (model.ProcessError.Length == 0 ? "" : " · " + model.ProcessError) + (model.ResourceError.Length == 0 ? "" : " · " + model.ResourceError);
             RunSmoke();
+            if (App.SortBenchmarkPath is not null && ticks >= 20 && model.Processes.Count > 0) RunSortBenchmark();
         } catch (NativeMonitorException error) {
             if (smokePath is not null) { App.Trace(error.ToString()); throw; }
             footer.Text = error.Message;
@@ -360,10 +375,11 @@ public sealed partial class MainWindow : Window
 
     private void HoldRows(object sender, PointerRoutedEventArgs args)
     {
+        if (IsIconic(windowHandle)) return;
         var element = args.OriginalSource as DependencyObject;
         bool row = false;
         while (element is not null && element != processList) {
-            if (element is ListViewItem item && item.Content is ProcessRow) { row = true; break; }
+            if (element is ListViewItem item && item.Content is ProcessSlot) { row = true; break; }
             element = VisualTreeHelper.GetParent(element);
         }
         model.SetHeld(row);
@@ -384,7 +400,8 @@ public sealed partial class MainWindow : Window
 
     private void RefreshSelection()
     {
-        if (processList.SelectedItem is not ProcessRow row) { selectionTitle.Text = "Vyberte proces"; selectionFacts.Text = "Ctrl a Shift vyberou více řádků."; return; }
+        if (updatingProcessSlots) return;
+        if (SelectedProcess is not { } row) { selectionTitle.Text = "Vyberte proces"; selectionFacts.Text = "Ctrl a Shift vyberou více řádků."; return; }
         selectionTitle.Text = row.Ended ? row.Name + " · ukončeno" : row.Name;
         selectionFacts.Text = $"PID {row.PidText} · {row.Threads} vláken · {row.Handles} popisovačů · CPU {row.CpuText} · {row.WorkingText}";
     }
@@ -415,9 +432,8 @@ public sealed partial class MainWindow : Window
         if (ready && !smokeModelsChecked) {
             WinUiChecks.ModelInvariants(model); smokeModelsChecked = true;
             smokeReadyAt = ticks;
-            ShowView(false); processList.SelectedItem = model.Processes.First(row => row.Key.Pid == Environment.ProcessId);
-            var own = (ProcessRow)processList.SelectedItem;
-            smokeIcons = Task.WhenAll(ProcessIcons.Load(own.Key, CancellationToken.None), Task.Run(() => ProcessIcons.Read(own.Key with { Generation = own.Key.Generation + 1 })));
+            ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);
+            smokeIcons = Task.WhenAll(Task.Run(() => ProcessIcons.Read(own.Key)), Task.Run(() => ProcessIcons.Read(own.Key with { Generation = own.Key.Generation + 1 })));
             smokeIconsAt = ticks;
         }
         int elapsed = ticks - smokeReadyAt;
@@ -428,12 +444,16 @@ public sealed partial class MainWindow : Window
             App.Trace("Process icons passed: own executable; recycled PID rejected");
             verifyProcessTable = WinUiChecks.BeginProcessTableReplay(processTable, processList);
         }
-        if (smokeModelsChecked && elapsed == 20) { verifyProcessTable!(); smokeColumnsChecked = true; resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true); }
+        if (smokeModelsChecked && elapsed == 20) { verifyProcessTable!(); model.VisibleProcesses.RefreshView(); smokeColumnsChecked = true; resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true); }
         if (smokeModelsChecked && elapsed == 30) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
         if (smokeModelsChecked && elapsed == 40) {
             if (coreCharts.Count != model.Processors.Count || coreCharts.Values.Any(core => core.ActualWidth <= 0)) throw new InvalidOperationException("Logical CPU charts did not render.");
             cpuMode = 2; RefreshPerformance();
             CheckResourceViews();
+            ShowView(DesktopView.Hardware); root.UpdateLayout();
+            if (hardwareSections.Values.Any(section => section.Children.Count == 0) || hardwareCards.ActualWidth <= 0)
+                throw new InvalidOperationException("Hardware overview did not render its facts.");
+            App.Trace("Hardware overview passed: CPU, RAM, mainboard and UPS availability");
         }
         if (smokeModelsChecked && elapsed == 50) { ShowView(DesktopView.Services); smokeServicesStage = 1; }
         if (smokeServicesStage == 1 && servicesModel!.Time > 0 && servicesModel.Find("RpcSs") is not null) {
@@ -452,7 +472,7 @@ public sealed partial class MainWindow : Window
             if (servicesModel.Host(model) is { } host) {
                 model.SetQuery("no-matching-process"); processQuery = "no-matching-process";
                 OpenServiceHost();
-                if (processList.SelectedItem != host || !model.VisibleProcesses.Contains(host)) throw new InvalidOperationException("Service host navigation kept the old process filter.");
+                if (SelectedProcess != host || !model.VisibleProcesses.Contains(host)) throw new InvalidOperationException("Service host navigation kept the old process filter.");
                 App.Trace("Service host navigation passed: generation=" + host.Key.Generation);
                 ShowView(DesktopView.Services);
             }
@@ -460,7 +480,7 @@ public sealed partial class MainWindow : Window
             smokeServiceTime = servicesModel.Time; smokeServicesAt = ticks; smokeServicesStage = 3; ShowWindow(windowHandle, 6);
         }
         if (smokeServicesStage == 3 && ticks - smokeServicesAt >= 20) {
-            if (servicesModel!.Time != smokeServiceTime) throw new InvalidOperationException("Minimized service model continued updating its view.");
+            if (servicesModel!.Time != smokeServiceTime) throw new InvalidOperationException("Minimized service model continued updating its view; iconic=" + IsIconic(windowHandle) + ";ticks=" + (ticks - smokeServicesAt));
             smokeServicesStage = 4; ShowWindow(windowHandle, 9);
         }
         if (smokeServicesStage == 4 && servicesModel!.Time > smokeServiceTime && !servicesModel.Stale) {
