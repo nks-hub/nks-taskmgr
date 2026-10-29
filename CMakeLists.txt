@@ -34,6 +34,7 @@ add_library(nks_native STATIC
     src/collectors/pdh_counters.cpp
     src/collectors/resource_collector.cpp
     src/collectors/gpu_telemetry.cpp
+    src/collectors/disk_telemetry.cpp
 )
 target_include_directories(nks_native PUBLIC src)
 target_include_directories(nks_native SYSTEM PRIVATE third_party/phnt/include)

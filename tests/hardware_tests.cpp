@@ -1,4 +1,11 @@
 #include "core/hardware.hpp"
+#include "collectors/disk_telemetry.hpp"
+#include <windows.h>
+#include <winioctl.h>
+#include <ntddstor.h>
+#include <nvme.h>
+#include <array>
+#include <cstring>
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
@@ -44,6 +51,41 @@ int main()
         try { (void)nks::parseMemoryHardware(table); } catch (const std::runtime_error&) { rejected = true; }
         require(rejected, "Truncated firmware table was accepted");
         require(!nks::memoryHardware().empty() && !nks::processorHardware().empty(), "Live hardware metadata could not be read");
+        std::array<std::byte, sizeof(STORAGE_PROTOCOL_DATA_DESCRIPTOR) + sizeof(NVME_HEALTH_INFO_LOG)> health{};
+        STORAGE_PROTOCOL_DATA_DESCRIPTOR header{};
+        header.Version = header.Size = sizeof(header);
+        header.ProtocolSpecificData.ProtocolType = ProtocolTypeNvme;
+        header.ProtocolSpecificData.DataType = NVMeDataTypeLogPage;
+        header.ProtocolSpecificData.ProtocolDataOffset = sizeof(STORAGE_PROTOCOL_SPECIFIC_DATA);
+        header.ProtocolSpecificData.ProtocolDataLength = sizeof(NVME_HEALTH_INFO_LOG);
+        NVME_HEALTH_INFO_LOG log{};
+        log.Temperature[0] = 0x2F; log.Temperature[1] = 1;
+        log.MediaErrors[8] = 1;
+        std::fill(std::begin(log.PowerCycle), std::end(log.PowerCycle), UCHAR{255});
+        log.PercentageUsed = 125;
+        const auto encode = [&] {
+            std::memcpy(health.data(), &header, sizeof(header));
+            std::memcpy(health.data() + sizeof(header), &log, sizeof(log));
+        };
+        encode();
+        const auto has = [&](const wchar_t* name, const wchar_t* expected) {
+            const auto decoded = nks::decodeNvmeHealth(health);
+            return std::any_of(decoded.begin(), decoded.end(), [&](const auto& item) { return item.name == name && item.value == expected; });
+        };
+        require(has(L"Teplota", L"29,9 °C"), "NVMe Kelvin temperature was not converted to Celsius");
+        require(has(L"Chyby média", L"18446744073709551616"), "NVMe lifetime counter overflowed 64 bits");
+        require(has(L"Zapnutí", L"340282366920938463463374607431768211455"), "NVMe 128-bit counter was truncated");
+        require(has(L"Využitá životnost", L"125 %"), "NVMe wear above the rated lifetime was hidden");
+        log.CriticalWarning.AsUchar = 4; log.Temperature[0] = log.Temperature[1] = 0; encode();
+        require(has(L"SMART", L"Upozornění 0x4") && has(L"Teplota", L"Měření nedostupné"), "NVMe warning or unknown temperature became healthy zero");
+        require(nks::decodeNvmeHealth(std::span(health).first(health.size() - 1)).empty(), "Truncated NVMe log was accepted");
+        header.ProtocolSpecificData.ProtocolDataOffset = MAXDWORD; encode();
+        require(nks::decodeNvmeHealth(health).empty(), "NVMe offset overflow was accepted");
+        header.ProtocolSpecificData.ProtocolDataOffset = sizeof(STORAGE_PROTOCOL_SPECIFIC_DATA) - 1; encode();
+        require(nks::decodeNvmeHealth(health).empty(), "NVMe payload overlapping the header was accepted");
+        header.ProtocolSpecificData.ProtocolDataOffset = sizeof(STORAGE_PROTOCOL_SPECIFIC_DATA);
+        header.ProtocolSpecificData.ProtocolType = ProtocolTypeAta; encode();
+        require(nks::decodeNvmeHealth(health).empty(), "ATA vendor data was interpreted as NVMe health");
         std::cout << "SMBIOS memory, empty slots, video RAM exclusion and live topology passed\n";
         return 0;
     } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }

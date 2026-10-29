@@ -19,6 +19,8 @@ private:
     PdhCounters counters;
     std::vector<ResourceRecord> devices;
     std::map<std::wstring, std::uint32_t> diskNumbers;
+    std::map<std::wstring, std::vector<HardwareFact>> diskHealthFacts;
+    std::chrono::steady_clock::time_point diskHealthAt{};
     std::map<std::wstring, std::wstring> gpuLuids;
     std::map<std::wstring, LUID> gpuLuidValues;
     std::map<std::uint64_t, NetworkBefore> previousNetworks;

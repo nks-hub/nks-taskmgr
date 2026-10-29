@@ -15,6 +15,7 @@ The current desktop prototype displays live processes and individual system devi
 - 🖥️ **Desktop prototype** - Provides a system overview, virtual process table, CPU and memory bars, name/PID search, column sorting, multiple selection, and a selection detail panel.
 - 🌳 **Process views** - Switches between all processes, measured CPU or I/O activity, and a collapsible tree that checks parent creation times before linking processes.
 - 📊 **Device view** - Lists individual disks, hardware GPUs, and physical network adapters, including disconnected adapters. Each item opens a graph and current counters.
+- 🌡️ **Disk detail** - Shows response time, queue length, IOPS, capacity, interface, and supported disk temperatures. Expanded NVMe health includes wear, spare capacity, operating hours, and media errors.
 - 🛠️ **Services** - Lists accessible Windows services with state filters and name, account, or PID search. The selected detail shows configuration, dependencies, and a link to a host process whose creation time has been verified.
 - ⏱️ **History** - Stores up to 2,401 samples for each of 512 series, draws gaps, and shows the retained duration. Collection runs on separate process and device threads with one pending snapshot each.
 - 🧩 **CPU graphs** - Switches between total CPU, a graph for each logical processor, and overlaid processor graphs. Processor groups retain separate identities.
@@ -30,6 +31,7 @@ The current desktop prototype displays live processes and individual system devi
 ## Requirements
 
 - Windows 10 or Windows 11, x64.
+- The desktop runs without elevation. Access to protected processes or unsupported device sensors can be unavailable.
 - Visual Studio 2022 with the C++ desktop workload and MSVC 14.44.
 - Windows SDK 10.0.26100.0, including the Universal CRT.
 - Visual Studio CMake tools, CMake 3.31 or later.
@@ -82,6 +84,8 @@ WinUI graphs label their value and time scales. Auto scale follows the highest r
 The WinUI Hardware view (Sestava) lists CPU topology, caches and CPUID fields, SMBIOS memory speed and slots, motherboard and BIOS names, and UPS data exposed by the Windows battery driver. Firmware omissions remain unavailable. UPS polling runs on the resource collector every five seconds and uses read queries. SPD timings and vendor-specific UPS protocols are not implemented. Network details distinguish link speed from current receive and transmit traffic.
 
 GPU details use the busiest engine for overall utilization. The WinUI view selects four engine graphs independently; the Win32 view lists all available engines. Memory graphs separate dedicated and shared usage. Process cards appear under CPU and physical memory; disk, network, and GPU details do not substitute CPU rankings for device activity.
+
+Disk performance counters refresh with the device view. SMART and temperature queries refresh every 30 seconds and open devices with no read/write access requested. NVMe health comes from the standard log page; other supported drives expose failure prediction and storage temperature queries. Missing or denied data stays unavailable. These queries do not install drivers or request elevation.
 
 Services runs in read-only mode. Its collector starts when the view opens and refreshes state once per second; polling pauses while the window is minimized. List configuration is cached for up to 15 seconds. The selected configuration is queried again with its detail. The dependency list opens a known service on double-click or Enter. Windows may omit services that the current account cannot query; denied configuration and host identity queries remain unavailable.
 

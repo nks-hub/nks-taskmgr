@@ -18,7 +18,13 @@ void PdhCounters::retryMissing()
         L"\\PhysicalDisk(*)\\Disk Write Bytes/sec",
         L"\\GPU Engine(*)\\Utilization Percentage",
         L"\\GPU Adapter Memory(*)\\Dedicated Usage",
-        L"\\GPU Adapter Memory(*)\\Shared Usage"
+        L"\\GPU Adapter Memory(*)\\Shared Usage",
+        L"\\PhysicalDisk(*)\\Avg. Disk sec/Transfer",
+        L"\\PhysicalDisk(*)\\Avg. Disk sec/Read",
+        L"\\PhysicalDisk(*)\\Avg. Disk sec/Write",
+        L"\\PhysicalDisk(*)\\Current Disk Queue Length",
+        L"\\PhysicalDisk(*)\\Disk Reads/sec",
+        L"\\PhysicalDisk(*)\\Disk Writes/sec"
     };
     for (std::size_t i = 0; i < paths.size(); ++i) {
         if (!counters[i] && PdhAddEnglishCounterW(query, paths[i], 0, &counters[i]) != ERROR_SUCCESS)

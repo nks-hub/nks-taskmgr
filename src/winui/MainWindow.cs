@@ -273,7 +273,7 @@ public sealed partial class MainWindow : Window
         retained.Margin = new Thickness(0, 7, 0, 0); content.Children.Add(retained);
         pageFileTitle.Margin = new Thickness(0, 18, 0, 8);
         content.Children.Add(pageFileTitle); content.Children.Add(pageFile);
-        chartGrid.Children.Add(Card(content));
+        var chartCard = Card(content); chartCard.VerticalAlignment = VerticalAlignment.Top; chartGrid.Children.Add(chartCard);
         var factCard = Card(facts); Grid.SetColumn(factCard, 1); chartGrid.Children.Add(factCard);
         performanceBody.Children.Add(chartGrid);
         Grid.SetRow(consumers, 1); performanceBody.Children.Add(consumers);

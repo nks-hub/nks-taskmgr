@@ -18,7 +18,7 @@ public:
 private:
     void retryMissing();
     PDH_HQUERY query{};
-    std::array<PDH_HCOUNTER, 6> counters{};
+    std::array<PDH_HCOUNTER, 12> counters{};
     std::chrono::steady_clock::time_point retryAt{};
 };
 

@@ -92,6 +92,24 @@ public sealed partial class MainWindow
             bool expected = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory;
             if ((consumers.Visibility == Visibility.Visible) != expected || (!expected && consumers.Children.Count != 0))
                 throw new InvalidOperationException("CPU process cards were shown for an unrelated resource.");
+            if (resource.Kind == ResourceKind.Disk) {
+                if (diskDetails is null || DiskSummary.Any(name => !factValues.ContainsKey(name)))
+                    throw new InvalidOperationException("Disk summary or expanded SMART details did not render.");
+                var diskCells = facts.Children.ToArray(); diskDetails.IsExpanded = true; root.UpdateLayout();
+                foreach (var detail in diskDetailValues)
+                    if (detail.Value.Text != resource.HardwareFacts[detail.Key]) throw new InvalidOperationException("Disk detail lost a native value.");
+                RefreshPerformance();
+                if (!diskDetails.IsExpanded || !diskCells.SequenceEqual(facts.Children)) throw new InvalidOperationException("Disk refresh recreated expanded facts.");
+                var originalFacts = resource.HardwareFacts;
+                try {
+                    resource.HardwareFacts = originalFacts.Where(pair => pair.Key != "Teplota").ToDictionary(pair => pair.Key, pair => pair.Value);
+                    RefreshPerformance();
+                    if (diskDetails is not { IsExpanded: true }) throw new InvalidOperationException("A missing SMART field collapsed the disk details.");
+                } finally { resource.HardwareFacts = originalFacts; RefreshPerformance(); }
+                if (diskDetails is not { IsExpanded: true }) throw new InvalidOperationException("Restored SMART fields collapsed the disk details.");
+                App.Trace($"Disk detail passed: summary={DiskSummary.Length};expanded={diskDetailValues.Count};temperature={factValues["Teplota"].Text};smart={factValues["SMART"].Text}");
+                diskDetails.IsExpanded = false;
+            }
             if (resource.Kind != ResourceKind.Gpu) continue;
             if (gpuPanel.Visibility != Visibility.Visible || chart.Visibility != Visibility.Collapsed || gpuDedicated.ActualWidth <= 0 || gpuShared.ActualWidth <= 0)
                 throw new InvalidOperationException("GPU graphs did not render within their detail.");

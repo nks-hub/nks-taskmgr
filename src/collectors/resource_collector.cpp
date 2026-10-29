@@ -2,6 +2,7 @@
 #include <ws2ipdef.h>
 #include "resource_collector.hpp"
 #include "gpu_telemetry.hpp"
+#include "disk_telemetry.hpp"
 #include <setupapi.h>
 #include <winioctl.h>
 #include <ntddstor.h>
@@ -12,6 +13,8 @@
 #include <algorithm>
 #include <memory>
 #include <cwchar>
+#include <iomanip>
+#include <sstream>
 
 namespace nks {
 namespace {
@@ -27,6 +30,16 @@ std::wstring luidName(LUID luid)
     wchar_t value[48]{};
     swprintf_s(value, L"luid_0x%08x_0x%08x", static_cast<unsigned>(luid.HighPart), luid.LowPart);
     return value;
+}
+
+std::wstring diskValue(const Metric<double>& metric, double multiplier, const wchar_t* unit)
+{
+    if (!metric.valid()) return L"Měření nedostupné";
+    std::wostringstream text;
+    text << std::fixed << std::setprecision(2) << metric.value * multiplier << unit;
+    auto result = text.str();
+    std::replace(result.begin(), result.end(), L'.', L',');
+    return result;
 }
 
 }
@@ -67,6 +80,7 @@ void ResourceCollector::inventory()
             disk.id = L"disk:" + std::wstring(detail->DevicePath);
             disk.title = L"Disk";
             disk.description = name;
+            disk.facts = diskHardware(detail->DevicePath);
             const auto handle = CreateFileW(detail->DevicePath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
                 nullptr, OPEN_EXISTING, 0, nullptr);
             if (handle != INVALID_HANDLE_VALUE) {
@@ -135,6 +149,7 @@ void ResourceCollector::inventory()
     });
     devices = std::move(next);
     diskNumbers = std::move(nextNumbers);
+    std::erase_if(diskHealthFacts, [&](const auto& item) { return !diskNumbers.contains(item.first); });
     gpuLuids = std::move(nextLuids);
     gpuLuidValues = std::move(nextLuidValues);
     disksFresh = diskComplete;
@@ -207,6 +222,10 @@ ResourceSnapshot ResourceCollector::collect()
     const auto engines = collected ? counters.read(3) : std::vector<NamedCounter>{};
     const auto dedicated = collected ? counters.read(4) : std::vector<NamedCounter>{};
     const auto shared = collected ? counters.read(5) : std::vector<NamedCounter>{};
+    std::array<std::vector<NamedCounter>, 6> diskDetails;
+    for (std::size_t i = 0; i < diskDetails.size(); ++i)
+        if (collected) diskDetails[i] = counters.read(i + 6);
+    const bool diskHealthDue = now - diskHealthAt >= std::chrono::seconds(30);
     const bool telemetryDue = now - telemetryAt >= std::chrono::seconds(5);
     for (auto& item : result.devices) {
         if ((item.kind == ResourceKind::disk && !disksFresh) || (item.kind == ResourceKind::gpu && !gpusFresh)) {
@@ -229,20 +248,32 @@ ResourceSnapshot ResourceCollector::collect()
         }
         const auto number = diskNumbers.find(item.id);
         if (number == diskNumbers.end()) continue;
+        if (diskHealthDue || !diskHealthFacts.contains(item.id))
+            diskHealthFacts[item.id] = diskHealth(item.id.substr(5));
+        const auto& healthFacts = diskHealthFacts.at(item.id);
+        item.facts.insert(item.facts.end(), healthFacts.begin(), healthFacts.end());
         const auto prefix = std::to_wstring(number->second);
-        const auto instance = std::find_if(idle.begin(), idle.end(), [&](const auto& v) {
-            return v.name == prefix || v.name.starts_with(prefix + L" ");
-        });
-        if (instance == idle.end()) continue;
-        item.title = L"Disk " + instance->name;
-        item.primary = instance->metric;
+        std::wstring instance;
+        const std::array<const std::vector<NamedCounter>*, 4> instances{&idle, &reads, &writes, &diskDetails[3]};
+        for (const auto* values : instances) {
+            const auto match = std::find_if(values->begin(), values->end(), [&](const auto& v) {
+                return v.name == prefix || v.name.starts_with(prefix + L" ");
+            });
+            if (match != values->end()) { instance = match->name; break; }
+        }
+        if (!instance.empty()) item.title = L"Disk " + instance;
+        item.primary = find(idle, instance);
         if (item.primary.valid()) item.primary.value = std::clamp(100 - item.primary.value, 0.0, 100.0);
-        item.secondary = find(reads, instance->name);
-        item.tertiary = find(writes, instance->name);
+        item.secondary = find(reads, instance);
+        item.tertiary = find(writes, instance);
+        constexpr std::array labels{L"Průměrná odezva", L"Odezva čtení", L"Odezva zápisu", L"Fronta požadavků", L"Čtení IOPS", L"Zápis IOPS"};
+        for (std::size_t i = 0; i < diskDetails.size(); ++i)
+            item.facts.push_back({labels[i], diskValue(find(diskDetails[i], instance), i < 3 ? 1000 : 1, i < 3 ? L" ms" : i > 3 ? L" operací/s" : L" požadavků")});
         item.capacity = 100;
     }
     networks(result);
     if (telemetryDue) telemetryAt = std::chrono::steady_clock::now();
+    if (diskHealthDue) diskHealthAt = std::chrono::steady_clock::now();
     return result;
 }
 

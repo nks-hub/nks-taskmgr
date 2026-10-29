@@ -71,7 +71,8 @@ public sealed partial class MainWindow
         retained.Text = Display.Number(duration, " s uchováno") + " · " + resource.History.Count + " vzorků · okno " + rangeSeconds + " s";
         string nextFacts = resource.Id + ":" + (memory ? model.Memory.State.ToString() : "") + ":" + string.Join('|', resource.HardwareFacts.Keys);
         if (factsKey != nextFacts) {
-            factsKey = nextFacts; facts.Children.Clear(); factValues.Clear(); hardwareFact = null;
+            diskDetailsExpanded = diskDetailsResource == resource.Id && diskDetails?.IsExpanded == true;
+            factsKey = nextFacts; facts.Children.Clear(); factValues.Clear(); hardwareFact = null; diskDetails = null;
             var factsHeading = Label("SESTAVA", 9, 0x95a4ad); factsHeading.CharacterSpacing = 178; facts.Children.Add(factsHeading);
         }
         void Fact(string name, string value) {
@@ -108,6 +109,7 @@ public sealed partial class MainWindow
                 Fact("Odesílání", Display.Metric(resource.Secondary, " Mbit/s", 1_000_000));
             } else if (resource.Kind == ResourceKind.Disk) {
                 Fact("Čtení", Display.Metric(resource.Secondary, " MiB/s", 1048576)); Fact("Zápis", Display.Metric(resource.Tertiary, " MiB/s", 1048576));
+                RefreshDiskFacts(resource, Fact);
             } else {
                 Fact("Vyhrazená paměť", Display.Metric(resource.Secondary, " MiB", 1048576)); Fact("Sdílená paměť", Display.Metric(resource.Tertiary, " MiB", 1048576));
                 Fact("Kapacita VRAM", Display.Number(resource.Capacity / 1073741824, " GiB"));
@@ -118,7 +120,7 @@ public sealed partial class MainWindow
             }
         }
         foreach (var fact in resource.HardwareFacts) {
-            if (!cpu || fact.Key == "Fyzická jádra" || fact.Key == "Patice" || fact.Key.StartsWith("Mezipaměť", StringComparison.Ordinal)) Fact(fact.Key, fact.Value);
+            if (resource.Kind != ResourceKind.Disk && (!cpu || fact.Key == "Fyzická jádra" || fact.Key == "Patice" || fact.Key.StartsWith("Mezipaměť", StringComparison.Ordinal))) Fact(fact.Key, fact.Value);
         }
         if (memory && model.Memory.State == SampleState.Valid && model.Memory.InstalledBytes >= model.Memory.PhysicalBytes)
             Fact("Rezervováno hardwarem", Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));
