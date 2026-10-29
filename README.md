@@ -85,7 +85,7 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Debug -Test
 
 The live check allocates and touches 32 MiB in its own process and runs one CPU worker for one second. It verifies that the collector sees the resulting CPU activity, memory change, and process creation time.
 
-The process-view test uses a hidden native ListView to check selection across refresh, PID reuse, parent generations, cycles, filtering, Unicode names, column reordering, and row height.
+The process-view test uses a native ListView in a hidden test window to check selection across refresh, PID reuse, parent generations, cycles, filtering, Unicode names, column reordering, row height, held rows, and scroll restoration.
 
 Run the collection benchmark:
 

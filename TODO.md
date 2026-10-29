@@ -41,7 +41,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [x] F06 Review UI: opravit dvojí vlastnictví seznamu obrázků, vyhodnocovat stáří i bez nových vzorků, kontrolovat vytvoření štětce a nezobrazovat neplatnou paměť jako nulu.
 - [ ] F07 Izolace sběru: získání diskového čísla používá synchronní systémový dotaz v odděleném vlákně; v T12 doplnit pracovní proces pro možnost ukončit zaseknutého poskytovatele i při zavírání aplikace.
 - [ ] F08 Sítě: přidat přepínač pro virtuální rozhraní; nyní jsou vidět všechny fyzické adaptéry včetně odpojených.
-- [ ] F09 Výkon: revize 6ac1f11 za 60 s zobrazení a 60 s minimalizace naměřila Procesy 0,137/0,084 % a Výkon 0,163/0,084 % CPU celého PC, soukromá paměť nejvýše 68,1 MiB; ověřit také předepsaných 500 procesů a dlouhý běh v T44.
+- [ ] F09 Výkon: za 60 s zobrazení a 60 s minimalizace naměřila revize 4dbbbfd v Procesy 0,122/0,067 % CPU a nejvýše 69,8 MiB; revize 6ac1f11 ve Výkon 0,163/0,084 % a 68,0 MiB. CPU je za celé PC; předepsaných 500 procesů a dlouhý běh v T44 zbývá ověřit.
 - [x] F10 GPU: PDH vrací hexadecimální písmena LUID jinou velikostí než DXGI; porovnání už velikost písmen ignoruje a test zahrnuje A–F. Živý test nyní načítá obě GPU.
 - [x] F11 CPU: reset jednoho logického CPU nyní zneplatní také souhrn, i když ho růst ostatních čítačů skryje; regrese ověřuje i návrat k platnému měření.
 - [x] F12 Historie: odstranit původní dokumenty, designové podklady a RE ze všech lokálních commitů. Odstraněno 19 cest; kontrola všech větví našla 0 zakázaných cest, aktuální strom zůstal totožný a záloha je mimo repo.
