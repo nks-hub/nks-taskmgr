@@ -128,6 +128,8 @@ public sealed partial class MainWindow : Window
         hardwareNav.Click += (_, _) => ShowView(DesktopView.Hardware);
         var find = new KeyboardAccelerator { Key = VirtualKey.F, Modifiers = VirtualKeyModifiers.Control };
         find.Invoked += (_, args) => { if (view != DesktopView.Services) ShowView(false); search.Focus(FocusState.Keyboard); args.Handled = true; };
+        root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
+        ToolTipService.SetToolTip(search, "Hledat (Ctrl+F)");
         root.KeyboardAccelerators.Add(find);
         root.SizeChanged += (_, _) => Resize();
         timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromMilliseconds(100);

@@ -49,6 +49,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] F36 Disky: doplnit odezvu čtení/zápisu, frontu a počet operací, kapacitu, rozhraní, teplotu a dostupné údaje SMART/NVMe. Sběr zdravotních údajů má běžet pomaleji mimo UI; nepodporovaný údaj nesmí vypadat jako platná nula.
 - [ ] F37 Teploty CPU: prověřit skutečná čidla čipu a jader přes dostupný ovladač; teplotní zóny ACPI nezaměňovat za teplotu CPU. Zatím není implementováno ani ověřeno čtení čidel.
 - [ ] F38 Oprávnění: WinUI používá asInvoker a dosavadní testy na dalších strojích běžely jako běžný uživatel. Nové diskové a senzorové dotazy ověřit také bez zvýšení oprávnění; ovladač pro rozšířené senzory nesmí být povinný pro spuštění aplikace.
+- [x] F39 Tooltip: automatická nápověda Ctrl+F je vypnutá na kořenové ploše a popisek je pouze u hledání. Zkratka zůstává funkční. Sestavení Native AOT a běhové testy prošly.
 - [x] F01 Sestavení: MSBuild x64 načítal jiný kořen UCRT než SDK; místní build skript ověřuje skutečný SDK a nastavuje UCRTContentRoot jen pro podřízené procesy.
 - [x] F20 Služby: změna výběru nyní zruší čekající detail i jeho chybu a odmítne dokončení předchozího dotazu podle verze výběru. Test rychlého přepnutí ověřil správný nový detail a nezávislou životnost starého snímku.
 - [x] F21 WinUI: vodorovný posuvník služeb dával tabulce neomezenou šířku; dlouhé názvy potom zbytečně odsouvaly stav a další sloupce. Šířka tabulky nyní vychází z viditelné plochy a pevného minima pro posuvník.
