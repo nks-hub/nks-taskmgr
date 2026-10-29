@@ -33,6 +33,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 
 ## Průběžné nálezy a review
 
+- [x] F24 GPU: DXGI při vzdáleném zobrazení vracelo kopii fyzické karty bez software příznaku. Inventář nově ověřuje typ přes D3DKMT a vynechá potvrzený nepřímý adaptér bez renderování; názvy karet neslučuje. Živý test po opravě zachoval dvě fyzické GPU, 24 enginů a platné obě paměti.
 - [x] F01 Sestavení: MSBuild x64 načítal jiný kořen UCRT než SDK; místní build skript ověřuje skutečný SDK a nastavuje UCRTContentRoot jen pro podřízené procesy.
 - [x] F20 Služby: změna výběru nyní zruší čekající detail i jeho chybu a odmítne dokončení předchozího dotazu podle verze výběru. Test rychlého přepnutí ověřil správný nový detail a nezávislou životnost starého snímku.
 - [x] F21 WinUI: vodorovný posuvník služeb dával tabulce neomezenou šířku; dlouhé názvy potom zbytečně odsouvaly stav a další sloupce. Šířka tabulky nyní vychází z viditelné plochy a pevného minima pro posuvník.

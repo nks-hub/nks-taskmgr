@@ -4,4 +4,5 @@
 
 namespace nks {
 Metric<double> gpuTemperature(LUID luid);
+bool gpuDisplayAlias(LUID luid);
 }

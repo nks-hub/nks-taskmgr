@@ -101,7 +101,8 @@ void ResourceCollector::inventory()
             DXGI_ADAPTER_DESC1 description{};
             const auto described = adapter->GetDesc1(&description);
             if (FAILED(described)) gpuComplete = false;
-            if (SUCCEEDED(described) && !(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) {
+            if (SUCCEEDED(described) && !(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+                && !gpuDisplayAlias(description.AdapterLuid)) {
                 ResourceRecord gpu;
                 gpu.kind = ResourceKind::gpu;
                 gpu.id = luidName(description.AdapterLuid);
