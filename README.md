@@ -59,6 +59,14 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Release -WinUI -Test
 
 Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, collection while minimized, CPU chart layout, and read-only Services. Visual checks require an active display; captures made while the display is off can contain a black client area. Administrative actions and the UI framework choice remain open.
 
+To build an installer and a portable ZIP from the published WinUI application, use Inno Setup 7.1.1:
+
+```powershell
+pwsh -NoProfile -File scripts/package.ps1 -Compiler ISCC.exe
+```
+
+Use `-Compiler` with the compiler's full path if it is outside `PATH`. `-AppDirectory` selects a different publish directory. Packages are written to `build/packages` and contain the Native AOT application, Windows App SDK files, MSVC 14.44 DLLs, and license texts. The installer uses the current user's `LocalAppData/Programs/NKS Task Manager` directory and registers a Start menu shortcut and an uninstaller. These development packages are unsigned.
+
 ## Usage
 
 Open the desktop prototype:
