@@ -10,6 +10,7 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class MainWindow
 {
     private bool sortBenchmarkRunning;
+    private double sortModelMs, sortHeaderMs, sortOverviewMs;
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -24,7 +25,15 @@ public sealed partial class MainWindow
 
     private void SortProcesses(int column)
     {
-        model.Sort(column); processTable.SetSort(model.SortColumn, model.SortDescending); RefreshProcesses();
+        long start = Stopwatch.GetTimestamp();
+        model.Sort(column);
+        long sorted = Stopwatch.GetTimestamp();
+        processTable.SetSort(model.SortColumn, model.SortDescending);
+        long header = Stopwatch.GetTimestamp();
+        RefreshProcesses();
+        sortModelMs = Stopwatch.GetElapsedTime(start, sorted).TotalMilliseconds;
+        sortHeaderMs = Stopwatch.GetElapsedTime(sorted, header).TotalMilliseconds;
+        sortOverviewMs = Stopwatch.GetElapsedTime(header).TotalMilliseconds;
     }
 
     private static async Task NextRenderedFrame()
@@ -60,7 +69,7 @@ public sealed partial class MainWindow
         try {
             model.SetPaused(true); model.SetMode(ProcessMode.All); model.SetQuery(""); ShowView(false);
             using var output = new StreamWriter(path, false);
-            await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc");
+            await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc,sort_model_ms,sort_header_ms,sort_overview_ms,slots_assign_ms,slots_restore_ms,slots_focus_ms");
             foreach (string scenario in new[] { "live", "replay" }) {
                 if (scenario == "replay") model.ReplayForBenchmark(ReplayRows());
                 SortProcesses(0); processList.UpdateLayout(); await NextRenderedFrame(); await NextRenderedFrame();
@@ -88,7 +97,9 @@ public sealed partial class MainWindow
                     await output.WriteLineAsync(string.Join(',', scenario, model.VisibleProcesses.Count, column, model.SortDescending,
                         handler.ToString("F3", CultureInfo.InvariantCulture), layout.ToString("F3", CultureInfo.InvariantCulture), watch.Elapsed.TotalMilliseconds.ToString("F3", CultureInfo.InvariantCulture),
                         ProcessIconView.DecodedImagesCreated - decodedBefore, uiCpu.ToString("F3", CultureInfo.InvariantCulture), allocated,
-                        gen0Collections, gen1Collections, gen2Collections));
+                        gen0Collections, gen1Collections, gen2Collections, sortModelMs.ToString("F3", CultureInfo.InvariantCulture),
+                        sortHeaderMs.ToString("F3", CultureInfo.InvariantCulture), sortOverviewMs.ToString("F3", CultureInfo.InvariantCulture),
+                        slotsAssignMs.ToString("F3", CultureInfo.InvariantCulture), slotsRestoreMs.ToString("F3", CultureInfo.InvariantCulture), slotsFocusMs.ToString("F3", CultureInfo.InvariantCulture)));
                     await output.FlushAsync();
                 }
                 processList.ScrollIntoView(slotsByRow[selected[0]], ScrollIntoViewAlignment.Leading);

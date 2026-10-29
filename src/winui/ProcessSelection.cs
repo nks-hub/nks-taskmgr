@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace NksTaskMgr.WinUI;
 
@@ -11,6 +12,7 @@ public sealed partial class MainWindow
     private readonly ObservableCollection<ProcessSlot> processSlots = [];
     private readonly Dictionary<ProcessRow, ProcessSlot> slotsByRow = [];
     private bool updatingProcessSlots;
+    private double slotsAssignMs, slotsRestoreMs, slotsFocusMs;
     private ProcessRow? SelectedProcess => (processList.SelectedItem as ProcessSlot)?.Row;
 
     private void SelectProcess(ProcessRow row, bool scroll = true)
@@ -44,6 +46,7 @@ public sealed partial class MainWindow
         };
         model.VisibleProcesses.Replaced += () => {
             if (!bound) return;
+            long began = Stopwatch.GetTimestamp();
             processList.SelectedItems.Clear();
             while (processSlots.Count > model.VisibleProcesses.Count) processSlots.RemoveAt(processSlots.Count - 1);
             slotsByRow.Clear();
@@ -52,16 +55,21 @@ public sealed partial class MainWindow
                 if (i == processSlots.Count) processSlots.Add(new ProcessSlot(row)); else processSlots[i].Assign(row);
                 slotsByRow.Add(row, processSlots[i]);
             }
+            long assigned = Stopwatch.GetTimestamp();
             if (primary is not null && slotsByRow.TryGetValue(primary, out var main)) processList.SelectedItems.Add(main);
             foreach (var row in selected) if (row != primary && slotsByRow.TryGetValue(row, out var slot)) processList.SelectedItems.Add(slot);
             if (anchor is not null) {
                 int index = model.VisibleProcesses.IndexOf(anchor);
                 if (index >= 0) scroll?.ChangeView(null, index * 34 + remainder, null, true);
             }
+            long restored = Stopwatch.GetTimestamp();
             if (focused is not null && model.VisibleProcesses.Contains(focused)) {
                 processList.UpdateLayout();
                 (processList.ContainerFromItem(slotsByRow[focused]) as ListViewItem)?.Focus(FocusState.Keyboard);
             }
+            slotsAssignMs = Stopwatch.GetElapsedTime(began, assigned).TotalMilliseconds;
+            slotsRestoreMs = Stopwatch.GetElapsedTime(assigned, restored).TotalMilliseconds;
+            slotsFocusMs = Stopwatch.GetElapsedTime(restored).TotalMilliseconds;
             updatingProcessSlots = false; RefreshSelection();
         };
     }
