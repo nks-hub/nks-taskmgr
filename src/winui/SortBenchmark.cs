@@ -71,7 +71,7 @@ public sealed partial class MainWindow
         try {
             model.SetPaused(true); model.SetMode(ProcessMode.All); model.SetQuery(""); ShowView(false);
             using var output = new StreamWriter(path, false);
-            await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc,sort_model_ms,sort_header_ms,sort_overview_ms,slots_assign_ms,slots_restore_ms,slots_focus_ms,icons_enabled");
+            await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc,sort_model_ms,sort_header_ms,sort_overview_ms,slots_assign_ms,slots_restore_ms,slots_focus_ms,icons_enabled,icon_apply_ms,icon_apply_max_ms,icon_start_ms,icon_start_max_ms");
             foreach (string scenario in new[] { "live", "replay" }) {
                 if (scenario == "replay") model.ReplayForBenchmark(ReplayRows());
                 SortProcesses(0); processList.UpdateLayout(); await NextRenderedFrame(); await NextRenderedFrame();
@@ -82,6 +82,8 @@ public sealed partial class MainWindow
                     var container = processList.ContainerFromIndex(0) as ListViewItem;
                     var visual = container is null ? null : Descendant<ProcessRowGrid>(container);
                     int decodedBefore = ProcessIconView.DecodedImagesCreated;
+                    double applyBefore = ProcessIconView.ApplyMs, startBefore = ProcessIconView.DecodeStartMs;
+                    ProcessIconView.BeginProfileSample();
                     int gen0 = GC.CollectionCount(0), gen1 = GC.CollectionCount(1), gen2 = GC.CollectionCount(2);
                     long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
                     ulong cpuBefore = UiThreadCpu100Ns();
@@ -101,7 +103,9 @@ public sealed partial class MainWindow
                         ProcessIconView.DecodedImagesCreated - decodedBefore, uiCpu.ToString("F3", CultureInfo.InvariantCulture), allocated,
                         gen0Collections, gen1Collections, gen2Collections, sortModelMs.ToString("F3", CultureInfo.InvariantCulture),
                         sortHeaderMs.ToString("F3", CultureInfo.InvariantCulture), sortOverviewMs.ToString("F3", CultureInfo.InvariantCulture),
-                        slotsAssignMs.ToString("F3", CultureInfo.InvariantCulture), slotsRestoreMs.ToString("F3", CultureInfo.InvariantCulture), slotsFocusMs.ToString("F3", CultureInfo.InvariantCulture), iconsEnabled));
+                        slotsAssignMs.ToString("F3", CultureInfo.InvariantCulture), slotsRestoreMs.ToString("F3", CultureInfo.InvariantCulture), slotsFocusMs.ToString("F3", CultureInfo.InvariantCulture), iconsEnabled,
+                        (ProcessIconView.ApplyMs - applyBefore).ToString("F3", CultureInfo.InvariantCulture), ProcessIconView.ApplyMaxMs.ToString("F3", CultureInfo.InvariantCulture),
+                        (ProcessIconView.DecodeStartMs - startBefore).ToString("F3", CultureInfo.InvariantCulture), ProcessIconView.DecodeStartMaxMs.ToString("F3", CultureInfo.InvariantCulture)));
                     await output.FlushAsync();
                 }
                 processList.ScrollIntoView(slotsByRow[selected[0]], ScrollIntoViewAlignment.Leading);
