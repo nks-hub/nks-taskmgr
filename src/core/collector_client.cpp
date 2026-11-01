@@ -259,10 +259,11 @@ ProcessSnapshot CollectorClient::processes(std::stop_token stop)
     catch (...) { if (connection) connection->stop(); throw; }
 }
 
-ResourceSnapshot CollectorClient::resources(std::stop_token stop)
+ResourceSnapshot CollectorClient::resources(std::stop_token stop, bool cpuSensors)
 {
     if (kind != collector::Kind::resources) throw std::logic_error("Wrong collector kind");
-    try { return collector::decodeResources(request(stop, kind)); }
+    collector::Writer body; body.number<std::uint32_t>(cpuSensors ? 1 : 0);
+    try { return collector::decodeResources(request(stop, kind, body.bytes)); }
     catch (...) { if (connection) connection->stop(); throw; }
 }
 

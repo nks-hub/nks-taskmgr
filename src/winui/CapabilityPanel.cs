@@ -30,12 +30,12 @@ internal sealed partial class CapabilityPanel : UserControl
         new("Actions", "Akce nad živým procesem", "Každý cíl se ověřuje na stejném handlu. Běžný pomocník pracuje jen s procesy stejného účtu a relace.", "Podepsaná varianta vyžaduje výslovné zvýšení a potvrzení správce. Odmítá systémovou či cizí relaci, kritické a chráněné cíle; bez důvěryhodného podpisu se nespustí.", "Používají se dostupná uživatelská rozhraní Windows, bez dalšího ovladače."),
         new("Dumps", "Dumpy procesů", "Čtení paměti vybraného procesu x64 nebo WOW64 až po potvrzení. Soubor může obsahovat citlivé údaje.", "Přístup se posuzuje pro konkrétní cíl; tato cesta práva nemění.", "Používá se systémové rozhraní Windows bez dalšího ovladače."),
         new("ServiceActions", "Ovládání služeb", "Právo určuje konkrétní služba. Závislé služby se zastaví jen podle výslovně schváleného plánu.", "Více práv nezaručuje možnost ovládat chráněnou systémovou službu.", "Používá se správce služeb Windows bez dalšího ovladače."),
-        new("cpu-temperature", "Teplota CPU", "Čidla čipu nejsou v této verzi připojená.", "Zvýšení práv samo nepřidá zdroj měření.", "Volitelný senzorový poskytovatel je dosud neimplementovaný.")
+        new("cpu-temperature", "Teplota CPU", "Volitelné čtení již běžícího místního HTTP API kompatibilního s LibreHardwareMonitor (127.0.0.1:8085). Výchozí stav je vypnutý.", "Zvýšení práv samo nepřidá zdroj měření; aplikace je nevyžaduje.", "Aplikace ovladač ani poskytovatele neinstaluje a nespouští. Čte publikované CPU vzorky s časem; identita poskytovatele není ověřena.")
     ];
     private readonly Dictionary<string, TextBlock> statuses = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Button> commands = new(StringComparer.Ordinal);
     private readonly TextBlock description = Text("");
-    private (long Process, long Resource, long Reports, long Services, bool Paused, bool Stale, bool ServicesStale, string ServicesError) stamp;
+    private (long Process, long Resource, long Reports, long Services, bool Paused, bool Stale, bool ServicesStale, string ServicesError, string CpuSensors) stamp;
     private bool initialized;
 
     internal CapabilityPanel()
@@ -72,7 +72,7 @@ internal sealed partial class CapabilityPanel : UserControl
     internal void Refresh(MonitorModel model, ServiceModel? services)
     {
         var current = (model.ProcessTime, model.ResourceTime, CapabilityReports.Version, services?.Time ?? 0,
-            model.Paused, model.Stale, services?.Stale ?? false, services?.Error ?? "");
+            model.Paused, model.Stale, services?.Stale ?? false, services?.Error ?? "", model.CpuSensorStatus);
         if (initialized && stamp == current) return;
         stamp = current; initialized = true;
         statuses["processes"].Text = model.ProcessError.Length > 0 ? "Sběr skončil chybou" : model.ProcessTime == 0 ? "Čeká na vzorek"
@@ -86,7 +86,7 @@ internal sealed partial class CapabilityPanel : UserControl
         statuses["hardware"].Text = facts == 0 ? "Čeká na systémové údaje" : $"Windows poskytl {facts} údajů";
         statuses["ups"].Text = model.Hardware.TryGetValue("ups", out var ups) && ups.Count > 0
             ? string.Join(" · ", ups.Take(2).Select(pair => pair.Key + ": " + pair.Value)) : "Zatím bez hlášení zařízení";
-        statuses["cpu-temperature"].Text = "Zdroj není implementovaný";
+        statuses["cpu-temperature"].Text = model.CpuSensorStatus;
         statuses["services"].Text = services is null || services.Time == 0 ? "Zatím nevyžádáno"
             : services.Error.Length > 0 ? "Čtení služeb skončilo chybou" : services.Stale ? "Zastaralý výpis"
             : services.All.Count + " stavů · " + services.All.Count(row => row.Config.Error == 0) + " konfigurací · "

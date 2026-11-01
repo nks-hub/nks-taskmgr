@@ -1,13 +1,14 @@
 #pragma once
 
 #include "pdh_counters.hpp"
+#include "cpu_sensors.hpp"
 #include <map>
 
 namespace nks {
 
 class ResourceCollector {
 public:
-    ResourceSnapshot collect();
+    ResourceSnapshot collect(bool cpuSensors = false);
 private:
     void inventory();
     void networks(ResourceSnapshot& snapshot);
@@ -17,6 +18,7 @@ private:
         std::chrono::steady_clock::time_point measuredAt;
     };
     PdhCounters counters;
+    CpuSensors cpuTemperature;
     std::vector<ResourceRecord> devices;
     std::map<std::wstring, std::uint32_t> diskNumbers;
     std::map<std::wstring, std::vector<HardwareFact>> diskHealthFacts;

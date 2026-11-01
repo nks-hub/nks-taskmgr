@@ -162,7 +162,8 @@ ProcessSnapshot decodeProcesses(std::span<const std::byte> payload)
 std::vector<std::byte> encode(const ResourceSnapshot& value)
 {
     Writer out;
-    facts(out, value.upsFacts); out.signedNumber(ticks<std::chrono::steady_clock>(value.measuredAt));
+    facts(out, value.upsFacts); facts(out, value.cpuSensorFacts);
+    out.signedNumber(ticks<std::chrono::steady_clock>(value.measuredAt));
     out.number<std::uint32_t>(value.diskCountersAvailable); out.number<std::uint32_t>(value.gpuCountersAvailable);
     out.count(value.devices.size(), 4096);
     for (const auto& device : value.devices) {
@@ -179,7 +180,8 @@ std::vector<std::byte> encode(const ResourceSnapshot& value)
 ResourceSnapshot decodeResources(std::span<const std::byte> payload)
 {
     Reader in(payload); ResourceSnapshot value;
-    value.upsFacts = facts(in); value.measuredAt = timePoint<std::chrono::steady_clock>(in);
+    value.upsFacts = facts(in); value.cpuSensorFacts = facts(in);
+    value.measuredAt = timePoint<std::chrono::steady_clock>(in);
     value.diskCountersAvailable = in.boolean(); value.gpuCountersAvailable = in.boolean();
     const auto count = in.count(4096, 332); value.devices.reserve(count);
     for (std::uint32_t i = 0; i < count; ++i) {

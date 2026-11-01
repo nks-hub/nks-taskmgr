@@ -21,6 +21,7 @@ public sealed partial class MainWindow
             var body = new StackPanel { Padding = new Thickness(22), Spacing = 13 };
             var title = Label(key switch { "cpu" => "Procesor", "memory" => "Paměť", "board" => "Základní deska a BIOS", _ => "Záložní zdroj UPS" }, 18, 0xe9eef0);
             title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold; body.Children.Add(title);
+            if (key == "cpu") AddCpuSensorChoice(body);
             var values = new StackPanel { Spacing = 12 }; body.Children.Add(values); hardwareSections.Add(key, values);
             hardwareCards.Children.Add(Card(body));
         }
@@ -46,7 +47,7 @@ public sealed partial class MainWindow
         capabilities.Refresh(model, servicesModel);
         foreach (var (key, panel) in hardwareSections) {
             var facts = model.Hardware.TryGetValue(key, out var available) ? new Dictionary<string, string>(available) : [];
-            if (key == "cpu") facts = new Dictionary<string, string> { ["Model"] = model.CpuModel.Length > 0 ? model.CpuModel : "Načítání…", ["Logické procesory"] = model.LogicalProcessors > 0 ? model.LogicalProcessors.ToString() : "Načítání…" }.Concat(facts).ToDictionary(pair => pair.Key, pair => pair.Value);
+            if (key == "cpu") facts = new Dictionary<string, string> { ["Model"] = model.CpuModel.Length > 0 ? model.CpuModel : "Načítání…", ["Logické procesory"] = model.LogicalProcessors > 0 ? model.LogicalProcessors.ToString() : "Načítání…" }.Concat(facts).Concat(model.CpuSensorFacts()).ToDictionary(pair => pair.Key, pair => pair.Value);
             if (key == "memory" && model.Memory.State == SampleState.Valid) facts["Instalováno"] = model.Memory.InstalledBytes > 0 ? Display.Number(model.Memory.InstalledBytes / 1073741824d, " GiB") : "Windows nehlásí";
             if (facts.Count == 0) facts["Dostupnost"] = "Údaje zatím nejsou dostupné";
             string signature = string.Join('\n', facts.Select(pair => pair.Key + ":" + pair.Value));

@@ -43,7 +43,8 @@ int serve(nks::collector::Kind kind)
         if ((request.kind != kind && !(serviceMode && request.kind == nks::collector::Kind::serviceDetail))
             || request.status || request.requestId <= previousId) return 3;
         const bool detailRequest = request.kind == nks::collector::Kind::serviceDetail;
-        if (request.payloadBytes > (detailRequest ? 65538u : 0u)) return 3;
+        const bool resourceRequest = request.kind == nks::collector::Kind::resources;
+        if (resourceRequest ? request.payloadBytes != 4 : request.payloadBytes > (detailRequest ? 65538u : 0u)) return 3;
         previousId = request.requestId;
         std::vector<std::byte> body(request.payloadBytes);
         if (!transfer(input, body, false)) return 0;
@@ -53,8 +54,10 @@ int serve(nks::collector::Kind kind)
                 if (!processes) processes = std::make_unique<nks::ProcessCollector>(nks::ProcessIdentityPreference::sequenceNumberWhenSupported);
                 payload = nks::collector::encode(processes->collect());
             } else if (kind == nks::collector::Kind::resources) {
+                nks::collector::Reader in(body);
+                const bool cpuSensors = in.boolean(); in.finished();
                 if (!resources) resources = std::make_unique<nks::ResourceCollector>();
-                payload = nks::collector::encode(resources->collect());
+                payload = nks::collector::encode(resources->collect(cpuSensors));
             } else {
                 std::wstring name;
                 if (detailRequest) {

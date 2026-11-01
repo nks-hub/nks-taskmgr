@@ -233,13 +233,14 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
     previousNetworks = std::move(next);
 }
 
-ResourceSnapshot ResourceCollector::collect()
+ResourceSnapshot ResourceCollector::collect(bool cpuSensors)
 {
     const auto now = std::chrono::steady_clock::now();
     if (now - inventoryAt > std::chrono::seconds(15))
         inventory();
     const auto collected = counters.collect();
     ResourceSnapshot result;
+    result.cpuSensorFacts = cpuTemperature.collect(cpuSensors);
     if (now - upsAt >= std::chrono::seconds(5)) { upsFacts = upsHardware(); upsAt = now; }
     result.upsFacts = upsFacts;
     result.measuredAt = std::chrono::steady_clock::now();

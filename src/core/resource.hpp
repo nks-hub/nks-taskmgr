@@ -33,6 +33,7 @@ struct ResourceRecord {
 
 struct ResourceSnapshot {
     std::vector<HardwareFact> upsFacts;
+    std::vector<HardwareFact> cpuSensorFacts;
     std::chrono::steady_clock::time_point measuredAt;
     std::vector<ResourceRecord> devices;
     bool diskCountersAvailable{};
