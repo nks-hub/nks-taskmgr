@@ -18,6 +18,7 @@ void ProcessEventStore::resync()
 void ProcessEventStore::initialize(BootIdentity boot, std::int64_t qpcFrequency)
 {
     std::lock_guard lock(mutex);
+    increment(info.queueDropped, records.size()); records.clear(); identities.clear(); transfers.initialize(qpcFrequency);
     info.boot = boot; info.qpcFrequency = qpcFrequency;
     resync();
 }
@@ -25,6 +26,8 @@ void ProcessEventStore::initialize(BootIdentity boot, std::int64_t qpcFrequency)
 void ProcessEventStore::state(ProcessEventMonitorState value, std::uint32_t error, bool cleanupOutstanding)
 {
     std::lock_guard lock(mutex);
+    if (!cleanupOutstanding && value != ProcessEventMonitorState::starting && value != ProcessEventMonitorState::idle)
+        transfers.drain(measurementTime(std::chrono::steady_clock::now()), identities, true);
     info.state = value; info.win32Error = error;
     if (cleanupOutstanding) info.flags |= eventsCleanupOutstanding;
     else info.flags &= ~eventsCleanupOutstanding;
@@ -46,19 +49,52 @@ void ProcessEventStore::push(ProcessEventRecord record)
     if (sequence == std::numeric_limits<std::uint64_t>::max()) { increment(info.queueDropped); resync(); return; }
     if (records.size() == capacity) { records.pop_front(); increment(info.queueDropped); resync(); }
     record.sequence = ++sequence;
-    // ETW kernel object pointers and current PID lookups are never lifetime identities.
-    record.identityKind = GenerationKind::missing; record.generation = 0; record.identityState = SampleState::unavailable;
+    // Only the provider's payload CreateTime establishes the target's historical lifetime.
+    if (record.identityKind == GenerationKind::creationTime && record.generation && record.pid
+        && info.boot.state == SampleState::valid && !info.boot.id.empty()) {
+        record.identityState = SampleState::valid;
+        if (transfers.metadataIsLate(record.timestampQpc)) invalidate(true);
+        const auto evictions = identities.evictions, conflicts = identities.conflicts;
+        identities.process(record.pid, record.generation, record.timestampQpc, record.kind == ProcessEventKind::started);
+        identityChanges(evictions, conflicts);
+    } else {
+        record.identityKind = GenerationKind::missing; record.generation = 0; record.identityState = SampleState::unavailable;
+        increment(info.ambiguous);
+    }
     if (record.imageName.size() > maximumNameChars) {
         record.imageName.clear(); record.flags = (record.flags & ~eventImageName) | eventPartial;
         increment(info.decodeErrors); resync();
     }
-    records.push_back(std::move(record)); increment(info.ambiguous);
+    try { records.push_back(std::move(record)); }
+    catch (const std::bad_alloc&) { increment(info.queueDropped); resync(); }
 }
 
-void ProcessEventStore::decodeFailure() { std::lock_guard lock(mutex); increment(info.decodeErrors); resync(); }
+void ProcessEventStore::invalidate(bool conflict) { identities.clear(); transfers.invalidate(conflict); resync(); }
+void ProcessEventStore::identityChanges(std::uint64_t evictions, std::uint64_t conflicts) {
+    if (identities.conflicts != conflicts) invalidate(true);
+    else if (identities.evictions != evictions) invalidate(false);
+}
+void ProcessEventStore::thread(std::uint32_t pid, std::uint32_t tid, std::int64_t qpc, bool start) {
+    std::lock_guard lock(mutex);
+    if (info.boot.state != SampleState::valid || info.boot.id.empty()) return;
+    if (transfers.metadataIsLate(qpc)) invalidate(true);
+    const auto evictions = identities.evictions, conflicts = identities.conflicts;
+    identities.thread(pid, tid, qpc, start); identityChanges(evictions, conflicts);
+}
+void ProcessEventStore::traffic(ProcessTrafficObservation observation) {
+    std::lock_guard lock(mutex);
+    const auto dropped = transfers.info.pendingDropped, evicted = transfers.info.evictedSamples;
+    transfers.observe(observation, identities);
+    if (dropped != transfers.info.pendingDropped || evicted != transfers.info.evictedSamples) resync();
+}
+void ProcessEventStore::providers(SampleState disk, SampleState network, SampleState identity) {
+    std::lock_guard lock(mutex); transfers.providers(disk, network, identity);
+}
+void ProcessEventStore::identityProvider(SampleState state) { std::lock_guard lock(mutex); transfers.info.identityProviderState = state; }
+void ProcessEventStore::decodeFailure() { std::lock_guard lock(mutex); increment(info.decodeErrors); invalidate(false); }
 void ProcessEventStore::lost(std::uint64_t events, std::uint64_t buffers) {
     std::lock_guard lock(mutex);
-    if (events || buffers) { increment(info.providerEventsLost, events); increment(info.providerBuffersLost, buffers); resync(); }
+    if (events || buffers) { increment(info.providerEventsLost, events); increment(info.providerBuffersLost, buffers); invalidate(false); }
 }
 void ProcessEventStore::acknowledgeResync(std::uint64_t version) {
     std::lock_guard lock(mutex);
@@ -68,7 +104,11 @@ void ProcessEventStore::acknowledgeResync(std::uint64_t version) {
 ProcessEventBatch ProcessEventStore::read()
 {
     std::lock_guard lock(mutex);
-    ProcessEventBatch batch; batch.events.reserve((std::min)(records.size(), maximumFrameEvents)); batch.info = info;
+    ProcessEventBatch batch; batch.events.reserve((std::min)(records.size(), maximumFrameEvents));
+    const auto dropped = transfers.info.pendingDropped, evicted = transfers.info.evictedSamples;
+    batch.traffic = transfers.read(measurementTime(std::chrono::steady_clock::now()), identities);
+    if (dropped != transfers.info.pendingDropped || evicted != transfers.info.evictedSamples) resync();
+    batch.info = info;
     if (info.state == ProcessEventMonitorState::stopping && stopRequestedAt != std::chrono::steady_clock::time_point{}
         && std::chrono::steady_clock::now() - stopRequestedAt >= std::chrono::seconds(5)) {
         batch.info.state = ProcessEventMonitorState::stopTimedOut; batch.info.win32Error = ERROR_TIMEOUT;

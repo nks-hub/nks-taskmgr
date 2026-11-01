@@ -42,6 +42,8 @@ add_library(nks_native STATIC
     src/collector_worker/service_codec.cpp
     src/core/history_stream.cpp
     src/core/process_events.cpp
+    src/core/event_identity.cpp
+    src/core/process_traffic.cpp
     src/collectors/etw_collector.cpp
     src/core/service.cpp
     src/core/service_monitor.cpp
