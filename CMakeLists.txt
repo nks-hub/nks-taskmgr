@@ -39,6 +39,8 @@ add_library(nks_native STATIC
     src/collector_worker/snapshot_codec.cpp
     src/collector_worker/service_codec.cpp
     src/core/history_stream.cpp
+    src/core/process_events.cpp
+    src/collectors/etw_collector.cpp
     src/core/service.cpp
     src/core/service_monitor.cpp
     src/collectors/service_collector.cpp
@@ -50,10 +52,10 @@ add_library(nks_native STATIC
 target_include_directories(nks_native PUBLIC src)
 target_include_directories(nks_native SYSTEM PRIVATE third_party/phnt/include)
 target_compile_definitions(nks_native PRIVATE PHNT_VERSION=117)
-target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32 gdi32 wintrust crypt32 bcrypt)
+target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32 gdi32 wintrust crypt32 bcrypt tdh ole32)
 target_compile_options(nks_native PRIVATE /W4 /WX /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
 
-add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/services_api.cpp src/interop/history_api.cpp)
+add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/services_api.cpp src/interop/history_api.cpp src/interop/events_api.cpp)
 target_include_directories(nks-monitor PUBLIC src)
 target_compile_definitions(nks-monitor PRIVATE NKS_MONITOR_EXPORTS)
 target_compile_options(nks-monitor PRIVATE /W4 /WX /utf-8 /permissive-)
@@ -76,6 +78,13 @@ add_executable(nks-details-worker src/details_worker/main.cpp src/collectors/pro
 target_link_libraries(nks-details-worker PRIVATE nks_native user32 dwmapi)
 target_compile_options(nks-details-worker PRIVATE /W4 /WX /utf-8 /permissive-)
 target_link_options(nks-details-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'")
+
+add_executable(nks-actions-worker src/actions_worker/main.cpp src/collectors/process_actions.cpp)
+target_include_directories(nks-actions-worker SYSTEM PRIVATE third_party/phnt/include)
+target_compile_definitions(nks-actions-worker PRIVATE PHNT_VERSION=117)
+target_link_libraries(nks-actions-worker PRIVATE nks_native user32)
+target_compile_options(nks-actions-worker PRIVATE /W4 /WX /utf-8 /permissive-)
+target_link_options(nks-actions-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'")
 
 add_executable(nks-collector-worker src/collector_worker/main.cpp)
 target_link_libraries(nks-collector-worker PRIVATE nks_native)

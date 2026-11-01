@@ -19,6 +19,7 @@
     <IconWorkerPath Condition="'$(IconWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-icon-worker.exe</IconWorkerPath>
     <DetailsWorkerPath Condition="'$(DetailsWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-details-worker.exe</DetailsWorkerPath>
     <CollectorWorkerPath Condition="'$(CollectorWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-collector-worker.exe</CollectorWorkerPath>
+    <ActionsWorkerPath Condition="'$(ActionsWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-actions-worker.exe</ActionsWorkerPath>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
@@ -28,6 +29,7 @@
     <None Include="$(IconWorkerPath)" Link="nks-icon-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Include="$(DetailsWorkerPath)" Link="nks-details-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Include="$(CollectorWorkerPath)" Link="nks-collector-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="$(ActionsWorkerPath)" Link="nks-actions-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\..\assets\app.ico" Link="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\..\assets\app.png" Link="app.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
@@ -36,5 +38,6 @@
     <Error Condition="!Exists('$(IconWorkerPath)')" Text="Build the native Release icon worker before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(DetailsWorkerPath)')" Text="Build the native Release details worker before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(CollectorWorkerPath)')" Text="Build the native Release collector worker before publishing the WinUI candidate." />
+    <Error Condition="!Exists('$(ActionsWorkerPath)')" Text="Build the native Release actions worker before publishing the WinUI candidate." />
   </Target>
 </Project>
