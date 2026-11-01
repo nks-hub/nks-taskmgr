@@ -19,6 +19,7 @@ public sealed partial class MainWindow
         AutomationProperties.SetAutomationId(processEventsButton, "process-events");
         ToolTipService.SetToolTip(processEventsButton, "Události vzniku a ukončení procesů");
         processEventsButton.Click += (_, _) => {
+            if (waitingForEventsStop || allowMainEventsClose) return;
             if (processEventsWindow is null) {
                 var window = new ProcessEventsWindow(() => (model.ProcessTime, model.BootIdentity.Identifier, model.BootIdentity.State));
                 processEventsWindow = window;
@@ -32,21 +33,21 @@ public sealed partial class MainWindow
 
     private async void OnMainEventsClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (allowMainEventsClose || processEventsWindow is not { NeedsCleanup: true } window) return;
+        if (allowMainEventsClose || processEventsWindow is not { } window) return;
         args.Cancel = true;
         if (waitingForEventsStop) return;
-        waitingForEventsStop = true;
-        bool clean = await window.StopForCloseAsync();
+        waitingForEventsStop = true; processEventsButton.IsEnabled = false;
+        bool clean = await window.StopForCloseAsync(fromMainWindow: true);
         if (allowMainEventsClose) return;
         if (!clean) {
-            var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = "Zastavení záznamu nebylo potvrzené",
+            var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = "Zastavení a dočtení záznamu nebylo potvrzené",
                 PrimaryButtonText = "Zavřít i tak", CloseButtonText = "Ponechat aplikaci otevřenou",
-                Content = "Windows nepotvrdil úklid vlastní relace ETW. Může dál zaznamenávat události. Aplikaci lze ponechat otevřenou a zkusit zastavení znovu." };
+                Content = "Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Aplikaci lze ponechat otevřenou a zkusit zastavení znovu." };
             Appearance.Dialog(dialog);
             try { clean = await dialog.ShowAsync() == ContentDialogResult.Primary; }
             catch (InvalidOperationException) { clean = false; }
         }
         if (clean) { allowMainEventsClose = true; DispatcherQueue.TryEnqueue(() => { window.CloseAfterStop(); Close(); }); }
-        else waitingForEventsStop = false;
+        else { waitingForEventsStop = false; window.CancelClose(fromMainWindow: true); processEventsButton.IsEnabled = true; }
     }
 }

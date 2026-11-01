@@ -39,10 +39,11 @@ internal sealed class ProcessEventsWindow : Window
     private ulong captureEpoch, heldTrimmed;
     private int estimatedBytes;
     private long originQpc, resyncAfter;
-    private bool closed, closing, allowClose, dirty;
+    private bool closed, closing, mainClosing, allowClose, dirty;
     private bool hasOrigin, changingMode, refreshing;
     private int shownMode;
     private bool trafficSupported = true;
+    private Task<bool>? closeStop;
     private ProcessTrafficBatchInfo? trafficInfo;
     private bool TrafficMode => modes.SelectedIndex == 1;
     private bool LifetimeMode => modes.SelectedIndex == 2;
@@ -115,9 +116,9 @@ internal sealed class ProcessEventsWindow : Window
         catch (Exception error) when (InteropError(error)) { status.Text = "Zastavení nebylo potvrzené: " + error.Message; }
     }
 
-    private void ReadBatch()
+    private int ReadBatch()
     {
-        if (closed || monitor is null) return;
+        if (closed || monitor is null) return 0;
         try {
             using var frame = monitor.Read();
             var info = frame.Info;
@@ -137,7 +138,7 @@ internal sealed class ProcessEventsWindow : Window
                 dirty = true;
             }
             dirty |= lifetimes.ObserveBatch(info, events, originQpc);
-            ReadTraffic(frame, info);
+            int trafficCount = ReadTraffic(frame, info);
             PruneHeldRows();
             status.Text = StateText(state) + (info.Win32Error != 0 ? " · Windows " + info.Win32Error : "");
             counters.Text = "Události " + retained.Count + "/" + MaximumRows + " · vytěsněno v okně " + trimmed
@@ -165,7 +166,8 @@ internal sealed class ProcessEventsWindow : Window
             if ((batchFlags & 2) != 0) notice.Text += " Relace ještě není uklizená.";
             if (dirty && hold.IsChecked != true) RefreshRows();
             UpdateCommands();
-        } catch (Exception error) when (InteropError(error)) { timer.Stop(); status.Text = "Čtení událostí selhalo: " + error.Message; }
+            return events.Length + trafficCount;
+        } catch (Exception error) when (InteropError(error)) { timer.Stop(); status.Text = "Čtení událostí selhalo: " + error.Message; return -1; }
     }
 
     private void ClearRows()
@@ -233,16 +235,17 @@ internal sealed class ProcessEventsWindow : Window
         } finally { refreshing = false; }
     }
 
-    private void ReadTraffic(NativeEventFrame frame, ProcessEventBatchInfo info)
+    private int ReadTraffic(NativeEventFrame frame, ProcessEventBatchInfo info)
     {
-        if (!trafficSupported) return;
+        if (!trafficSupported) return 0;
         ProcessTrafficBatch batch;
         try { batch = frame.CopyTraffic(); }
-        catch (EntryPointNotFoundException) { trafficSupported = false; trafficRows.Clear(); trafficInfo = null; dirty = true; return; }
+        catch (EntryPointNotFoundException) { trafficSupported = false; trafficRows.Clear(); trafficInfo = null; dirty = true; return 0; }
         trafficInfo = batch.Info;
         if (!hasOrigin && batch.Samples.Length > 0) { originQpc = batch.Samples[0].StartQpc; hasOrigin = true; }
         foreach (var item in batch.Samples) trafficRows.Upsert(item, info.QpcFrequency, originQpc, info.Boot);
         if (batch.Samples.Length > 0) dirty = true;
+        return batch.Samples.Length;
     }
 
     private string TrafficCounters()
@@ -267,23 +270,35 @@ internal sealed class ProcessEventsWindow : Window
 
     private void UpdateCommands()
     {
+        bool closePending = closing || mainClosing;
         bool running = state is ProcessEventMonitorState.Starting or ProcessEventMonitorState.Running or ProcessEventMonitorState.Stopping;
-        start.IsEnabled = !closing && !running && (batchFlags & 2) == 0;
-        stop.IsEnabled = !closing && (running || (batchFlags & 2) != 0);
+        start.IsEnabled = !closePending && !running && (batchFlags & 2) == 0;
+        stop.IsEnabled = !closePending && (running || (batchFlags & 2) != 0);
+        clear.IsEnabled = !closePending;
     }
 
-    internal async Task<bool> StopForCloseAsync()
+    internal Task<bool> StopForCloseAsync(bool fromMainWindow = false)
+    {
+        if (fromMainWindow) mainClosing = true; else closing = true;
+        UpdateCommands();
+        return closeStop is { IsCompleted: false } pending ? pending : closeStop = DrainForCloseAsync();
+    }
+
+    private async Task<bool> DrainForCloseAsync()
     {
         if (monitor is null) return true;
         try {
             monitor.Stop();
-            ReadBatch();
-            if (!NeedsCleanup) return true;
             long began = Stopwatch.GetTimestamp();
-            while (NeedsCleanup && Stopwatch.GetElapsedTime(began) < TimeSpan.FromSeconds(5)) {
-                await Task.Delay(50); ReadBatch();
-            }
-            return !NeedsCleanup;
+            do {
+                int count = ReadBatch();
+                if (count < 0) return false;
+                // Stopped confirms session cleanup, not an empty lifecycle queue.
+                if (!NeedsCleanup && count == 0) return true;
+                if (NeedsCleanup) await Task.Delay(50);
+                else await Task.Yield();
+            } while (Stopwatch.GetElapsedTime(began) < TimeSpan.FromSeconds(5));
+            return false;
         } catch (Exception error) when (InteropError(error)) {
             status.Text = "Úklid záznamu nebyl potvrzený: " + error.Message; return false;
         }
@@ -292,23 +307,28 @@ internal sealed class ProcessEventsWindow : Window
     internal bool NeedsCleanup => monitor is not null && ((batchFlags & 2) != 0
         || state is ProcessEventMonitorState.Starting or ProcessEventMonitorState.Running or ProcessEventMonitorState.Stopping);
     internal void CloseAfterStop() { allowClose = true; if (!closed) Close(); }
+    internal void CancelClose(bool fromMainWindow = false)
+    {
+        if (fromMainWindow) mainClosing = false; else closing = false;
+        UpdateCommands();
+    }
 
     private async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
         if (allowClose || closed) return;
         args.Cancel = true;
-        if (closing) return;
+        if (closing || mainClosing) return;
         closing = true; UpdateCommands();
         bool clean = await StopForCloseAsync();
         if (closed) return;
         if (!clean) {
-            var dialog = new ContentDialog { XamlRoot = layout.XamlRoot, Title = "Zastavení záznamu nebylo potvrzené", CloseButtonText = "Ponechat otevřené",
-                PrimaryButtonText = "Zavřít i tak", Content = "Windows nepotvrdil ukončení vlastní relace ETW. Může dál zaznamenávat události. Okno můžete ponechat otevřené a zkusit zastavení znovu." };
+            var dialog = new ContentDialog { XamlRoot = layout.XamlRoot, Title = "Zastavení a dočtení záznamu nebylo potvrzené", CloseButtonText = "Ponechat otevřené",
+                PrimaryButtonText = "Zavřít i tak", Content = "Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu." };
             Appearance.Dialog(dialog);
             try { clean = await dialog.ShowAsync() == ContentDialogResult.Primary; }
             catch (InvalidOperationException) { clean = false; }
         }
-        if (clean) { allowClose = true; DispatcherQueue.TryEnqueue(() => Close()); } else { closing = false; UpdateCommands(); }
+        if (clean) { allowClose = true; DispatcherQueue.TryEnqueue(() => Close()); } else CancelClose();
     }
 
     private static string StateText(ProcessEventMonitorState value) => value switch {

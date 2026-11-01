@@ -110,6 +110,7 @@ public static partial class WinUiChecks
         Require(model.TopConsumers(false).All(row => row.Key.Pid != 0 && row.Cpu.State == SampleState.Valid), "Idle time was shown as CPU consumption.");
         ProcessRefresh();
         ProcessLifetimes();
+        ProcessEventCloseOwnership();
         PublisherTrustChecks.Run();
         DeepTree();
         Graphs();
