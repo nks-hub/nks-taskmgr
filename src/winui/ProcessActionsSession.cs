@@ -39,7 +39,7 @@ internal sealed partial class ProcessActionsSession : IDisposable
             if (process.ExitCode != 0 && result.Frame == ProcessActionFrame.Results)
                 throw new IOException("Pracovník skončil bez potvrzeného výsledku akce.");
             return result;
-        } catch (Exception error) when (cancellation.IsCancellationRequested && error is IOException or ObjectDisposedException or Win32Exception) {
+        } catch (Exception error) when (cancellation.IsCancellationRequested && error is IOException or InvalidDataException or ObjectDisposedException or Win32Exception) {
             throw new OperationCanceledException("Čekání bylo zrušeno. Výsledek rozpracované akce není známý.", error, cancellation);
         } catch (Win32Exception error) {
             throw new IOException("Pracovníka akcí nelze spustit nebo připojit (Windows " + error.NativeErrorCode + ").", error);

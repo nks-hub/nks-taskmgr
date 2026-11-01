@@ -81,7 +81,7 @@ public sealed partial class MainWindow
                 await ActionMessageAsync("Výběr se změnil", rows, "Akce nebyla odeslána. Vyberte znovu živý proces."); return;
             }
             await ExecuteProcessActionAsync(request, rows, operation);
-        } catch (Exception error) when (error is IOException or TimeoutException or OperationCanceledException) {
+        } catch (Exception error) when (error is IOException or InvalidDataException or TimeoutException or OperationCanceledException) {
             if (!processActionsClosed) await ActionMessageAsync("Dotaz na nastavení nebyl dokončen", rows,
                 error is OperationCanceledException ? "Výběr už není aktuální nebo byl dotaz zrušen. Změna nebyla odeslána." : error.Message + " Změna nebyla odeslána.");
         } finally {
@@ -158,7 +158,7 @@ public sealed partial class MainWindow
             try {
                 var result = await processActionsClient.ExecuteAsync(request, operation.Token);
                 content.Children.Clear(); AddActionResults(content, rows, result);
-            } catch (Exception error) when (error is IOException or TimeoutException or OperationCanceledException) {
+            } catch (Exception error) when (error is IOException or InvalidDataException or TimeoutException or OperationCanceledException) {
                 content.Children.Clear();
                 string reason = error is OperationCanceledException ? "Čekání bylo zrušeno nebo se změnil vybraný proces." : error.Message;
                 foreach (var row in rows) content.Children.Add(ActionText(ActionTargetName(row) + "\nVýsledek není známý. Akce se mohla provést. " + reason));
