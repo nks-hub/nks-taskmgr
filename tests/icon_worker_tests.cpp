@@ -1,4 +1,5 @@
 #include <windows.h>
+#include "collectors/process_identity.hpp"
 
 #include <array>
 #include <cstddef>
@@ -74,18 +75,22 @@ struct Child {
             at += received; length -= received;
         }
     }
-    void request(std::uint64_t generation, std::uint32_t magic = 0x31494b4e) {
-        std::array<std::byte, 16> bytes{};
-        const DWORD pid = GetCurrentProcessId();
+    void request(const nks::ProcessIdentity& identity, std::uint32_t magic = 0x32494b4e, std::uint32_t reserved = 0) {
+        std::array<std::byte, 40> bytes{};
+        const auto kind = static_cast<std::uint32_t>(identity.generationKind);
         std::memcpy(bytes.data(), &magic, 4);
-        std::memcpy(bytes.data() + 4, &pid, 4);
-        std::memcpy(bytes.data() + 8, &generation, 8);
+        std::memcpy(bytes.data() + 4, &identity.pid, 4);
+        std::memcpy(bytes.data() + 8, &kind, 4);
+        std::memcpy(bytes.data() + 12, &reserved, 4);
+        std::memcpy(bytes.data() + 16, &identity.generation, 8);
+        std::memcpy(bytes.data() + 24, &identity.boot.low, 8);
+        std::memcpy(bytes.data() + 32, &identity.boot.high, 8);
         write(bytes.data(), static_cast<DWORD>(bytes.size()));
     }
     std::vector<std::byte> response() {
         std::array<std::uint32_t, 2> header{};
         read(header.data(), sizeof(header));
-        require(header[0] == 0x31494b4e && (header[1] == 0 || header[1] == 1350), "Invalid response frame");
+        require(header[0] == 0x32494b4e && (header[1] == 0 || header[1] == 1350), "Invalid response frame");
         std::vector<std::byte> bytes(header[1]);
         if (!bytes.empty()) read(bytes.data(), static_cast<DWORD>(bytes.size()));
         return bytes;
@@ -104,29 +109,44 @@ int main() {
         require(GetProcessTimes(GetCurrentProcess(), &created, &exited, &kernel, &user) != FALSE, "Creation time unavailable");
         std::uint64_t generation{};
         std::memcpy(&generation, &created, sizeof(generation));
+        const auto target = nks::queryProcessIdentity(GetCurrentProcess(), nks::GenerationKind::creationTime);
+        require(target.state == nks::SampleState::valid && !target.identity.boot.empty()
+            && generation != 0 && target.identity.generation == generation && target.identity.pid == GetCurrentProcessId(),
+            "Verified test process identity disagrees with the held process");
+        const auto& identity = target.identity;
         {
             Child child;
-            child.request(generation + 1);
+            auto changed = identity; ++changed.generation;
+            child.request(changed);
             require(child.response().empty(), "Recycled PID generation was accepted");
-            child.request(generation);
+            changed = identity; changed.boot.low ^= 1;
+            child.request(changed);
+            require(child.response().empty(), "Different boot identity was accepted");
+            changed = identity; changed.generationKind = nks::GenerationKind::missing;
+            child.request(changed);
+            require(child.response().empty(), "Missing generation kind was accepted");
+            child.request(identity, 0x32494b4e, 1);
+            require(child.response().empty(), "Reserved request data was accepted");
+            child.request(identity);
             const auto bytes = child.response();
             require(bytes.size() == 1350 && bytes[0] == std::byte{'B'} && bytes[1] == std::byte{'M'}, "Executable icon was not a bounded bitmap");
             std::int32_t width{}, height{};
             std::memcpy(&width, bytes.data() + 18, 4); std::memcpy(&height, bytes.data() + 22, 4);
             require(width == 18 && height == -18, "Bitmap dimensions changed");
-            child.request(0);
+            changed = identity; changed.generation = 0;
+            child.request(changed);
             require(child.response().empty(), "Missing generation was accepted");
             CloseHandle(child.input); child.input = nullptr;
             child.exited(0);
         }
         {
             Child child;
-            child.request(generation, 0);
+            child.request(identity, 0);
             child.exited(4);
         }
         {
             Child child;
-            const std::uint32_t prefix = 0x31494b4e;
+            const std::uint32_t prefix = 0x32494b4e;
             child.write(&prefix, sizeof(prefix));
             CloseHandle(child.input); child.input = nullptr;
             child.exited(0);
@@ -136,7 +156,7 @@ int main() {
             CloseHandle(child.job); child.job = nullptr;
             require(WaitForSingleObject(child.process, 2000) == WAIT_OBJECT_0, "Closing the owner job left a live worker");
         }
-        std::cout << "Icon worker: generation, bitmap, framing, EOF, owner exit; elevated=false\n";
+        std::cout << "Icon worker: boot, generation kind/value, bitmap, framing, EOF, owner exit; elevated=false\n";
         return 0;
     } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }
