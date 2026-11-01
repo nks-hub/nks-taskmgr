@@ -75,6 +75,7 @@ internal static partial class ProcessDumpQaChecks
                     string destination = Path.Combine(runDirectory, (architecture == ProcessArchitecture.X64 ? "x64" : "wow64") + "-" + mode.ToString().ToLowerInvariant() + ".dmp");
                     var result = await client.CaptureAsync(child.Target, mode, destination, cancellation).ConfigureAwait(false);
                     cleanup &= await WaitIdleAsync(client, log).ConfigureAwait(false);
+                    log($"dump-qa result;requestedArchitecture={architecture};mode={mode};state={result.State};error={result.Error};errorHex=0x{result.Error:X8};actualArchitecture={result.Architecture};flags=0x{result.CaptureFlags:X};bytes={result.FileBytes};observedCT={result.ObservedCreated100ns};saved={result.SavedPath is not null};cleanupError={client.CleanupError}");
                     Require(result.State == ProcessDumpState.Captured && result.Error == 0 && result.SavedPath is not null
                         && Path.GetFullPath(result.SavedPath) == Path.GetFullPath(destination)
                         && result.ObservedCreated100ns == child.Target.Created100ns && result.Architecture == architecture,
