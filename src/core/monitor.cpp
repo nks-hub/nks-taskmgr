@@ -1,6 +1,5 @@
 #include "monitor.hpp"
-#include "collectors/process_collector.hpp"
-#include "collectors/resource_collector.hpp"
+#include "collector_client.hpp"
 #include "process_sampler.hpp"
 #include <windows.h>
 #include <stdexcept>
@@ -17,12 +16,14 @@ void Monitor::start()
         processThread = std::jthread([this](std::stop_token stop) {
             SetThreadDescription(GetCurrentThread(), L"NKS process collector");
             try {
-                ProcessCollector collector(ProcessIdentityPreference::sequenceNumberWhenSupported);
+                CollectorClient collector(collector::Kind::processes);
                 ProcessSampler sampler;
                 while (!stop.stop_requested()) {
                     if (!paused()) {
                         try {
-                            auto sample = collector.collect(); sampler.apply(sample);
+                            auto sample = collector.processes(stop);
+                            if (stop.stop_requested()) break;
+                            sampler.apply(sample);
                             try { history.append(sample); } catch (const std::exception&) { history.failed(); }
                             processSlot.publish(std::move(sample));
                         } catch (const std::exception& error) {
@@ -37,11 +38,12 @@ void Monitor::start()
         resourceThread = std::jthread([this](std::stop_token stop) {
             SetThreadDescription(GetCurrentThread(), L"NKS resource collector");
             try {
-                ResourceCollector collector;
+                CollectorClient collector(collector::Kind::resources);
                 while (!stop.stop_requested()) {
                     if (!paused()) {
                         try {
-                            auto sample = collector.collect();
+                            auto sample = collector.resources(stop);
+                            if (stop.stop_requested()) break;
                             try { history.append(sample); } catch (const std::exception&) { history.failed(); }
                             resourceSlot.publish(std::move(sample));
                         } catch (const std::exception& error) {

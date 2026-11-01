@@ -1,5 +1,5 @@
 #include "service_monitor.hpp"
-#include "collectors/service_collector.hpp"
+#include "collector_client.hpp"
 #include <stdexcept>
 
 namespace nks {
@@ -10,7 +10,7 @@ void ServiceMonitor::start()
 {
     if (worker.joinable()) throw std::logic_error("Service monitor already started");
     worker = std::jthread([this](std::stop_token stop) {
-        ServiceCollector collector;
+        CollectorClient collector(collector::Kind::services);
         while (!stop.stop_requested()) {
             std::wstring name;
             std::uint64_t version{};
@@ -21,12 +21,12 @@ void ServiceMonitor::start()
                 name = selected; version = selectionVersion; changed = false;
             }
             try {
-                auto snapshot = collector.collect(stop);
+                auto snapshot = collector.services(stop);
                 if (!stop.stop_requested()) snapshots.publish(std::move(snapshot));
             } catch (const std::exception& error) { if (!stop.stop_requested()) snapshots.fail(error.what()); }
             if (!stop.stop_requested() && !name.empty()) {
                 try {
-                    auto detail = collector.detail(name);
+                    auto detail = collector.detail(name, stop);
                     std::lock_guard lock(mutex);
                     if (!stop.stop_requested() && version == selectionVersion) details.publish(std::move(detail));
                 } catch (const std::exception& error) {
