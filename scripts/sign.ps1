@@ -145,8 +145,8 @@ function Invoke-NksSignPayload([string]$Directory, $Signer) {
 
 function Invoke-NksSignSetup([string]$Path, [string]$Version, [string]$Revision, $Signer) {
     $info = [Diagnostics.FileVersionInfo]::GetVersionInfo($Path)
-    if ($info.ProductName -cne 'NKS Task Manager' -or $info.FileDescription -cne 'NKS Task Manager Setup' -or
-        $info.OriginalFilename -cne 'NksTaskMgrSetup.exe' -or $info.ProductVersion -cne "$Version+$Revision") { throw 'The installer PE role or source revision does not match the package.' }
+    if ($info.ProductName.TrimEnd([char]32) -cne 'NKS Task Manager' -or $info.FileDescription.TrimEnd([char]32) -cne 'NKS Task Manager Setup' -or
+        $info.OriginalFilename.TrimEnd([char]32) -cne 'NksTaskMgrSetup.exe' -or $info.ProductVersion.TrimEnd([char]32) -cne "$Version+$Revision") { throw 'The installer PE role or source revision does not match the package.' }
     Invoke-NksSignFile $Path $Signer
 }
 

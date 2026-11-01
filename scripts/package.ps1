@@ -92,8 +92,8 @@ Write-PackageManifest
 if ($LASTEXITCODE) { throw "Installer compilation failed: $LASTEXITCODE" }
 $setup = Join-Path $OutputDirectory ($baseName + '-setup.exe')
 $setupInfo = [Diagnostics.FileVersionInfo]::GetVersionInfo($setup)
-if ($setupInfo.ProductName -cne 'NKS Task Manager' -or $setupInfo.FileDescription -cne 'NKS Task Manager Setup' -or
-    $setupInfo.OriginalFilename -cne 'NksTaskMgrSetup.exe' -or $setupInfo.ProductVersion -cne "$version+$revision") { throw 'The compiled setup PE role does not match the payload.' }
+if ($setupInfo.ProductName.TrimEnd([char]32) -cne 'NKS Task Manager' -or $setupInfo.FileDescription.TrimEnd([char]32) -cne 'NKS Task Manager Setup' -or
+    $setupInfo.OriginalFilename.TrimEnd([char]32) -cne 'NksTaskMgrSetup.exe' -or $setupInfo.ProductVersion.TrimEnd([char]32) -cne "$version+$revision") { throw 'The compiled setup PE role does not match the payload.' }
 if ($signer) {
     Invoke-NksSignSetup $setup $version $revision $signer
     [ordered]@{ schemaVersion=1; sourceRevision=$revision; productVersion="$version+$revision"; name=[IO.Path]::GetFileName($setup);

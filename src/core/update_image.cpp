@@ -72,6 +72,8 @@ void verifyVersion(Image& image, Role role)
                 throw Error(Status::rejected, "Incomplete image role resource");
             std::wstring result(value, size - 1);
             if (result.find(L'\0') != std::wstring::npos) throw Error(Status::rejected, "Embedded null in image role");
+            // Inno Setup keeps installer text in fixed-width, space-padded slots.
+            if (role == Role::installer) while (!result.empty() && result.back() == L' ') result.pop_back();
             return result;
         };
         if (field(L"ProductName") != L"NKS Task Manager" || field(L"FileDescription") != description || field(L"OriginalFilename") != filename)
