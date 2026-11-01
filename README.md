@@ -3,16 +3,17 @@
 ![Development](https://img.shields.io/badge/status-in%20development-8b6f47)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-0078d4)
 ![C++](https://img.shields.io/badge/C%2B%2B-20-00599c)
+![.NET](https://img.shields.io/badge/.NET-10-512BD4)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A Windows process and system monitor written in C++20.
+A Windows process and system monitor with a C#/WinUI 3 Native AOT interface and a C++20 core.
 
-The current desktop prototype displays live processes and individual system devices. Administrative actions and the remaining application scope are tracked in [TODO.md](TODO.md).
+Users launch NKS Task Manager once. The application loads its native DLL and manages its helper processes automatically. Remaining development and acceptance work is tracked in [TODO.md](TODO.md).
 
 ## Features
 
 - 🔎 **Process collection** - Reads process identities, parent PIDs, CPU times, threads, handles, and I/O counters through the Windows native API.
-- 🖥️ **Desktop prototype** - Provides a system overview, virtual process table, CPU and memory bars, name/PID search, column sorting, multiple selection, and a selection detail panel.
+- 🖥️ **WinUI interface** - Provides a system overview, virtual process table, CPU and memory bars, name/PID search, column sorting, multiple selection, and a selection detail panel.
 - 🌳 **Process views** - Switches between all processes, measured CPU or I/O activity, application groups, and a collapsible tree that checks parent creation times before linking processes.
 - 🧵 **WinUI process details** - Reads threads and modules in a separate worker and checks the selected module file's signature on request, including local catalog signatures.
 - 🗂️ **Memory and objects** - Lists virtual memory regions and process handles, queries a selected object's type and name, and searches accessible processes with bounded batches and cancellation.
@@ -64,14 +65,14 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Release
 
 The executables are placed in `build/msvc/Release`. The Win32 candidate has a DirectComposition renderer through D3D11, DXGI, and Direct2D. It shares drawing code with a DC fallback and reports the selected rendering path. Runtime acceptance, device-loss recovery, and comparison with the WinUI 3 candidates remain open.
 
-The experimental C#/WinUI candidate shares the native DLL. Build it with .NET SDK 10.0.403:
+The main C#/WinUI application uses the native DLL. Build it with .NET SDK 10.0.403:
 
 ```powershell
 pwsh -NoProfile -File scripts/build.ps1 -Configuration Release -WinUI -Test
 ./build/winui-aot/NksTaskMgr.WinUI.exe
 ```
 
-Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, collection while minimized, CPU chart layout, and read-only Services. Visual checks require an active display; captures made while the display is off can contain a black client area. Administrative actions and the UI framework choice remain open.
+Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, collection while minimized, CPU chart layout, and read-only Services. Visual checks require an active display; captures made while the display is off can contain a black client area. Runtime acceptance of administrative actions and the remaining requirements is tracked in TODO. The main application uses C#/WinUI Native AOT with the C++ core.
 
 The C++/WinUI comparison candidate uses the same native monitor and collector. Build it with Visual Studio C++ tools:
 
@@ -79,7 +80,7 @@ The C++/WinUI comparison candidate uses the same native monitor and collector. B
 pwsh -NoProfile -File scripts/build-winui-cpp.ps1 -NativeDirectory ./build/msvc/Release
 ```
 
-The script restores Windows App SDK 2.5.1 and C++/WinRT 2.0.250303.1 and writes an unpackaged output to `build/winui-cpp/app`, including the native pair, UI resources, and MSVC runtime DLLs. It builds without launching the application. This candidate implements the process, resource, and service views; feature parity, runtime behavior, and performance comparison remain open.
+The script restores Windows App SDK 2.5.1 and C++/WinRT 2.0.250303.1 and writes an unpackaged output to `build/winui-cpp/app`, including the native pair, UI resources, and MSVC runtime DLLs. It builds without launching the application. This technical client implements the process, resource, and service views for comparison. The shipping application is C#/WinUI Native AOT with the C++ core; expanding another UI to all of its features is outside the product scope. Runtime behavior and a comparison using equivalent workloads remain open.
 
 To build an installer and a portable ZIP from the published WinUI application, use Inno Setup 7.1.1:
 
@@ -93,10 +94,10 @@ To sign a build, select an existing code-signing certificate in `Cert:\CurrentUs
 
 ## Usage
 
-Open the desktop prototype:
+Open the main application after building with `-WinUI`:
 
 ```powershell
-./build/msvc/Release/nks-taskmgr.exe
+./build/winui-aot/NksTaskMgr.WinUI.exe
 ```
 
 Switch between Processes and Performance using the left navigation. Performance keeps individual resource previews beside the graph, hardware facts, and process cards. Select a process card to open its row in the process table. The refresh control switches between one second and 250 milliseconds; Pause stops both collectors. Graphs switch between 60 seconds and 10 minutes. Ctrl+F opens the process search.
