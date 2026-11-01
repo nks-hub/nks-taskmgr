@@ -26,6 +26,8 @@ internal sealed partial class CapabilityPanel : UserControl
         new("HandleInfo", "Typ a název objektu", "Vyžaduje právo duplikovat handle cílového procesu.", "Přístup se vyhodnocuje pro konkrétní objekt.", "Blokující dotaz je oddělený do pracovního procesu."),
         new("Signature", "Podpis souboru modulu", "Ověření čitelného vybraného souboru na disku.", "Oprávnění mohou pomoci s přístupem k souboru.", "Používá se místní ověření podpisu a katalogů."),
         new("Owners", "Procesy pro hledání objektů", "Výpis vlastníků s ověřitelnou životností.", "Nedostupní vlastníci se hlásí jako omezení výpisu.", "Další ovladač se nepoužívá."),
+        new("Events", "Události procesů ETW", "Spuštění vlastní relace se vyžádá až v okně událostí; Windows může přístup odmítnout.", "Dostupnost určuje oprávnění k systémové relaci. Aplikace práva automaticky nezvyšuje.", "Používá se systémový zdroj událostí; žádný další ovladač se neinstaluje."),
+        new("Actions", "Akce nad živým procesem", "Každý cíl se ověřuje na stejném handlu. Pomocník pracuje jen s procesy stejného účtu a relace.", "Pomocník i při zvýšených právech odmítá cizí účet, kritické a chráněné cíle.", "Používají se dostupná uživatelská rozhraní Windows, bez dalšího ovladače."),
         new("cpu-temperature", "Teplota CPU", "Čidla čipu nejsou v této verzi připojená.", "Zvýšení práv samo nepřidá zdroj měření.", "Volitelný senzorový poskytovatel je dosud neimplementovaný.")
     ];
     private readonly Dictionary<string, TextBlock> statuses = new(StringComparer.Ordinal);
@@ -37,7 +39,7 @@ internal sealed partial class CapabilityPanel : UserControl
     internal CapabilityPanel()
     {
         var body = new StackPanel { Spacing = 10 };
-        body.Children.Add(Text("Aktuální dostupnost měření a posledních čtecích dotazů. Změna oprávnění není automatická."));
+        body.Children.Add(Text("Aktuální dostupnost měření a výsledky posledních operací. Změna oprávnění není automatická."));
         var list = new StackPanel { Spacing = 4 };
         foreach (var policy in Policies) {
             var row = new Grid { ColumnSpacing = 12, Padding = new Thickness(8, 6, 8, 6) };
@@ -88,7 +90,7 @@ internal sealed partial class CapabilityPanel : UserControl
             : services.All.Count + " stavů · " + services.All.Count(row => row.Config.Error == 0) + " konfigurací · "
                 + services.All.Count(row => row.Config.Error == 5) + " konfigurací zamítnuto";
         var observed = CapabilityReports.Snapshot();
-        foreach (var policy in Policies.Where(policy => policy.Id is "Threads" or "Modules" or "Memory" or "Handles" or "HandleInfo" or "Signature" or "Owners"))
+        foreach (var policy in Policies.Where(policy => policy.Id is "Threads" or "Modules" or "Memory" or "Handles" or "HandleInfo" or "Signature" or "Owners" or "Events" or "Actions"))
             statuses[policy.Id].Text = observed.TryGetValue(policy.Id, out var value)
                 ? value.Status + (value.Target.Pid == 0 ? "" : " · PID " + value.Target.Pid) + " · " + value.ReceivedAt.LocalDateTime.ToString("g")
                 : "Zatím nevyžádáno";

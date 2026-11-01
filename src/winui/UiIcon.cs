@@ -17,7 +17,13 @@ public static class UiIcon
             foreach (var point in points.Skip(1)) figure.Segments.Add(new LineSegment { Point = point });
             path.Figures.Add(figure); geometry.Children.Add(path);
         }
-        if (name == "object-search") {
+        if (name == "events") {
+            Line(new Point(5, 3), new Point(5, 21));
+            foreach (int position in new[] { 6, 12, 18 }) {
+                geometry.Children.Add(new EllipseGeometry { Center = new Point(5, position), RadiusX = 2, RadiusY = 2 });
+                Line(new Point(11, position), new Point(21, position));
+            }
+        } else if (name == "object-search") {
             geometry.Children.Add(new EllipseGeometry { Center = new Point(10, 10), RadiusX = 6, RadiusY = 6 });
             Line(new Point(14, 14), new Point(21, 21));
             Line(new Point(7, 10), new Point(13, 10)); Line(new Point(10, 7), new Point(10, 13));

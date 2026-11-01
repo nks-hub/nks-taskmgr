@@ -93,7 +93,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
+        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureProcessActions(); ConfigureProcessEvents(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");
@@ -310,7 +310,7 @@ public sealed partial class MainWindow : Window
         var columns = Button("Sloupce"); columns.Height = 29; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
         columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů");
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); actions.Children.Add(compareSnapshots); actions.Children.Add(processDetailsButton); actions.Children.Add(globalObjectSearchButton); toolbar.Children.Add(actions);
+        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); actions.Children.Add(compareSnapshots); actions.Children.Add(processDetailsButton); actions.Children.Add(globalObjectSearchButton); actions.Children.Add(processEventsButton); actions.Children.Add(processActionsButton); toolbar.Children.Add(actions);
         Grid.SetColumn(actions, 1);
         Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
         var workspace = BuildApplicationGroups(processTable); Grid.SetRow(workspace, 2); processPage.Children.Add(workspace);
@@ -433,6 +433,7 @@ public sealed partial class MainWindow : Window
     {
         if (updatingProcessSlots) return;
         UpdateProcessDetailsCommand();
+        RefreshProcessActions();
         if (SelectedProcess is not { } row) { selectionTitle.Text = "Vyberte proces"; selectionFacts.Text = "Ctrl a Shift vyberou více řádků."; return; }
         selectionTitle.Text = row.Ended ? row.Name + " · ukončeno" : row.Name;
         selectionFacts.Text = $"PID {row.PidText} · {row.Threads} vláken · {row.Handles} popisovačů · CPU {row.CpuText} · {row.WorkingText}";
