@@ -110,6 +110,18 @@ bool trustConfigured() noexcept
     return publisherPin.size() == 64 && std::all_of(publisherPin.begin(), publisherPin.end(), [](char c) { return hex(c) >= 0; });
 }
 
+bool verifyImageFile(Peer& peer)
+{
+    if (!trustConfigured()) { SetLastError(trustNotConfigured); return false; }
+    if (!peer.image || peer.image.get() == INVALID_HANDLE_VALUE
+        || !GetFileInformationByHandleEx(peer.image.get(), FileIdInfo, &peer.fileId, sizeof(peer.fileId))
+        || !lockPath(peer) || !signerPinned(peer.image.get(), peer.path)) { SetLastError(trustRejected); return false; }
+    FILE_ID_INFO after{};
+    if (!GetFileInformationByHandleEx(peer.image.get(), FileIdInfo, &after, sizeof(after))
+        || std::memcmp(&after, &peer.fileId, sizeof(after))) { SetLastError(trustRejected); return false; }
+    return true;
+}
+
 bool readToken(HANDLE process, TokenIdentity& result)
 {
     HANDLE raw = nullptr;

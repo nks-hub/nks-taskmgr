@@ -1,5 +1,27 @@
 cmake_minimum_required(VERSION 3.31)
 project(NksTaskManager VERSION 0.1.0 LANGUAGES C CXX)
+find_package(Git QUIET)
+string(REPEAT "0" 40 nks_build_revision)
+if(GIT_FOUND)
+    execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        RESULT_VARIABLE git_result OUTPUT_VARIABLE git_revision OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    string(LENGTH "${git_revision}" git_revision_length)
+    if(git_result EQUAL 0 AND git_revision_length EQUAL 40 AND git_revision MATCHES "^[0-9a-fA-F]+$")
+        set(nks_build_revision "${git_revision}")
+        execute_process(COMMAND "${GIT_EXECUTABLE}" symbolic-ref --quiet HEAD WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+            OUTPUT_VARIABLE git_ref OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+        foreach(ref_name HEAD "${git_ref}")
+            if(NOT ref_name STREQUAL "")
+                execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse --git-path "${ref_name}" WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                    OUTPUT_VARIABLE ref_path OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+                if(NOT ref_path STREQUAL "")
+                    get_filename_component(ref_path "${ref_path}" ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
+                    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${ref_path}")
+                endif()
+            endif()
+        endforeach()
+    endif()
+endif()
 if(MSVC AND NOT MSVC_VERSION EQUAL 1944)
     message(FATAL_ERROR "This baseline requires the MSVC 14.44 toolset.")
 endif()
@@ -18,12 +40,15 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 add_compile_definitions(UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN WINVER=0x0A00 _WIN32_WINNT=0x0A00)
 
 set(NKS_BROKER_PUBLISHER_SPKI_SHA256 "" CACHE STRING "SHA-256 of the permitted broker publisher public key")
-if(NOT NKS_BROKER_PUBLISHER_SPKI_SHA256 STREQUAL "")
-    string(LENGTH "${NKS_BROKER_PUBLISHER_SPKI_SHA256}" broker_pin_length)
-    if(NOT broker_pin_length EQUAL 64 OR NOT NKS_BROKER_PUBLISHER_SPKI_SHA256 MATCHES "^[0-9a-fA-F]+$")
-        message(FATAL_ERROR "NKS_BROKER_PUBLISHER_SPKI_SHA256 must be empty or 64 hexadecimal characters.")
+set(NKS_UPDATE_PUBLISHER_SPKI_SHA256 "" CACHE STRING "SHA-256 of the permitted update publisher public key")
+foreach(pin_variable NKS_BROKER_PUBLISHER_SPKI_SHA256 NKS_UPDATE_PUBLISHER_SPKI_SHA256)
+    if(NOT "${${pin_variable}}" STREQUAL "")
+        string(LENGTH "${${pin_variable}}" pin_length)
+        if(NOT pin_length EQUAL 64 OR NOT "${${pin_variable}}" MATCHES "^[0-9a-fA-F]+$")
+            message(FATAL_ERROR "${pin_variable} must be empty or 64 hexadecimal characters.")
+        endif()
     endif()
-endif()
+endforeach()
 
 add_library(nks_native STATIC
     src/collectors/process_query.c
@@ -114,6 +139,29 @@ target_compile_definitions(nks-elevation-broker PRIVATE PHNT_VERSION=117
 target_link_libraries(nks-elevation-broker PRIVATE nks_native user32 comctl32 shell32 ole32 wintrust crypt32 bcrypt advapi32)
 target_compile_options(nks-elevation-broker PRIVATE /W4 /WX /utf-8 /permissive-)
 target_link_options(nks-elevation-broker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
+
+add_executable(nks-update-worker
+    src/update_worker/main.cpp
+    src/update_worker/cache.cpp
+    src/update_worker/journal.cpp
+    src/update_worker/execute.cpp
+    src/update_worker/app.rc
+    src/core/update_image.cpp
+    src/core/broker_trust.cpp
+    src/collectors/process_identity.cpp
+    src/collectors/boot_identity.cpp
+)
+set_property(TARGET nks-update-worker PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_include_directories(nks-update-worker PRIVATE src)
+target_include_directories(nks-update-worker SYSTEM PRIVATE third_party/phnt/include)
+target_compile_definitions(nks-update-worker PRIVATE PHNT_VERSION=117
+    NKS_BROKER_PUBLISHER_SPKI_SHA256="${NKS_UPDATE_PUBLISHER_SPKI_SHA256}"
+    NKS_UPDATE_PUBLISHER_SPKI_SHA256="${NKS_UPDATE_PUBLISHER_SPKI_SHA256}"
+    NKS_UPDATE_PRODUCT_VERSION=L"${PROJECT_VERSION}+${nks_build_revision}"
+    "NKS_UPDATE_FILE_VERSION=${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},0")
+target_compile_options(nks-update-worker PRIVATE /W4 /WX /utf-8 /permissive-)
+target_link_options(nks-update-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0x800)
+target_link_libraries(nks-update-worker PRIVATE ntdll advapi32 bcrypt crypt32 wintrust version shell32 ole32)
 
 add_executable(nks-service-actions-worker
     src/service_actions_worker/main.cpp

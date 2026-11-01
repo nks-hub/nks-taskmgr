@@ -23,6 +23,7 @@ struct Peer {
     std::wstring path;
 };
 bool trustConfigured() noexcept;
+bool verifyImageFile(Peer& peer);
 bool readToken(HANDLE process, TokenIdentity& token);
 bool sameLogon(const TokenIdentity& left, const TokenIdentity& right) noexcept;
 DWORD parentPid(HANDLE process) noexcept;
