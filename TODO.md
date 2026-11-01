@@ -10,6 +10,8 @@ Zdrojový stav 2276738 doplnil dávky změn procesů ve WinUI i Win32, historick
 
 Další dávka zdrojově doplnila T46/T47: podpisovou cestu, ověřenou cache instalátorů a předání aktualizace po zavření GUI s návratem původní verze. Nativní pomocník, broker a společné C#/XAML sestavení prošly bez varování; tři PowerShell skripty prošly syntaktickou kontrolou. Zatím nebyl použit skutečný certifikát, sestaven nový instalátor ani spuštěný běhový test. Navazující v2 dávka zdrojově doplnila ruční repair, režim registrované instalace/přenosné kopie a historii podle kořene složky. Nativní i společné C#/XAML sestavení prošly bez varování a pracovní Inno kompilace ověřila syntaxi přenosné větve. Instalační soubor nebyl spuštěný ani podepsaný. Úklid vyčerpatelné cache zůstává v F57, skutečné přijetí v T46/T47.
 
+Zdrojový stav b0a1ea7 doplnil ruční úklid cache F57, virtuální adaptéry F08 a výchozí CPU sets napříč skupinami T35. Nativní, Win32, společné C#/XAML i Native AOT sestavení prošla. Statická kontrola ověřila 11 součástí výstupu, shodné hashe deseti kopírovaných nativních součástí a stejnou revizi v metadatech GUI i aktualizačního pracovníka. Aplikace, instalátor ani nové běhové či výkonové testy nebyly spuštěné; přijetí těchto funkcí zůstává otevřené.
+
 P0 znamená nutný základ nebo podmínku správnosti, P1 další základní funkci a P2 samostatné rozšíření. Role je budoucí odpovědnost, nikoli již přidělený člověk. Každá položka obsahuje závislost a podmínku dokončení. T01–T48 a T54 tvoří základní rozsah, T49–T53 rozšíření. Celkem je 54 implementačních úkolů.
 
 ## Požadavky a přijímací podmínky
