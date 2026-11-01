@@ -28,6 +28,8 @@ internal sealed partial class CapabilityPanel : UserControl
         new("Owners", "Procesy pro hledání objektů", "Výpis vlastníků s ověřitelnou životností.", "Nedostupní vlastníci se hlásí jako omezení výpisu.", "Další ovladač se nepoužívá."),
         new("Events", "Události procesů ETW", "Spuštění vlastní relace se vyžádá až v okně událostí; Windows může přístup odmítnout.", "Dostupnost určuje oprávnění k systémové relaci. Aplikace práva automaticky nezvyšuje.", "Používá se systémový zdroj událostí; žádný další ovladač se neinstaluje."),
         new("Actions", "Akce nad živým procesem", "Každý cíl se ověřuje na stejném handlu. Pomocník pracuje jen s procesy stejného účtu a relace.", "Pomocník i při zvýšených právech odmítá cizí účet, kritické a chráněné cíle.", "Používají se dostupná uživatelská rozhraní Windows, bez dalšího ovladače."),
+        new("Dumps", "Dumpy procesů", "Čtení paměti vybraného procesu x64 nebo WOW64 až po potvrzení. Soubor může obsahovat citlivé údaje.", "Přístup se posuzuje pro konkrétní cíl; tato cesta práva nemění.", "Používá se systémové rozhraní Windows bez dalšího ovladače."),
+        new("ServiceActions", "Ovládání služeb", "Právo určuje konkrétní služba. Závislé služby se zastaví jen podle výslovně schváleného plánu.", "Více práv nezaručuje možnost ovládat chráněnou systémovou službu.", "Používá se správce služeb Windows bez dalšího ovladače."),
         new("cpu-temperature", "Teplota CPU", "Čidla čipu nejsou v této verzi připojená.", "Zvýšení práv samo nepřidá zdroj měření.", "Volitelný senzorový poskytovatel je dosud neimplementovaný.")
     ];
     private readonly Dictionary<string, TextBlock> statuses = new(StringComparer.Ordinal);
@@ -90,7 +92,7 @@ internal sealed partial class CapabilityPanel : UserControl
             : services.All.Count + " stavů · " + services.All.Count(row => row.Config.Error == 0) + " konfigurací · "
                 + services.All.Count(row => row.Config.Error == 5) + " konfigurací zamítnuto";
         var observed = CapabilityReports.Snapshot();
-        foreach (var policy in Policies.Where(policy => policy.Id is "Threads" or "Modules" or "Memory" or "Handles" or "HandleInfo" or "Signature" or "Owners" or "Events" or "Actions"))
+        foreach (var policy in Policies.Where(policy => policy.Id is "Threads" or "Modules" or "Memory" or "Handles" or "HandleInfo" or "Signature" or "Owners" or "Events" or "Actions" or "Dumps" or "ServiceActions"))
             statuses[policy.Id].Text = observed.TryGetValue(policy.Id, out var value)
                 ? value.Status + (value.Target.Pid == 0 ? "" : " · PID " + value.Target.Pid) + " · " + value.ReceivedAt.LocalDateTime.ToString("g")
                 : "Zatím nevyžádáno";

@@ -12,7 +12,7 @@ internal static class CapabilityReports
 {
     private static readonly object sync = new();
     private static readonly Dictionary<string, CapabilityObservation> observations = new(StringComparer.Ordinal);
-    private static readonly HashSet<string> commands = new(StringComparer.Ordinal) { "Threads", "Modules", "Signature", "Memory", "Handles", "HandleInfo", "Owners", "Events", "Actions" };
+    private static readonly HashSet<string> commands = new(StringComparer.Ordinal) { "Threads", "Modules", "Signature", "Memory", "Handles", "HandleInfo", "Owners", "Events", "Actions", "Dumps", "ServiceActions" };
     private static long version;
     internal static long Version => Interlocked.Read(ref version);
 
@@ -57,6 +57,10 @@ internal static class CapabilityReports
         var target = batch.Results.Length == 1 ? batch.Results[0].Target.Key : default;
         Store("Actions", new(target, status, batch.ReceivedAt));
     }
+
+    internal static void ObserveDump(ProcessKey target, string status) => Store("Dumps", new(target, Bound(status), DateTimeOffset.UtcNow));
+    internal static void ObserveServiceAction(string status) => Store("ServiceActions", new(default, Bound(status), DateTimeOffset.UtcNow));
+    private static string Bound(string text) => text.Length <= 240 ? text : text[..(char.IsHighSurrogate(text[239]) ? 239 : 240)] + "…";
 
     private static string ActionState(ProcessActionOutcome value) => value switch {
         ProcessActionOutcome.Inspected => "ověřený dotaz", ProcessActionOutcome.Applied => "potvrzená změna",
