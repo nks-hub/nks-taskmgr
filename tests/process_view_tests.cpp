@@ -122,6 +122,7 @@ void verify(nks::ProcessTable& table)
     MoveWindow(table.handle(), 0, 0, 900, 260, FALSE);
     table.setVisible(true);
     auto many = std::make_shared<nks::ProcessSnapshot>();
+    many->boot.id = {1, 2}; many->boot.state = nks::SampleState::valid;
     for (unsigned i = 0; i < 30; ++i) many->processes.push_back(process((L"Process-" + std::to_wstring(i)).c_str(), 1000 + i, 0, 10 + i, i));
     table.update(many);
     ListView_EnsureVisible(table.handle(), 12, FALSE);
@@ -138,7 +139,25 @@ void verify(nks::ProcessTable& table)
     reordered->processes[1].cpuPercent.value = 200;
     table.update(reordered);
     check(ListView_GetTopIndex(table.handle()) == 0 && table.record(0)->identity.pid == 1001, "Live sorting scrolled away from the highest CPU process");
+    auto deltaTop = std::make_shared<nks::ProcessSnapshot>(*reordered);
+    deltaTop->processes[2].cpuPercent.value = 300;
+    const auto topChanges = nks::processChanges(reordered.get(), *deltaTop);
+    check(!topChanges.reset && topChanges.entries.size() == 1, "Top-row scroll regression did not exercise a process delta");
+    table.update(deltaTop, topChanges);
+    check(ListView_GetTopIndex(table.handle()) == 0 && table.record(0)->identity.pid == 1002,
+        "Process deltas scrolled away from the new highest CPU process at the top");
+    reordered = deltaTop;
     ListView_EnsureVisible(table.handle(), 12, FALSE);
+    const auto deltaAnchor = table.record(ListView_GetTopIndex(table.handle()))->identity;
+    auto deltaScrolled = std::make_shared<nks::ProcessSnapshot>(*reordered);
+    deltaScrolled->processes[4].cpuPercent.value = 350;
+    const auto scrolledChanges = nks::processChanges(reordered.get(), *deltaScrolled);
+    check(ListView_GetTopIndex(table.handle()) > 0 && !scrolledChanges.reset && scrolledChanges.entries.size() == 1,
+        "Scrolled-row regression did not exercise an anchored process delta");
+    table.update(deltaScrolled, scrolledChanges);
+    check(table.record(ListView_GetTopIndex(table.handle()))->identity == deltaAnchor,
+        "Process deltas lost the scrolled top process identity");
+    reordered = deltaScrolled;
     const auto hiddenTop = table.record(ListView_GetTopIndex(table.handle()))->identity;
     table.setVisible(false);
     auto hidden = std::make_shared<nks::ProcessSnapshot>(*reordered);

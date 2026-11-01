@@ -69,7 +69,7 @@ ProcessTable::ViewState ProcessTable::captureView() const
     state.mark = key(ListView_GetSelectionMark(window));
     state.topIndex = topAnchor ? topAnchorIndex : ListView_GetTopIndex(window);
     state.top = topAnchor;
-    if (!state.top) if (const auto* process = record(state.topIndex)) state.top = process->identity;
+    if (!state.top && state.topIndex > 0) if (const auto* process = record(state.topIndex)) state.top = process->identity;
     return state;
 }
 
