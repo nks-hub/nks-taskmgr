@@ -195,19 +195,21 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
     lastNetworks.clear();
     for (ULONG i = 0; i < raw->NumEntries; ++i) {
         const auto& row = raw->Table[i];
-        if (!row.InterfaceAndOperStatusFlags.HardwareInterface || row.InterfaceAndOperStatusFlags.FilterInterface
-            || row.Type == IF_TYPE_SOFTWARE_LOOPBACK)
-            continue;
+        if (row.InterfaceAndOperStatusFlags.FilterInterface) continue;
+        const bool virtualInterface = !row.InterfaceAndOperStatusFlags.HardwareInterface || row.Type == IF_TYPE_SOFTWARE_LOOPBACK;
         ResourceRecord network;
         network.id = L"network:" + std::to_wstring(row.InterfaceLuid.Value);
         network.kind = ResourceKind::network;
         network.title = row.Alias;
+        if (virtualInterface) network.title = L"Virtuální · " + network.title;
         network.description = row.Description;
         network.capacity = static_cast<double>(std::max(row.TransmitLinkSpeed, row.ReceiveLinkSpeed));
         const bool connected = row.OperStatus == IfOperStatusUp;
         network.status = connected ? L"Připojeno" : L"Odpojeno";
         network.facts = {{L"Rychlost linky ↓", hardwareRate(row.ReceiveLinkSpeed)}, {L"Rychlost linky ↑", hardwareRate(row.TransmitLinkSpeed)},
-            {L"MTU", std::to_wstring(row.Mtu) + L" B"}, {L"Připojení", row.Type == IF_TYPE_IEEE80211 ? L"Wi-Fi" : row.Type == IF_TYPE_ETHERNET_CSMACD ? L"Ethernet" : L"Jiné"}};
+            {L"MTU", std::to_wstring(row.Mtu) + L" B"}, {L"Připojení", row.Type == IF_TYPE_IEEE80211 ? L"Wi-Fi" : row.Type == IF_TYPE_ETHERNET_CSMACD ? L"Ethernet"
+                : row.Type == IF_TYPE_SOFTWARE_LOOPBACK ? L"Loopback" : row.Type == IF_TYPE_TUNNEL ? L"Tunel" : L"Jiné"},
+            {L"Druh rozhraní", virtualInterface ? L"Virtuální" : L"Fyzické"}, {L"LUID rozhraní", std::to_wstring(row.InterfaceLuid.Value)}};
         network.primary = {0, connected ? SampleState::first : SampleState::unavailable, MetricSource::networkInterface};
         network.secondary = network.primary;
         const auto before = previousNetworks.find(row.InterfaceLuid.Value);

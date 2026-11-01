@@ -94,14 +94,14 @@ void Desktop::drawButton(const DRAWITEMSTRUCT& item)
     const auto background = navigation || caption ? D2D1::ColorF(0x12181c) : item.CtlID == 40 ? D2D1::ColorF(0x171d21) : panel;
     if (!beginControl(item, background)) return;
     const auto w = controlSize.width, h = controlSize.height;
-    const bool segmented = (item.CtlID >= 20 && item.CtlID <= 22) || item.CtlID == 30 || item.CtlID == 31
+    const bool segmented = (item.CtlID >= 20 && item.CtlID <= 22) || item.CtlID == 30 || item.CtlID == 31 || item.CtlID == 32
         || (item.CtlID >= 70 && item.CtlID <= 72) || (item.CtlID >= 110 && item.CtlID <= 113) || item.CtlID == 130 || item.CtlID == 131;
     const bool selected = (item.CtlID == 1 && view == DesktopView::processes) || (item.CtlID == 2 && view == DesktopView::performance)
         || (item.CtlID == 7 && view == DesktopView::services)
         || (item.CtlID >= 110 && item.CtlID <= 113 && static_cast<int>(item.CtlID) - 110 == static_cast<int>(serviceTable.filterMode()))
         || (item.CtlID >= 130 && item.CtlID <= 131 && static_cast<int>(item.CtlID) - 130 == serviceTab)
         || (item.CtlID >= 20 && item.CtlID <= 22 && static_cast<int>(item.CtlID) - 20 == cpuView)
-        || (item.CtlID == 30 && rangeSeconds == 60) || (item.CtlID == 31 && rangeSeconds == 600);
+        || (item.CtlID == 30 && rangeSeconds == 60) || (item.CtlID == 31 && rangeSeconds == 600) || (item.CtlID == 32 && showVirtualNetworks);
     const bool processFilter = item.CtlID >= 70 && item.CtlID <= 72;
     const bool activeFilter = processFilter && static_cast<int>(item.CtlID) - 70 == static_cast<int>(table.mode());
     fill(rect(0, 0, w, h), background);

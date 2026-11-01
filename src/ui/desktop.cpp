@@ -116,6 +116,7 @@ void Desktop::create()
     cpuOverlayButton = button(L"Překrytí", 22);
     range60Button = button(L"60 s", 30);
     range600Button = button(L"10 min", 31);
+    virtualNetworksButton = button(L"Virtuální síť: vypnuto", 32);
     allProcessesButton = button(L"Všechny procesy  →", 40);
     for (int i = 0; i < 3; ++i) consumerButtons[i] = button(L"Proces", 60 + i);
     const std::array filters{L"Všechny procesy", L"Aktivní", L"Strom"};
@@ -157,7 +158,7 @@ void Desktop::setFonts()
         if (target) target->SetTextRenderingParams(textRendering.Get());
         if (controlTarget) controlTarget->SetTextRenderingParams(textRendering.Get());
     }
-    for (const auto child : {processButton, performanceButton, pauseButton, intervalButton})
+    for (const auto child : {processButton, performanceButton, pauseButton, intervalButton, virtualNetworksButton})
         if (child) SendMessageW(child, WM_SETFONT, reinterpret_cast<WPARAM>(font), FALSE);
     if (search) SendMessageW(search, WM_SETFONT, reinterpret_cast<WPARAM>(searchFont), FALSE);
     if (table.handle()) table.setFont(font);
@@ -181,6 +182,7 @@ void Desktop::changeView(DesktopView value)
     view = value;
     serviceMonitor.setActive(view == DesktopView::services && !IsIconic(window));
     ShowWindow(resourceList, view == DesktopView::performance ? SW_SHOW : SW_HIDE);
+    ShowWindow(virtualNetworksButton, view == DesktopView::performance ? SW_SHOW : SW_HIDE);
     table.setVisible(view == DesktopView::processes);
     serviceTable.setVisible(view == DesktopView::services);
     SetWindowTextW(search, (view == DesktopView::services ? serviceQuery : processQuery).c_str());
@@ -215,8 +217,9 @@ void Desktop::layout()
     move(intervalButton, width - headerPadding - 170, 84, 65, 35);
     move(pauseButton, width - headerPadding - 96, 84, 96, 35);
     ShowWindow(intervalButton, view == DesktopView::services ? SW_HIDE : SW_SHOW);
-    move(resourceList, frame.inventoryX + 10, 202, frame.inventoryWidth - 20,
-        std::max(30.f, std::min(height - 290, static_cast<float>(resources.size()) * 59)));
+    move(virtualNetworksButton, frame.inventoryX + 10, 202, frame.inventoryWidth - 20, 30);
+    move(resourceList, frame.inventoryX + 10, 240, frame.inventoryWidth - 20,
+        std::max(30.f, std::min(height - 328, static_cast<float>(resources.size()) * 59)));
     const auto page = ProcessLayout::calculate(width, height);
     move(search, page.searchX + 34, page.searchY + 9, page.searchWidth - (width > 1000 ? 77 : 45), 19);
     move(table.handle(), page.left + 1, page.tableTop + 1, page.width - 2, page.tableHeight - 1);
@@ -334,6 +337,11 @@ void Desktop::rebuildResources()
                 if (item.kind != ResourceKind::cpu && item.kind != ResourceKind::memory)
                     item.primary.state = item.secondary.state = item.tertiary.state = SampleState::stale;
     }
+    if (!showVirtualNetworks) std::erase_if(next, [](const auto& item) {
+        return item.kind == ResourceKind::network && std::any_of(item.facts.begin(), item.facts.end(), [](const auto& fact) {
+            return fact.name == L"Druh rozhraní" && fact.value == L"Virtuální";
+        });
+    });
     bool same = next.size() == resources.size();
     if (same) for (std::size_t i = 0; i < next.size(); ++i) if (next[i].id != resources[i].id) same = false;
     resources = std::move(next);
@@ -496,6 +504,10 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         case 30: case 31:
             rangeSeconds = LOWORD(wp) == 30 ? 60 : 600; InvalidateRect(window, nullptr, FALSE);
             InvalidateRect(range60Button, nullptr, FALSE); InvalidateRect(range600Button, nullptr, FALSE); break;
+        case 32:
+            showVirtualNetworks = !showVirtualNetworks;
+            SetWindowTextW(virtualNetworksButton, showVirtualNetworks ? L"Virtuální síť: zapnuto" : L"Virtuální síť: vypnuto");
+            rebuildResources(); InvalidateRect(virtualNetworksButton, nullptr, FALSE); InvalidateRect(window, nullptr, FALSE); break;
         case 40: changeView(DesktopView::processes); break;
         case 70: case 71: case 72:
             table.setMode(static_cast<ProcessMode>(LOWORD(wp) - 70));

@@ -75,6 +75,7 @@ private:
     int hoveredResource{-1};
     bool focusFromKeyboard{};
     HWND minimizeButton{}, maximizeButton{}, closeButton{}, cpuTotalButton{}, cpuEachButton{}, cpuOverlayButton{}, range60Button{}, range600Button{}, allProcessesButton{};
+    HWND virtualNetworksButton{};
     std::array<HWND, 3> processFilters{};
     std::array<HWND, 4> overviewButtons{};
     std::array<HWND, 3> consumerButtons{};
@@ -89,6 +90,7 @@ private:
     int cpuView{}, rangeSeconds{60};
     float detailScroll{}, detailDragY{}, detailDragStart{};
     bool detailDragging{};
+    bool showVirtualNetworks{};
     std::wstring selectedId{L"cpu"}, processError, resourceError;
     ProcessTable table;
     std::shared_ptr<const ProcessSnapshot> processes;

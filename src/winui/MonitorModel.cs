@@ -18,6 +18,7 @@ public sealed partial class MonitorModel : IDisposable
     private bool descending;
     public ProcessRows VisibleProcesses { get; } = [];
     public ObservableCollection<ResourceRow> Resources { get; } = [];
+    public bool ShowVirtualNetworkAdapters { get; private set; }
     public IReadOnlyCollection<ProcessRow> Processes => processes.Values;
     internal IEnumerable<ResourceRow> AllResources => resources.Values;
     public Dictionary<(uint Group, uint Index), HistorySeries> Processors { get; } = [];
@@ -45,6 +46,12 @@ public sealed partial class MonitorModel : IDisposable
     internal void SelectApplication(ProcessKey key) { held = false; Applications.Select(key); Rebuild(true); }
 
     public void SetPaused(bool value) { monitor.SetPaused(value); Paused = value; }
+    public void SetShowVirtualNetworkAdapters(bool value)
+    {
+        if (ShowVirtualNetworkAdapters == value) return;
+        ShowVirtualNetworkAdapters = value;
+        if (visualUpdates) SyncResources();
+    }
     public void SetInterval(uint value) { monitor.SetInterval(value); Interval = value; }
     public void SetQuery(string value) { held = false; query = value; Rebuild(true); }
     public void SetMode(ProcessMode value) { held = false; Mode = value; Rebuild(true); }
@@ -90,7 +97,10 @@ public sealed partial class MonitorModel : IDisposable
             Rebuild();
             foreach (var row in VisibleProcesses) row.NotifyUpdated();
         }
-        if (changed && visualUpdates) foreach (var resource in resources.Values) resource.RefreshPreview();
+        if (changed && visualUpdates) {
+            SyncResources();
+            foreach (var resource in resources.Values) resource.RefreshPreview();
+        }
         if (changed && visualUpdates && Mode == ProcessMode.Applications) Applications.RefreshMetrics(held);
         return changed;
     }
@@ -184,9 +194,10 @@ public sealed partial class MonitorModel : IDisposable
 
     private void SyncResources()
     {
-        var wanted = resources.Values.ToHashSet();
+        var rows = resources.Values.Where(row => ShowVirtualNetworkAdapters || !row.IsVirtualNetwork)
+            .OrderBy(row => row.Kind == ResourceKind.Cpu ? 0 : row.Kind == ResourceKind.Memory ? 1 : 2).ToArray();
+        var wanted = rows.ToHashSet();
         for (int i = Resources.Count - 1; i >= 0; --i) if (!wanted.Contains(Resources[i])) Resources.RemoveAt(i);
-        var rows = resources.Values.OrderBy(row => row.Kind == ResourceKind.Cpu ? 0 : row.Kind == ResourceKind.Memory ? 1 : 2).ToArray();
         for (int i = 0; i < rows.Length; ++i) {
             if (i < Resources.Count && ReferenceEquals(Resources[i], rows[i])) continue;
             int found = Resources.IndexOf(rows[i]);

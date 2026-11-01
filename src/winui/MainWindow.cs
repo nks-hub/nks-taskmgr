@@ -239,12 +239,14 @@ public sealed partial class MainWindow : Window
         performancePage.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(278) });
         performancePage.ColumnDefinitions.Add(new ColumnDefinition()); performancePage.ColumnSpacing = 20;
         var inventory = new Grid { Padding = new Thickness(10, 18, 10, 10) };
-        inventory.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) }); inventory.RowDefinitions.Add(new RowDefinition());
+        inventory.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) });
+        inventory.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); inventory.RowDefinitions.Add(new RowDefinition());
         var inventoryHeader = new Grid { Margin = new Thickness(8, 1, 9, 0) };
         var inventoryLabel = Label("Prostředky", 13, 0xe9eef0); inventoryLabel.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
         resourceCount.HorizontalAlignment = HorizontalAlignment.Right; resourceCount.VerticalAlignment = VerticalAlignment.Center;
         inventoryHeader.Children.Add(inventoryLabel); inventoryHeader.Children.Add(resourceCount); inventory.Children.Add(inventoryHeader);
-        Grid.SetRow(resourceList, 1); inventory.Children.Add(resourceList); performancePage.Children.Add(Card(inventory));
+        var networkFilter = BuildNetworkFilter(); Grid.SetRow(networkFilter, 1); inventory.Children.Add(networkFilter);
+        Grid.SetRow(resourceList, 2); inventory.Children.Add(resourceList); performancePage.Children.Add(Card(inventory));
         var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = performanceBody };
         performanceBody.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         performanceBody.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });

@@ -13,6 +13,8 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     }
     public string Id { get; }
     public ResourceKind Kind { get; }
+    // Older collectors expose only physical interfaces and have no classification fact.
+    public bool IsVirtualNetwork => Kind == ResourceKind.Network && HardwareFacts.TryGetValue("Druh rozhraní", out var type) && type == "Virtuální";
     public GpuModel? Gpu { get; }
     public string Title { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;

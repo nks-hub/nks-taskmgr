@@ -30,6 +30,7 @@ public sealed partial class MainWindow
                 ? Display.Number(model.Memory.PhysicalBytes / 1073741824d, " GiB celkem") : resource.Description;
         var measurement = model.MeasurementFor(resource, false);
         resourceDescription.Text += " · " + MeasurementText.Summary(measurement);
+        if (resource.IsVirtualNetwork) resourceDescription.Text += " · virtuální síťové rozhraní";
         string context = MeasurementText.Describe(measurement, resource.Primary, resource.Stale);
         if (resource.Kind == ResourceKind.Cpu && cpuMode > 0)
             context += "\n\nGrafy logických procesorů:\n" + MeasurementText.DescribeFormat(model.MeasurementFor(resource, true));
