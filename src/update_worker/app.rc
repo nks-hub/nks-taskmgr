@@ -18,6 +18,7 @@ BEGIN
       VALUE "ProductName", "NKS Task Manager\0"
       VALUE "FileDescription", "NKS Task Manager Update Worker\0"
       VALUE "OriginalFilename", "nks-update-worker.exe\0"
+      VALUE "FileVersion", NKS_UPDATE_PRODUCT_VERSION
       VALUE "ProductVersion", NKS_UPDATE_PRODUCT_VERSION
     END
   END

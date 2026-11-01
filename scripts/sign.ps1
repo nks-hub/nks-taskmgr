@@ -69,7 +69,24 @@ function Read-NksPinEvidence([string]$Directory) {
     $evidence
 }
 
+function Assert-NksArtifactRoles([string]$Directory, [string]$Revision) {
+    $guiVersion = $null
+    foreach ($name in @('NksTaskMgr.WinUI.exe', 'nks-update-worker.exe')) {
+        $path = Join-Path $Directory $name
+        if (!(Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        $info = [Diagnostics.FileVersionInfo]::GetVersionInfo($path)
+        $description = if ($name -eq 'NksTaskMgr.WinUI.exe') { 'NKS Task Manager' } else { 'NKS Task Manager Update Worker' }
+        $original = if ($name -eq 'NksTaskMgr.WinUI.exe') { 'NksTaskMgr.WinUI.dll' } else { $name }
+        if (!$info.FileVersion -or $info.ProductName -cne 'NKS Task Manager' -or $info.FileDescription -cne $description -or
+            $info.OriginalFilename -cne $original -or $info.ProductVersion -notmatch '^\d+\.\d+\.\d+\+[0-9a-fA-F]{40}$' -or
+            $info.ProductVersion.Split('+')[-1] -ine $Revision) { throw "The PE role or source revision is invalid: $name." }
+        if ($name -eq 'NksTaskMgr.WinUI.exe') { $guiVersion = $info.ProductVersion }
+        elseif ($guiVersion -and $info.ProductVersion -cne $guiVersion) { throw 'The GUI and update worker versions differ.' }
+    }
+}
+
 function Write-NksPinEvidence([string]$Directory, [string]$Revision, [string]$BrokerPin, [string]$UpdatePin, $Signer = $null) {
+    Assert-NksArtifactRoles $Directory $Revision
     $artifacts = @(foreach ($name in (Get-NksOwnedArtifactNames)) {
         $path = Join-Path $Directory $name
         if (Test-Path -LiteralPath $path -PathType Leaf) { [ordered]@{ name=$name; sha256=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash } }
@@ -82,6 +99,7 @@ function Write-NksPinEvidence([string]$Directory, [string]$Revision, [string]$Br
 }
 
 function Assert-NksArtifactEvidence([string]$Directory, $Evidence) {
+    Assert-NksArtifactRoles $Directory $Evidence.sourceRevision
     $names = @(Get-NksOwnedArtifactNames)
     if (@($Evidence.artifacts).Count -gt $names.Count) { throw 'The build pin evidence contains too many artifacts.' }
     $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
