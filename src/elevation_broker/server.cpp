@@ -30,12 +30,13 @@ int serve(const std::wstring& name, DWORD expectedClient)
         || !pipeIo(pipe.get(), header, false, client.process.get(), ioDeadline) || !headerValid(header)
         || !validEnvelope(binding, header, client, gui, challenge)) return 2;
     std::vector<std::byte> payload(read32(header, 8)); std::vector<Result> results;
-    if (!pipeIo(pipe.get(), payload, false, client.process.get(), ioDeadline) || !decodeTargets(header, payload, results)) return 2;
+    CpuSetsHash baseline{}; std::vector<std::uint32_t> selected;
+    if (!pipeIo(pipe.get(), payload, false, client.process.get(), ioDeadline) || !decodeTargets(header, payload, results, baseline, selected)) return 2;
     const auto command = static_cast<Command>(read(header, 6, 2)); bool accepted = false;
     auto send = [&](std::span<const std::byte> bytes) { return pipeWrite(pipe.get(), bytes, client.process.get(), ioDeadline); };
     try {
         Consent consent(gui, client);
-        if (!consent.prepare(command, results) || !consent.confirm(command, read64(header, 40), read32(header, 48))) {
+        if (!consent.prepare(command, results) || !consent.confirm(command, read64(header, 40), read32(header, 48), selected)) {
             ioDeadline = GetTickCount64() + 1000;
             send(response(header, FrameKind::rejected, 0, consentDeclined)); return 2;
         }
@@ -44,6 +45,11 @@ int serve(const std::wstring& name, DWORD expectedClient)
         accepted = true;
         std::thread([] { Sleep(static_cast<DWORD>(operationMs)); TerminateProcess(GetCurrentProcess(), ERROR_TIMEOUT); }).detach();
         // The bridge enforces a 5 s operation deadline; every action also rechecks the held bridge and GUI.
+        if (command == Command::queryCpuSets || command == Command::cpuSets) {
+            CpuSetsResult result; result.result = results[0];
+            if (consent.target(0)) processHeldCpuSets(consent.context(), command, baseline, selected, consent.target(0), result);
+            return cpuSetsFrame(send, header, result) ? 0 : 4;
+        }
         if (command == Command::terminateTree) {
             if (!consent.target(0)) {
                 TreeResult tree; tree.root = results[0].target; tree.ordinal = 1;

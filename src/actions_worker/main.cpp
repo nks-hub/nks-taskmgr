@@ -45,8 +45,8 @@ int main(int argc, char** argv)
     try {
         if (!headerValid(header)) { writeAll(output, response(header, FrameKind::rejected, 0, ERROR_INVALID_PARAMETER)); return 2; }
         const auto count = read32(header, 12); const auto command = static_cast<Command>(read(header, 6, 2));
-        std::array<std::byte, maximumTargets * targetBytes> payload{};
-        if (!readAll(input, std::span(payload).first(count * targetBytes))) return 2;
+        std::vector<std::byte> payload(read32(header, 8));
+        if (!readAll(input, payload)) return 2;
         BYTE extra{}; DWORD received = 0;
         const bool ended = ReadFile(input, &extra, 1, &received, nullptr) != FALSE;
         if (received || (!ended && GetLastError() != ERROR_BROKEN_PIPE && GetLastError() != ERROR_HANDLE_EOF)) return 2;
@@ -64,9 +64,19 @@ int main(int argc, char** argv)
                 writeAll(output, response(header, FrameKind::rejected, 0, ERROR_INVALID_PARAMETER)); return 2;
             }
         }
+        CpuSetsHash baseline{}; std::vector<std::uint32_t> selected;
+        const bool cpuSets = command == Command::queryCpuSets || command == Command::cpuSets;
+        if (cpuSets && !cpuSetsRequest(header, payload, baseline, selected)) {
+            writeAll(output, response(header, FrameKind::rejected, 0, ERROR_INVALID_PARAMETER)); return 2;
+        }
         if (!writeAll(output, response(header, FrameKind::accepted, count))) return 4;
         accepted = true;
         const auto context = actionContext();
+        if (cpuSets) {
+            CpuSetsResult result; result.result = results[0];
+            processCpuSets(context, command, baseline, selected, result);
+            return cpuSetsFrame([&](std::span<const std::byte> bytes) { return writeAll(output, bytes); }, header, result) ? 0 : 4;
+        }
         if (command == Command::terminateTree) {
             bool delivered = true;
             const auto tree = terminateProcessTree(context, results[0].target, [&](const TreeResult& plan) {

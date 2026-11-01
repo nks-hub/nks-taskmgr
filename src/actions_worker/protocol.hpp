@@ -9,9 +9,11 @@ constexpr std::uint32_t magic = 0x31414b4e;
 constexpr std::uint16_t version = 1;
 constexpr std::size_t headerBytes = 64, targetBytes = 48, resultBytes = 112, maximumTargets = 64;
 constexpr std::size_t maximumTreeTargets = 256, treePrefixBytes = 64, treeNodeBytes = 64;
+constexpr std::size_t maximumCpuSets = 4096, cpuSetsPrefixBytes = 48, cpuSetBytes = 32;
+constexpr std::size_t maximumCpuSetsResponse = resultBytes + cpuSetsPrefixBytes + maximumCpuSets * (cpuSetBytes + 4);
 
-enum class Command : std::uint16_t { query, closeWindows, terminate, suspend, resume, priority, affinity, terminateTree };
-enum class FrameKind : std::uint32_t { accepted, results, rejected, failed, treePlan, treeResults };
+enum class Command : std::uint16_t { query, closeWindows, terminate, suspend, resume, priority, affinity, terminateTree, queryCpuSets = 8, cpuSets = 9 };
+enum class FrameKind : std::uint32_t { accepted, results, rejected, failed, treePlan, treeResults, cpuSets = 6 };
 enum class Outcome : std::uint32_t {
     inspected, applied, closeRequested, terminationRequested, nativeRequestAccepted, refused,
     identityChanged, alreadyExited, error, unsupported, unverified, notPerformed

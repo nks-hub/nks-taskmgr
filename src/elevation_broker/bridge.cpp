@@ -57,7 +57,8 @@ int bridge()
     if (!stdioIo(input, header, false) || !headerValid(header)) return 2;
     auto reject = [&](DWORD error) { stdioWrite(output, response(header, FrameKind::rejected, 0, error)); return 2; };
     std::vector<std::byte> payload(read32(header, 8)); std::vector<Result> targets;
-    if (!stdioIo(input, payload, false) || !decodeTargets(header, payload, targets)) return reject(ERROR_INVALID_PARAMETER);
+    CpuSetsHash baseline{}; std::vector<std::uint32_t> selected;
+    if (!stdioIo(input, payload, false) || !decodeTargets(header, payload, targets, baseline, selected)) return reject(ERROR_INVALID_PARAMETER);
     BYTE extra{}; DWORD size = 0; const BOOL end = ReadFile(input, &extra, 1, &size, nullptr);
     if (size || (!end && GetLastError() != ERROR_BROKEN_PIPE && GetLastError() != ERROR_HANDLE_EOF)) return reject(ERROR_INVALID_DATA);
     if (!trustConfigured()) return reject(trustNotConfigured);
@@ -92,16 +93,21 @@ int bridge()
             || !std::equal(reply.begin() + 16, reply.begin() + 40, header.begin() + 16)
             || read64(reply, 48) || read64(reply, 56)) return 3;
         const auto kind = static_cast<FrameKind>(read32(reply, 40)); const auto length = read32(reply, 8);
-        if (++frames > 6 || length > treePrefixBytes + maximumTreeTargets * (treeNodeBytes + resultBytes)) return 3;
+        const bool cpuSets = read(header, 6, 2) == static_cast<unsigned>(Command::queryCpuSets) || read(header, 6, 2) == static_cast<unsigned>(Command::cpuSets);
+        const auto maximum = cpuSets ? maximumCpuSetsResponse : treePrefixBytes + maximumTreeTargets * (treeNodeBytes + resultBytes);
+        if (++frames > 6 || length > maximum) return 3;
         if (kind == FrameKind::accepted) {
             if (accepted || frames != 1 || length || read32(reply, 12) != targets.size() || read32(reply, 44)) return 3;
             accepted = true;
         } else if ((!accepted && kind != FrameKind::rejected) || (accepted && kind != FrameKind::results
-            && kind != FrameKind::treePlan && kind != FrameKind::treeResults && kind != FrameKind::failed)) return 3;
+            && kind != FrameKind::treePlan && kind != FrameKind::treeResults && kind != FrameKind::cpuSets && kind != FrameKind::failed)) return 3;
+        if (kind == FrameKind::cpuSets && (!cpuSets || read32(reply, 12) != 1 || read32(reply, 44)
+            || length < resultBytes + cpuSetsPrefixBytes)) return 3;
+        if (cpuSets && accepted && kind != FrameKind::accepted && kind != FrameKind::cpuSets && kind != FrameKind::failed) return 3;
         std::vector<std::byte> bytes(length);
         if (!pipeIo(pipe.get(), bytes, false, nullptr, operationDeadline) || !stdioWrite(output, reply) || !stdioWrite(output, bytes)) return 3;
         if (kind != FrameKind::accepted && kind != FrameKind::treePlan) {
-            const bool success = kind == FrameKind::results || kind == FrameKind::treeResults;
+            const bool success = kind == FrameKind::results || kind == FrameKind::treeResults || kind == FrameKind::cpuSets;
             // The client accepts results only after a clean broker exit, never a truncated pipe.
             if (WaitForSingleObject(elevated.get(), 1000) != WAIT_OBJECT_0) return 3;
             DWORD exit = 0; if (!GetExitCodeProcess(elevated.get(), &exit) || (success && exit != 0)) return 3;

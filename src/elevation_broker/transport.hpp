@@ -17,7 +17,8 @@ inline bool stdioWrite(HANDLE pipe, std::span<const std::byte> bytes)
 {
     return stdioIo(pipe, {const_cast<std::byte*>(bytes.data()), bytes.size()}, true);
 }
-inline bool decodeTargets(const actions::wire::Header& header, std::span<const std::byte> payload, std::vector<actions::Result>& results)
+inline bool decodeTargets(const actions::wire::Header& header, std::span<const std::byte> payload, std::vector<actions::Result>& results,
+    actions::CpuSetsHash& baseline, std::vector<std::uint32_t>& selected)
 {
     using namespace actions;
     if (!wire::headerValid(header) || payload.size() != read32(header, 8)) return false;
@@ -33,7 +34,7 @@ inline bool decodeTargets(const actions::wire::Header& header, std::span<const s
             || (command != Command::closeWindows && target.window) || target.window == 0xffff || target.window == UINT64_MAX) return false;
         for (std::size_t j = 0; j < i; ++j) if (results[j].target.key.pid == target.key.pid) return false;
     }
-    return true;
+    return (command != Command::queryCpuSets && command != Command::cpuSets) || wire::cpuSetsRequest(header, payload, baseline, selected);
 }
 int serve(const std::wstring& name, DWORD expectedClient);
 int bridge();

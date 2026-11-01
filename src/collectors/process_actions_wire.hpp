@@ -1,6 +1,8 @@
 #pragma once
 #include "process_tree_actions.hpp"
+#include "process_cpu_sets.hpp"
 #include <array>
+#include <algorithm>
 namespace nks::actions::wire {
 using Header = std::array<std::byte, headerBytes>;
 inline Header response(const Header& request, FrameKind kind, std::uint32_t count, DWORD error = 0)
@@ -33,12 +35,55 @@ inline void rowBytes(const Result& result, std::span<std::byte> row)
 inline bool headerValid(const Header& value)
 {
     auto command = read(value, 6, 2); auto count = read32(value, 12);
-    return read32(value, 0) == magic && read(value, 4, 2) == version && command <= static_cast<unsigned>(Command::terminateTree)
-        && count > 0 && count <= maximumTargets && read32(value, 8) == count * targetBytes
-        && read64(value, 16) != 0 && (read64(value, 24) || read64(value, 32)) && !read32(value, 52) && !read64(value, 56)
-        && (command != static_cast<unsigned>(Command::terminateTree) || count == 1)
+    if (read32(value, 0) != magic || read(value, 4, 2) != version || command > static_cast<unsigned>(Command::cpuSets)
+        || !count || count > maximumTargets || !read64(value, 16) || (!read64(value, 24) && !read64(value, 32))
+        || read32(value, 52) || read64(value, 56)) return false;
+    if (command == static_cast<unsigned>(Command::queryCpuSets))
+        return count == 1 && read32(value, 8) == targetBytes && !read64(value, 40) && !read32(value, 48);
+    if (command == static_cast<unsigned>(Command::cpuSets))
+        return count == 1 && read64(value, 40) <= maximumCpuSets && !read32(value, 48)
+            && read32(value, 8) == targetBytes + 32 + read64(value, 40) * 4;
+    return read32(value, 8) == count * targetBytes && (command != static_cast<unsigned>(Command::terminateTree) || count == 1)
         && (command == static_cast<unsigned>(Command::affinity) ? count == 1 && read64(value, 40) != 0 && read32(value, 48) <= 65535
             : read32(value, 48) == 0 && (command == static_cast<unsigned>(Command::priority) ? priorityAllowed(read64(value, 40)) : read64(value, 40) == 0));
+}
+inline bool cpuSetsRequest(const Header& header, std::span<const std::byte> payload, CpuSetsHash& baseline, std::vector<std::uint32_t>& selected)
+{
+    if (read(header, 6, 2) == static_cast<unsigned>(Command::queryCpuSets)) return payload.size() == targetBytes;
+    if (read(header, 6, 2) != static_cast<unsigned>(Command::cpuSets) || payload.size() < targetBytes + baseline.size()) return false;
+    std::copy_n(payload.begin() + targetBytes, baseline.size(), baseline.begin());
+    if (std::all_of(baseline.begin(), baseline.end(), [](auto byte) { return byte == std::byte{}; })) return false;
+    const auto count = read64(header, 40);
+    if (count > maximumCpuSets || payload.size() != targetBytes + baseline.size() + count * 4) return false;
+    selected.reserve(static_cast<std::size_t>(count));
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto id = read32(payload, targetBytes + baseline.size() + i * 4);
+        if (!selected.empty() && selected.back() >= id) return false;
+        selected.push_back(id);
+    }
+    return true;
+}
+template<class Write> bool cpuSetsFrame(Write&& output, const Header& request, const CpuSetsResult& result)
+{
+    const auto& snapshot = result.snapshot;
+    if (snapshot.cpus.size() > maximumCpuSets || snapshot.defaults.size() > maximumCpuSets) throw std::invalid_argument("CPU set response exceeds its bound");
+    std::vector<std::byte> bytes(resultBytes + cpuSetsPrefixBytes
+        + (snapshot.valid ? snapshot.cpus.size() * cpuSetBytes + snapshot.defaults.size() * 4 : 0));
+    rowBytes(result.result, std::span(bytes).first(resultBytes));
+    if (snapshot.valid) {
+        std::copy(snapshot.baseline.begin(), snapshot.baseline.end(), bytes.begin() + resultBytes);
+        write(bytes, resultBytes + 32, snapshot.cpus.size(), 4); write(bytes, resultBytes + 36, snapshot.defaults.size(), 4);
+        write(bytes, resultBytes + 40, 1, 4);
+        std::size_t at = resultBytes + cpuSetsPrefixBytes;
+        for (const auto& cpu : snapshot.cpus) {
+            write(bytes, at, cpu.id, 4); write(bytes, at + 4, cpu.group, 4); write(bytes, at + 8, cpu.logicalProcessor, 4);
+            write(bytes, at + 12, cpu.core, 4); write(bytes, at + 16, cpu.numa, 4); write(bytes, at + 20, cpu.lastLevelCache, 4);
+            write(bytes, at + 24, cpu.efficiency, 4); write(bytes, at + 28, cpu.flags, 4); at += cpuSetBytes;
+        }
+        for (const auto id : snapshot.defaults) { write(bytes, at, id, 4); at += 4; }
+    }
+    auto header = response(request, FrameKind::cpuSets, 1); write(header, 8, bytes.size(), 4);
+    return output(header) && output(bytes);
 }
 template<class Write> bool treeFrame(Write&& output, const Header& request, const TreeResult& tree, FrameKind kind)
 {

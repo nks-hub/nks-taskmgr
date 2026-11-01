@@ -6,7 +6,7 @@ class Consent {
 public:
     Consent(const Peer& gui, const Peer& bridge);
     bool prepare(actions::Command command, std::span<actions::Result> results);
-    bool confirm(actions::Command command, std::uint64_t argument, std::uint32_t group);
+    bool confirm(actions::Command command, std::uint64_t argument, std::uint32_t group, std::span<const std::uint32_t> selected = {});
     actions::Context& context() noexcept { return context_; }
     HANDLE target(std::size_t index) const noexcept { return targets_[index].get(); }
 private:

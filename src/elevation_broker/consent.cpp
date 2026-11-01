@@ -27,6 +27,8 @@ const wchar_t* actionName(actions::Command command)
     case Command::resume: return L"Požádat o obnovení procesů";
     case Command::priority: return L"Změnit prioritu";
     case Command::affinity: return L"Změnit afinitu v jedné skupině";
+    case Command::queryCpuSets: return L"Načíst výchozí CPU sets procesu";
+    case Command::cpuSets: return L"Změnit výchozí CPU sets procesu";
     }
     return L"Neplatná akce";
 }
@@ -67,6 +69,7 @@ bool Consent::prepare(actions::Command command, std::span<actions::Result> resul
         if (command == Command::terminate || command == Command::terminateTree) access |= PROCESS_TERMINATE;
         if (command == Command::suspend || command == Command::resume) access |= 0x0800;
         if (command == Command::priority || command == Command::affinity) access |= PROCESS_SET_INFORMATION;
+        if (command == Command::cpuSets) access |= PROCESS_SET_LIMITED_INFORMATION;
         if (!key.pid || key.pid == 4 || key.pid == context_.ownPid || key.pid == gui_.key.pid || key.pid == bridge_.key.pid) {
             result.reason = key.pid <= 4 ? Reason::systemTarget : Reason::ownOrParent; result.error = ERROR_ACCESS_DENIED;
         } else targets_[i].reset(OpenProcess(access, FALSE, key.pid));
@@ -90,7 +93,7 @@ bool Consent::prepare(actions::Command command, std::span<actions::Result> resul
     return true;
 }
 
-bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uint32_t group)
+bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uint32_t group, std::span<const std::uint32_t> selected)
 {
     TokenIdentity own;
     if (!readToken(GetCurrentProcess(), own) || !own.elevated || own.integrity < SECURITY_MANDATORY_HIGH_RID) return false;
@@ -99,15 +102,26 @@ bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uin
     if (command == actions::Command::priority) content += L"Priorita: " + std::to_wstring(argument) + L"\n";
     if (command == actions::Command::affinity) content += L"Skupina: " + std::to_wstring(group) + L", maska: " + std::to_wstring(argument) + L"\n";
     if (command == actions::Command::terminateTree) content += L"Rozsah: tento kořen a nově ověření potomci, nejvýše 256 cílů / 3 průchody / 5 s. Strom není atomický.\n";
+    std::wstring cpuDetails;
+    if (command == actions::Command::cpuSets) {
+        content += selected.empty() ? L"Zrušit výchozí výběr CPU sets procesu.\n"
+            : L"Nastavit výchozí měkký výběr: " + std::to_wstring(selected.size()) + L" CPU set ID.\n";
+        content += L"Tvrdá afinita a výslovné volby vláken zůstanou zachované. Výběr nezaručuje využití konkrétních procesorů.\n";
+        if (!selected.empty()) {
+            cpuDetails = L"Schvalovaná CPU set ID:\n";
+            for (const auto id : selected) { if (cpuDetails.back() != L'\n') cpuDetails += L", "; cpuDetails += std::to_wstring(id); }
+        }
+    }
     content += L"\nBoot: " + std::to_wstring(gui_.key.boot.high) + L":" + std::to_wstring(gui_.key.boot.low) + L"\n" + description_;
     TASKDIALOG_BUTTON button{IDYES, L"Povolit tento požadavek"}; Prompt prompt{gui_, bridge_};
     TASKDIALOGCONFIG dialog{}; dialog.cbSize = sizeof(dialog); dialog.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_CALLBACK_TIMER;
     dialog.dwCommonButtons = TDCBF_CANCEL_BUTTON; dialog.pszWindowTitle = L"NKS Task Manager · správce";
     dialog.pszMainInstruction = actionName(command); dialog.pszContent = content.c_str(); dialog.pszMainIcon = TD_SHIELD_ICON;
+    if (!cpuDetails.empty()) { dialog.pszExpandedInformation = cpuDetails.c_str(); dialog.dwFlags |= TDF_EXPANDED_BY_DEFAULT; }
     dialog.cButtons = 1; dialog.pButtons = &button; dialog.nDefaultButton = IDCANCEL;
     dialog.pfCallback = promptEvent; dialog.lpCallbackData = reinterpret_cast<LONG_PTR>(&prompt);
-    int selected = IDCANCEL;
-    if (FAILED(TaskDialogIndirect(&dialog, &selected, nullptr, nullptr)) || selected != IDYES || !peerAlive(gui_) || !peerAlive(bridge_)) return false;
+    int selectedButton = IDCANCEL;
+    if (FAILED(TaskDialogIndirect(&dialog, &selectedButton, nullptr, nullptr)) || selectedButton != IDYES || !peerAlive(gui_) || !peerAlive(bridge_)) return false;
     context_.consented = true; return true;
 }
 }
