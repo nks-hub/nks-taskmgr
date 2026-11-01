@@ -153,6 +153,8 @@ The updater uses a separate `UpdatePublisherSpkiSha256` build property and nativ
 
 Unresolved operations appear in a separate recovery selector. Recovery requires an explicit plan using the verified original installer. A live or unverifiable worker or installer prevents repair. New journals store the installer lifetime before its suspended process is resumed; journal publication uses a flushed temporary file and a rename without replacement. Only a new verified repair resolves the old record, including a chain of failed repairs. Legacy records without an installer identity remain read-only in the same Windows boot. Runtime acceptance of these paths remains pending.
 
+Cache cleanup is under development. Its client and UI separate the preview, confirmation, and per-item result. Unknown file sizes and missing replies are not reported as successful zero-byte deletion. The native cleanup policy and runtime acceptance remain pending.
+
 The WinUI Appearance menu selects the system, light, or dark appearance and saves the choice in the user profile. Theme changes update existing controls, charts, and dialogs. Runtime and visual acceptance of the theme changes remain pending. Elevation and accessibility acceptance remain open. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
 
 Capture two real process samples one second apart:

@@ -7,6 +7,8 @@ namespace NksTaskMgr.WinUI;
 
 internal sealed partial class UpdateWindow
 {
+    private TextBlock? cleanupDeadline;
+
     private async Task CleanupAsync(CancellationToken token)
     {
         status.Text = "Připravuji náhled úklidu…";
@@ -25,6 +27,8 @@ internal sealed partial class UpdateWindow
         content.Children.Add(Text(hasCandidates
             ? "Odstraní se pouze uvedené nepotřebné soubory aktualizací. Před smazáním se znovu ověří. Používané nebo změněné soubory se přeskočí. Nastavení aplikace zůstane zachované."
             : "V tomto náhledu nejsou žádné ověřené položky k odstranění."));
+        cleanupDeadline = Text("");
+        content.Children.Add(cleanupDeadline);
         content.Children.Add(CleanupItemsView(plan.Items));
         var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = "Úklid cache aktualizací",
             Content = new ScrollViewer { Content = content, MaxHeight = 420, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -38,7 +42,7 @@ internal sealed partial class UpdateWindow
         RefreshButtons();
         ContentDialogResult choice;
         try { choice = await dialog.ShowAsync(); }
-        finally { confirmation = null; }
+        finally { confirmation = null; cleanupDeadline = null; }
         if (choice != ContentDialogResult.Primary || closed || token.IsCancellationRequested) {
             if (!closed) status.Text = "Úklid nebyl spuštěný.";
             return;
@@ -81,10 +85,10 @@ internal sealed partial class UpdateWindow
     private static string CleanupTotalsLabel(UpdateCleanupTotals value)
     {
         if (!value.CountsKnown) return "počet a velikost nejsou potvrzené";
-        string count = (value.UnknownSizeCount == 0 ? "" : "známé údaje: ") + value.Files.ToString("N0", CultureInfo.GetCultureInfo("cs-CZ")) + " souborů";
-        if (value.Directories != 0) count += ", " + value.Directories.ToString("N0", CultureInfo.GetCultureInfo("cs-CZ")) + " složek";
+        string count = (value.UnknownSizeCount == 0 ? "" : "známé údaje: ") + "soubory: " + value.Files.ToString("N0", CultureInfo.GetCultureInfo("cs-CZ"));
+        if (value.Directories != 0) count += ", složky: " + value.Directories.ToString("N0", CultureInfo.GetCultureInfo("cs-CZ"));
         if (value.KnownBytes != 0 || value.UnknownSizeCount == 0) count += " · " + CleanupBytes(value.KnownBytes);
-        if (value.UnknownSizeCount != 0) count += "; nezjištěná velikost u " + value.UnknownSizeCount + " položek";
+        if (value.UnknownSizeCount != 0) count += "; položky s nezjištěnou velikostí: " + value.UnknownSizeCount;
         return count;
     }
 

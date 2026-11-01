@@ -217,8 +217,13 @@ internal sealed partial class UpdateWindow : Window
         cancel.IsEnabled = busy && prepared?.CommitSent != true && preparedCleanup?.CommitSent != true;
         if (confirmation is { } dialog && prepared is { } session)
             dialog.IsPrimaryButtonEnabled = !closed && operation?.IsCancellationRequested != true && UpdateProtocol.NowMs < session.CommitDeadlineMonotonicMs;
-        if (confirmation is { } cleanupDialog && preparedCleanup is { } cleanupSession)
-            cleanupDialog.IsPrimaryButtonEnabled = !closed && operation?.IsCancellationRequested != true && UpdateProtocol.NowMs < cleanupSession.CommitDeadlineMonotonicMs;
+        if (confirmation is { } cleanupDialog && preparedCleanup is { } cleanupSession) {
+            ulong now = UpdateProtocol.NowMs, deadline = cleanupSession.CommitDeadlineMonotonicMs;
+            cleanupDialog.IsPrimaryButtonEnabled = !closed && operation?.IsCancellationRequested != true && now < deadline;
+            if (cleanupDeadline is { } label) label.Text = now < deadline
+                ? "Náhled platí ještě " + ((deadline - now + 999) / 1000) + " s."
+                : "Platnost náhledu vypršela. Zavřete dialog a připravte nový náhled.";
+        }
     }
 
     private static string StatusText(UpdateStatus value) => value switch {
