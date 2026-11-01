@@ -13,21 +13,22 @@ The current desktop prototype displays live processes and individual system devi
 
 - 🔎 **Process collection** - Reads process identities, parent PIDs, CPU times, threads, handles, and I/O counters through the Windows native API.
 - 🖥️ **Desktop prototype** - Provides a system overview, virtual process table, CPU and memory bars, name/PID search, column sorting, multiple selection, and a selection detail panel.
-- 🌳 **Process views** - Switches between all processes, measured CPU or I/O activity, and a collapsible tree that checks parent creation times before linking processes.
+- 🌳 **Process views** - Switches between all processes, measured CPU or I/O activity, application groups, and a collapsible tree that checks parent creation times before linking processes.
 - 🧵 **WinUI process details** - Reads threads and modules in a separate worker and checks the selected module file's signature on request, including local catalog signatures.
 - 🗂️ **Memory and objects** - Lists virtual memory regions and process handles, queries a selected object's type and name, and searches accessible processes with bounded batches and cancellation.
 - 🔐 **Capability status** - Shows observed provider states and recent target-specific query results, with explanations of permissions and driver support.
 - 📊 **Device view** - Lists individual disks, hardware GPUs, and physical network adapters, including disconnected adapters. Each item opens a graph and current counters.
 - 🌡️ **Disk detail** - Shows response time, queue length, IOPS, capacity, interface, and supported disk temperatures. Expanded NVMe health includes wear, spare capacity, operating hours, and media errors.
 - 🛠️ **Services** - Lists accessible Windows services with state filters and name, account, or PID search. The selected detail shows configuration, dependencies, and a link to a host process whose creation time has been verified.
-- ⏱️ **History** - Stores up to 2,401 samples for each of 512 series, draws gaps, and shows the retained duration. Collection runs on separate process and device threads with one pending snapshot each.
+- ⏱️ **History** - Stores up to 2,401 samples for each of 512 series, draws gaps, and shows the retained duration. The parent captures samples before handing the latest snapshot to the UI.
+- 🧱 **Collector isolation** - Uses separate child processes for process, device, and service queries. Each request has a five-second response deadline and a bounded local protocol; cancellation closes that child's job.
 - 🧩 **CPU graphs** - Switches between total CPU, a graph for each logical processor, and overlaid processor graphs. Processor groups retain separate identities.
 - 🎮 **GPU detail** - Charts individual GPU engines, dedicated memory, and shared memory. Adapter memory counters provide usage; DXGI provides capacities. Supported drivers also provide temperature through D3DKMT, refreshed every five seconds.
 - ↕️ **Network traffic** - Shows receive and transmit rates in the resource list, selected chart, and device details.
 - 💾 **Pagefile usage** - Displays the current and peak pagefile allocation, its capacity, and a usage graph beside physical memory and commit values.
 - 📄 **WinUI snapshots** - Exports selected process and device metrics to JSON, with a preview and separate opt-ins for names and device identifiers.
 - 🔍 **Process comparison** - Compares process lifetimes and metric changes between two JSON snapshots, with status filters and reasons for entries that cannot be compared.
-- 🧮 **Sample states** - Distinguishes a first sample, measured zero, unavailable data, and gaps after counter or topology changes.
+- 🧮 **Sample states** - Distinguishes a first sample, measured zero, unavailable data, and gaps after counter or topology changes. Graph context reports units, normalization, and the calculation interval when the provider exposes it.
 - 🧠 **Memory accounting** - Keeps working set, private memory, physical memory, and commit values separate.
 - 🔗 **Shared collector** - Exposes immutable process and device snapshots through a versioned C API and C# bindings for Native AOT clients.
 - 🧪 **Local verification** - Tests malformed buffers, PID reuse, CPU normalization, and a controlled CPU and memory load.
@@ -113,6 +114,10 @@ Process details opens from the WinUI process toolbar for a selected live process
 The Memory and Handles tabs filter their loaded data. A handle's type and name are queried on request and describe the duplicated object observed at that time. Global object search starts explicitly from the process toolbar and reports its progress, skipped owners, and limits. It matches local DOS and NT path forms, batches results, and marks incomplete searches. Opening a live owner requires its full current process lifetime key. Repeated queries share at most two worker processes with two queued requests.
 
 The Hardware view includes a capability panel. It shows current measurement states, the last targeted read query, and the application's effective elevation state. Selecting a feature explains ordinary access, elevated access, and the required provider. CPU chip temperature remains marked as unimplemented. Runtime and permission acceptance of these additions remain pending.
+
+The Applications view inventories visible windows only while that view is selected. It verifies each window owner's process lifetime and separates packaged application owners from their frame hosts. Ambiguous matches are skipped and reported as incomplete. Selecting a group keeps its member process table on the same screen; working sets are not summed into a group memory total. Runtime and visual acceptance remain pending.
+
+The native DLL and desktop require `nks-collector-worker.exe` beside their binaries. Process, device, and service workers inherit the application's permissions and each run in a separate job with a 256 MiB process memory limit. The parent retains CPU sampling state and bounds replies to 64 MiB. It waits for a retiring worker to exit before starting its replacement. Timeout, cancellation, restart, and performance acceptance remain pending.
 
 The WinUI Appearance menu selects the system, light, or dark appearance and saves the choice in the user profile. Theme changes update existing controls, charts, and dialogs. Runtime and visual acceptance of the theme changes remain pending. Administrative actions and accessibility acceptance are not yet implemented. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
 
