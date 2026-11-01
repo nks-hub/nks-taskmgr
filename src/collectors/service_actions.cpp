@@ -74,8 +74,9 @@ std::vector<Dependent> activeDependents(SC_HANDLE service) {
     return values;
 }
 void verifyName(const Plan& plan, const Node& node) {
-    // This read-only probe detects delete-pending; all mutations use node.handle.
-    Handle probe(OpenServiceW(plan.manager.get(), node.name.c_str(), 0));
+    // SCM can deny access 0; QUERY_STATUS detects delete-pending without mutation.
+    // All mutations still use the original node.handle.
+    Handle probe(OpenServiceW(plan.manager.get(), node.name.c_str(), SERVICE_QUERY_STATUS));
     if (!probe) fail(GetLastError(), "Service name is no longer available");
 }
 }
