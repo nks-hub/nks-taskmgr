@@ -206,6 +206,58 @@ Context actionContext()
     context.parentKey = parent.identity; context.ready = true; return context;
 }
 
+void applyHeldAction(const Context& context, Command command, std::uint64_t argument, std::uint32_t group, HANDLE process,
+    Result& result)
+{
+    const auto pid = result.target.key.pid;
+    if (!pid || pid == 4) { refuse(result, Reason::systemTarget); return; }
+    if (pid == context.ownPid || pid == context.parentPid) { refuse(result, Reason::ownOrParent); return; }
+    if (!parentAlive(context)) { refuse(result, context.ready ? Reason::parentUnavailable : context.denial); return; }
+    if (!process) { refuse(result, Reason::identityUnverifiable, ERROR_INVALID_HANDLE); return; }
+    if (!verify(process, result, true) || protectedTarget(process, result)) return;
+    std::vector<std::byte> user; DWORD session = 0;
+    if (!tokenIdentity(process, user, session)) { refuse(result, Reason::protectionUnverifiable, lastError()); return; }
+    if (!session || systemUser(user)) { refuse(result, Reason::systemTarget); return; }
+    if (session != context.session || !EqualSid(user.data(), const_cast<std::byte*>(context.user.data()))) { refuse(result, Reason::ownerMismatch); return; }
+    metadata(process, result);
+    if (command == Command::query) { result.outcome = Outcome::inspected; lifeAfter(process, command, result); return; }
+    if (command == Command::affinity && (!(result.flags & affinityAvailable) || result.group != group)) {
+        refuse(result, Reason::multipleGroups, result.affinityError ? result.affinityError : ERROR_NOT_SUPPORTED); return;
+    }
+    if (command == Command::affinity && (!argument || (argument & ~result.systemMask))) { refuse(result, Reason::invalidArgument, ERROR_INVALID_PARAMETER); return; }
+    if (command == Command::priority && !priorityAllowed(argument)) { refuse(result, Reason::invalidArgument, ERROR_INVALID_PARAMETER); return; }
+    if (!parentAlive(context)) { refuse(result, Reason::parentUnavailable); return; }
+    if (!verify(process, result, false) || protectedTarget(process, result)) return;
+    if (command == Command::closeWindows) closeWindows(context, process, result);
+    else if (command == Command::terminate) {
+        result.flags |= mayHaveApplied;
+        if (TerminateProcess(process, ERROR_PROCESS_ABORTED)) result.outcome = Outcome::terminationRequested;
+        else { result.outcome = Outcome::error; result.error = lastError(); }
+    } else if (command == Command::suspend || command == Command::resume) {
+        result.flags |= mayHaveApplied;
+        result.ntStatus = command == Command::suspend ? NtSuspendProcess(process) : NtResumeProcess(process);
+        if (NT_SUCCESS(result.ntStatus)) result.outcome = Outcome::nativeRequestAccepted;
+        else {
+            result.outcome = result.ntStatus == STATUS_NOT_SUPPORTED || result.ntStatus == STATUS_NOT_IMPLEMENTED ? Outcome::unsupported : Outcome::error;
+            result.reason = Reason::nativeUnavailable; result.error = RtlNtStatusToDosError(result.ntStatus);
+        }
+    } else if (command == Command::priority || command == Command::affinity) {
+        result.flags |= mayHaveApplied;
+        const bool applied = command == Command::priority ? SetPriorityClass(process, static_cast<DWORD>(argument)) != FALSE
+            : SetProcessAffinityMask(process, static_cast<DWORD_PTR>(argument)) != FALSE;
+        if (!applied) { result.outcome = Outcome::error; result.error = lastError(); }
+        else {
+            metadata(process, result);
+            const bool confirmed = command == Command::priority ? (result.flags & priorityAvailable) && result.priority == argument
+                : (result.flags & affinityAvailable) && result.group == group && result.processMask == argument;
+            result.outcome = confirmed ? Outcome::applied : Outcome::unverified;
+            if (confirmed) result.flags |= effectConfirmed;
+            else { result.reason = Reason::readbackMismatch; result.error = ERROR_RETRY; }
+        }
+    } else refuse(result, Reason::invalidArgument, ERROR_INVALID_PARAMETER);
+    lifeAfter(process, command, result);
+}
+
 void applyAction(const Context& context, Command command, std::uint64_t argument, std::uint32_t group, Result& result)
 {
     const auto pid = result.target.key.pid;
@@ -218,47 +270,6 @@ void applyAction(const Context& context, Command command, std::uint64_t argument
     if (command == Command::priority || command == Command::affinity) access |= PROCESS_SET_INFORMATION;
     Handle process(OpenProcess(access, FALSE, pid));
     if (!process) { const auto error = lastError(); refuse(result, error == ERROR_ACCESS_DENIED ? Reason::accessDenied : Reason::identityUnverifiable, error); return; }
-    if (!verify(process.get(), result, true) || protectedTarget(process.get(), result)) return;
-    std::vector<std::byte> user; DWORD session = 0;
-    if (!tokenIdentity(process.get(), user, session)) { refuse(result, Reason::protectionUnverifiable, lastError()); return; }
-    if (!session || systemUser(user)) { refuse(result, Reason::systemTarget); return; }
-    if (session != context.session || !EqualSid(user.data(), const_cast<std::byte*>(context.user.data()))) { refuse(result, Reason::ownerMismatch); return; }
-    metadata(process.get(), result);
-    if (command == Command::query) { result.outcome = Outcome::inspected; lifeAfter(process.get(), command, result); return; }
-    if (command == Command::affinity && (!(result.flags & affinityAvailable) || result.group != group)) {
-        refuse(result, Reason::multipleGroups, result.affinityError ? result.affinityError : ERROR_NOT_SUPPORTED); return;
-    }
-    if (command == Command::affinity && (!argument || (argument & ~result.systemMask))) { refuse(result, Reason::invalidArgument, ERROR_INVALID_PARAMETER); return; }
-    if (command == Command::priority && !priorityAllowed(argument)) { refuse(result, Reason::invalidArgument, ERROR_INVALID_PARAMETER); return; }
-    if (!parentAlive(context)) { refuse(result, Reason::parentUnavailable); return; }
-    if (!verify(process.get(), result, false) || protectedTarget(process.get(), result)) return;
-    if (command == Command::closeWindows) closeWindows(context, process.get(), result);
-    else if (command == Command::terminate) {
-        result.flags |= mayHaveApplied;
-        if (TerminateProcess(process.get(), ERROR_PROCESS_ABORTED)) result.outcome = Outcome::terminationRequested;
-        else { result.outcome = Outcome::error; result.error = lastError(); }
-    } else if (command == Command::suspend || command == Command::resume) {
-        result.flags |= mayHaveApplied;
-        result.ntStatus = command == Command::suspend ? NtSuspendProcess(process.get()) : NtResumeProcess(process.get());
-        if (NT_SUCCESS(result.ntStatus)) result.outcome = Outcome::nativeRequestAccepted;
-        else {
-            result.outcome = result.ntStatus == STATUS_NOT_SUPPORTED || result.ntStatus == STATUS_NOT_IMPLEMENTED ? Outcome::unsupported : Outcome::error;
-            result.reason = Reason::nativeUnavailable; result.error = RtlNtStatusToDosError(result.ntStatus);
-        }
-    } else if (command == Command::priority || command == Command::affinity) {
-        result.flags |= mayHaveApplied;
-        const bool applied = command == Command::priority ? SetPriorityClass(process.get(), static_cast<DWORD>(argument)) != FALSE
-            : SetProcessAffinityMask(process.get(), static_cast<DWORD_PTR>(argument)) != FALSE;
-        if (!applied) { result.outcome = Outcome::error; result.error = lastError(); }
-        else {
-            metadata(process.get(), result);
-            const bool confirmed = command == Command::priority ? (result.flags & priorityAvailable) && result.priority == argument
-                : (result.flags & affinityAvailable) && result.group == group && result.processMask == argument;
-            result.outcome = confirmed ? Outcome::applied : Outcome::unverified;
-            if (confirmed) result.flags |= effectConfirmed;
-            else { result.reason = Reason::readbackMismatch; result.error = ERROR_RETRY; }
-        }
-    } else refuse(result, Reason::invalidArgument, ERROR_INVALID_PARAMETER);
-    lifeAfter(process.get(), command, result);
+    applyHeldAction(context, command, argument, group, process.get(), result);
 }
 }

@@ -80,12 +80,22 @@ target_link_libraries(nks-details-worker PRIVATE nks_native user32 dwmapi)
 target_compile_options(nks-details-worker PRIVATE /W4 /WX /utf-8 /permissive-)
 target_link_options(nks-details-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
 
-add_executable(nks-actions-worker src/actions_worker/main.cpp src/collectors/process_actions.cpp)
+add_executable(nks-actions-worker src/actions_worker/main.cpp src/collectors/process_actions.cpp src/collectors/process_tree_actions.cpp)
 target_include_directories(nks-actions-worker SYSTEM PRIVATE third_party/phnt/include)
 target_compile_definitions(nks-actions-worker PRIVATE PHNT_VERSION=117)
 target_link_libraries(nks-actions-worker PRIVATE nks_native user32)
 target_compile_options(nks-actions-worker PRIVATE /W4 /WX /utf-8 /permissive-)
 target_link_options(nks-actions-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
+
+add_executable(nks-service-actions-worker
+    src/service_actions_worker/main.cpp
+    src/collectors/service_actions.cpp
+    src/collectors/service_actions_plan.cpp
+    src/collectors/service_actions_execute.cpp
+)
+target_link_libraries(nks-service-actions-worker PRIVATE nks_native)
+target_compile_options(nks-service-actions-worker PRIVATE /W4 /WX /utf-8 /permissive-)
+target_link_options(nks-service-actions-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
 
 add_executable(nks-dump-worker
     src/dump_worker/main.cpp

@@ -38,4 +38,5 @@ struct Context {
 Context actionContext();
 bool priorityAllowed(std::uint64_t value) noexcept;
 void applyAction(const Context& context, Command command, std::uint64_t argument, std::uint32_t group, Result& result);
+void applyHeldAction(const Context& context, Command command, std::uint64_t argument, std::uint32_t group, HANDLE process, Result& result);
 }
