@@ -24,6 +24,7 @@ public sealed partial class MainWindow
 
     private void BuildServices()
     {
+        ConfigureServiceActions();
         servicesPage.RowDefinitions.Add(new RowDefinition { Height = new GridLength(104) }); servicesPage.RowDefinitions.Add(new RowDefinition());
         var summary = new Grid { Padding = new Thickness(22, 18, 22, 18), ColumnSpacing = 10 };
         summary.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.4, GridUnitType.Star) });
@@ -65,7 +66,9 @@ public sealed partial class MainWindow
         toolbar.Children.Add(new ScrollViewer { Content = controls, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
         serviceCount.HorizontalAlignment = HorizontalAlignment.Right; serviceCount.VerticalAlignment = VerticalAlignment.Center;
-        Grid.SetColumn(serviceCount, 1); toolbar.Children.Add(serviceCount); inventory.Children.Add(toolbar);
+        var serviceCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 9, VerticalAlignment = VerticalAlignment.Center };
+        serviceCommands.Children.Add(serviceCount); serviceCommands.Children.Add(serviceActionsButton);
+        Grid.SetColumn(serviceCommands, 1); toolbar.Children.Add(serviceCommands); inventory.Children.Add(toolbar);
         var table = new Grid { MinWidth = 706 }; table.RowDefinitions.Add(new RowDefinition { Height = new GridLength(39) }); table.RowDefinitions.Add(new RowDefinition());
         var columns = new Grid { Padding = new Thickness(18, 0, 18, 0), Background = Display.Brush(0x1d252a) };
         foreach (var width in new[] { new GridLength(1, GridUnitType.Star), new GridLength(105), new GridLength(140), new GridLength(65), new GridLength(150) }) columns.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
@@ -89,6 +92,7 @@ public sealed partial class MainWindow
             if (updatingServices || servicesModel is null) return;
             if (serviceList.SelectedItem is ServiceRow row) servicesModel.Select(row.Name);
             RefreshServiceDetail();
+            RefreshServiceActions();
         };
         AutomationProperties.SetName(serviceList, "Systémové služby");
         AutomationProperties.SetAutomationId(serviceList, "services-list");
@@ -134,6 +138,7 @@ public sealed partial class MainWindow
             serviceFilters[i].Background = Display.Brush(i == (int)servicesModel.Filter ? 0x28343bu : 0x1d252au);
         }
         RefreshServiceDetail();
+        RefreshServiceActions();
     }
     private Action PreserveServiceScroll()
     {
