@@ -14,6 +14,7 @@ The current desktop prototype displays live processes and individual system devi
 - 🔎 **Process collection** - Reads process identities, parent PIDs, CPU times, threads, handles, and I/O counters through the Windows native API.
 - 🖥️ **Desktop prototype** - Provides a system overview, virtual process table, CPU and memory bars, name/PID search, column sorting, multiple selection, and a selection detail panel.
 - 🌳 **Process views** - Switches between all processes, measured CPU or I/O activity, and a collapsible tree that checks parent creation times before linking processes.
+- 🧵 **WinUI process details** - Reads threads and modules in a separate worker and checks the selected module file's signature on request, including local catalog signatures.
 - 📊 **Device view** - Lists individual disks, hardware GPUs, and physical network adapters, including disconnected adapters. Each item opens a graph and current counters.
 - 🌡️ **Disk detail** - Shows response time, queue length, IOPS, capacity, interface, and supported disk temperatures. Expanded NVMe health includes wear, spare capacity, operating hours, and media errors.
 - 🛠️ **Services** - Lists accessible Windows services with state filters and name, account, or PID search. The selected detail shows configuration, dependencies, and a link to a host process whose creation time has been verified.
@@ -102,6 +103,10 @@ GPU details use the busiest engine for overall utilization. The WinUI view selec
 Disk performance counters refresh with the device view. SMART and temperature queries refresh every 30 seconds and open devices with no read/write access requested. NVMe health comes from the standard log page; other supported drives expose failure prediction and storage temperature queries. Missing or denied data stays unavailable. These queries do not install drivers or request elevation.
 
 Services runs in read-only mode. Its collector starts when the view opens and refreshes state once per second; polling pauses while the window is minimized. List configuration is cached for up to 15 seconds. The selected configuration is queried again with its detail. The dependency list opens a known service on double-click or Enter. Windows may omit services that the current account cannot query; denied configuration and host identity queries remain unavailable.
+
+The WinUI Shared PID filter shows services that report the same nonzero host PID. The selected detail lists the other reported services, their states, and their accounts. This grouping follows the SCM snapshot; opening a live host process separately requires its verified lifetime identity.
+
+Process details opens from the WinUI process toolbar for a selected live process. Its thread and module lists are read-only. File signature checks run only when requested for a selected module and use cached local trust data. The worker has the same permissions as the application, a bounded request queue, a five-second operation deadline, and cancellation that closes its own job. Runtime, WOW64, and visual acceptance of these additions remain pending.
 
 The WinUI Appearance menu selects the system, light, or dark appearance and saves the choice in the user profile. Theme changes update existing controls, charts, and dialogs. Runtime and visual acceptance of the theme changes remain pending. Administrative actions and accessibility acceptance are not yet implemented. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
 
