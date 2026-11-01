@@ -1,13 +1,7 @@
 #include "monitor_api.h"
-#include "core/monitor.hpp"
+#include "monitor_handle.hpp"
 #include <limits>
 #include <stdexcept>
-
-struct NksMonitor {
-    nks::Monitor monitor;
-    std::mutex readMutex;
-    std::wstring processError, resourceError;
-};
 
 struct NksFrame {
     std::atomic<uint32_t> references{1};
