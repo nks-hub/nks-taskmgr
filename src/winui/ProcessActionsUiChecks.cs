@@ -293,16 +293,27 @@ internal sealed partial class ProcessActionsUiChecks : Window
         Require(!identity.IsSystem && current.SessionId > 0, "Actions check requires an ordinary interactive GUI caller.");
         if (!OpenProcessToken(current.SafeHandle, 8, out var token)) throw new Win32Exception(Marshal.GetLastPInvokeError());
         using (token) {
+            uint elevation = TokenDword(token, 20), elevationType = TokenDword(token, 18);
             nint data = Marshal.AllocHGlobal(4096);
             try {
-                Require(GetTokenInformation(token, 20, data, 4096, out _) && Marshal.ReadInt32(data) == 0, "Actions check refuses an elevated caller.");
-                Require(GetTokenInformation(token, 25, data, 4096, out _), "Token integrity is unavailable.");
+                if (!GetTokenInformation(token, 25, data, 4096, out uint used))
+                    throw new Win32Exception(Marshal.GetLastPInvokeError(), "TokenIntegrityLevel query failed");
+                Require(used > 0 && used <= 4096, "Token integrity returned an invalid length.");
                 string sid = new SecurityIdentifier(Marshal.ReadIntPtr(data)).Value;
                 uint level = uint.Parse(sid[(sid.LastIndexOf('-') + 1)..], System.Globalization.CultureInfo.InvariantCulture);
+                Log($"token session={current.SessionId};integrity={level};rawElevation={elevation};elevationType={elevationType}");
+                Require(elevation == 0, "Actions check refuses an elevated caller.");
                 Require(level >= 0x2000 && level < 0x3000, "Actions check requires medium integrity.");
-                Log($"token user={identity.User?.Value};session={current.SessionId};integrity={level};elevated=False");
             } finally { Marshal.FreeHGlobal(data); }
         }
+    }
+    private uint TokenDword(SafeFileHandle token, uint kind)
+    {
+        bool success = GetTokenDword(token, kind, out uint value, sizeof(uint), out uint used);
+        int error = success ? 0 : Marshal.GetLastPInvokeError();
+        Log($"token dword;class={kind};success={success};used={used};win32={error};raw={(success && used == sizeof(uint) ? value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "unavailable")}");
+        if (!success) throw new Win32Exception(error, $"Token DWORD query failed for class {kind}");
+        Require(used == sizeof(uint), $"Token DWORD class {kind} returned an unexpected length."); return value;
     }
     private static string FileHash(string file) { using var input = File.OpenRead(file); return Convert.ToHexString(SHA256.HashData(input)); }
     [StructLayout(LayoutKind.Sequential)] private struct BasicLimits {
@@ -325,4 +336,5 @@ internal sealed partial class ProcessActionsUiChecks : Window
     [LibraryImport("kernel32.dll", EntryPoint = "TerminateProcess", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool AbortOwnedChild(SafeProcessHandle process, uint exitCode);
     [LibraryImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool OpenProcessToken(SafeProcessHandle process, uint access, out SafeFileHandle token);
     [LibraryImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool GetTokenInformation(SafeFileHandle token, uint kind, nint data, uint size, out uint required);
+    [LibraryImport("advapi32.dll", EntryPoint = "GetTokenInformation", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool GetTokenDword(SafeFileHandle token, uint kind, out uint value, uint size, out uint required);
 }
