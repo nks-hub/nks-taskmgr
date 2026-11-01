@@ -9,40 +9,58 @@
 
 LONG NksQueryProcessBuffer(NKS_SYSTEM_QUERY query, void** buffer, ULONG* capacity, ULONG* used)
 {
-    ULONG attempt;
-    if (!query || !buffer || !capacity || !used)
+    NksProcessQueryBudget budget;
+    if (!capacity)
+        return STATUS_INVALID_PARAMETER;
+    budget.remaining_attempts = NKS_PROCESS_QUERY_ATTEMPTS;
+    budget.allocated_bytes = *capacity;
+    return NksQueryProcessBufferBudgeted(query, SystemProcessInformation, buffer, capacity, used, &budget);
+}
+
+LONG NksQueryProcessBufferBudgeted(NKS_SYSTEM_QUERY query, ULONG informationClass, void** buffer,
+    ULONG* capacity, ULONG* used, NksProcessQueryBudget* budget)
+{
+    if (!query || !buffer || !capacity || !used || !budget)
         return STATUS_INVALID_PARAMETER;
 
     *used = 0;
-    if ((*buffer == NULL) != (*capacity == 0) || *capacity > NKS_PROCESS_BUFFER_LIMIT)
+    if ((*buffer == NULL) != (*capacity == 0) || *capacity > budget->allocated_bytes
+        || budget->allocated_bytes > NKS_PROCESS_BUFFER_LIMIT || budget->remaining_attempts > NKS_PROCESS_QUERY_ATTEMPTS)
         return STATUS_INVALID_PARAMETER;
+    if (!budget->remaining_attempts)
+        return STATUS_RETRY;
 
     if (!*buffer)
     {
-        *capacity = 0x4000;
-        *buffer = HeapAlloc(GetProcessHeap(), 0, *capacity);
+        const ULONG initial = 0x4000;
+        if (initial > NKS_PROCESS_BUFFER_LIMIT - budget->allocated_bytes)
+            return STATUS_INSUFFICIENT_RESOURCES;
+        *buffer = HeapAlloc(GetProcessHeap(), 0, initial);
         if (!*buffer)
-        {
-            *capacity = 0;
             return STATUS_NO_MEMORY;
-        }
+        *capacity = initial;
+        budget->allocated_bytes += initial;
     }
 
-    for (attempt = 0; attempt < NKS_PROCESS_QUERY_ATTEMPTS; ++attempt)
+    while (budget->remaining_attempts)
     {
         ULONG required = 0;
-        LONG status = query(SystemProcessInformation, *buffer, *capacity, &required);
+        LONG status;
+        --budget->remaining_attempts;
+        status = query(informationClass, *buffer, *capacity, &required);
         if (status == STATUS_BUFFER_TOO_SMALL || status == STATUS_INFO_LENGTH_MISMATCH)
         {
             ULONG growth = *capacity + *capacity / 2;
             ULONG next = required > growth ? required : growth;
             void* replacement;
-            if (next > NKS_PROCESS_BUFFER_LIMIT)
+            if (!budget->remaining_attempts)
+                return STATUS_RETRY;
+            if (next > NKS_PROCESS_BUFFER_LIMIT - (budget->allocated_bytes - *capacity))
                 return STATUS_INSUFFICIENT_RESOURCES;
-            replacement = HeapAlloc(GetProcessHeap(), 0, next);
+            replacement = HeapReAlloc(GetProcessHeap(), 0, *buffer, next);
             if (!replacement)
                 return STATUS_NO_MEMORY;
-            HeapFree(GetProcessHeap(), 0, *buffer);
+            budget->allocated_bytes += next - *capacity;
             *buffer = replacement;
             *capacity = next;
         }

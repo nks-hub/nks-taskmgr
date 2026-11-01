@@ -2,6 +2,7 @@
 #include <phnt.h>
 #include "process_parser.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -47,6 +48,7 @@ std::vector<ProcessRecord> parseProcesses(std::span<const std::byte> buffer, Boo
             throw std::runtime_error("Negative process counter");
 
         ProcessRecord record;
+        record.created100ns = static_cast<std::uint64_t>(raw.CreateTime.QuadPart);
         record.identity = {boot, static_cast<std::uint32_t>(pid),
             raw.CreateTime.QuadPart ? GenerationKind::creationTime : GenerationKind::missing,
             static_cast<std::uint64_t>(raw.CreateTime.QuadPart)};
@@ -68,6 +70,85 @@ std::vector<ProcessRecord> parseProcesses(std::span<const std::byte> buffer, Boo
         offset += raw.NextEntryOffset;
     }
     throw std::runtime_error("Process chain has no final entry");
+}
+
+std::vector<BasicProcessIdentity> parseBasicProcesses(std::span<const std::byte> buffer)
+{
+    // SYSTEM_BASICPROCESS_INFORMATION in Windows SDK winternl.h, information class 252.
+    struct BasicHeader {
+        ULONG NextEntryOffset;
+        HANDLE UniqueProcessId, InheritedFromUniqueProcessId;
+        ULONGLONG SequenceNumber;
+        UNICODE_STRING ImageName;
+    };
+    static_assert(sizeof(BasicHeader) == 48 && offsetof(BasicHeader, SequenceNumber) == 24
+        && offsetof(BasicHeader, ImageName) == 32);
+    if (buffer.size() < sizeof(BasicHeader)) throw std::runtime_error("Truncated basic process header");
+    std::vector<BasicProcessIdentity> records;
+    records.reserve(buffer.size() / 128);
+    std::size_t offset = 0;
+    bool final = false;
+    while (offset < buffer.size()) {
+        const auto remaining = buffer.size() - offset;
+        if (remaining < sizeof(BasicHeader)) throw std::runtime_error("Truncated basic process entry");
+        BasicHeader raw{};
+        std::memcpy(&raw, buffer.data() + offset, sizeof(raw));
+        const auto entrySize = raw.NextEntryOffset ? raw.NextEntryOffset : remaining;
+        if (entrySize < sizeof(raw) || entrySize > remaining || raw.NextEntryOffset % alignof(void*) != 0)
+            throw std::runtime_error("Invalid basic process entry offset");
+        if (raw.ImageName.Length % sizeof(wchar_t) != 0 || raw.ImageName.Length > raw.ImageName.MaximumLength)
+            throw std::runtime_error("Invalid basic process name length");
+        const auto entryAddress = reinterpret_cast<std::uintptr_t>(buffer.data() + offset);
+        const auto nameAddress = reinterpret_cast<std::uintptr_t>(raw.ImageName.Buffer);
+        const auto nameOffset = nameAddress - entryAddress;
+        if (raw.ImageName.Length && (nameAddress < entryAddress || nameOffset < sizeof(raw) || nameOffset > entrySize
+            || raw.ImageName.Length > entrySize - nameOffset)) throw std::runtime_error("Basic process name exceeds entry");
+        const auto pid = reinterpret_cast<std::uintptr_t>(raw.UniqueProcessId);
+        const auto parent = reinterpret_cast<std::uintptr_t>(raw.InheritedFromUniqueProcessId);
+        if (pid > std::numeric_limits<std::uint32_t>::max() || parent > std::numeric_limits<std::uint32_t>::max())
+            throw std::runtime_error("Basic process identifier exceeds 32 bits");
+        records.push_back({static_cast<std::uint32_t>(pid), static_cast<std::uint32_t>(parent), raw.SequenceNumber});
+        if (!raw.NextEntryOffset) { final = true; break; }
+        offset += raw.NextEntryOffset;
+    }
+    if (!final) throw std::runtime_error("Basic process chain has no final entry");
+    std::sort(records.begin(), records.end(), [](const auto& a, const auto& b) { return a.pid < b.pid; });
+    if (std::adjacent_find(records.begin(), records.end(), [](const auto& a, const auto& b) { return a.pid == b.pid; }) != records.end())
+        throw std::runtime_error("Duplicate basic process identifier");
+    return records;
+}
+
+bool applySequenceIdentities(std::vector<ProcessRecord>& processes,
+    std::span<const BasicProcessIdentity> before, std::span<const BasicProcessIdentity> after)
+{
+    if (processes.empty() || before.empty() || after.empty()) return false;
+    const auto ordered = [](auto entries) {
+        return std::adjacent_find(entries.begin(), entries.end(), [](const auto& a, const auto& b) { return a.pid >= b.pid; }) == entries.end();
+    };
+    if (!ordered(before) || !ordered(after)) return false;
+    const auto find = [](auto entries, std::uint32_t pid) {
+        return std::lower_bound(entries.begin(), entries.end(), pid, [](const auto& entry, auto value) { return entry.pid < value; });
+    };
+    std::vector<ProcessIdentity> verified;
+    std::vector<std::uint32_t> pids;
+    verified.reserve(processes.size()); pids.reserve(processes.size());
+    const auto boot = processes.front().identity.boot;
+    if (boot.empty()) return false;
+    for (const auto& process : processes) {
+        auto identity = process.identity;
+        if (identity.boot != boot || (identity.generationKind != GenerationKind::creationTime && identity.generationKind != GenerationKind::missing)) return false;
+        const auto first = find(before, identity.pid), second = find(after, identity.pid);
+        if (first == before.end() || second == after.end() || first->pid != identity.pid || second->pid != identity.pid
+            || first->sequenceNumber != second->sequenceNumber) return false;
+        if (!first->sequenceNumber && identity.pid != 0) return false;
+        identity.generationKind = first->sequenceNumber ? GenerationKind::sequenceNumber : GenerationKind::missing;
+        identity.generation = first->sequenceNumber;
+        verified.push_back(identity); pids.push_back(identity.pid);
+    }
+    std::sort(pids.begin(), pids.end());
+    if (std::adjacent_find(pids.begin(), pids.end()) != pids.end()) return false;
+    for (std::size_t i = 0; i < processes.size(); ++i) processes[i].identity = verified[i];
+    return true;
 }
 
 }

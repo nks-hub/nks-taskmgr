@@ -65,6 +65,7 @@ struct ProcessRecord {
     Metric<double> cpuPercent;
     Metric<double> readIoBytesPerSecond;
     Metric<double> writeIoBytesPerSecond;
+    std::uint64_t created100ns{};
 };
 
 struct SystemMemory {

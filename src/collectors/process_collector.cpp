@@ -13,6 +13,7 @@
 #include <intrin.h>
 #include <array>
 #include <cstring>
+#include <limits>
 
 namespace nks {
 namespace {
@@ -25,6 +26,28 @@ LONG NTAPI queryProcesses(ULONG informationClass, void* buffer, ULONG size, ULON
 LONG NTAPI queryGroup(USHORT group, void* buffer, ULONG size, ULONG* returned)
 {
     return NtQuerySystemInformationEx(SystemProcessorPerformanceInformation, &group, sizeof(group), buffer, size, returned);
+}
+
+LONG NTAPI queryHandle(HANDLE process, ULONG informationClass, void* buffer, ULONG size, ULONG* returned)
+{
+    return NtQueryInformationProcess(process, static_cast<PROCESSINFOCLASS>(informationClass), buffer, size, returned);
+}
+
+bool unsupportedProcessQuery(LONG status)
+{
+    return status == STATUS_INVALID_INFO_CLASS || status == STATUS_NOT_IMPLEMENTED || status == STATUS_NOT_SUPPORTED;
+}
+
+SampleState processQueryState(LONG status)
+{
+    if (status == STATUS_ACCESS_DENIED || status == STATUS_PRIVILEGE_NOT_HELD) return SampleState::accessDenied;
+    return unsupportedProcessQuery(status) ? SampleState::unsupported : SampleState::error;
+}
+
+void requireProcessQuery(LONG status)
+{
+    if (!NT_SUCCESS(status))
+        throw std::runtime_error("NtQuerySystemInformation process query failed: " + std::to_string(static_cast<unsigned long>(status)));
 }
 
 std::wstring processorName()
@@ -54,38 +77,102 @@ BOOL CALLBACK pageFiles(void* context, PENUM_PAGE_FILE_INFORMATION info, LPCWSTR
 
 }
 
-ProcessCollector::ProcessCollector()
+ProcessIdentityResult queryProcessIdentity(HANDLE process, GenerationKind kind,
+    const BootIdentity& boot, ProcessHandleQuery query)
+{
+    if (kind == GenerationKind::missing) return {{}, SampleState::unavailable};
+    if (!process || !query || (kind != GenerationKind::creationTime && kind != GenerationKind::sequenceNumber)) return {{}, SampleState::error};
+    if (boot.state != SampleState::valid) return {{}, boot.state};
+    if (boot.id.empty()) return {{}, SampleState::error};
+    PROCESS_BASIC_INFORMATION basic{};
+    ULONG used = 0;
+    auto status = query(process, ProcessBasicInformation, &basic, sizeof(basic), &used);
+    if (!NT_SUCCESS(status)) return {{}, processQueryState(status)};
+    const auto pid = reinterpret_cast<std::uintptr_t>(basic.UniqueProcessId);
+    if (used != sizeof(basic) || pid > std::numeric_limits<std::uint32_t>::max()) return {{}, SampleState::error};
+    std::uint64_t generation = 0;
+    used = 0;
+    if (kind == GenerationKind::sequenceNumber) {
+        status = query(process, ProcessSequenceNumber, &generation, sizeof(generation), &used);
+        if (!NT_SUCCESS(status)) return {{}, processQueryState(status)};
+        if (used != sizeof(generation)) return {{}, SampleState::error};
+    } else {
+        KERNEL_USER_TIMES times{};
+        status = query(process, ProcessTimes, &times, sizeof(times), &used);
+        if (!NT_SUCCESS(status)) return {{}, processQueryState(status)};
+        if (used != sizeof(times) || times.CreateTime.QuadPart < 0) return {{}, SampleState::error};
+        generation = static_cast<std::uint64_t>(times.CreateTime.QuadPart);
+    }
+    if (!generation) return {{}, SampleState::unavailable};
+    return {{boot.id, static_cast<std::uint32_t>(pid), kind, generation}, SampleState::valid};
+}
+
+ProcessIdentityResult queryProcessIdentity(HANDLE process, GenerationKind kind)
+{
+    return queryProcessIdentity(process, kind, queryBootIdentity(queryProcesses), queryHandle);
+}
+
+ProcessCollector::ProcessCollector(ProcessIdentityPreference preference)
 {
     boot = queryBootIdentity(queryProcesses);
+    sequenceChecked = preference == ProcessIdentityPreference::creationTime || boot.state != SampleState::valid || boot.id.empty();
     SYSTEM_TIMEOFDAY_INFORMATION time{};
     const auto status = NtQuerySystemInformation(SystemTimeOfDayInformation, &time, sizeof(time), nullptr);
     if (NT_SUCCESS(status) && time.BootTime.QuadPart > 0) bootTime = static_cast<std::uint64_t>(time.BootTime.QuadPart);
 }
 
-ProcessCollector::~ProcessCollector() { NksFreeProcessBuffer(buffer); }
+ProcessCollector::~ProcessCollector() { NksFreeProcessBuffer(buffer); NksFreeProcessBuffer(basicBuffer); }
+
+std::vector<ProcessRecord> ProcessCollector::collectProcesses(std::chrono::steady_clock::time_point& measuredAt,
+    std::chrono::system_clock::time_point& wallTime)
+{
+    NksProcessQueryBudget budget{NKS_PROCESS_QUERY_ATTEMPTS, capacity + basicCapacity};
+    for (;;) {
+        std::vector<BasicProcessIdentity> before;
+        if (!sequenceChecked || sequenceEnabled) {
+            if (budget.remaining_attempts < 3) requireProcessQuery(STATUS_RETRY);
+            ULONG used = 0;
+            const auto status = NksQueryProcessBufferBudgeted(queryProcesses, SystemBasicProcessInformation,
+                &basicBuffer, &basicCapacity, &used, &budget);
+            if (!sequenceChecked && unsupportedProcessQuery(status)) {
+                sequenceChecked = true; sequenceEnabled = false;
+                NksFreeProcessBuffer(basicBuffer); basicBuffer = nullptr;
+                budget.allocated_bytes -= basicCapacity; basicCapacity = 0;
+            }
+            else {
+                requireProcessQuery(status);
+                before = parseBasicProcesses({static_cast<const std::byte*>(basicBuffer), used});
+                sequenceChecked = sequenceEnabled = true;
+            }
+        }
+        ULONG used = 0;
+        requireProcessQuery(NksQueryProcessBufferBudgeted(queryProcesses, SystemProcessInformation, &buffer, &capacity, &used, &budget));
+        measuredAt = std::chrono::steady_clock::now();
+        wallTime = std::chrono::system_clock::now();
+        auto processes = parseProcesses({static_cast<const std::byte*>(buffer), used}, boot.id);
+        if (!sequenceEnabled) return processes;
+        requireProcessQuery(NksQueryProcessBufferBudgeted(queryProcesses, SystemBasicProcessInformation,
+            &basicBuffer, &basicCapacity, &used, &budget));
+        const auto after = parseBasicProcesses({static_cast<const std::byte*>(basicBuffer), used});
+        if (applySequenceIdentities(processes, before, after)) return processes;
+    }
+}
 
 ProcessSnapshot ProcessCollector::collect()
 {
     const auto began = std::chrono::steady_clock::now();
-    ULONG used = 0;
-    const auto status = NksQueryProcessBuffer(queryProcesses, &buffer, &capacity, &used);
-    if (!NT_SUCCESS(status))
-        throw std::runtime_error("NtQuerySystemInformation process query failed: " + std::to_string(static_cast<unsigned long>(status)));
-
     ProcessSnapshot result;
     result.boot = boot;
     result.bootTime = bootTime;
+    result.processes = collectProcesses(result.measuredAt, result.wallTime);
+    const auto parsedAt = std::chrono::steady_clock::now();
     static const auto memoryFacts = memoryHardware(), cpuFacts = processorHardware(), boardFacts = boardHardware();
     result.memoryFacts = memoryFacts; result.cpuFacts = cpuFacts; result.boardFacts = boardFacts;
-    result.measuredAt = std::chrono::steady_clock::now();
-    result.wallTime = std::chrono::system_clock::now();
     result.logicalProcessors = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
     static const auto model = processorName();
     result.cpuModel = model;
     if (!result.logicalProcessors)
         throw std::runtime_error("No active logical processors");
-    result.processes = parseProcesses({static_cast<const std::byte*>(buffer), used}, boot.id);
-    const auto parsedAt = std::chrono::steady_clock::now();
     result.queryTime = result.measuredAt - began;
     result.parseTime = parsedAt - result.measuredAt;
 
