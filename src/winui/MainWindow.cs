@@ -26,7 +26,7 @@ public sealed partial class MainWindow : Window
     private static partial bool ShowWindow(nint window, int command);
     private readonly nint windowHandle;
     private readonly MonitorModel model = new();
-    private readonly Grid root = new() { Background = Display.Brush(0x171d21), RequestedTheme = ElementTheme.Dark };
+    private readonly Grid root = new() { Background = Display.Brush(0x171d21) };
     private readonly Grid page = new();
     private readonly Grid sidebar = new() { Background = Display.Brush(0x12181c), Width = 88 };
     private readonly TextBlock heading = Label("Výkon", 28, 0xe9eef0);
@@ -91,11 +91,9 @@ public sealed partial class MainWindow : Window
         AppWindow.Resize(new SizeInt32(1440, 920));
         ExtendsContentIntoTitleBar = true;
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
-        AppWindow.TitleBar.ButtonBackgroundColor = Windows.UI.Color.FromArgb(255, 18, 24, 28);
-        AppWindow.TitleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 149, 164, 173);
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); BuildShell(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
+        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); BuildShell(); ConfigureAppearance(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");

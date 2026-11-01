@@ -13,7 +13,7 @@ public static class Display
             SampleState.First => "První vzorek", SampleState.Stale => "Zastaralá data",
             SampleState.AccessDenied => "Chybí oprávnění", SampleState.Gap => "Mezera", _ => "Měření nedostupné"
         };
-    public static SolidColorBrush Brush(uint color) => new(Windows.UI.Color.FromArgb(255, (byte)(color >> 16), (byte)(color >> 8), (byte)color));
+    public static SolidColorBrush Brush(uint color) => ThemePalette.Brush(color);
     public static uint ResourceColor(ResourceKind kind) => kind switch {
         ResourceKind.Cpu => 0x80c5c0, ResourceKind.Memory => 0xabb0f1, ResourceKind.Disk => 0x83bca0,
         ResourceKind.Gpu => 0xcc9bb6, _ => 0xdfaf76

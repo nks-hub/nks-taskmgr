@@ -61,10 +61,10 @@ public sealed partial class MainWindow
             SnapshotFields Fields() => checks.Aggregate((SnapshotFields)0, (value, pair) => pair.Value.IsChecked == true ? value | pair.Key : value);
             void RefreshPreview() => preview.Text = SnapshotExport.Preview(snapshot, Fields());
             RefreshPreview();
-            var dialog = new ContentDialog { Title = "Uložit snímek", XamlRoot = root.XamlRoot, RequestedTheme = ElementTheme.Dark,
+            var dialog = Appearance.Dialog(new ContentDialog { Title = "Uložit snímek", XamlRoot = root.XamlRoot,
                 PrimaryButtonText = "Uložit…", CloseButtonText = "Zrušit", DefaultButton = ContentDialogButton.Primary,
                 Content = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, MaxHeight = Math.Max(60, Math.Min(520, root.ActualHeight - 280)) } };
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, MaxHeight = Math.Max(60, Math.Min(520, root.ActualHeight - 280)) } });
             AutomationProperties.SetAutomationId(dialog, "snapshot-dialog");
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
             var picker = new FileSavePicker(AppWindow.Id) { SuggestedFileName = "nks-snapshot-" + snapshot.CapturedAt.ToString("yyyyMMdd-HHmmss"), DefaultFileExtension = ".json" };
@@ -73,11 +73,11 @@ public sealed partial class MainWindow
             if (file is null) return;
             string? backup = await SnapshotExport.SaveAsync(file.Path, snapshot, Fields());
             footer.Text = "Uložen snímek: " + Path.GetFileName(file.Path);
-            if (backup is not null) await new ContentDialog { Title = "Snímek je uložený", XamlRoot = root.XamlRoot, RequestedTheme = ElementTheme.Dark,
-                Content = "Původní zálohu se nepodařilo odstranit. Zůstala v souboru: " + backup, CloseButtonText = "Zavřít" }.ShowAsync();
+            if (backup is not null) await Appearance.Dialog(new ContentDialog { Title = "Snímek je uložený", XamlRoot = root.XamlRoot,
+                Content = "Původní zálohu se nepodařilo odstranit. Zůstala v souboru: " + backup, CloseButtonText = "Zavřít" }).ShowAsync();
         } catch (Exception error) when (error is IOException or UnauthorizedAccessException or COMException or ArgumentException) {
-            await new ContentDialog { Title = "Snímek se nepodařilo uložit", Content = error.Message,
-                XamlRoot = root.XamlRoot, RequestedTheme = ElementTheme.Dark, CloseButtonText = "Zavřít" }.ShowAsync();
+            await Appearance.Dialog(new ContentDialog { Title = "Snímek se nepodařilo uložit", Content = error.Message,
+                XamlRoot = root.XamlRoot, CloseButtonText = "Zavřít" }).ShowAsync();
         } finally { exporting = false; exportSnapshot.IsEnabled = model.ProcessTime > 0; }
     }
 }

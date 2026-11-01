@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -40,7 +39,7 @@ internal sealed partial class SnapshotComparisonView : Window
 {
     private static readonly CultureInfo Czech = CultureInfo.GetCultureInfo("cs-CZ");
     private static readonly ProcessComparisonKind[] Kinds = Enum.GetValues<ProcessComparisonKind>();
-    private readonly Grid layout = new() { Padding = new Thickness(16), RowSpacing = 8, RequestedTheme = ElementTheme.Dark, Background = Display.Brush(0x171d21) };
+    private readonly Grid layout = new() { Padding = new Thickness(16), RowSpacing = 8, Background = Display.Brush(0x171d21) };
     private readonly Button beforeButton = Command("Vybrat původní JSON…"), afterButton = Command("Vybrat následující JSON…");
     private readonly Button compare = Command("Porovnat"), cancel = Command("Zrušit načítání");
     private readonly TextBlock beforeFile = Text("Soubor není vybraný"), afterFile = Text("Soubor není vybraný");
@@ -60,15 +59,7 @@ internal sealed partial class SnapshotComparisonView : Window
     {
         Title = "Porovnat snímky · NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
-        if (AppWindowTitleBar.IsCustomizationSupported()) {
-            var titleBar = AppWindow.TitleBar;
-            var background = Windows.UI.Color.FromArgb(255, 18, 24, 28);
-            var foreground = Windows.UI.Color.FromArgb(255, 149, 164, 173);
-            titleBar.BackgroundColor = titleBar.InactiveBackgroundColor = background;
-            titleBar.ForegroundColor = titleBar.InactiveForegroundColor = foreground;
-            titleBar.ButtonBackgroundColor = titleBar.ButtonInactiveBackgroundColor = background;
-            titleBar.ButtonForegroundColor = titleBar.ButtonInactiveForegroundColor = foreground;
-        }
+        Appearance.Attach(this, layout);
         AppWindow.Resize(new SizeInt32(1100, 820));
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star) })
             layout.RowDefinitions.Add(new RowDefinition { Height = height });

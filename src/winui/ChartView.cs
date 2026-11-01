@@ -53,6 +53,8 @@ public sealed partial class ChartView : Grid
         canvas.Children.Add(areaPath); canvas.Children.Add(linePath); canvas.Children.Add(secondaryPath); Children.Add(canvas);
         Grid.SetColumn(canvas, 1);
         BuildAxes(); BuildInteraction();
+        Loaded += (_, _) => { Appearance.Changed += AppearanceChanged; AppearanceChanged(); };
+        Unloaded += (_, _) => Appearance.Changed -= AppearanceChanged;
         canvas.SizeChanged += (_, _) => {
             for (int i = 0; i < horizontal.Count; ++i) {
                 var line = horizontal[i]; line.X2 = canvas.ActualWidth; line.Y1 = line.Y2 = canvas.ActualHeight * i / 4;
@@ -63,6 +65,11 @@ public sealed partial class ChartView : Grid
             canvas.Clip = new RectangleGeometry { Rect = new Rect(0, 0, canvas.ActualWidth, canvas.ActualHeight) };
             Render();
         };
+    }
+
+    private void AppearanceChanged()
+    {
+        paintedColor = null; rendered = null; Render();
     }
 
     internal static double ScaleMaximum(double observed, double capacity)
@@ -102,7 +109,7 @@ public sealed partial class ChartView : Grid
         }
         if (paintedColor != color) {
             var brush = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
-            var rgb = Windows.UI.Color.FromArgb(65, (byte)(color >> 16), (byte)(color >> 8), (byte)color);
+            var rgb = ThemePalette.Color(color, 65);
             brush.GradientStops.Add(new GradientStop { Color = rgb, Offset = 0 });
             rgb.A = 8; brush.GradientStops.Add(new GradientStop { Color = rgb, Offset = 1 });
             areaPath.Fill = brush; linePath.Stroke = Display.Brush(color); paintedColor = color;
