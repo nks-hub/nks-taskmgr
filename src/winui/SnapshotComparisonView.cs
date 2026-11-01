@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -59,6 +60,15 @@ internal sealed partial class SnapshotComparisonView : Window
     {
         Title = "Porovnat snímky · NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
+        if (AppWindowTitleBar.IsCustomizationSupported()) {
+            var titleBar = AppWindow.TitleBar;
+            var background = Windows.UI.Color.FromArgb(255, 18, 24, 28);
+            var foreground = Windows.UI.Color.FromArgb(255, 149, 164, 173);
+            titleBar.BackgroundColor = titleBar.InactiveBackgroundColor = background;
+            titleBar.ForegroundColor = titleBar.InactiveForegroundColor = foreground;
+            titleBar.ButtonBackgroundColor = titleBar.ButtonInactiveBackgroundColor = background;
+            titleBar.ButtonForegroundColor = titleBar.ButtonInactiveForegroundColor = foreground;
+        }
         AppWindow.Resize(new SizeInt32(1100, 820));
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star) })
             layout.RowDefinitions.Add(new RowDefinition { Height = height });
