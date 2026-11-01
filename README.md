@@ -73,6 +73,14 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Release -WinUI -Test
 
 Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, collection while minimized, CPU chart layout, and read-only Services. Visual checks require an active display; captures made while the display is off can contain a black client area. Administrative actions and the UI framework choice remain open.
 
+The C++/WinUI comparison candidate uses the same native monitor and collector. Build it with Visual Studio C++ tools:
+
+```powershell
+pwsh -NoProfile -File scripts/build-winui-cpp.ps1 -NativeDirectory ./build/msvc/Release
+```
+
+The script restores Windows App SDK 2.5.1 and C++/WinRT 2.0.250303.1 and writes an unpackaged output to `build/winui-cpp/app`, including the native pair, UI resources, and MSVC runtime DLLs. It builds without launching the application. This candidate implements the process, resource, and service views; feature parity, runtime behavior, and performance comparison remain open.
+
 To build an installer and a portable ZIP from the published WinUI application, use Inno Setup 7.1.1:
 
 ```powershell
