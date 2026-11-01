@@ -23,6 +23,7 @@ The current desktop prototype displays live processes and individual system devi
 - ↕️ **Network traffic** - Shows receive and transmit rates in the resource list, selected chart, and device details.
 - 💾 **Pagefile usage** - Displays the current and peak pagefile allocation, its capacity, and a usage graph beside physical memory and commit values.
 - 📄 **WinUI snapshots** - Exports selected process and device metrics to JSON, with a preview and separate opt-ins for names and device identifiers.
+- 🔍 **Process comparison** - Compares process lifetimes and metric changes between two JSON snapshots, with status filters and reasons for entries that cannot be compared.
 - 🧮 **Sample states** - Distinguishes a first sample, measured zero, unavailable data, and gaps after counter or topology changes.
 - 🧠 **Memory accounting** - Keeps working set, private memory, physical memory, and commit values separate.
 - 🔗 **Shared collector** - Exposes immutable process and device snapshots through a versioned C API and C# bindings for Native AOT clients.
@@ -83,6 +84,8 @@ Processes provides All, Active, and Tree views. Search accepts process names and
 The WinUI candidate also resizes columns by dragging their edges and hides optional columns through the Columns menu. A heading's context menu offers move and resize commands for keyboard use. The menu restores the default layout; the process name remains visible.
 
 The save icon in the WinUI process toolbar opens a snapshot preview. Choose CPU, memory, process I/O, and device fields. Process and device names and raw device identifiers have separate opt-ins and are excluded by default. Command lines, arguments, accounts, and hardware fact strings are not exported. Values retain their units, sources, sample states, and process lifetime keys. The sample is captured before the dialog opens; live updates do not change it. Saving runs outside the UI thread and preserves an existing destination's access rules.
+
+The comparison icon opens a separate window. Select the original and following JSON snapshots, then choose Compare. Their order follows your selection, even if the recorded wall clock moves backwards. The result lists process changes and shows the selected process's values, sample states, sources, and differences. Numeric differences require valid values with matching units and sources. When a process lifetime cannot be verified, the result explains why it cannot be compared. The window is read-only, accepts exports without names, and can cancel loading or comparison.
 
 Process rows are 34 DIP high with 13 DIP text. The UI uses Segoe UI Variable when installed and Segoe UI otherwise. WinUI reads executable icons through up to two child processes after verifying process creation time. Waiting for a response is limited to three seconds; a silent worker is terminated and restarted for the next request. The workers inherit the user's permissions and exit with the application. Unavailable icons use a generic symbol, and the cache holds up to 128 images. The Win32 candidate currently uses letter icons.
 
