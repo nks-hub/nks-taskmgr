@@ -2,6 +2,8 @@
 
 Vývoj nativní aplikace začal. Tento soubor drží plán, nálezy, review a stav ověření. Původní analýzy, RE podklady a webový návrh jsou mimo repozitář. Dokumentace v repozitáři je omezena na README a TODO. Sestavení a testy probíhají místně; CI se nyní nepřidává.
 
+Aktuální režim podle zadání: souběžně vyvíjet zbývající funkce; běhové, UI, regresní a výkonové testy nechat až na poslední fázi zpracování TODO. Při vývoji provádět jen sestavení a statickou kontrolu. Nový kód označovat jako implementovaný s odloženým ověřením; dřívější výsledky nepřenášet na pozdější neověřené změny.
+
 P0 znamená nutný základ nebo podmínku správnosti, P1 další základní funkci a P2 samostatné rozšíření. Role je budoucí odpovědnost, nikoli již přidělený člověk. Každá položka obsahuje závislost a podmínku dokončení. T01–T48 a T54 tvoří základní rozsah, T49–T53 rozšíření. Celkem je 54 implementačních úkolů.
 
 ## Požadavky a přijímací podmínky
@@ -161,7 +163,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] T25 P1 · Sběr: přiřadit diskové a síťové přenosy k životnosti procesu; závisí na T07,T24; hotovo při rozlišení I/O od disku, známém přenosu a odmítnutí nejasné identity.
 - [ ] T26 P1 · Sběr/UI: zobrazit krátce žijící procesy a ukončené položky; závisí na T09,T24; hotovo při řízeném krátkém procesu a označení mezer při výpadku zdroje.
 - [x] T27 P0 · Export: uložit snímek s výběrem polí a skrytím citlivých hodnot; závisí na T07,T17; WinUI náhled, skutečné uložení i absence testovacího tajného řetězce ve výchozím exportu jsou ověřené podle F48. Přijetí ostatních UI kandidátů a celé aplikace zůstává v T54/T48.
-- [ ] T28 P1 · Jádro/UI: porovnat dva snímky; závisí na T09,T27; hotovo při rozlišení vzniku, konce a změny bez sloučení dvou generací stejného PID. Jádro je integrované a prošlo review i Windows 11 VM bez správce včetně skutečných exportů, obrácených časových údajů, vadných vstupů, Unicode a limitů; poslední načtení dvou snímků po 10 000 procesech trvalo 549 ms a porovnání 110 ms. UI se dokončuje, nejde o měření celé aplikace.
+- [ ] T28 P1 · Jádro/UI: porovnat dva snímky; závisí na T09,T27; hotovo při rozlišení vzniku, konce a změny bez sloučení dvou generací stejného PID. Jádro a WinUI jsou implementované. Dosavadní VM ověřila import, zrušení, Unicode, opakovaný import, filtry a 10 000 výsledků s devíti vytvořenými řádky; samostatné načtení dvou snímků po 10 000 procesech trvalo 549 ms a porovnání 110 ms. Dokončení ověření systémového výběru souboru a následných úprav vzhledu je podle nového zadání odložené do závěrečné fáze; nejde o přijetí celé aplikace.
 - [ ] T29 P1 · Grafy/UI: propojit výběr času, špičky a detail procesu; závisí na T16,T25,T26,T28; hotovo při společném kurzoru, časovém výběru a zákazu živých akcí nad historickým záznamem.
 - [ ] T30 P0 · UI: vysvětlit chybějící práva, zdroje a schopnosti; závisí na T03,T18,T21,T22,T24; hotovo při pravdivé matici běžný uživatel/správce/ovladač a funkčním běhu bez ovladače.
 
