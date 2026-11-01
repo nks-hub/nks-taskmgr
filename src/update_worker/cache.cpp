@@ -3,6 +3,7 @@
 #include <sddl.h>
 #include <aclapi.h>
 #include <algorithm>
+#include <bcrypt.h>
 #include <cstring>
 
 namespace nks::update {
@@ -214,10 +215,21 @@ std::vector<std::byte> readData(const std::wstring& path, std::size_t limit)
 void writeNew(const std::wstring& path, std::span<const std::byte> bytes)
 {
     if (bytes.empty() || bytes.size() > maxPayload) throw Error(Status::invalidRequest, "Update record exceeds the limit");
-    broker::Handle file(CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_FLAG_WRITE_THROUGH, nullptr));
+    std::array<std::byte, 16> nonce{};
+    if (BCryptGenRandom(nullptr, reinterpret_cast<PUCHAR>(nonce.data()), static_cast<ULONG>(nonce.size()), BCRYPT_USE_SYSTEM_PREFERRED_RNG) != 0)
+        throw Error(Status::io, "Cannot create an atomic update record name");
+    const auto temporary = path + L".tmp-" + hex(nonce);
+    broker::Handle file(CreateFileW(temporary.c_str(), GENERIC_WRITE | DELETE, 0, nullptr, CREATE_NEW, FILE_FLAG_WRITE_THROUGH, nullptr));
     if (!file || file.get() == INVALID_HANDLE_VALUE) throw Error(Status::conflict, "Cannot reserve immutable update record", GetLastError());
     DWORD count = 0;
     if (!WriteFile(file.get(), bytes.data(), static_cast<DWORD>(bytes.size()), &count, nullptr) || count != bytes.size() || !FlushFileBuffers(file.get()))
         throw Error(Status::unknown, "Update journal write is incomplete", GetLastError());
+    const auto length = path.size() * sizeof(wchar_t);
+    std::vector<std::byte> renameBytes(offsetof(FILE_RENAME_INFO, FileName) + length);
+    auto& rename = *reinterpret_cast<FILE_RENAME_INFO*>(renameBytes.data());
+    rename.ReplaceIfExists = FALSE; rename.RootDirectory = nullptr; rename.FileNameLength = static_cast<DWORD>(length);
+    std::copy(path.begin(), path.end(), rename.FileName);
+    if (!SetFileInformationByHandle(file.get(), FileRenameInfo, &rename, static_cast<DWORD>(renameBytes.size())) || !FlushFileBuffers(file.get()))
+        throw Error(Status::unknown, "Atomic update record publication did not complete", GetLastError());
 }
 }

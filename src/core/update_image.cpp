@@ -76,6 +76,7 @@ void verifyVersion(Image& image, Role role)
         };
         if (field(L"ProductName") != L"NKS Task Manager" || field(L"FileDescription") != description || field(L"OriginalFilename") != filename)
             throw Error(Status::rejected, "Signed image has the wrong product role");
+        if (role == Role::worker && field(L"NksUpdateProtocol") != L"2") throw Error(Status::rejected, "Update worker does not declare compatible wire version 2");
         const auto current = field(L"ProductVersion");
         if (!version.empty() && current != version) throw Error(Status::rejected, "Conflicting image versions");
         version = current;

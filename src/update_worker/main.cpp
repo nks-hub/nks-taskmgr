@@ -56,17 +56,22 @@ int serve(std::atomic<ULONGLONG>& deadline)
         if (!io(input, request, false)) return 2;
         reply = request; received = true;
         const auto command = static_cast<Command>(read(request, 6, 2)); const auto length = static_cast<std::size_t>(read(request, 8, 4));
-        if (command < Command::list || command > Command::rollback || !validHeader(request, command, length)) throw Error(Status::invalidRequest, "Invalid update request");
+        if (command < Command::list || command > Command::repair || command == Command::commit || !validHeader(request, command, length)) throw Error(Status::invalidRequest, "Invalid update request");
         std::vector<std::byte> payload(length);
         if (!io(input, payload, false)) throw Error(Status::invalidRequest, "Truncated update request");
-        const bool applying = command == Command::apply || command == Command::rollback;
-        if ((!applying && !eof(input)) || ((command == Command::list || command == Command::cache) && !empty(selected(request)))
-            || ((command == Command::list || command == Command::plan) && !payload.empty()) || (applying && (payload.size() != 16 || empty(selected(request)))))
+        const bool applying = command == Command::apply || command == Command::rollback || command == Command::repair;
+        if ((!applying && !eof(input)) || ((command == Command::list || command == Command::cache || command == Command::inspect) && !empty(selected(request)))
+            || ((command == Command::list || command == Command::plan) && !payload.empty()) || (applying && (payload.size() != 16 || empty(selected(request))))
+            || ((command == Command::inspect || command == Command::repairPlan) && payload.size() != 16)
+            || (command == Command::repairPlan && empty(selected(request))))
             throw Error(Status::invalidRequest, "Unexpected update request payload");
-        auto context = authenticate(request, applying); cache = std::make_unique<Cache>();
+        const bool compatible = command == Command::list || command == Command::cache || command == Command::inspect
+            || command == Command::repairPlan || command == Command::repair;
+        auto context = authenticate(request, applying, compatible); cache = std::make_unique<Cache>();
         if (command == Command::list) {
-            auto packages = cache->packages(); const auto entries = journalEntries(*cache); const auto previous = previousVersion(entries, context.installed);
-            const auto body = result(Status::ok, 0, observedState(entries), {}, &packages, nullptr, 0, context.installed.version, previous);
+            auto packages = cache->packages(); const auto entries = journalEntries(*cache); const auto previous = previousVersion(entries, context.installed, context.scope);
+            const auto candidates = inspections(*cache, context);
+            const auto body = result(Status::ok, 0, observedState(entries, context.scope), context.scope.detail, &packages, nullptr, 0, context.installed.version, previous, &context, &candidates);
             return send(output, request, Frame::result, body) ? 0 : 3;
         }
         if (command == Command::cache) {
@@ -77,6 +82,18 @@ int serve(std::atomic<ULONGLONG>& deadline)
         if (command == Command::plan) {
             const auto plan = createPlan(*cache, context, selected(request)); const auto body = result(Status::ok, 0, State::planned, {}, nullptr, &plan);
             return send(output, request, Frame::result, body) ? 0 : 3;
+        }
+        if (command == Command::inspect) {
+            PlanId id{}; std::copy(payload.begin(), payload.end(), id.begin());
+            const bool all = std::all_of(id.begin(), id.end(), [](auto value) { return value == std::byte{}; });
+            const auto candidates = inspections(*cache, context, all ? nullptr : &id);
+            if (!all && candidates.empty()) throw Error(Status::notFound, "The requested unresolved transaction is unavailable");
+            const auto body = result(Status::ok, 0, observedState(journalEntries(*cache), context.scope), context.scope.detail, nullptr, nullptr, 0, {}, {}, &context, &candidates);
+            return send(output, request, Frame::result, body) ? 0 : 3;
+        }
+        if (command == Command::repairPlan) {
+            const auto plan = prepareRepair(*cache, context, request, payload);
+            return send(output, request, Frame::result, result(Status::ok, 0, State::planned, {}, nullptr, &plan)) ? 0 : 3;
         }
         staged = loadPlan(*cache, context, request, payload);
         auto package = openImage(staged->packagePath(), Role::installer);
@@ -90,6 +107,9 @@ int serve(std::atomic<ULONGLONG>& deadline)
         if (commit != expected || GetTickCount64() >= commitDeadline || !validHeader(commit, Command::commit, 0) || !eof(input)
             || !nks::broker::peerAlive(context.gui) || !matches(staged->installed, context.installed)) throw Error(Status::rejected, "Commit binding expired or changed");
         reply = commit;
+        const auto scope = classifyScope(context.gui); requireScope(scope);
+        if (scope.mode != staged->mode() || !sameRoot(scope.id, staged->root)) throw Error(Status::rejected, "Application mode or root changed before commit");
+        recheckRepair(*cache, context, *staged);
         journal(*cache, *staged, State::committed, 1);
         if (!send(output, commit, Frame::accepted, result(Status::ok, 0, State::committed))) {
             journal(*cache, *staged, State::rejected, 4, ERROR_BROKEN_PIPE); return 3;

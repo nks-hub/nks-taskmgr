@@ -20,6 +20,7 @@ BEGIN
       VALUE "OriginalFilename", "nks-update-worker.exe\0"
       VALUE "FileVersion", NKS_UPDATE_PRODUCT_VERSION
       VALUE "ProductVersion", NKS_UPDATE_PRODUCT_VERSION
+      VALUE "NksUpdateProtocol", "2\0"
     END
   END
   BLOCK "VarFileInfo"

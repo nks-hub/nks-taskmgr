@@ -145,6 +145,9 @@ add_executable(nks-update-worker
     src/update_worker/cache.cpp
     src/update_worker/journal.cpp
     src/update_worker/execute.cpp
+    src/update_worker/scope.cpp
+    src/update_worker/recovery.cpp
+    src/update_worker/install.cpp
     src/update_worker/app.rc
     src/core/update_image.cpp
     src/core/broker_trust.cpp
