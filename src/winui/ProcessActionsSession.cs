@@ -29,7 +29,7 @@ internal sealed partial class ProcessActionsSession : IDisposable
             _ = ProcessActionsProtocol.PayloadLength(header, request);
             bool accepted = ProcessActionsProtocol.Frame(header) == ProcessActionFrame.Accepted;
             if (accepted) await output.ReadExactlyAsync(header, cancellation).ConfigureAwait(false);
-            else if (ProcessActionsProtocol.Frame(header) == ProcessActionFrame.Results)
+            else if (ProcessActionsProtocol.Frame(header) is ProcessActionFrame.Results or ProcessActionFrame.CpuSets)
                 throw new InvalidDataException("Pracovník neověřil přijetí požadavku před výsledkem.");
             bool tree = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(6)) == (ushort)ProcessActionCommand.TerminateTree;
             int plans = 0;
@@ -52,7 +52,7 @@ internal sealed partial class ProcessActionsSession : IDisposable
             if (await output.ReadAsync(end, cancellation).ConfigureAwait(false) != 0)
                 throw new InvalidDataException("Pracovník vrátil data za koncem výsledku.");
             await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
-            if (process.ExitCode != 0 && result.Frame is ProcessActionFrame.Results or ProcessActionFrame.TreeResults)
+            if (process.ExitCode != 0 && result.Frame is ProcessActionFrame.Results or ProcessActionFrame.TreeResults or ProcessActionFrame.CpuSets)
                 throw new IOException("Pracovník skončil bez potvrzeného výsledku akce.");
             return result;
         } catch (Exception error) when (cancellation.IsCancellationRequested && error is IOException or InvalidDataException or ObjectDisposedException or Win32Exception) {

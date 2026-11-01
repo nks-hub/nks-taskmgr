@@ -4,8 +4,8 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-internal enum ProcessActionCommand : ushort { Query, CloseWindows, Terminate, Suspend, Resume, Priority, Affinity, TerminateTree }
-internal enum ProcessActionFrame : uint { Accepted, Results, Rejected, Failed, TreePlan, TreeResults }
+internal enum ProcessActionCommand : ushort { Query, CloseWindows, Terminate, Suspend, Resume, Priority, Affinity, TerminateTree, QueryCpuSets, CpuSets }
+internal enum ProcessActionFrame : uint { Accepted, Results, Rejected, Failed, TreePlan, TreeResults, CpuSets }
 internal enum ProcessActionOutcome : uint {
     Inspected, Applied, CloseRequested, TerminationRequested, NativeRequestAccepted, Refused,
     IdentityChanged, AlreadyExited, Error, Unsupported, Unverified, NotPerformed
@@ -22,7 +22,8 @@ internal enum ProcessActionFlags : uint {
     PriorityAvailable = 16, AffinityAvailable = 32, EffectConfirmed = 64, MayHaveApplied = 128
 }
 internal sealed record ProcessActionTarget(ProcessKey Key, ulong Created100ns, ulong Window = 0);
-internal sealed record ProcessActionsRequest(ProcessActionCommand Command, ProcessActionTarget[] Targets, ulong Argument = 0, uint Group = 0);
+internal sealed record ProcessActionsRequest(ProcessActionCommand Command, ProcessActionTarget[] Targets, ulong Argument = 0, uint Group = 0,
+    ProcessCpuSetsSelection? CpuSets = null);
 internal sealed record ProcessActionResult(ProcessActionTarget Target, ulong ObservedCreated100ns, ProcessActionOutcome Outcome,
     ProcessActionReason Reason, uint Error, int NtStatus, ProcessActionFlags Flags, uint PriorityClass,
     ulong ProcessMask, ulong SystemMask, uint Group, uint PriorityError, uint AffinityError, uint WindowsPosted, uint WindowsFailed);
@@ -31,15 +32,18 @@ internal sealed record ProcessActionsBatch(ProcessActionCommand Command, Process
 {
     internal bool Accepted { get; init; }
     internal ProcessTreeActionsPlan? Tree { get; init; }
+    internal ProcessCpuSetsSnapshot? CpuSets { get; init; }
 }
 
-internal static class ProcessActionsProtocol
+internal static partial class ProcessActionsProtocol
 {
     private const uint Magic = 0x31414b4e;
     internal const int ResponseHeaderBytes = 64;
 
     internal static byte[] Request(ProcessActionsRequest request)
     {
+        if (request.Command is ProcessActionCommand.QueryCpuSets or ProcessActionCommand.CpuSets) return CpuSetsRequest(request);
+        if (request.CpuSets is not null) throw new ArgumentException("Výběr CPU sets nepatří k této akci.", nameof(request));
         if ((ushort)request.Command > (ushort)ProcessActionCommand.TerminateTree || request.Targets.Length is < 1 or > 64)
             throw new ArgumentException("Akce vyžaduje 1 až 64 vybraných procesů.", nameof(request));
         if (request.Command == ProcessActionCommand.TerminateTree && request.Targets.Length != 1)
@@ -78,6 +82,8 @@ internal static class ProcessActionsProtocol
             || !header.Slice(16, 24).SequenceEqual(request.Slice(16, 24)) || ULong(header, 48) != 0 || ULong(header, 56) != 0)
             throw Invalid("Pracovník vrátil jiný požadavek nebo neplatnou hlavičku.");
         uint bytes = UInt(header, 8), count = UInt(header, 12); var frame = Frame(header);
+        if (BinaryPrimitives.ReadUInt16LittleEndian(request[6..]) is (ushort)ProcessActionCommand.QueryCpuSets or (ushort)ProcessActionCommand.CpuSets)
+            return CpuSetsPayloadLength(header, frame, bytes, count);
         if (BinaryPrimitives.ReadUInt16LittleEndian(request[6..]) == (ushort)ProcessActionCommand.TerminateTree)
             return ProcessTreeActionsProtocol.PayloadLength(header, frame, bytes, count);
         if ((uint)frame > (uint)ProcessActionFrame.Failed || bytes > 112 * 64
@@ -94,7 +100,7 @@ internal static class ProcessActionsProtocol
         if (PayloadLength(header, request) != payload.Length || Frame(header) == ProcessActionFrame.Accepted)
             throw Invalid("Chybí konečný výsledek požadavku.");
         var frame = Frame(header); var command = (ProcessActionCommand)BinaryPrimitives.ReadUInt16LittleEndian(request[6..]);
-        var rows = frame == ProcessActionFrame.Results ? new ProcessActionResult[UInt(header, 12)] : [];
+        var rows = frame is ProcessActionFrame.Results or ProcessActionFrame.CpuSets ? new ProcessActionResult[UInt(header, 12)] : [];
         for (int i = 0; i < rows.Length; ++i) {
             var row = payload.Slice(i * 112, 112); var expected = request.Slice(64 + i * 48, 48);
             var outcome = (ProcessActionOutcome)UInt(row, 48); var reason = (ProcessActionReason)UInt(row, 52);
@@ -108,17 +114,17 @@ internal static class ProcessActionsProtocol
                     || (ULong(row, 72) & ~ULong(row, 80)) != 0 || UInt(row, 88) > ushort.MaxValue || UInt(row, 96) != 0)
                 || !flags.HasFlag(ProcessActionFlags.PriorityAvailable) && UInt(row, 68) != 0
                 || !flags.HasFlag(ProcessActionFlags.AffinityAvailable) && (ULong(row, 72) != 0 || ULong(row, 80) != 0 || UInt(row, 88) != 0)
-                || outcome == ProcessActionOutcome.Inspected && command != ProcessActionCommand.Query
+                || outcome == ProcessActionOutcome.Inspected && command is not (ProcessActionCommand.Query or ProcessActionCommand.QueryCpuSets)
                 || outcome == ProcessActionOutcome.CloseRequested && command != ProcessActionCommand.CloseWindows
                 || outcome == ProcessActionOutcome.TerminationRequested && command != ProcessActionCommand.Terminate
                 || outcome == ProcessActionOutcome.NativeRequestAccepted && command is not (ProcessActionCommand.Suspend or ProcessActionCommand.Resume)
                 || outcome is ProcessActionOutcome.CloseRequested or ProcessActionOutcome.TerminationRequested or ProcessActionOutcome.NativeRequestAccepted
                     && (flags & (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.MayHaveApplied))
                         != (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.MayHaveApplied)
-                || outcome == ProcessActionOutcome.Applied && (command is not (ProcessActionCommand.Priority or ProcessActionCommand.Affinity or ProcessActionCommand.Terminate)
+                || outcome == ProcessActionOutcome.Applied && (command is not (ProcessActionCommand.Priority or ProcessActionCommand.Affinity or ProcessActionCommand.Terminate or ProcessActionCommand.CpuSets)
                     || (flags & (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.EffectConfirmed | ProcessActionFlags.MayHaveApplied))
                         != (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.EffectConfirmed | ProcessActionFlags.MayHaveApplied))
-                || command == ProcessActionCommand.Query && (flags & (ProcessActionFlags.MayHaveApplied | ProcessActionFlags.EffectConfirmed)) != 0
+                || (command is ProcessActionCommand.Query or ProcessActionCommand.QueryCpuSets) && (flags & (ProcessActionFlags.MayHaveApplied | ProcessActionFlags.EffectConfirmed)) != 0
                 || outcome == ProcessActionOutcome.Inspected && (flags & (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore))
                     != (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore)
                 || outcome == ProcessActionOutcome.CloseRequested && UInt(row, 100) == 0
@@ -131,7 +137,9 @@ internal static class ProcessActionsProtocol
             rows[i] = new(target, ULong(row, 40), outcome, reason, UInt(row, 56), unchecked((int)UInt(row, 60)), flags,
                 UInt(row, 68), ULong(row, 72), ULong(row, 80), UInt(row, 88), UInt(row, 92), UInt(row, 96), UInt(row, 100), UInt(row, 104));
         }
-        return new(command, frame, UInt(header, 44), rows, DateTimeOffset.UtcNow);
+        return new(command, frame, UInt(header, 44), rows, DateTimeOffset.UtcNow) {
+            CpuSets = frame == ProcessActionFrame.CpuSets ? CpuSetsSnapshot(payload[112..], rows[0], request) : null
+        };
     }
 
     private static bool PriorityAllowed(ulong value) => value is 0x40 or 0x4000 or 0x20 or 0x8000 or 0x80;

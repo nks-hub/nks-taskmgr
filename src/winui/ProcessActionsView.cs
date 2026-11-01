@@ -23,14 +23,14 @@ public sealed partial class MainWindow
         AutomationProperties.SetAutomationId(processActionsButton, "process-actions");
         var menu = new MenuFlyout();
         foreach (var command in new[] { ProcessActionCommand.CloseWindows, ProcessActionCommand.Terminate, ProcessActionCommand.TerminateTree,
-            ProcessActionCommand.Suspend, ProcessActionCommand.Resume, ProcessActionCommand.Priority, ProcessActionCommand.Affinity }) {
+            ProcessActionCommand.Suspend, ProcessActionCommand.Resume, ProcessActionCommand.Priority, ProcessActionCommand.Affinity, ProcessActionCommand.CpuSets }) {
             var item = new MenuFlyoutItem { Text = ActionTitle(command) + "…" };
             item.Click += async (_, _) => await StartProcessActionAsync(command); menu.Items.Add(item);
         }
         processActionsButton.Flyout = menu;
         var administrator = new MenuFlyoutSubItem { Text = "Se zvýšenými právy správce" };
         foreach (var command in new[] { ProcessActionCommand.CloseWindows, ProcessActionCommand.Terminate, ProcessActionCommand.TerminateTree,
-            ProcessActionCommand.Suspend, ProcessActionCommand.Resume, ProcessActionCommand.Priority, ProcessActionCommand.Affinity }) {
+            ProcessActionCommand.Suspend, ProcessActionCommand.Resume, ProcessActionCommand.Priority, ProcessActionCommand.Affinity, ProcessActionCommand.CpuSets }) {
             var item = new MenuFlyoutItem { Text = ActionTitle(command) + " jako správce…" };
             item.Click += async (_, _) => await StartProcessActionAsync(command, elevated: true); administrator.Items.Add(item);
         }
@@ -74,14 +74,16 @@ public sealed partial class MainWindow
             if (command == ProcessActionCommand.TerminateTree && rows.Length != 1) {
                 await ActionMessageAsync("Ukončit strom", rows, "Vyberte jeden živý kořen. Potomky znovu zjistí a ověří pracovník."); return;
             }
-            if (command == ProcessActionCommand.Affinity && rows.Length != 1) {
-                await ActionMessageAsync("Afinita procesorů", rows, "Vyberte jeden proces. Afinita se nastavuje v jediné ověřené skupině procesorů."); return;
+            if (command is ProcessActionCommand.Affinity or ProcessActionCommand.CpuSets && rows.Length != 1) {
+                await ActionMessageAsync(ActionTitle(command), rows, "Vyberte jeden proces. Každý proces má vlastní přiřazení procesorů."); return;
             }
             ProcessActionsBatch? query = null;
-            if (command is ProcessActionCommand.Priority or ProcessActionCommand.Affinity) {
-                footer.Text = "Načítám současnou prioritu a afinitu vybraných procesů…";
-                query = await ExecuteActionRequestAsync(ActionRequest(ProcessActionCommand.Query, rows), elevated, operation.Token);
-                if (query.Frame != ProcessActionFrame.Results || query.Results.Any(row => row.Outcome != ProcessActionOutcome.Inspected)) {
+            if (command is ProcessActionCommand.Priority or ProcessActionCommand.Affinity or ProcessActionCommand.CpuSets) {
+                bool cpuSets = command == ProcessActionCommand.CpuSets;
+                footer.Text = cpuSets ? "Načítám výchozí CPU sets a dostupné logické procesory…" : "Načítám současnou prioritu a afinitu vybraných procesů…";
+                query = await ExecuteActionRequestAsync(ActionRequest(cpuSets ? ProcessActionCommand.QueryCpuSets : ProcessActionCommand.Query, rows), elevated, operation.Token);
+                if (query.Frame != (cpuSets ? ProcessActionFrame.CpuSets : ProcessActionFrame.Results)
+                    || query.Results.Any(row => row.Outcome != ProcessActionOutcome.Inspected) || cpuSets && query.CpuSets?.Valid != true) {
                     await ActionResultsAsync("Nastavení procesu není dostupné", rows, query); return;
                 }
             }
@@ -106,6 +108,7 @@ public sealed partial class MainWindow
 
     private async Task<ProcessActionsRequest?> ConfirmProcessActionAsync(ProcessActionCommand command, ProcessRow[] rows, ProcessActionsBatch? query)
     {
+        if (command == ProcessActionCommand.CpuSets) return await ConfirmCpuSetsAsync(rows, query!.CpuSets!);
         var content = new StackPanel { Spacing = 10, MinWidth = 280 };
         content.Children.Add(ActionText(ActionExplanation(command)));
         foreach (var row in rows) content.Children.Add(ActionText(ActionTargetName(row), 0xe9eef0));
@@ -130,7 +133,7 @@ public sealed partial class MainWindow
             var result = query!.Results[0];
             if (!result.Flags.HasFlag(ProcessActionFlags.AffinityAvailable)) {
                 await ActionMessageAsync("Afinita není dostupná", rows,
-                    "Nastavení vyžaduje jedinou ověřenou skupinu procesorů a dostupné masky procesu i systému. CPU sets ani více skupin nejsou podporované."
+                    "Toto nastavení vyžaduje jedinou ověřenou skupinu procesorů a dostupné masky procesu i systému. Výchozí CPU sets napříč skupinami mají samostatnou nabídku."
                     + WindowsError(result.AffinityError)); return null;
             }
             group = result.Group;
@@ -171,7 +174,7 @@ public sealed partial class MainWindow
         bool running = true; Task? work = null;
         async Task Run() {
             try {
-                processActionDispatched = request.Command != ProcessActionCommand.Query;
+                processActionDispatched = request.Command is not (ProcessActionCommand.Query or ProcessActionCommand.QueryCpuSets);
                 var result = await ExecuteActionRequestAsync(request, elevated, operation.Token);
                 content.Children.Clear(); AddActionResults(content, rows, result);
             } catch (ProcessTreeActionsUnknownException error) {
@@ -225,7 +228,8 @@ public sealed partial class MainWindow
         ProcessActionCommand.CloseWindows => "Požádat o zavření oken", ProcessActionCommand.Terminate => "Ukončit proces",
         ProcessActionCommand.TerminateTree => "Ukončit strom",
         ProcessActionCommand.Suspend => "Pozastavit proces", ProcessActionCommand.Resume => "Obnovit běh procesu",
-        ProcessActionCommand.Priority => "Změnit prioritu", ProcessActionCommand.Affinity => "Afinita procesorů", _ => "Nastavení procesu"
+        ProcessActionCommand.Priority => "Změnit prioritu", ProcessActionCommand.Affinity => "Afinita procesorů",
+        ProcessActionCommand.CpuSets or ProcessActionCommand.QueryCpuSets => "Výchozí CPU sets", _ => "Nastavení procesu"
     };
     private static string ActionExplanation(ProcessActionCommand command) => command switch {
         ProcessActionCommand.CloseWindows => "Pošle požadavek zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.",
@@ -234,7 +238,8 @@ public sealed partial class MainWindow
         ProcessActionCommand.Suspend => "Požádá systém o pozastavení procesu. Jeho okna přestanou reagovat a prostředky zůstanou obsazené.",
         ProcessActionCommand.Resume => "Požádá systém o obnovení procesu. Výsledek nezaručuje běh všech vláken pozastavených jinými nástroji.",
         ProcessActionCommand.Priority => "Nastaví prioritu plánování času CPU u vybraných procesů. Priorita reálného času není v nabídce.",
-        ProcessActionCommand.Affinity => "Omezí proces na vybrané logické procesory v jediné skupině.", _ => ""
+        ProcessActionCommand.Affinity => "Omezí proces na vybrané logické procesory v jediné skupině.",
+        ProcessActionCommand.CpuSets => "Nastaví výchozí výběr logických procesorů i napříč skupinami. Výslovné volby jednotlivých vláken a pevná afinita mají přednost. Potvrzení nastavení není důkaz, na kterém procesoru se vlákno skutečně spustilo.", _ => ""
     };
     private static string WindowsError(uint error) => error == 0 ? "" : " Windows " + error + " (0x" + error.ToString("X8") + ").";
 
@@ -243,6 +248,7 @@ public sealed partial class MainWindow
         string brokerStatus = ElevationBrokerClient.Status(result.Error);
         if (brokerStatus.Length > 0) content.Children.Add(ActionText(brokerStatus));
         if (result.Command == ProcessActionCommand.TerminateTree) { AddTreeActionResults(content, rows[0], result); return; }
+        if (result.Command is ProcessActionCommand.QueryCpuSets or ProcessActionCommand.CpuSets) { AddCpuSetsResults(content, rows[0], result); return; }
         content.Children.Add(ActionText("Odpověď " + result.ReceivedAt.LocalDateTime.ToString("HH:mm:ss") + " · " + ActionTitle(result.Command)));
         foreach (var row in rows) {
             string text = ActionTargetName(row) + "\n";

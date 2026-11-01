@@ -19,7 +19,7 @@ internal sealed class ElevationBrokerClient : IDisposable
         try {
             var result = await client.ExecuteAsync(request, cancellation).ConfigureAwait(false);
             uncertain = result.Frame == ProcessActionFrame.Failed || result.Accepted
-                && result.Frame is not (ProcessActionFrame.Results or ProcessActionFrame.TreeResults);
+                && result.Frame is not (ProcessActionFrame.Results or ProcessActionFrame.TreeResults or ProcessActionFrame.CpuSets);
             return result;
         } catch (ElevationBrokerTrustException error) {
             uncertain = false;
