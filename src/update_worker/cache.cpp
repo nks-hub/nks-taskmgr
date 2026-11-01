@@ -20,7 +20,7 @@ bool isPlanName(const std::wstring& name)
 }
 broker::Handle directory(const std::wstring& path)
 {
-    broker::Handle result(CreateFileW(path.c_str(), FILE_READ_ATTRIBUTES | READ_CONTROL, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+    broker::Handle result(CreateFileW(path.c_str(), FILE_READ_ATTRIBUTES | FILE_TRAVERSE | READ_CONTROL | SYNCHRONIZE, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
     FILE_ATTRIBUTE_TAG_INFO attributes{};
     if (!result || result.get() == INVALID_HANDLE_VALUE || !GetFileInformationByHandleEx(result.get(), FileAttributeTagInfo, &attributes, sizeof(attributes))
@@ -142,10 +142,23 @@ Cache::Cache()
         throw Error(Status::rejected, "Cache is not on a local fixed volume");
     for (auto slash = volumeEnd + 1; slash != std::wstring::npos; slash = root_.find(L'\\', slash + 1))
         directories_.push_back(directory(root_.substr(0, slash == volumeEnd + 1 ? slash + 1 : slash)));
-    directories_.push_back(std::move(rootHandle));
-    for (const wchar_t* child : {L"Packages", L"Plans", L"Stages", L"Journal"}) {
-        const auto path = root_ + L"\\" + child; secureDirectory(path, security, token); directories_.push_back(directory(path));
+    rootHandle_ = std::move(rootHandle);
+    std::size_t part = 0;
+    for (const wchar_t* child : {L"Packages", L"Plans", L"Stages", L"Journal", L"Roots"}) {
+        const auto path = root_ + L"\\" + child; secureDirectory(path, security, token); partitions_[part++] = directory(path);
     }
+}
+FILE_ID_INFO Cache::rootId() const
+{
+    FILE_ID_INFO id{};
+    if (!GetFileInformationByHandleEx(rootHandle(), FileIdInfo, &id, sizeof(id))) throw Error(Status::io, "Cannot reidentify cache root", GetLastError());
+    return id;
+}
+FILE_ID_INFO Cache::parentId(CachePartition part) const
+{
+    FILE_ID_INFO id{};
+    if (!GetFileInformationByHandleEx(parentHandle(part), FileIdInfo, &id, sizeof(id))) throw Error(Status::io, "Cannot reidentify cache partition", GetLastError());
+    return id;
 }
 std::wstring Cache::packagePath(const Hash& hash) const { return root_ + L"\\Packages\\" + hex(hash) + L".exe"; }
 std::wstring Cache::stagePath(const PlanId& id) const { return root_ + L"\\Stages\\" + hex(id) + L"\\nks-update-worker.exe"; }
@@ -200,7 +213,7 @@ Image Cache::stage(Image& self, const PlanId& id)
     if (!CreateDirectoryW(folder.c_str(), nullptr)) throw Error(Status::io, "Cannot reserve staging directory", GetLastError());
     auto held = directory(folder); return copyImage(self, destination, Role::worker);
 }
-std::vector<std::wstring> Cache::journalFiles() const { return directoryEntries(root_ + L"\\Journal", maxJournalFiles); }
+std::vector<std::wstring> Cache::journalFiles(std::size_t limit) const { return directoryEntries(root_ + L"\\Journal", limit); }
 std::vector<std::byte> readData(const std::wstring& path, std::size_t limit)
 {
     broker::Handle file(CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr));

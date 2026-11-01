@@ -47,7 +47,7 @@ Plan decodePlan(std::span<const std::byte> bytes);
 std::vector<std::byte> packageRow(const Image& image, std::uint32_t flags);
 void journal(Cache& cache, const Plan& plan, State state, unsigned step, DWORD error = 0, DWORD installerExit = 0,
     const ProcessIdentity* installer = nullptr, const Image* verifiedResult = nullptr);
-std::vector<JournalEntry> journalEntries(const Cache& cache);
+std::vector<JournalEntry> journalEntries(const Cache& cache, std::size_t limit = maxJournalFiles);
 bool belongs(const Plan& plan, const Scope& scope);
 bool unresolved(const JournalEntry& entry);
 PlanId resolution(const JournalEntry& entry, const std::vector<JournalEntry>& all);

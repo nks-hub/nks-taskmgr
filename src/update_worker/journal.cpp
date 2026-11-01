@@ -110,11 +110,11 @@ void journal(Cache& cache, const Plan& plan, State state, unsigned step, DWORD e
     if (verifiedResult) appendText(bytes, verifiedResult->version);
     writeNew(cache.journalPath(plan.id, step), bytes);
 }
-std::vector<JournalEntry> journalEntries(const Cache& cache)
+std::vector<JournalEntry> journalEntries(const Cache& cache, std::size_t limit)
 {
     std::map<std::wstring, JournalEntry> latest;
     std::map<std::wstring, ProcessIdentity> installers;
-    for (const auto& name : cache.journalFiles()) {
+    for (const auto& name : cache.journalFiles(limit)) {
         if (name.size() == 75 && name.substr(38, 5) == L".tmp-"
             && std::all_of(name.begin() + 43, name.end(), [](wchar_t c) { return (c >= L'0' && c <= L'9') || (c >= L'a' && c <= L'f'); })) continue;
         if (name.size() != 38 || name[32] != L'-' || name[33] < L'0' || name[33] > L'4' || name.substr(34) != L".bin")
