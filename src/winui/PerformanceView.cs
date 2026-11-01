@@ -132,38 +132,7 @@ public sealed partial class MainWindow
         }
         if (memory && model.Memory.State == SampleState.Valid && model.Memory.InstalledBytes >= model.Memory.PhysicalBytes)
             Fact("Rezervováno hardwarem", Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));
-        consumers.Visibility = cpu || memory ? Visibility.Visible : Visibility.Collapsed;
-        consumers.Children.Clear();
-        if (!cpu && !memory) return;
-        consumers.Children.Add(Label("SOUVISLOSTI", 9, 0x95a4ad));
-        consumers.Children.Add(Label(memory ? "Pracovní sada včetně sdílených stránek" : "Procesy podle CPU", 15, 0xe9eef0));
-        var ranked = model.TopConsumers(memory);
-        var cards = new Grid { ColumnSpacing = 14 };
-        int count = 0;
-        bool stacked = root.ActualWidth <= 1000;
-        foreach (var row in ranked) {
-            int index = count++;
-            if (stacked) cards.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); else cards.ColumnDefinitions.Add(new ColumnDefinition());
-            var content = new Grid { ColumnSpacing = 10 };
-            foreach (var width in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto }) content.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
-            var order = Label(count.ToString("00"), 9, 0x95a4ad); order.VerticalAlignment = VerticalAlignment.Center; content.Children.Add(order);
-            var icon = new Border { Child = UiIcon.Create(false, color, 18), Background = Display.Brush(0x28343b), Width = 30, Height = 30, CornerRadius = new CornerRadius(7) };
-            Grid.SetColumn(icon, 1); content.Children.Add(icon);
-            var name = new StackPanel { Spacing = 5, VerticalAlignment = VerticalAlignment.Center };
-            var title = Label(row.Name, 11, 0xe9eef0); title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold; name.Children.Add(title);
-            name.Children.Add(Label("PID " + row.PidText, 9, 0x95a4ad)); Grid.SetColumn(name, 2); content.Children.Add(name);
-            var value = Label(memory ? row.WorkingText : row.CpuText, 12, 0xe9eef0); value.VerticalAlignment = VerticalAlignment.Center;
-            Grid.SetColumn(value, 3); content.Children.Add(value);
-            var button = Button(""); button.Content = content; button.Height = 74; button.Padding = new Thickness(17, 12, 17, 12);
-            button.HorizontalAlignment = HorizontalAlignment.Stretch; button.HorizontalContentAlignment = HorizontalAlignment.Stretch; button.Margin = new Thickness(0, 0, 0, stacked ? 8 : 0);
-            button.Click += (_, _) => {
-                if (!model.IsCurrent(row)) return;
-                search.Text = string.Empty; model.SetMode(ProcessMode.All); ShowView(false);
-                SelectProcess(row);
-            };
-            if (stacked) Grid.SetRow(button, index); else Grid.SetColumn(button, index); cards.Children.Add(button);
-        }
-        consumers.Children.Add(cards);
+        RefreshConsumers(cpu, memory, color);
     }
 
     private void RefreshProcessors(long now)

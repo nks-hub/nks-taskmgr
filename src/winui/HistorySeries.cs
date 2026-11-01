@@ -64,15 +64,18 @@ public sealed class HistorySeries
         long duration = seconds * 1_000_000_000L, start = now - duration, prior = 0;
         PathFigure? figure = null;
         PolyLineSegment? line = null;
+        var points = new List<Point>();
         Point last = default;
         void Close()
         {
             if (figure is null) return;
             if (fill) {
-                line!.Points.Add(new Point(last.X, height));
+                points.Add(new Point(last.X, height));
                 figure.IsClosed = true;
             }
+            ReplacePoints(line!.Points, points);
             geometry.Figures.Add(figure); figure = null; line = null;
+            points.Clear();
         }
         for (int i = 0; i < count; ++i) {
             int slot = (first + i) % Capacity;
@@ -86,10 +89,31 @@ public sealed class HistorySeries
             if (figure is null) {
                 figure = new PathFigure { StartPoint = fill ? new Point(last.X, height) : last, IsFilled = fill };
                 line = new PolyLineSegment(); figure.Segments.Add(line);
-                if (fill) line.Points.Add(last);
-            } else line!.Points.Add(last);
+                if (fill) points.Add(last);
+            } else points.Add(last);
         }
         Close();
         return geometry;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private readonly struct VectorPoint(Point value)
+    {
+        internal readonly float X = (float)value.X, Y = (float)value.Y;
+    }
+
+    private static unsafe void ReplacePoints(PointCollection collection, List<Point> points)
+    {
+        // IVector<Point>::ReplaceAll is slot 17; its ABI points contain two 32-bit floats.
+        var values = new VectorPoint[points.Count];
+        for (int i = 0; i < values.Length; ++i) values[i] = new VectorPoint(points[i]);
+        using var vector = ((WinRT.IWinRTObject)collection).NativeObject.As(ABI.System.Collections.Generic.IListMethods<Point>.IID);
+        int result;
+        fixed (VectorPoint* data = values) {
+            var replace = (delegate* unmanaged[Stdcall]<nint, uint, VectorPoint*, int>)(*(nint**)vector.ThisPtr)[17];
+            result = replace(vector.ThisPtr, (uint)values.Length, data);
+        }
+        GC.KeepAlive(collection);
+        WinRT.ExceptionHelpers.ThrowExceptionForHR(result);
     }
 }

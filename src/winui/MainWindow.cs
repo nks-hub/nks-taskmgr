@@ -380,7 +380,10 @@ public sealed partial class MainWindow : Window
         try {
             bool minimized = IsIconic(windowHandle);
             bool changed = model.Tick(!minimized && view != DesktopView.Services);
-            exportSnapshot.IsEnabled = !exporting && model.ProcessTime > 0;
+            if (!minimized) {
+                bool canExport = !exporting && model.ProcessTime > 0;
+                if (exportSnapshot.IsEnabled != canExport) exportSnapshot.IsEnabled = canExport;
+            }
             TickServices(!minimized && view == DesktopView.Services);
             if (changed && !minimized) {
                 if (selectedResource is null || !model.Resources.Contains(selectedResource)) resourceList.SelectedItem = model.Resources.FirstOrDefault();
@@ -498,7 +501,7 @@ public sealed partial class MainWindow : Window
                 throw new InvalidOperationException("Shared executable icon checks did not pass.", smokeSharedIcon?.Exception);
             verifyProcessTable!(); model.VisibleProcesses.RefreshView(); smokeColumnsChecked = true; resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true);
         }
-        if (smokeModelsChecked && elapsed == 30) { resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
+        if (smokeModelsChecked && elapsed == 30) { CheckGraphRefresh(); resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
         if (smokeModelsChecked && elapsed == 40) {
             if (coreCharts.Count != model.Processors.Count || coreCharts.Values.Any(core => core.ActualWidth <= 0)) throw new InvalidOperationException("Logical CPU charts did not render.");
             cpuMode = 2; RefreshPerformance();

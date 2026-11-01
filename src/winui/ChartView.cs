@@ -26,6 +26,7 @@ public sealed partial class ChartView : Grid
     private long renderedAt;
     private IReadOnlyList<(string Name, HistorySeries History, uint Color)> overlays = [];
     private readonly List<ShapePath> overlayPaths = [];
+    private long[] renderedOverlayTimes = [];
 
     public void SetOverlays(IReadOnlyList<(string Name, HistorySeries History, uint Color)> values)
     {
@@ -98,8 +99,12 @@ public sealed partial class ChartView : Grid
         double width = canvas.ActualWidth, height = canvas.ActualHeight;
         if (width <= 0 || height <= 0) return;
         var state = new ChartState(series, secondary, series?.LastTime ?? 0, secondary?.LastTime ?? 0, seconds, width, height, maximum, color, grid, filled);
-        if (rendered == state && now >= renderedAt && now - renderedAt < 1_000_000_000) return;
+        bool overlayChanged = renderedOverlayTimes.Length != overlays.Count;
+        for (int i = 0; !overlayChanged && i < overlays.Count; ++i) overlayChanged = renderedOverlayTimes[i] != overlays[i].History.LastTime;
+        if (rendered == state && !overlayChanged && now >= renderedAt && now - renderedAt < 1_000_000_000) return;
         rendered = state; renderedAt = now;
+        if (renderedOverlayTimes.Length != overlays.Count) renderedOverlayTimes = new long[overlays.Count];
+        for (int i = 0; i < overlays.Count; ++i) renderedOverlayTimes[i] = overlays[i].History.LastTime;
         foreach (var line in horizontal) line.Visibility = grid ? Visibility.Visible : Visibility.Collapsed;
         foreach (var line in vertical) line.Visibility = grid ? Visibility.Visible : Visibility.Collapsed;
         if (series is null) {

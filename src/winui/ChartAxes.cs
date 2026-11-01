@@ -16,6 +16,10 @@ public sealed partial class ChartView
     private ChartUnit unit;
     private string primaryName = "Využití", secondaryName = "Odesílání";
     private bool axes = true;
+    private readonly record struct ChartConfiguration(string Name, ChartUnit Unit, bool Axes, string SecondaryName, bool Interactive);
+    private readonly record struct AxisState(ChartUnit Unit, double Maximum, int Seconds, bool Secondary);
+    private ChartConfiguration? configuration;
+    private AxisState? axisState;
 
     private static TextBlock Caption() => new() {
         FontFamily = UiTypography.Font, FontSize = 11, Foreground = Display.Brush(0x95a4ad), IsHitTestVisible = false
@@ -38,12 +42,17 @@ public sealed partial class ChartView
 
     public void Configure(string name, ChartUnit valueUnit = ChartUnit.Percent, bool showAxes = true, string secondName = "Odesílání", bool interactive = true)
     {
+        var next = new ChartConfiguration(name, valueUnit, showAxes, secondName, interactive);
+        if (configuration == next) return;
         if (primaryName != name || unit != valueUnit) SeriesChanged();
         primaryName = name; secondaryName = secondName; unit = valueUnit; axes = showAxes;
-        scale.Visibility = timeline.Visibility = axes ? Visibility.Visible : Visibility.Collapsed;
-        IsTabStop = interactive; IsHitTestVisible = interactive;
-        AutomationProperties.SetName(this, name + ". Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.");
+        if (configuration?.Axes != showAxes) scale.Visibility = timeline.Visibility = axes ? Visibility.Visible : Visibility.Collapsed;
+        if (configuration?.Interactive != interactive) { IsTabStop = interactive; IsHitTestVisible = interactive; }
+        if (configuration?.Name != name)
+            AutomationProperties.SetName(this, name + ". Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.");
+        configuration = next;
         UpdateAxes();
+        ApplyTimeline();
     }
 
     private string Format(double value)
@@ -59,9 +68,14 @@ public sealed partial class ChartView
     private void UpdateAxes()
     {
         if (!axes) return;
-        upper.Text = Format(maximum); middle.Text = Format(maximum / 2); lower.Text = Format(0);
-        startTime.Text = seconds >= 60 ? seconds / 60 + " min" : seconds + " s";
-        endTime.Text = "nyní";
-        legend.Text = secondary is not null ? "↓ příjem · ↑ odesílání" : "";
+        var next = new AxisState(unit, maximum, seconds, secondary is not null);
+        if (axisState == next) return;
+        SetAxisText(upper, Format(maximum)); SetAxisText(middle, Format(maximum / 2)); SetAxisText(lower, Format(0));
+        SetAxisText(startTime, seconds >= 60 ? seconds / 60 + " min" : seconds + " s");
+        SetAxisText(endTime, "nyní");
+        SetAxisText(legend, secondary is not null ? "↓ příjem · ↑ odesílání" : "");
+        axisState = next;
     }
+
+    private static void SetAxisText(TextBlock label, string text) { if (label.Text != text) label.Text = text; }
 }

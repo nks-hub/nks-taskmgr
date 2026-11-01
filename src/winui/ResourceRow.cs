@@ -31,6 +31,8 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     internal void AttachHistory(HistorySeries series, bool upload) { if (upload) Upload = series; else History = series; }
     public Geometry? Preview { get; private set; }
     public Geometry? UploadPreview { get; private set; }
+    private readonly record struct PreviewState(HistorySeries History, HistorySeries? Upload, long Last, long UploadLast, double Maximum);
+    private PreviewState? previewState;
     public string Value => Stale ? "Zastaralá data" : Kind == ResourceKind.Network && Primary.State == SampleState.Valid
         ? "↓ " + Display.Metric(Primary, "", 1_000_000) + "  ↑ " + Display.Metric(Secondary, " Mbit/s", 1_000_000)
         : Kind == ResourceKind.Network && Status == "Odpojeno" ? Status
@@ -57,8 +59,14 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     public void RefreshPreview()
     {
         long time = History.LastTime;
-        Preview = History.Build(50, 31, time, 60, Maximum(time, 60));
-        if (Kind == ResourceKind.Network) UploadPreview = Upload.Build(50, 31, time, 60, Maximum(time, 60));
+        double maximum = Maximum(time, 60);
+        var state = new PreviewState(History, Kind == ResourceKind.Network ? Upload : null, time,
+            Kind == ResourceKind.Network ? Upload.LastTime : 0, maximum);
+        if (previewState != state) {
+            Preview = History.Build(50, 31, time, 60, maximum);
+            if (Kind == ResourceKind.Network) UploadPreview = Upload.Build(50, 31, time, 60, maximum);
+            previewState = state;
+        }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
     }
 

@@ -122,6 +122,7 @@ public static partial class WinUiChecks
         PublisherTrustChecks.Run();
         DeepTree();
         Graphs();
+        GraphRefresh();
     }
 
     private static void DeepTree()
