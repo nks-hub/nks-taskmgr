@@ -1,4 +1,5 @@
 #include "snapshot_codec.hpp"
+#include "core/helper_policy.hpp"
 #include "service_codec.hpp"
 #include "collectors/process_collector.hpp"
 #include "collectors/resource_collector.hpp"
@@ -81,6 +82,7 @@ int serve(nks::collector::Kind kind)
 
 int wmain(int argc, wchar_t** argv)
 {
+    if (!nks::initializeHelperProcess()) return 2;
     if (argc != 2) return 2;
     const std::wstring_view mode(argv[1]);
     if (mode != L"--processes" && mode != L"--resources" && mode != L"--services") return 2;

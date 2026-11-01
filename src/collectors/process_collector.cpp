@@ -28,20 +28,9 @@ LONG NTAPI queryGroup(USHORT group, void* buffer, ULONG size, ULONG* returned)
     return NtQuerySystemInformationEx(SystemProcessorPerformanceInformation, &group, sizeof(group), buffer, size, returned);
 }
 
-LONG NTAPI queryHandle(HANDLE process, ULONG informationClass, void* buffer, ULONG size, ULONG* returned)
-{
-    return NtQueryInformationProcess(process, static_cast<PROCESSINFOCLASS>(informationClass), buffer, size, returned);
-}
-
 bool unsupportedProcessQuery(LONG status)
 {
     return status == STATUS_INVALID_INFO_CLASS || status == STATUS_NOT_IMPLEMENTED || status == STATUS_NOT_SUPPORTED;
-}
-
-SampleState processQueryState(LONG status)
-{
-    if (status == STATUS_ACCESS_DENIED || status == STATUS_PRIVILEGE_NOT_HELD) return SampleState::accessDenied;
-    return unsupportedProcessQuery(status) ? SampleState::unsupported : SampleState::error;
 }
 
 void requireProcessQuery(LONG status)
@@ -75,41 +64,6 @@ BOOL CALLBACK pageFiles(void* context, PENUM_PAGE_FILE_INFORMATION info, LPCWSTR
     return TRUE;
 }
 
-}
-
-ProcessIdentityResult queryProcessIdentity(HANDLE process, GenerationKind kind,
-    const BootIdentity& boot, ProcessHandleQuery query)
-{
-    if (kind == GenerationKind::missing) return {{}, SampleState::unavailable};
-    if (!process || !query || (kind != GenerationKind::creationTime && kind != GenerationKind::sequenceNumber)) return {{}, SampleState::error};
-    if (boot.state != SampleState::valid) return {{}, boot.state};
-    if (boot.id.empty()) return {{}, SampleState::error};
-    PROCESS_BASIC_INFORMATION basic{};
-    ULONG used = 0;
-    auto status = query(process, ProcessBasicInformation, &basic, sizeof(basic), &used);
-    if (!NT_SUCCESS(status)) return {{}, processQueryState(status)};
-    const auto pid = reinterpret_cast<std::uintptr_t>(basic.UniqueProcessId);
-    if (used != sizeof(basic) || pid > std::numeric_limits<std::uint32_t>::max()) return {{}, SampleState::error};
-    std::uint64_t generation = 0;
-    used = 0;
-    if (kind == GenerationKind::sequenceNumber) {
-        status = query(process, ProcessSequenceNumber, &generation, sizeof(generation), &used);
-        if (!NT_SUCCESS(status)) return {{}, processQueryState(status)};
-        if (used != sizeof(generation)) return {{}, SampleState::error};
-    } else {
-        KERNEL_USER_TIMES times{};
-        status = query(process, ProcessTimes, &times, sizeof(times), &used);
-        if (!NT_SUCCESS(status)) return {{}, processQueryState(status)};
-        if (used != sizeof(times) || times.CreateTime.QuadPart < 0) return {{}, SampleState::error};
-        generation = static_cast<std::uint64_t>(times.CreateTime.QuadPart);
-    }
-    if (!generation) return {{}, SampleState::unavailable};
-    return {{boot.id, static_cast<std::uint32_t>(pid), kind, generation}, SampleState::valid};
-}
-
-ProcessIdentityResult queryProcessIdentity(HANDLE process, GenerationKind kind)
-{
-    return queryProcessIdentity(process, kind, queryBootIdentity(queryProcesses), queryHandle);
 }
 
 ProcessCollector::ProcessCollector(ProcessIdentityPreference preference)

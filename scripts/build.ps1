@@ -40,6 +40,10 @@ try {
     $preset = $Configuration.ToLowerInvariant()
     & $cmake --build --preset $preset --parallel 4
     if ($LASTEXITCODE) { throw "Build failed: $LASTEXITCODE" }
+    & $cmake -S src\dump_worker -B build\msvc-dump-x86 -G 'Visual Studio 17 2022' -A Win32 -T 'v143,host=x64' '-DCMAKE_SYSTEM_VERSION=10.0.26100.0'
+    if ($LASTEXITCODE) { throw "x86 dump helper configuration failed: $LASTEXITCODE" }
+    & $cmake --build build\msvc-dump-x86 --config $Configuration --target nks-dump-worker-x86 --parallel 4
+    if ($LASTEXITCODE) { throw "x86 dump helper build failed: $LASTEXITCODE" }
     if ($Test) {
         & $ctest --preset $preset
         if ($LASTEXITCODE) { throw "Tests failed: $LASTEXITCODE" }
@@ -52,7 +56,8 @@ try {
         $winuiOutput = Join-Path $projectRoot 'build\winui-aot'
         $nativeMonitor = Join-Path $projectRoot "build\msvc\$Configuration\nks-monitor.dll"
         $iconWorker = Join-Path $projectRoot "build\msvc\$Configuration\nks-icon-worker.exe"
-        & $DotNet publish src\winui\NksTaskMgr.WinUI.csproj -c $Configuration -r win-x64 -o $winuiOutput "-p:NativeMonitorPath=$nativeMonitor" "-p:IconWorkerPath=$iconWorker"
+        $dumpWorkerX86 = Join-Path $projectRoot "build\msvc-dump-x86\$Configuration\nks-dump-worker-x86.exe"
+        & $DotNet publish src\winui\NksTaskMgr.WinUI.csproj -c $Configuration -r win-x64 -o $winuiOutput "-p:NativeMonitorPath=$nativeMonitor" "-p:IconWorkerPath=$iconWorker" "-p:DumpWorkerX86Path=$dumpWorkerX86"
         if ($LASTEXITCODE) { throw "WinUI Native AOT publication failed: $LASTEXITCODE" }
         if ($Test) {
             $resultPath = Join-Path ([IO.Path]::GetTempPath()) ("nks-winui-" + [guid]::NewGuid().ToString('N') + '.txt')

@@ -21,6 +21,7 @@ add_library(nks_native STATIC
     src/collectors/process_query.c
     src/collectors/process_parser.cpp
     src/collectors/process_collector.cpp
+    src/collectors/process_identity.cpp
     src/collectors/process_details.cpp
     src/collectors/process_memory.cpp
     src/collectors/process_handles.cpp
@@ -72,24 +73,39 @@ target_compile_options(nks-resource-sample PRIVATE /W4 /WX /utf-8 /permissive-)
 add_executable(nks-icon-worker src/icon_worker/main.cpp)
 target_link_libraries(nks-icon-worker PRIVATE nks_native shell32 ole32 gdi32)
 target_compile_options(nks-icon-worker PRIVATE /W4 /WX /utf-8 /permissive-)
-target_link_options(nks-icon-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'")
+target_link_options(nks-icon-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
 
 add_executable(nks-details-worker src/details_worker/main.cpp src/collectors/process_applications.cpp)
 target_link_libraries(nks-details-worker PRIVATE nks_native user32 dwmapi)
 target_compile_options(nks-details-worker PRIVATE /W4 /WX /utf-8 /permissive-)
-target_link_options(nks-details-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'")
+target_link_options(nks-details-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
 
 add_executable(nks-actions-worker src/actions_worker/main.cpp src/collectors/process_actions.cpp)
 target_include_directories(nks-actions-worker SYSTEM PRIVATE third_party/phnt/include)
 target_compile_definitions(nks-actions-worker PRIVATE PHNT_VERSION=117)
 target_link_libraries(nks-actions-worker PRIVATE nks_native user32)
 target_compile_options(nks-actions-worker PRIVATE /W4 /WX /utf-8 /permissive-)
-target_link_options(nks-actions-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'")
+target_link_options(nks-actions-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
+
+add_executable(nks-dump-worker
+    src/dump_worker/main.cpp
+    src/collectors/process_dump.cpp
+    src/collectors/process_dump_policy.cpp
+    src/collectors/process_identity.cpp
+    src/collectors/boot_identity.cpp
+)
+set_property(TARGET nks-dump-worker PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_include_directories(nks-dump-worker PRIVATE src)
+target_include_directories(nks-dump-worker SYSTEM PRIVATE third_party/phnt/include)
+target_compile_definitions(nks-dump-worker PRIVATE PHNT_VERSION=117)
+target_compile_options(nks-dump-worker PRIVATE /W4 /WX /utf-8 /permissive-)
+target_link_options(nks-dump-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0x800)
+target_link_libraries(nks-dump-worker PRIVATE ntdll advapi32 bcrypt dbghelp)
 
 add_executable(nks-collector-worker src/collector_worker/main.cpp)
 target_link_libraries(nks-collector-worker PRIVATE nks_native)
 target_compile_options(nks-collector-worker PRIVATE /W4 /WX /utf-8 /permissive-)
-target_link_options(nks-collector-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'")
+target_link_options(nks-collector-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
 add_dependencies(nks-monitor nks-collector-worker)
 
 add_executable(nks-taskmgr WIN32 src/app/desktop_main.cpp src/app/app.rc src/ui/desktop.cpp src/ui/desktop_paint.cpp src/ui/history_view.cpp src/ui/control_paint.cpp src/ui/performance_paint.cpp src/ui/process_paint.cpp src/ui/process_table.cpp src/ui/service_table.cpp src/ui/service_view.cpp src/ui/service_paint.cpp)

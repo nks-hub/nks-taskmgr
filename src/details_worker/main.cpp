@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "core/helper_policy.hpp"
 #include "collectors/process_details.hpp"
 #include <windows.h>
 #include <cstring>
@@ -193,6 +194,7 @@ int serveRequest(HANDLE input, HANDLE output, bool server)
 
 int main(int argc, char** argv)
 {
+    if (!nks::initializeHelperProcess()) return 2;
     if (argc != 2) return 2;
     const bool server = std::string_view(argv[1]) == "--stdio-server";
     if (!server && std::string_view(argv[1]) != "--stdio") return 2;

@@ -2,6 +2,7 @@
 #include <shellapi.h>
 #include <objbase.h>
 #include "collectors/process_identity.hpp"
+#include "core/helper_policy.hpp"
 
 #include <algorithm>
 #include <array>
@@ -92,6 +93,7 @@ std::vector<std::byte> readIcon(const nks::ProcessIdentity& expected) {
 }
 
 int main() {
+    if (!nks::initializeHelperProcess()) return 2;
     const HANDLE input = GetStdHandle(STD_INPUT_HANDLE), output = GetStdHandle(STD_OUTPUT_HANDLE);
     if (GetFileType(input) != FILE_TYPE_PIPE || GetFileType(output) != FILE_TYPE_PIPE) return 2;
     const HRESULT initialized = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
