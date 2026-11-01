@@ -22,6 +22,8 @@ add_library(nks_native STATIC
     src/collectors/process_parser.cpp
     src/collectors/process_collector.cpp
     src/collectors/process_details.cpp
+    src/collectors/process_memory.cpp
+    src/collectors/process_handles.cpp
     src/collectors/process_signature.cpp
     src/collectors/boot_identity.cpp
     src/collectors/processor_query.cpp

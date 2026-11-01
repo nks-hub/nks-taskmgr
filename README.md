@@ -15,6 +15,8 @@ The current desktop prototype displays live processes and individual system devi
 - 🖥️ **Desktop prototype** - Provides a system overview, virtual process table, CPU and memory bars, name/PID search, column sorting, multiple selection, and a selection detail panel.
 - 🌳 **Process views** - Switches between all processes, measured CPU or I/O activity, and a collapsible tree that checks parent creation times before linking processes.
 - 🧵 **WinUI process details** - Reads threads and modules in a separate worker and checks the selected module file's signature on request, including local catalog signatures.
+- 🗂️ **Memory and objects** - Lists virtual memory regions and process handles, queries a selected object's type and name, and searches accessible processes with bounded batches and cancellation.
+- 🔐 **Capability status** - Shows observed provider states and recent target-specific query results, with explanations of permissions and driver support.
 - 📊 **Device view** - Lists individual disks, hardware GPUs, and physical network adapters, including disconnected adapters. Each item opens a graph and current counters.
 - 🌡️ **Disk detail** - Shows response time, queue length, IOPS, capacity, interface, and supported disk temperatures. Expanded NVMe health includes wear, spare capacity, operating hours, and media errors.
 - 🛠️ **Services** - Lists accessible Windows services with state filters and name, account, or PID search. The selected detail shows configuration, dependencies, and a link to a host process whose creation time has been verified.
@@ -107,6 +109,10 @@ Services runs in read-only mode. Its collector starts when the view opens and re
 The WinUI Shared PID filter shows services that report the same nonzero host PID. The selected detail lists the other reported services, their states, and their accounts. This grouping follows the SCM snapshot; opening a live host process separately requires its verified lifetime identity.
 
 Process details opens from the WinUI process toolbar for a selected live process. Its thread and module lists are read-only. File signature checks run only when requested for a selected module and use cached local trust data. The worker has the same permissions as the application, a bounded request queue, a five-second operation deadline, and cancellation that closes its own job. Runtime, WOW64, and visual acceptance of these additions remain pending.
+
+The Memory and Handles tabs filter their loaded data. A handle's type and name are queried on request and describe the duplicated object observed at that time. Global object search starts explicitly from the process toolbar and reports its progress, skipped owners, and limits. It matches local DOS and NT path forms, batches results, and marks incomplete searches. Opening a live owner requires its full current process lifetime key. Repeated queries share at most two worker processes with two queued requests.
+
+The Hardware view includes a capability panel. It shows current measurement states, the last targeted read query, and the application's effective elevation state. Selecting a feature explains ordinary access, elevated access, and the required provider. CPU chip temperature remains marked as unimplemented. Runtime and permission acceptance of these additions remain pending.
 
 The WinUI Appearance menu selects the system, light, or dark appearance and saves the choice in the user profile. Theme changes update existing controls, charts, and dialogs. Runtime and visual acceptance of the theme changes remain pending. Administrative actions and accessibility acceptance are not yet implemented. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
 
