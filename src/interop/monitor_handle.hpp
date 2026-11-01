@@ -9,4 +9,6 @@ struct NksMonitor {
     nks::Monitor monitor;
     std::mutex readMutex;
     std::wstring processError, resourceError;
+    std::shared_ptr<const nks::ProcessSnapshot> previousProcesses;
+    std::uint64_t processRevision{};
 };

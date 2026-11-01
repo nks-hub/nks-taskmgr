@@ -30,6 +30,7 @@ add_library(nks_native STATIC
     src/collectors/processor_query.cpp
     src/collectors/memory_query.cpp
     src/core/process_sampler.cpp
+    src/core/process_delta.cpp
     src/core/measurement.cpp
     src/core/resource.cpp
     src/core/hardware.cpp

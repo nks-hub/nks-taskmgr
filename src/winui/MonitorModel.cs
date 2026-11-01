@@ -67,10 +67,7 @@ public sealed partial class MonitorModel : IDisposable
             frame.Read(view => {
                 if ((view.Flags & FrameFlags.ProcessData) != 0)
                     BootIdentity = frame.ReadBootIdentity() ?? new BootIdentityInfo { State = SampleState.Unavailable };
-                bool applied = false;
-                if ((view.Flags & FrameFlags.ProcessData) != 0)
-                    frame.ReadProcessCreationTimes(creation => { Apply(view, creation, false); applied = true; });
-                if (!applied) Apply(view, default, false);
+                ApplyFrame(frame, view);
                 if ((view.Flags & FrameFlags.ResourceData) != 0) frame.ReadGpu(data => ApplyGpu(data, false));
             });
             frame.ReadHardware(ApplyHardware);
@@ -93,13 +90,14 @@ public sealed partial class MonitorModel : IDisposable
             foreach (var row in VisibleProcesses) row.NotifyUpdated();
         }
         if (changed && visualUpdates) foreach (var resource in resources.Values) resource.RefreshPreview();
+        if (changed && visualUpdates && Mode == ProcessMode.Applications) Applications.RefreshMetrics(held);
         return changed;
     }
 
     // Frame buffers remain owned by the caller and are copied before this returns.
     internal void Apply(FrameView view) => Apply(view, default, true);
 
-    private unsafe void Apply(FrameView view, ProcessCreationData creation, bool recordHistory)
+    private unsafe void Apply(FrameView view, ProcessCreationData creation, bool recordHistory, ProcessChangesData? changes = null)
     {
         if ((view.Flags & FrameFlags.ProcessErrorChanged) != 0) ProcessError = view.ProcessError.Copy();
         if ((view.Flags & FrameFlags.ResourceErrorChanged) != 0) ResourceError = view.ResourceError.Copy();
@@ -108,24 +106,18 @@ public sealed partial class MonitorModel : IDisposable
             CollectionMs = view.Processes.CollectionNs / 1_000_000d;
             LogicalProcessors = view.Processes.LogicalProcessors;
             CpuModel = view.Processes.CpuModel.Copy();
-            var seen = new HashSet<ProcessKey>();
-            for (uint i = 0; i < view.Processes.ProcessCount; ++i) {
-                var source = view.Processes.Processes[i];
-                var key = new ProcessKey(BootIdentity.Identifier, source.Pid, source.GenerationKind, source.Generation);
-                seen.Add(key);
-                if (!processes.TryGetValue(key, out var row)) processes.Add(key, row = new ProcessRow(key));
-                row.Update(source, visualUpdates);
-                ulong created = 0;
-                if (i < creation.ProcessCount && creation.Processes != null) {
-                    var metadata = creation.Processes[i];
-                    if (metadata.Pid == key.Pid && metadata.Kind == key.Kind && metadata.Generation == key.Generation
-                        && metadata.State == SampleState.Valid) created = metadata.Created100ns;
-                } else if (key.Kind == GenerationKind.CreationTime) created = key.Generation;
-                row.SetCreatedTime(created);
+            if (!ApplyProcessChanges(view, creation, changes, out bool orderChanged)) {
+                var seen = new HashSet<ProcessKey>();
+                for (uint i = 0; i < view.Processes.ProcessCount; ++i) {
+                    var source = view.Processes.Processes[i];
+                    var key = new ProcessKey(BootIdentity.Identifier, source.Pid, source.GenerationKind, source.Generation);
+                    seen.Add(key); UpdateProcess(source, key, i, creation);
+                }
+                foreach (var key in processes.Keys.Where(key => !seen.Contains(key)).ToArray()) {
+                    processes[key].SetStatus(true, false, visualUpdates); processes.Remove(key);
+                }
             }
-            foreach (var key in processes.Keys.Where(key => !seen.Contains(key)).ToArray()) {
-                processes[key].SetStatus(true, false, visualUpdates); processes.Remove(key);
-            }
+            processRevision = changes?.Revision ?? 0;
             Resource("cpu", ResourceKind.Cpu).Update("Procesor", CpuModel, string.Empty, view.Processes.CpuPercent, default, default, 100, ProcessTime, visualUpdates && recordHistory, recordHistory);
             var memory = new Metric { Value = Memory.PhysicalBytes - Math.Min(Memory.PhysicalBytes, Memory.AvailableBytes), State = Memory.State, Source = MetricSource.PerformanceInfo };
             Resource("memory", ResourceKind.Memory).Update("Paměť", "Fyzická paměť", string.Empty, memory, default, default, Memory.PhysicalBytes, ProcessTime, visualUpdates && recordHistory, recordHistory);
@@ -137,7 +129,7 @@ public sealed partial class MonitorModel : IDisposable
                 if (recordHistory) series.Append(ProcessTime, processor.CpuPercent);
             }
             foreach (var key in Processors.Keys.Where(key => !processorKeys.Contains(key)).ToArray()) Processors.Remove(key);
-            if (!held && visualUpdates) Rebuild();
+            if (orderChanged && !held && visualUpdates) Rebuild();
         }
         if ((view.Flags & FrameFlags.ResourceData) != 0) {
             ResourceTime = view.Resources.MeasuredAtNs;
