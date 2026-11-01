@@ -11,16 +11,18 @@ internal sealed partial class UpdateWorkerProcess
     private readonly Process process;
     private readonly SignedImageLease image;
     private SafeFileHandle? job;
-    private UpdateWorkerProcess(Process process, SignedImageLease image, SafeFileHandle? job)
-    { this.process = process; this.image = image; this.job = job; }
+    internal string ReleaseVersion { get; }
+    private UpdateWorkerProcess(Process process, SignedImageLease image, SafeFileHandle? job, string releaseVersion)
+    { this.process = process; this.image = image; this.job = job; ReleaseVersion = releaseVersion; }
 
-    internal static UpdateWorkerProcess Start(string path, byte[] pin, string currentVersion, UpdatePlan? plan, CancellationToken cancellation)
+    internal static UpdateWorkerProcess Start(string path, byte[] pin, string currentVersion, UpdatePlan? plan, CancellationToken cancellation, bool compatibleRelease = false)
     {
         cancellation.ThrowIfCancellationRequested();
         var image = SignedImageLease.Open(path, pin); Process? child = null; SafeFileHandle? job = null;
         try {
             var role = PublisherTrust.RequireRole(image, "NKS Task Manager Update Worker", "nks-update-worker.exe");
-            if (role.ProductVersion != currentVersion) throw new InvalidDataException("Verze podepsaného pracovníka neodpovídá běžícímu klientovi.");
+            if (!compatibleRelease && role.ProductVersion != currentVersion)
+                throw new UpdateException(UpdateStatus.Rejected, "Verze podepsaného pracovníka neodpovídá běžícímu klientovi. Dostupný je pouze přehled a výslovná obnova původní verze.");
             if (plan is not null && (image.Identity != plan.StageHelperFileId || image.Length != plan.StageHelperBytes
                 || !CryptographicOperations.FixedTimeEquals(image.Hash(UpdateProtocol.MaximumPackageBytes, cancellation), UpdateProtocol.ParseHash(plan.StageHelperSha256))))
                 throw new InvalidDataException("Připravený pracovník neodpovídá schválenému plánu.");
@@ -39,7 +41,7 @@ internal sealed partial class UpdateWorkerProcess
             child = Process.Start(start) ?? throw new IOException("Pracovníka aktualizací nelze spustit.");
             if (job is not null && !AssignProcessToJobObject(job, child.SafeHandle)) throw new Win32Exception(Marshal.GetLastPInvokeError());
             image.VerifyProcess(child); cancellation.ThrowIfCancellationRequested();
-            return new(child, image, job);
+            return new(child, image, job, role.ProductVersion);
         } catch {
             job?.Dispose();
             if (child is not null) {

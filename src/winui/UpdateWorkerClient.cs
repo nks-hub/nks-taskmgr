@@ -14,7 +14,8 @@ internal sealed class UpdateWorkerClient : IDisposable
     private GuiContext? context;
     private UpdateSession? prepared;
     private bool disposed;
-    private sealed record GuiContext(ProcessKey Key, string Version, string Sha256, SignedImageLease.FileId FileId, ulong Bytes);
+    private sealed record GuiContext(ProcessKey Key, string Version, string Sha256, SignedImageLease.FileId FileId, ulong Bytes,
+        string Directory, SignedImageLease.FileId RootFileId);
     internal static bool IsConfigured => PublisherTrust.IsConfigured(PublisherPolicy.Update);
     internal bool IsBusy => Volatile.Read(ref pending) != 0;
 
@@ -35,17 +36,41 @@ internal sealed class UpdateWorkerClient : IDisposable
     }, cancellation);
 
     internal Task<UpdateSession> PrepareAsync(string? packageSha256, CancellationToken cancellation = default)
+        => PrepareCoreAsync(packageSha256, null, cancellation);
+
+    internal Task<UpdateSession> PrepareRecoveryAsync(string candidateId, CancellationToken cancellation = default)
+    {
+        _ = UpdateProtocol.ParseId(candidateId);
+        return PrepareCoreAsync(null, candidateId, cancellation);
+    }
+
+    private Task<UpdateSession> PrepareCoreAsync(string? packageSha256, string? candidateId, CancellationToken cancellation)
     {
         bool transferred = false;
         return RunAsync(async (pin, token) => {
-            var result = await QueryAsync(UpdateCommand.Plan, pin, packageSha256, null, token).ConfigureAwait(false);
+            var gui = Context(pin, token);
+            UpdateRecoveryCandidate? candidate = null;
+            if (candidateId is not null) {
+                var inspection = await QueryAsync(UpdateCommand.Inspect, pin, null, UpdateProtocol.ParseId(candidateId), token).ConfigureAwait(false);
+                if (inspection.Status != UpdateStatus.Ok) throw new UpdateException(inspection.Status, inspection.Detail, inspection.Error);
+                candidate = inspection.RecoveryCandidates.SingleOrDefault(item => item.CandidateId.Equals(candidateId, StringComparison.OrdinalIgnoreCase));
+                if (candidate is null) throw new UpdateException(UpdateStatus.NotFound, "Nejasný záznam pro obnovu už není dostupný.");
+                if (!candidate.CanRepair || !candidate.HasOriginalPackage) throw new UpdateException(candidate.Status,
+                    candidate.Detail.Length > 0 ? candidate.Detail : "Zánik původního pracovníka nebo instalátoru nebyl prokázaný. Obnova nebyla připravena.");
+                packageSha256 = candidate.PackageSha256;
+            }
+            var result = await QueryAsync(candidate is null ? UpdateCommand.Plan : UpdateCommand.RepairPlan, pin, packageSha256,
+                candidate is null ? null : UpdateProtocol.ParseId(candidate.CandidateId), token).ConfigureAwait(false);
             if (result.Status != UpdateStatus.Ok || result.Plan is not { } plan)
                 throw new UpdateException(result.Status, result.Detail.Length > 0 ? result.Detail : UpdateProtocol.StatusText(result.Status), result.Error);
-            var gui = Context(pin, token);
-            if (plan.Action != (packageSha256 is null ? UpdateAction.Rollback : UpdateAction.Update)
+            if (plan.Action != (candidate is not null ? UpdateAction.Repair : packageSha256 is null ? UpdateAction.Rollback : UpdateAction.Update)
                 || packageSha256 is not null && !plan.PackageSha256.Equals(packageSha256, StringComparison.OrdinalIgnoreCase)
                 || plan.CurrentVersion != gui.Version || plan.InstalledAppFileId != gui.FileId || plan.InstalledAppBytes != gui.Bytes
-                || plan.InstalledAppSha256 != gui.Sha256 || plan.PreviousVersion != plan.CurrentVersion
+                || plan.InstalledAppSha256 != gui.Sha256 || plan.InstallRootFileId != gui.RootFileId
+                || !SameDirectory(plan.InstallDirectory, gui.Directory)
+                || candidate is null && (plan.PreviousVersion != plan.CurrentVersion || plan.RecoveryCandidateId.Length != 0)
+                || candidate is not null && (plan.RecoveryCandidateId != candidate.CandidateId || plan.PreviousVersion.Length != 0
+                    || plan.SelectedVersion != candidate.OriginalVersion || plan.Mode != candidate.Mode)
                 || plan.Action == UpdateAction.Rollback && plan.SelectedVersion == plan.CurrentVersion)
                 throw new InvalidDataException("Plán neodpovídá výběru ani ověřenému běžícímu obrazu.");
             using (var package = SignedImageLease.Open(plan.PackagePath, pin)) {
@@ -56,8 +81,8 @@ internal sealed class UpdateWorkerClient : IDisposable
             }
             UpdateWorkerProcess? stage = null;
             try {
-                stage = UpdateWorkerProcess.Start(plan.StageHelperPath, pin, gui.Version, plan, token);
-                var request = UpdateProtocol.Request(plan.Action == UpdateAction.Update ? UpdateCommand.Apply : UpdateCommand.Rollback,
+                stage = UpdateWorkerProcess.Start(plan.StageHelperPath, pin, gui.Version, plan, token, compatibleRelease: plan.IsRecovery);
+                var request = UpdateProtocol.Request(plan.Action == UpdateAction.Repair ? UpdateCommand.Repair : plan.Action == UpdateAction.Update ? UpdateCommand.Apply : UpdateCommand.Rollback,
                     gui.Key, plan.PackageSha256, Convert.FromHexString(plan.PlanId));
                 using var abort = token.Register(() => _ = Task.Run(stage.Cancel));
                 await stage.WriteAsync(request, false, token).ConfigureAwait(false);
@@ -78,7 +103,8 @@ internal sealed class UpdateWorkerClient : IDisposable
     {
         var gui = Context(pin, cancellation);
         var request = UpdateProtocol.Request(command, gui.Key, sha, payload);
-        var worker = UpdateWorkerProcess.Start(Path.Combine(AppContext.BaseDirectory, "nks-update-worker.exe"), pin, gui.Version, null, cancellation);
+        bool compatible = command is UpdateCommand.List or UpdateCommand.Cache or UpdateCommand.Inspect or UpdateCommand.RepairPlan;
+        var worker = UpdateWorkerProcess.Start(Path.Combine(AppContext.BaseDirectory, "nks-update-worker.exe"), pin, gui.Version, null, cancellation, compatibleRelease: compatible);
         using var abort = cancellation.Register(() => _ = Task.Run(worker.Cancel));
         try {
             await worker.WriteAsync(request, true, cancellation).ConfigureAwait(false);
@@ -86,8 +112,18 @@ internal sealed class UpdateWorkerClient : IDisposable
             if (result.Frame is not (UpdateFrame.Result or UpdateFrame.Rejected)
                 || command == UpdateCommand.List && result.Plan is not null
                 || command == UpdateCommand.Cache && result.Plan is not null
-                || command == UpdateCommand.Plan && (result.Packages.Length != 0 || result.Status == UpdateStatus.Ok && result.Plan is null))
+                || (command is UpdateCommand.Plan or UpdateCommand.RepairPlan) && (result.Packages.Length != 0 || result.Status == UpdateStatus.Ok && result.Plan is null)
+                || command == UpdateCommand.Inspect && (result.Packages.Length != 0 || result.Plan is not null))
                 throw new InvalidDataException("Nesprávná fáze odpovědi aktualizace.");
+            if (result.Scope is { } scope && (scope.RootFileId != gui.RootFileId || !SameDirectory(scope.InstallDirectory, gui.Directory)
+                || scope.GuiVersion != gui.Version || scope.HelperVersion != worker.ReleaseVersion))
+                throw new InvalidDataException("Přehled aktualizací patří jinému kořeni nebo podepsanému obrazu.");
+            if ((command is UpdateCommand.List or UpdateCommand.Inspect) && result.Status == UpdateStatus.Ok && result.Scope is null)
+                throw new InvalidDataException("Chybí ověřitelný rozsah přehledu aktualizací.");
+            foreach (var recovery in result.RecoveryCandidates) {
+                if (recovery.CanRepair && (recovery.InstallRootFileId != gui.RootFileId || !SameDirectory(recovery.InstallDirectory, gui.Directory)))
+                    throw new InvalidDataException("Obnova byla nabídnuta pro jinou kopii aplikace.");
+            }
             await worker.EndAsync(result, cancellation).ConfigureAwait(false); return result;
         } finally { await worker.RetireAsync(true).ConfigureAwait(false); }
     }
@@ -103,7 +139,8 @@ internal sealed class UpdateWorkerClient : IDisposable
             image.VerifyProcess(self);
             var role = PublisherTrust.RequireRole(image, "NKS Task Manager", "NksTaskMgr.WinUI.dll");
             string hash = Convert.ToHexString(image.Hash(UpdateProtocol.MaximumPackageBytes, cancellation));
-            var value = new GuiContext(new(key.Boot, key.Pid, key.Kind, key.Generation), role.ProductVersion, hash, image.Identity, image.Length);
+            var value = new GuiContext(new(key.Boot, key.Pid, key.Kind, key.Generation), role.ProductVersion, hash, image.Identity, image.Length,
+                image.ParentDirectoryPath, image.ParentDirectoryId);
             cancellation.ThrowIfCancellationRequested();
             lock (sync) { ObjectDisposedException.ThrowIf(disposed, this); guiImage = image; context = value; }
             return value;
@@ -131,7 +168,21 @@ internal sealed class UpdateWorkerClient : IDisposable
             throw new UpdateException(UpdateStatus.Unknown, "Čekání na pracovníka vypršelo. Dokud není ověřen jeho konec, nevznikne další požadavek. " + error.Message, 1460);
         }
     }
-    private static UpdateInventory Inventory(UpdateResponse response) => new(response.Status, response.Error, response.JournalState, response.Detail, response.Packages);
+    private static bool SameDirectory(string left, string right) => left.TrimEnd('\\').Equals(right.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+    private static UpdateInventory Inventory(UpdateResponse response)
+    {
+        var scope = response.Scope;
+        bool exact = scope is not null && scope.GuiVersion == scope.HelperVersion && (scope.Flags & 1) == 0;
+        return new(response.Status, response.Error, response.JournalState, response.Detail, response.Packages) {
+            Mode = scope?.Mode ?? UpdateInstallMode.Unknown, InstallDirectory = scope?.InstallDirectory ?? "",
+            InstallRootFileId = scope?.RootFileId ?? default, RecoveryCandidates = response.RecoveryCandidates,
+            StandardOperationsAllowed = response.Status == UpdateStatus.Ok && scope is not null && scope.Mode != UpdateInstallMode.Unknown && exact && (scope.Flags & 2) == 0,
+            CompatibilityDetail = scope is null ? "Pracovník neposkytl ověřitelný rozsah v protokolu 2; tento výsledek nepovoluje změnu instalace."
+                : !exact ? "Podepsané části nemají stejnou vydanou verzi. Dostupný je pouze přehled, uložení ověřeného balíčku a výslovná obnova."
+                : scope?.Mode == UpdateInstallMode.Unknown ? "Původ adresáře nebyl prokázaný; standardní změna je zakázaná."
+                : ((scope?.Flags ?? 0) & 2) != 0 ? "Nejasný výsledek vyžaduje výslovné posouzení obnovy; standardní změna se nezkouší znovu." : ""
+        };
+    }
     public void Dispose()
     {
         lock (sync) { if (disposed) return; disposed = true; }

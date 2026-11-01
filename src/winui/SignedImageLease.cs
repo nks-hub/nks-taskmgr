@@ -16,6 +16,14 @@ internal sealed unsafe partial class SignedImageLease : IDisposable
     internal FileId Identity => id;
     internal SafeFileHandle Handle => image ?? throw new ObjectDisposedException(nameof(SignedImageLease));
     internal string Path { get; private set; } = "";
+    internal string ParentDirectoryPath => System.IO.Path.GetDirectoryName(Path) ?? throw new IOException("Chybí ověřený kořen souboru.");
+    internal FileId ParentDirectoryId {
+        get {
+            if (directories.Count == 0 || !GetFileId(directories[^1], 18, out var value, (uint)sizeof(FileId)))
+                throw new IOException("Identitu drženého kořenového adresáře nelze ověřit.");
+            return value;
+        }
+    }
     internal ulong Length => checked((ulong)RandomAccess.GetLength(Handle));
 
     internal byte[] ReadAt(long offset, int count)
