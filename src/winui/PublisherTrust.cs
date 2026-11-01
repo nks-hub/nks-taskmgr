@@ -19,14 +19,14 @@ internal static class PublisherTrust
         return pin is { Length: 64 } && pin.All(Uri.IsHexDigit) ? Convert.FromHexString(pin) : null;
     }
 
-    internal static SignedImageProduct ReadProduct(SignedImageLease image)
+    internal static SignedImageProduct RequireRole(SignedImageLease image, string description, string originalFilename)
     {
-        try { return ReadProductCore(image); }
+        try { return ReadProductCore(image, description, originalFilename); }
         catch (Exception error) when (error is DecoderFallbackException or ArgumentOutOfRangeException or OverflowException) {
             throw new InvalidDataException("Podepsaný prostředek verze PE je poškozený.", error);
         }
     }
-    private static SignedImageProduct ReadProductCore(SignedImageLease image)
+    private static SignedImageProduct ReadProductCore(SignedImageLease image, string description, string originalFilename)
     {
         var dos = image.ReadAt(0, 64);
         if (U16(dos, 0) != 0x5a4d) throw Invalid();
@@ -63,15 +63,16 @@ internal static class PublisherTrust
             uint dataRva = U32(resources, language.Offset), dataSize = U32(resources, language.Offset + 4);
             if (dataRva < rva || dataSize is < 64 or > 65535 || dataRva - rva > resources.Length
                 || dataSize > resources.Length - (dataRva - rva) || U32(resources, language.Offset + 12) != 0) throw Invalid();
-            var product = VersionResource(resources.AsSpan(checked((int)(dataRva - rva)), checked((int)dataSize)).ToArray());
+            var product = RequireVersionResource(resources.AsSpan(checked((int)(dataRva - rva)), checked((int)dataSize)).ToArray(), description, originalFilename);
             if (result is not null && result != product) throw new InvalidDataException("Jazykové varianty podepsané role si odporují.");
             result = product;
         }
         image.VerifyUnchanged(); return result ?? throw Invalid();
     }
-    internal static SignedImageProduct RequireRole(SignedImageLease image, string description, string originalFilename)
+    internal static SignedImageProduct RequireVersionResource(byte[] bytes, string description, string originalFilename)
     {
-        var product = ReadProduct(image);
+        bool installer = description == "NKS Task Manager Setup" && originalFilename == "NksTaskMgrSetup.exe";
+        var product = VersionResource(bytes, installer);
         if (product.ProductName != "NKS Task Manager" || product.Description != description || product.OriginalFilename != originalFilename
             || !ValidProductVersion(product.ProductVersion)) throw new InvalidDataException("Podepsaná role nebo verze souboru neodpovídá aplikaci.");
         return product;
@@ -84,7 +85,7 @@ internal static class PublisherTrust
         return parts.Length == 3 && parts.All(part => part.Length is > 0 and <= 10 && (part.Length == 1 || part[0] != '0')
             && part.All(char.IsAsciiDigit) && uint.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out _));
     }
-    private static SignedImageProduct VersionResource(byte[] bytes)
+    private static SignedImageProduct VersionResource(byte[] bytes, bool installer)
     {
         var root = Node(bytes, 0, bytes.Length);
         if (root.Key != "VS_VERSION_INFO" || root.Type != 0 || root.ValueBytes != 52 || U32(bytes, root.Value) != 0xfeef04bd) throw Invalid();
@@ -98,7 +99,10 @@ internal static class PublisherTrust
                 foreach (var field in Children(bytes, language)) {
                     if (field.Type != 1 || field.ValueBytes is < 2 or > 4096 || field.ValueBytes % 2 != 0) throw Invalid();
                     string text = Utf16.GetString(bytes.AsSpan(field.Value, field.ValueBytes));
-                    if (text[^1] != '\0' || text.AsSpan(0, text.Length - 1).Contains('\0') || !values.TryAdd(field.Key, text[..^1])) throw Invalid();
+                    if (text[^1] != '\0' || text.AsSpan(0, text.Length - 1).Contains('\0')) throw Invalid();
+                    string value = text[..^1];
+                    if (installer) value = value.TrimEnd(' ');
+                    if (!values.TryAdd(field.Key, value)) throw Invalid();
                 }
                 if (!values.TryGetValue("ProductName", out var name) || !values.TryGetValue("FileDescription", out var description)
                     || !values.TryGetValue("OriginalFilename", out var original) || !values.TryGetValue("ProductVersion", out var version)) throw Invalid();
