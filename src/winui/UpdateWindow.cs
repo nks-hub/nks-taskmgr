@@ -10,7 +10,7 @@ using Windows.Graphics;
 
 namespace NksTaskMgr.WinUI;
 
-internal sealed class UpdateWindow : Window
+internal sealed partial class UpdateWindow : Window
 {
     private sealed record PackageChoice(UpdatePackage Package)
     {
@@ -27,15 +27,16 @@ internal sealed class UpdateWindow : Window
     private readonly StackPanel recoveryPanel = new() { Spacing = 8, Visibility = Visibility.Collapsed };
     private readonly ComboBox recoveryChoices = new() { HorizontalAlignment = HorizontalAlignment.Stretch, FontFamily = UiTypography.Font, FontSize = 13 };
     private readonly ListView packages = new() { MinHeight = 100, MaxHeight = 240, SelectionMode = ListViewSelectionMode.Single, FontFamily = UiTypography.Font, FontSize = 13 };
-    private readonly Button refresh = Command("Načíst balíčky"), add = Command("Přidat instalátor…"), install = Command("Nainstalovat vybraný…"), rollback = Command("Vrátit předchozí verzi…"), repair = Command("Obnovit nedokončenou instalaci…"), cancel = Command("Zrušit");
+    private readonly Button refresh = Command("Načíst balíčky"), add = Command("Přidat instalátor…"), cleanup = Command("Vyčistit cache…"), install = Command("Nainstalovat vybraný…"), rollback = Command("Vrátit předchozí verzi…"), repair = Command("Obnovit nedokončenou instalaci…"), cancel = Command("Zrušit");
     private readonly UpdateWorkerClient client = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly Action requestShutdown;
     private CancellationTokenSource? operation;
     private UpdateSession? prepared;
+    private UpdateCleanupSession? preparedCleanup;
     private ContentDialog? confirmation;
     private UpdateInventory? inventory;
-    private bool opened, closed, busy, handoffUncertain;
+    private bool opened, closed, busy, handoffUncertain, cleanupUncertain;
 
     internal UpdateWindow(Action requestShutdown)
     {
@@ -53,7 +54,7 @@ internal sealed class UpdateWindow : Window
         root.Children.Add(heading);
         Grid.SetRow(status, 1); root.Children.Add(status);
         var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        tools.Children.Add(refresh); tools.Children.Add(add); tools.Children.Add(cancel);
+        tools.Children.Add(refresh); tools.Children.Add(add); tools.Children.Add(cleanup); tools.Children.Add(cancel);
         Grid.SetRow(tools, 2); root.Children.Add(tools);
         Grid.SetRow(packages, 3); root.Children.Add(packages);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -70,10 +71,13 @@ internal sealed class UpdateWindow : Window
         AutomationProperties.SetAutomationId(add, "update-add-installer");
         AutomationProperties.SetAutomationId(install, "update-install-selected");
         AutomationProperties.SetAutomationId(rollback, "update-rollback");
+        AutomationProperties.SetAutomationId(cleanup, "update-cleanup");
+        ToolTipService.SetToolTip(cleanup, "Nejdříve zobrazí náhled odstranitelné cache. Balíčky potřebné pro návrat a nejasné záznamy zůstanou zachované.");
         AutomationProperties.SetName(recoveryChoices, "Nejasné výsledky instalace v této složce");
         AutomationProperties.SetAutomationId(repair, "update-repair");
         refresh.Click += async (_, _) => await RunAsync(ReadInventoryAsync);
         add.Click += async (_, _) => await RunAsync(AddInstallerAsync);
+        cleanup.Click += async (_, _) => await RunAsync(CleanupAsync);
         install.Click += async (_, _) => { if (packages.SelectedItem is PackageChoice choice) await RunAsync(token => PrepareAsync(choice.Package.Sha256, token)); };
         rollback.Click += async (_, _) => await RunAsync(token => PrepareAsync(null, token));
         repair.Click += async (_, _) => {
@@ -104,17 +108,20 @@ internal sealed class UpdateWindow : Window
         catch (Exception error) when (error is IOException or TimeoutException or OperationCanceledException or Win32Exception or UnauthorizedAccessException
             or CryptographicException or COMException or InvalidOperationException or NksTaskMgr.Native.NativeMonitorException) {
             if (prepared?.CommitSent == true) handoffUncertain = true;
+            if (preparedCleanup?.CommitSent == true) cleanupUncertain = true;
             inventory = null;
             if (!closed) {
                 status.Text = handoffUncertain ? "Předání nemá potvrzený výsledek."
+                    : cleanupUncertain ? "Úklid nemá potvrzený výsledek."
                     : error is UpdateException nativeError ? StatusText(nativeError.Status)
                     : error is OperationCanceledException ? "Operace byla zrušena." : "Operaci nelze dokončit.";
                 result.Text = handoffUncertain
                     ? "Aplikace zůstává otevřená. Neopakujte instalaci; po skončení pomocníka znovu otevřete přehled a ověřte jeho stav."
+                    : cleanupUncertain ? "Část souborů už mohla být odstraněná. Po skončení pomocníka načtěte aktuální přehled; úklid se neopakuje automaticky."
                     : error is OperationCanceledException ? "" : Bound(error.Message);
             }
         } finally {
-            prepared = null; operation = null; busy = false;
+            prepared = null; preparedCleanup = null; operation = null; busy = false;
             if (!closed) RefreshButtons();
         }
     }
@@ -145,6 +152,7 @@ internal sealed class UpdateWindow : Window
     private void ShowInventory(UpdateInventory value)
     {
         inventory = value;
+        cleanupUncertain = false;
         packages.ItemsSource = value.Packages.Select(package => new PackageChoice(package)).ToArray();
         location.Text = (value.Mode switch { UpdateInstallMode.Installed => "Registrovaná instalace", UpdateInstallMode.Portable => "Přenosná kopie", _ => "Režim složky není ověřený" })
             + (value.InstallDirectory.Length == 0 ? "" : " · " + value.InstallDirectory);
@@ -201,14 +209,16 @@ internal sealed class UpdateWindow : Window
         bool idle = !closed && !busy && !client.IsBusy && !handoffUncertain;
         bool trusted = idle && inventory?.Status is UpdateStatus.Ok or UpdateStatus.Conflict;
         bool ready = trusted && inventory!.StandardOperationsAllowed;
-        refresh.IsEnabled = idle; add.IsEnabled = trusted;
+        refresh.IsEnabled = idle; add.IsEnabled = trusted; cleanup.IsEnabled = trusted;
         install.IsEnabled = ready && packages.SelectedItem is PackageChoice choice && !choice.Package.Flags.HasFlag(UpdatePackageFlags.Current);
         rollback.IsEnabled = ready && inventory!.Packages.Any(package => package.Flags.HasFlag(UpdatePackageFlags.Previous));
         recoveryChoices.IsEnabled = idle;
         repair.IsEnabled = trusted && recoveryChoices.SelectedItem is RecoveryChoice recoveryChoice && recoveryChoice.Candidate.CanRepair;
-        cancel.IsEnabled = busy && prepared?.CommitSent != true;
+        cancel.IsEnabled = busy && prepared?.CommitSent != true && preparedCleanup?.CommitSent != true;
         if (confirmation is { } dialog && prepared is { } session)
             dialog.IsPrimaryButtonEnabled = !closed && operation?.IsCancellationRequested != true && UpdateProtocol.NowMs < session.CommitDeadlineMonotonicMs;
+        if (confirmation is { } cleanupDialog && preparedCleanup is { } cleanupSession)
+            cleanupDialog.IsPrimaryButtonEnabled = !closed && operation?.IsCancellationRequested != true && UpdateProtocol.NowMs < cleanupSession.CommitDeadlineMonotonicMs;
     }
 
     private static string StatusText(UpdateStatus value) => value switch {
