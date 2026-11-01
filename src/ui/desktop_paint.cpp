@@ -167,33 +167,49 @@ void Desktop::paint(HDC destination)
         }, reinterpret_cast<LPARAM>(&context));
     }
     RECT client{}; GetClientRect(window, &client);
+    const auto finish = [&] { surface = nullptr; drawBrush = nullptr; if (saved) RestoreDC(dc, saved); if (!destination) EndPaint(window, &paint); };
+    if (client.right <= 0 || client.bottom <= 0 || (!destination && IsIconic(window))) { finish(); return; }
+    const auto width = client.right / scale, height = client.bottom / scale;
+    if (!destination && composition.begin(window, factory.Get(),
+        D2D1::SizeU(static_cast<UINT32>(client.right), static_cast<UINT32>(client.bottom)), 96 * scale)) {
+        surface = composition.surface(); drawBrush = composition.brush();
+        surface->SetTextRenderingParams(textRendering.Get());
+        paintContent(width, height, composition.description());
+        const auto result = composition.end();
+        if (result != CompositionRenderer::Presentation::failed) {
+            if (result == CompositionRenderer::Presentation::busy || result == CompositionRenderer::Presentation::occluded)
+                SetTimer(window, renderRetryTimer, result == CompositionRenderer::Presentation::busy ? 16 : 250, nullptr);
+            finish(); return;
+        }
+    }
     if (!target) {
         const auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_DEFAULT,
             D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE), 96 * scale, 96 * scale);
         if (FAILED(factory->CreateDCRenderTarget(&properties, &target))) {
-            if (saved) RestoreDC(dc, saved);
-            if (!destination) EndPaint(window, &paint);
-            return;
+            finish(); return;
         }
         target->SetDpi(96 * scale, 96 * scale);
         target->SetTextRenderingParams(textRendering.Get());
         if (FAILED(target->CreateSolidColorBrush(ink, &brush))) {
             brush.Reset(); target.Reset();
-            if (saved) RestoreDC(dc, saved);
-            if (!destination) EndPaint(window, &paint);
-            return;
+            finish(); return;
         }
     }
     if (FAILED(target->BindDC(dc, &client))) {
         brush.Reset(); target.Reset();
-        if (saved) RestoreDC(dc, saved);
-        if (!destination) EndPaint(window, &paint);
-        return;
+        finish(); return;
     }
     surface = target.Get(); drawBrush = brush.Get();
     target->BeginDraw();
-    target->Clear(D2D1::ColorF(0x171d21));
-    const auto width = client.right / scale, height = client.bottom / scale;
+    target->SetTransform(D2D1::Matrix3x2F::Identity());
+    paintContent(width, height, L"Direct2D · DC");
+    if (FAILED(target->EndDraw())) { brush.Reset(); target.Reset(); }
+    finish();
+}
+
+void Desktop::paintContent(float width, float height, const wchar_t* renderer)
+{
+    surface->Clear(D2D1::ColorF(0x171d21));
     const auto frame = performanceLayout();
     const auto headerX = frame.sidebar + (width <= 1000 ? 22.f : 30.f);
     fill(rect(0, 0, width, 49), D2D1::ColorF(0x12181c));
@@ -229,10 +245,8 @@ void Desktop::paint(HDC destination)
     }
     if (historyLost || historyErrors) footer += L" · Historie: " + std::to_wstring(historyLost)
         + L" neuchovaných vzorků, " + std::to_wstring(historyErrors) + L" chyb";
+    footer += L"  ·  "; footer += renderer;
     text(footer, rect(frame.inventoryX, height - 21, width - frame.inventoryX - 25, 18), 9, muted);
-    if (target->EndDraw() == D2DERR_RECREATE_TARGET) { brush.Reset(); target.Reset(); }
-    if (saved) RestoreDC(dc, saved);
-    if (!destination) EndPaint(window, &paint);
 }
 
 }

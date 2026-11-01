@@ -9,6 +9,7 @@
 #include "service_table.hpp"
 #include "service_layout.hpp"
 #include "core/service_monitor.hpp"
+#include "composition_renderer.hpp"
 #include <d2d1.h>
 #include <dwrite.h>
 #include <dwrite_1.h>
@@ -24,6 +25,7 @@ public:
     LRESULT message(UINT message, WPARAM wparam, LPARAM lparam);
     static LRESULT CALLBACK procedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 private:
+    static constexpr UINT_PTR renderRetryTimer = 2;
     void create();
     void setFonts();
     void layout();
@@ -31,6 +33,7 @@ private:
     bool readHistory();
     void changeView(DesktopView value);
     void paint(HDC destination = nullptr);
+    void paintContent(float width, float height, const wchar_t* renderer);
     void paintPerformance(float width, float height);
     void paintProcesses(float width, float height);
     void paintSearch(float x, float y, float width, bool shortcut);
@@ -107,6 +110,7 @@ private:
     std::vector<std::pair<std::wstring, bool>> dependencyRows;
     int serviceTab{};
     Microsoft::WRL::ComPtr<ID2D1Factory> factory;
+    CompositionRenderer composition;
     Microsoft::WRL::ComPtr<IDWriteFactory> writing;
     Microsoft::WRL::ComPtr<IDWriteRenderingParams> textRendering;
     Microsoft::WRL::ComPtr<ID2D1DCRenderTarget> target;

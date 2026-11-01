@@ -28,8 +28,11 @@ int Desktop::run(HINSTANCE instance, int show, bool smoke)
     smokeMode = smoke;
     INITCOMMONCONTROLSEX controls{sizeof(controls), ICC_LISTVIEW_CLASSES};
     InitCommonControlsEx(&controls);
-    if (FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, factory.GetAddressOf()))
-        || FAILED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
+    Microsoft::WRL::ComPtr<ID2D1Factory1> modernFactory;
+    const auto graphics = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, modernFactory.GetAddressOf());
+    if (SUCCEEDED(graphics)) factory = modernFactory;
+    else if (FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, factory.GetAddressOf()))) return 2;
+    if (FAILED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
             reinterpret_cast<IUnknown**>(writing.GetAddressOf())))) return 2;
     WNDCLASSEXW type{sizeof(type)};
     type.hInstance = instance;
@@ -383,7 +386,13 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
     switch (msg) {
     case WM_CREATE: create(); return 0;
     case WM_NCCALCSIZE: if (wp) return 0; break;
-    case WM_SIZE: serviceMonitor.setActive(view == DesktopView::services && !IsIconic(window)); layout(); return 0;
+    case WM_SIZE:
+        serviceMonitor.setActive(view == DesktopView::services && !IsIconic(window));
+        if (wp == SIZE_MINIMIZED) KillTimer(window, renderRetryTimer);
+        else layout();
+        return 0;
+    case WM_DISPLAYCHANGE: case WM_DWMCOMPOSITIONCHANGED:
+        composition.reset(); InvalidateRect(window, nullptr, FALSE); return 0;
     case WM_DPICHANGED: {
         scale = HIWORD(wp) / 96.f;
         setFonts();
@@ -423,7 +432,10 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         if (point.y < 48 * scale) return HTCAPTION;
         return HTCLIENT;
     }
-    case WM_TIMER: if (wp == refreshTimer) tick(); return 0;
+    case WM_TIMER:
+        if (wp == refreshTimer) tick();
+        else if (wp == renderRetryTimer) { KillTimer(window, renderRetryTimer); if (!IsIconic(window)) InvalidateRect(window, nullptr, FALSE); }
+        return 0;
     case WM_ERASEBKGND: return 1;
     case WM_VKEYTOITEM:
         if (reinterpret_cast<HWND>(lp) == serviceDependencies && LOWORD(wp) == VK_RETURN) { serviceCommand(103); return -2; }
@@ -565,7 +577,8 @@ LRESULT Desktop::message(UINT msg, WPARAM wp, LPARAM lp)
         }
         break;
     case WM_CLOSE: DestroyWindow(window); return 0;
-    case WM_DESTROY: KillTimer(window, refreshTimer); PostQuitMessage(0); return 0;
+    case WM_DESTROY:
+        KillTimer(window, refreshTimer); KillTimer(window, renderRetryTimer); composition.reset(); PostQuitMessage(0); return 0;
     }
     return DefWindowProcW(window, msg, wp, lp);
 }
