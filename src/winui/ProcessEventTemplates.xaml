@@ -14,4 +14,17 @@
       <TextBlock Grid.Row="1" Grid.Column="2" Text="{x:Bind IdentityText}" FontSize="11" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis"/>
     </Grid>
   </DataTemplate>
+  <DataTemplate x:Key="ProcessLifetime" x:DataType="local:ProcessEventRow">
+    <Grid Padding="8,6" ColumnSpacing="12" RowSpacing="4">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="150"/><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+      <TextBlock Text="{x:Bind StartedText}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Grid.Column="1" Text="{x:Bind EndedText}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Grid.Column="2" Text="{x:Bind DurationText}" FontSize="12"/>
+      <TextBlock Grid.Column="3" Text="{x:Bind NameText}" FontSize="13" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{x:Bind TargetText}" FontSize="11" Foreground="{ThemeResource NksSecondaryTextBrush}"/>
+      <TextBlock Grid.Row="1" Grid.Column="3" Text="{x:Bind KindText}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Grid.Row="2" Grid.ColumnSpan="4" Text="{x:Bind IdentityText}" FontSize="11" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis"/>
+    </Grid>
+  </DataTemplate>
 </ResourceDictionary>

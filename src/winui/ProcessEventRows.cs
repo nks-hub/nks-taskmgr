@@ -28,7 +28,7 @@ public sealed partial class ProcessEventRow
     internal bool Matches(string query) => NameText.Contains(query, StringComparison.OrdinalIgnoreCase)
         || TargetText.Contains(query, StringComparison.OrdinalIgnoreCase) || KindText.Contains(query, StringComparison.OrdinalIgnoreCase)
         || IdentityText.Contains(query, StringComparison.OrdinalIgnoreCase);
-    internal string Detail => Traffic is not null ? TrafficDetail : KindText + " · " + NameText + "\n" + TargetText + "\n" + IdentityText + "\n"
+    internal string Detail => Lifetime is { } lifetime ? ProcessLifetimeText.Detail(lifetime) : Traffic is not null ? TrafficDetail : KindText + " · " + NameText + "\n" + TargetText + "\n" + IdentityText + "\n"
         + "Pořadí ve zdroji: " + Source.Sequence + "\nČas ETW (QPC): " + Source.TimestampQpc + "\nFrekvence QPC: " + frequency
         + "\nPřijato (monotónní ns): " + Source.ObservedAtNs + "\nStav identity: " + Source.IdentityState
         + "\nDruh generace: " + Source.IdentityKind + " · generace " + Source.Generation + "\nPříznaky události: " + Source.Flags
