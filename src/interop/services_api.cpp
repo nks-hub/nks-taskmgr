@@ -1,5 +1,6 @@
 #include "services_api.h"
 #include "core/service_monitor.hpp"
+#include <array>
 #include <limits>
 #include <stdexcept>
 
@@ -18,6 +19,9 @@ struct NksServiceFrame {
     std::vector<std::vector<NksString16>> dependencies;
     std::vector<NksString16> detailDependencies, dependents;
     NksServiceFrameView view{};
+    std::array<NksProcessIdentityData, 2> hostIdentities{{
+        {0, 0, 0, NKS_GENERATION_CREATION_TIME, 0, NKS_SAMPLE_UNAVAILABLE, 0},
+        {0, 0, 0, NKS_GENERATION_SEQUENCE_NUMBER, 0, NKS_SAMPLE_UNAVAILABLE, 0}}};
     void build();
 };
 
@@ -47,6 +51,31 @@ NksServiceConfig config(const nks::ServiceConfig& source, std::vector<NksString1
     return {source.error, source.startType, source.delayedError, source.delayed ? 1u : 0u,
         string(source.account), string(source.group), string(source.command), dependencies.data(), count(dependencies.size()), 0};
 }
+
+void readHostIdentities(const nks::ServiceDetail& detail, std::array<NksProcessIdentityData, 2>& identities)
+{
+    const auto unavailable = [&](uint32_t state) { for (auto& identity : identities) identity.state = state; };
+    if (detail.statusError || detail.hostError) {
+        const auto error = detail.statusError ? detail.statusError : detail.hostError;
+        unavailable(error == ERROR_ACCESS_DENIED ? NKS_SAMPLE_ACCESS_DENIED
+            : error == ERROR_NO_DATA ? NKS_SAMPLE_UNAVAILABLE : NKS_SAMPLE_ERROR);
+        return;
+    }
+    if (detail.state != SERVICE_RUNNING || !detail.pid || !detail.hostCreated100ns) return;
+    const std::unique_ptr<void, decltype(&CloseHandle)> process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, detail.pid), CloseHandle);
+    if (!process) { unavailable(GetLastError() == ERROR_ACCESS_DENIED ? NKS_SAMPLE_ACCESS_DENIED : NKS_SAMPLE_UNAVAILABLE); return; }
+    FILETIME created{}, exited{}, kernel{}, user{};
+    if (!GetProcessTimes(process.get(), &created, &exited, &kernel, &user)) {
+        unavailable(GetLastError() == ERROR_ACCESS_DENIED ? NKS_SAMPLE_ACCESS_DENIED : NKS_SAMPLE_ERROR); return;
+    }
+    const auto created100ns = (static_cast<uint64_t>(created.dwHighDateTime) << 32) | created.dwLowDateTime;
+    if (created100ns != detail.hostCreated100ns) { unavailable(NKS_SAMPLE_STALE); return; }
+    for (auto& identity : identities) {
+        const auto kind = identity.generation_kind;
+        if (nks_process_query_identity(process.get(), kind, sizeof(identity), &identity) != NKS_OK)
+            identity = {0, 0, 0, kind, 0, NKS_SAMPLE_ERROR, 0};
+    }
+}
 }
 
 static_assert(sizeof(NksServiceConfig) == 80 && sizeof(NksService) == 128);
@@ -72,6 +101,7 @@ void NksServiceFrame::build()
         view.detail = {nanos(detail->measuredAt), string(detail->name), string(detail->description), config(detail->config, detailDependencies),
             detail->statusError, detail->descriptionError, detail->dependentsError, detail->hostError,
             detail->pid, detail->state, detail->hostCreated100ns, dependents.data(), count(dependents.size()), 0};
+        readHostIdentities(*detail, hostIdentities);
     }
 }
 
@@ -134,6 +164,13 @@ NksResult __cdecl nks_service_frame_get_view(const NksServiceFrame* frame, uint3
     *result = frame->view; return NKS_OK;
 }
 void __cdecl nks_service_frame_retain(NksServiceFrame* frame) noexcept { if (frame) frame->references.fetch_add(1, std::memory_order_relaxed); }
+NksResult __cdecl nks_service_frame_get_host_identity(const NksServiceFrame* frame, uint32_t kind, uint32_t size, NksProcessIdentityData* result) noexcept
+{
+    if (!frame || !result || (kind != NKS_GENERATION_CREATION_TIME && kind != NKS_GENERATION_SEQUENCE_NUMBER)) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksProcessIdentityData)) return NKS_ABI_MISMATCH;
+    *result = frame->hostIdentities[kind == NKS_GENERATION_CREATION_TIME ? 0 : 1];
+    return frame->detail ? NKS_OK : NKS_NO_DATA;
+}
 void __cdecl nks_service_frame_release(NksServiceFrame* frame) noexcept
 {
     if (frame && frame->references.fetch_sub(1, std::memory_order_acq_rel) == 1) delete frame;

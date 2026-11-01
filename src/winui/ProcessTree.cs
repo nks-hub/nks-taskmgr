@@ -8,8 +8,8 @@ public static class ProcessTree
         var children = new Dictionary<ProcessKey, List<ProcessRow>>(); var roots = new List<ProcessRow>();
         foreach (var row in rows) {
             if (row.ParentPid != row.Key.Pid && byPid.TryGetValue(row.ParentPid, out var parent)
-                && row.Key.Kind == Native.GenerationKind.CreationTime && parent.Key.Kind == Native.GenerationKind.CreationTime
-                && row.Key.Boot == parent.Key.Boot && parent.Key.Generation <= row.Key.Generation) {
+                && !row.Key.Boot.IsEmpty && row.Key.Boot == parent.Key.Boot
+                && row.Created100ns != 0 && parent.Created100ns != 0 && parent.Created100ns <= row.Created100ns) {
                 if (!children.TryGetValue(parent.Key, out var list)) children.Add(parent.Key, list = []);
                 list.Add(row);
             } else roots.Add(row);

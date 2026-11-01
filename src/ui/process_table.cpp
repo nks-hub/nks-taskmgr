@@ -230,10 +230,9 @@ void ProcessTable::buildTree()
         const auto parent = byPid.find(child.parentPid);
         bool attached = false;
         if (parent != byPid.end() && parent->second != index) {
-            const auto& a = snapshot->processes[parent->second].identity;
-            const auto& b = child.identity;
-            if (a.boot == b.boot && a.generationKind == GenerationKind::creationTime
-                && b.generationKind == GenerationKind::creationTime && a.generation && a.generation <= b.generation) {
+            const auto& ancestor = snapshot->processes[parent->second];
+            if (!ancestor.identity.boot.empty() && ancestor.identity.boot == child.identity.boot
+                && ancestor.created100ns && child.created100ns && ancestor.created100ns <= child.created100ns) {
                 children[parent->second].push_back(index); attached = true;
             }
         }

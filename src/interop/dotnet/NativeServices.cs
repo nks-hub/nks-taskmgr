@@ -102,6 +102,17 @@ public sealed class NativeServiceFrame : SafeHandleZeroOrMinusOneIsInvalid
         Use(pointer => { ServiceMethods.Retain(pointer); clone.SetHandle(pointer); });
         return clone;
     }
+    public unsafe ProcessIdentityInfo? ReadHostIdentity(GenerationKind kind)
+    {
+        ProcessIdentityInfo? identity = null;
+        Use(pointer => {
+            var status = ServiceMethods.GetHostIdentity(pointer, kind, (uint)sizeof(ProcessIdentityInfo), out var data);
+            if (status == NativeResult.NoData) return;
+            NativeMonitor.Check(status);
+            identity = data;
+        });
+        return identity;
+    }
     private void Use(Action<nint> visitor)
     {
         bool added = false;
@@ -131,6 +142,8 @@ internal static partial class ServiceMethods
     internal static partial NativeResult Read(NativeServices services, out NativeServiceFrame frame);
     [LibraryImport(Library, EntryPoint = "nks_service_frame_get_view")]
     internal static partial NativeResult GetView(nint frame, uint size, out ServiceFrameView view);
+    [LibraryImport(Library, EntryPoint = "nks_service_frame_get_host_identity")]
+    internal static partial NativeResult GetHostIdentity(nint frame, GenerationKind kind, uint size, out ProcessIdentityInfo identity);
     [LibraryImport(Library, EntryPoint = "nks_service_frame_retain")]
     internal static partial void Retain(nint frame);
     [LibraryImport(Library, EntryPoint = "nks_service_frame_release")]

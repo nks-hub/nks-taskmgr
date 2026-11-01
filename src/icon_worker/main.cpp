@@ -1,16 +1,18 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <objbase.h>
+#include "collectors/process_identity.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <vector>
 
 namespace {
-constexpr std::uint32_t magic = 0x31494b4e;
+constexpr std::uint32_t magic = 0x32494b4e;
 constexpr int iconSize = 18;
 
 bool readAll(HANDLE pipe, void* data, DWORD size) {
@@ -70,19 +72,15 @@ std::vector<std::byte> bitmap(HICON icon) {
     return bytes;
 }
 
-std::vector<std::byte> readIcon(DWORD pid, std::uint64_t generation) {
-    if (generation == 0) return {};
-    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+std::vector<std::byte> readIcon(const nks::ProcessIdentity& expected) {
+    if (!expected.generation || expected.boot.empty()) return {};
+    const std::unique_ptr<void, decltype(&CloseHandle)> process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, expected.pid), CloseHandle);
     if (!process) return {};
-    FILETIME created{}, exited{}, kernel{}, user{};
+    const auto actual = nks::queryProcessIdentity(process.get(), expected.generationKind);
+    if (actual.state != nks::SampleState::valid || actual.identity != expected) return {};
     std::array<wchar_t, 32768> path{};
     DWORD length = static_cast<DWORD>(path.size());
-    std::uint64_t actual{};
-    bool valid = GetProcessTimes(process, &created, &exited, &kernel, &user) != FALSE;
-    std::memcpy(&actual, &created, sizeof(actual));
-    valid = valid && actual == generation && QueryFullProcessImageNameW(process, 0, path.data(), &length);
-    CloseHandle(process);
-    if (!valid || length < 3 || path[1] != L':') return {};
+    if (!QueryFullProcessImageNameW(process.get(), 0, path.data(), &length) || length < 3 || path[1] != L':') return {};
     const wchar_t drive[]{path[0], L':', L'\\', L'\0'};
     if (GetDriveTypeW(drive) != DRIVE_FIXED) return {};
     SHFILEINFOW shell{};
@@ -100,15 +98,24 @@ int main() {
     if (FAILED(initialized)) return 3;
     int result = 0;
     try {
-        std::array<std::byte, 16> request{};
+        std::array<std::byte, 40> request{};
         while (readAll(input, request.data(), static_cast<DWORD>(request.size()))) {
-            std::uint32_t version{}, pid{};
-            std::uint64_t generation{};
+            std::uint32_t version{}, kind{}, reserved{};
+            nks::ProcessIdentity identity;
             std::memcpy(&version, request.data(), 4);
-            std::memcpy(&pid, request.data() + 4, 4);
-            std::memcpy(&generation, request.data() + 8, 8);
+            std::memcpy(&identity.pid, request.data() + 4, 4);
+            std::memcpy(&kind, request.data() + 8, 4);
+            std::memcpy(&reserved, request.data() + 12, 4);
+            std::memcpy(&identity.generation, request.data() + 16, 8);
+            std::memcpy(&identity.boot.low, request.data() + 24, 8);
+            std::memcpy(&identity.boot.high, request.data() + 32, 8);
             if (version != magic) { result = 4; break; }
-            auto bytes = readIcon(pid, generation);
+            std::vector<std::byte> bytes;
+            if (reserved == 0 && (kind == static_cast<std::uint32_t>(nks::GenerationKind::creationTime)
+                || kind == static_cast<std::uint32_t>(nks::GenerationKind::sequenceNumber))) {
+                identity.generationKind = static_cast<nks::GenerationKind>(kind);
+                bytes = readIcon(identity);
+            }
             const std::array<std::uint32_t, 2> response{magic, static_cast<std::uint32_t>(bytes.size())};
             if (!writeAll(output, response.data(), sizeof(response))
                 || !writeAll(output, bytes.data(), static_cast<DWORD>(bytes.size()))) break;

@@ -13,6 +13,7 @@ public sealed partial class ProcessRow : INotifyPropertyChanged
     public string Name { get; private set; } = string.Empty;
     public string DisplayName => (HasChildren ? Collapsed ? "› " : "⌄ " : "") + Name + (Ended ? " · ukončeno" : Stale ? " · zastaralé" : "");
     public uint ParentPid { get; private set; }
+    public ulong Created100ns { get; private set; }
     public uint Threads { get; private set; }
     public uint Handles { get; private set; }
     public ulong WorkingBytes { get; private set; }
@@ -68,6 +69,8 @@ public sealed partial class ProcessRow : INotifyPropertyChanged
         if (Ended == ended && Stale == stale) return;
         Ended = ended; Stale = stale; if (notify) NotifyUpdated();
     }
+
+    public void SetCreatedTime(ulong value) => Created100ns = value;
 
     public void SetTree(int depth, bool children, bool collapsed)
     {

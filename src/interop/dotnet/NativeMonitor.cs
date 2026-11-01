@@ -58,6 +58,35 @@ public struct ProcessInfo
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct ProcessCreationInfo
+{
+    public uint Pid;
+    public GenerationKind Kind;
+    public ulong Generation, Created100ns;
+    public SampleState State;
+    public uint Reserved;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public unsafe struct ProcessCreationData
+{
+    public ProcessCreationInfo* Processes;
+    public uint ProcessCount, Reserved;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct ProcessIdentityInfo
+{
+    public ulong BootLow, BootHigh;
+    public uint Pid;
+    public GenerationKind Kind;
+    public ulong Generation;
+    public SampleState State;
+    public uint Reserved;
+    public readonly BootIdentifier Boot => new(BootLow, BootHigh);
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
 public struct ProcessorInfo
 {
     public uint Group, Index;
@@ -169,6 +198,13 @@ public sealed class NativeMonitor : SafeHandleZeroOrMinusOneIsInvalid
     public void SetInterval(uint milliseconds) => Check(NativeMethods.SetInterval(this, milliseconds));
     public static long MonotonicNowNs => NativeMethods.MonotonicNowNs();
 
+    public static unsafe ProcessIdentityInfo QueryProcessIdentity(SafeProcessHandle process, GenerationKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(process);
+        Check(NativeMethods.QueryProcessIdentity(process, kind, (uint)sizeof(ProcessIdentityInfo), out var identity));
+        return identity;
+    }
+
     public NativeFrame? Read()
     {
         var result = NativeMethods.Read(this, out var frame);
@@ -237,6 +273,17 @@ public sealed class NativeFrame : SafeHandleZeroOrMinusOneIsInvalid
         return identity;
     }
 
+    public unsafe void ReadProcessCreationTimes(Action<ProcessCreationData> visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+        Use(pointer => {
+            var status = NativeMethods.GetProcessCreationData(pointer, (uint)sizeof(ProcessCreationData), out var data);
+            if (status == NativeResult.NoData) return;
+            NativeMonitor.Check(status);
+            visitor(data);
+        });
+    }
+
     private void Use(Action<nint> action)
     {
         bool added = false;
@@ -273,6 +320,10 @@ internal static partial class NativeMethods
     internal static partial NativeResult GetHardwareData(nint frame, uint dataSize, out HardwareData data);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_boot_data")]
     internal static partial NativeResult GetBootData(nint frame, uint dataSize, out BootIdentityInfo data);
+    [LibraryImport(Library, EntryPoint = "nks_frame_get_process_creation_data")]
+    internal static partial NativeResult GetProcessCreationData(nint frame, uint dataSize, out ProcessCreationData data);
+    [LibraryImport(Library, EntryPoint = "nks_process_query_identity")]
+    internal static partial NativeResult QueryProcessIdentity(SafeProcessHandle process, GenerationKind kind, uint dataSize, out ProcessIdentityInfo data);
     [LibraryImport(Library, EntryPoint = "nks_frame_retain")]
     internal static partial void Retain(nint frame);
     [LibraryImport(Library, EntryPoint = "nks_frame_release")]

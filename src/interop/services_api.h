@@ -66,6 +66,8 @@ NKS_MONITOR_API NksResult __cdecl nks_services_select(NksServices* services, con
 NKS_MONITOR_API NksResult __cdecl nks_services_read(NksServices* services, NksServiceFrame** result) NKS_SERVICES_NOEXCEPT;
 // Arrays and UTF-16 strings remain valid until the final frame release, including after monitor destruction.
 NKS_MONITOR_API NksResult __cdecl nks_service_frame_get_view(const NksServiceFrame* frame, uint32_t view_size, NksServiceFrameView* result) NKS_SERVICES_NOEXCEPT;
+// Host identities are verified against host_created_100ns and copied into the immutable frame.
+NKS_MONITOR_API NksResult __cdecl nks_service_frame_get_host_identity(const NksServiceFrame* frame, uint32_t generation_kind, uint32_t data_size, NksProcessIdentityData* result) NKS_SERVICES_NOEXCEPT;
 NKS_MONITOR_API void __cdecl nks_service_frame_retain(NksServiceFrame* frame) NKS_SERVICES_NOEXCEPT;
 NKS_MONITOR_API void __cdecl nks_service_frame_release(NksServiceFrame* frame) NKS_SERVICES_NOEXCEPT;
 

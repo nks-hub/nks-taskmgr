@@ -4,12 +4,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
 internal sealed partial class IconWorker : IDisposable
 {
-    private const uint Magic = 0x31494b4e;
+    private const uint Magic = 0x32494b4e;
     private readonly object lifetime = new();
     private Process? process;
     private SafeFileHandle? job;
@@ -54,17 +55,22 @@ internal sealed partial class IconWorker : IDisposable
     internal byte[]? Request(ProcessKey key)
     {
         Failure = null;
+        if (key.Kind is not (GenerationKind.CreationTime or GenerationKind.SequenceNumber) || key.Generation == 0 || key.Boot.IsEmpty) return null;
         try {
             Start();
-            Span<byte> request = stackalloc byte[16];
+            Span<byte> request = stackalloc byte[40];
             BinaryPrimitives.WriteUInt32LittleEndian(request, Magic);
             BinaryPrimitives.WriteUInt32LittleEndian(request[4..], key.Pid);
-            BinaryPrimitives.WriteUInt64LittleEndian(request[8..], key.Generation);
+            BinaryPrimitives.WriteUInt32LittleEndian(request[8..], (uint)key.Kind);
+            BinaryPrimitives.WriteUInt32LittleEndian(request[12..], 0);
+            BinaryPrimitives.WriteUInt64LittleEndian(request[16..], key.Generation);
+            BinaryPrimitives.WriteUInt64LittleEndian(request[24..], key.Boot.Low);
+            BinaryPrimitives.WriteUInt64LittleEndian(request[32..], key.Boot.High);
             var input = process!.StandardInput.BaseStream;
             input.Write(request);
             input.Flush();
             return ReadResponse(TimeSpan.FromSeconds(3));
-        } catch (Exception error) when (error is IOException or Win32Exception or TimeoutException or ObjectDisposedException) {
+        } catch (Exception error) when (error is IOException or InvalidDataException or Win32Exception or TimeoutException or ObjectDisposedException) {
             Failure = error.ToString(); Reset(); return null;
         }
     }

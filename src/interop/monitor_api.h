@@ -153,6 +153,24 @@ typedef struct NksBootData {
     uint64_t low, high;
     uint32_t state, reserved;
 } NksBootData;
+
+typedef struct NksProcessCreation {
+    uint32_t pid, generation_kind;
+    uint64_t generation, created_100ns;
+    uint32_t state, reserved;
+} NksProcessCreation;
+
+typedef struct NksProcessCreationData {
+    const NksProcessCreation* processes;
+    uint32_t process_count, reserved;
+} NksProcessCreationData;
+
+typedef struct NksProcessIdentityData {
+    uint64_t boot_low, boot_high;
+    uint32_t pid, generation_kind;
+    uint64_t generation;
+    uint32_t state, reserved;
+} NksProcessIdentityData;
 #pragma pack(pop)
 
 // String lengths count UTF-16 code units. Arrays and strings live until the final frame release.
@@ -166,6 +184,10 @@ NKS_MONITOR_API NksResult __cdecl nks_frame_get_view(const NksFrame* frame, uint
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_gpu_data(const NksFrame* frame, uint32_t data_size, NksGpuData* result) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_hardware_data(const NksFrame* frame, uint32_t data_size, NksHardwareData* result) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_boot_data(const NksFrame* frame, uint32_t data_size, NksBootData* result) NKS_NOEXCEPT;
+// Creation times are independent of generation_kind. A missing time has state UNAVAILABLE and value zero.
+NKS_MONITOR_API NksResult __cdecl nks_frame_get_process_creation_data(const NksFrame* frame, uint32_t data_size, NksProcessCreationData* result) NKS_NOEXCEPT;
+// The caller retains ownership of the process HANDLE. VALID verifies that held object, not action permissions or continued liveness.
+NKS_MONITOR_API NksResult __cdecl nks_process_query_identity(void* process_handle, uint32_t generation_kind, uint32_t data_size, NksProcessIdentityData* result) NKS_NOEXCEPT;
 NKS_MONITOR_API void __cdecl nks_frame_retain(NksFrame* frame) NKS_NOEXCEPT;
 NKS_MONITOR_API void __cdecl nks_frame_release(NksFrame* frame) NKS_NOEXCEPT;
 // measured_at_ns and read_at_ns use this clock; wall_time_unix_ns uses the Unix epoch.

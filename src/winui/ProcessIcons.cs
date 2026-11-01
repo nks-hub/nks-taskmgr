@@ -24,9 +24,12 @@ internal static partial class ProcessIcons
 
     internal static unsafe byte[]? Read(ProcessKey key)
     {
-        if (key.Kind != GenerationKind.CreationTime || key.Generation == 0) return null;
+        if (key.Kind is not (GenerationKind.CreationTime or GenerationKind.SequenceNumber) || key.Generation == 0 || key.Boot.IsEmpty) return null;
         using var process = OpenProcess(0x1000, false, key.Pid);
-        if (process.IsInvalid || !GetProcessTimes(process, out ulong created, out _, out _, out _) || created != key.Generation) return null;
+        if (process.IsInvalid) return null;
+        var identity = NativeMonitor.QueryProcessIdentity(process, key.Kind);
+        if (identity.State != SampleState.Valid || identity.Boot != key.Boot || identity.Pid != key.Pid
+            || identity.Kind != key.Kind || identity.Generation != key.Generation) return null;
         char[] buffer = new char[32768]; uint length = (uint)buffer.Length;
         fixed (char* pathBuffer = buffer) if (!QueryFullProcessImageName(process, 0, pathBuffer, ref length)) return null;
         string path = new(buffer, 0, (int)length);
@@ -44,9 +47,6 @@ internal static partial class ProcessIcons
 
     [LibraryImport("kernel32.dll", EntryPoint = "OpenProcess")]
     private static partial SafeProcessHandle OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint pid);
-    [LibraryImport("kernel32.dll", EntryPoint = "GetProcessTimes")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetProcessTimes(SafeProcessHandle process, out ulong created, out ulong ended, out ulong kernel, out ulong user);
     [LibraryImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static unsafe partial bool QueryFullProcessImageName(SafeProcessHandle process, uint flags, char* path, ref uint length);

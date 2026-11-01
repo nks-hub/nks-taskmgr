@@ -38,9 +38,9 @@ public sealed class ServiceModel : IDisposable
         if (!active || paused) return false;
         using var frame = monitor.Read();
         if (frame is null) return false;
-        frame.Read(Apply); return true;
+        frame.Read(view => Apply(view, frame)); return true;
     }
-    private unsafe void Apply(ServiceFrameView view)
+    private unsafe void Apply(ServiceFrameView view, NativeServiceFrame frame)
     {
         if (view.AbiVersion != 1) throw new NativeMonitorException(NativeResult.AbiMismatch);
         if ((view.Flags & ServiceFrameFlags.ErrorChanged) != 0) Error = view.Error.Copy();
@@ -59,7 +59,10 @@ public sealed class ServiceModel : IDisposable
             if (changed) Rebuild();
         }
         if ((view.Flags & ServiceFrameFlags.Detail) != 0 && Selected is { } selectedRow && ServiceConfiguration.Same(selectedRow.Name, view.Detail.Name))
-            Detail = ServiceDetailData.Copy(view.Detail);
+            Detail = ServiceDetailData.Copy(view.Detail) with {
+                HostCreationIdentity = frame.ReadHostIdentity(GenerationKind.CreationTime),
+                HostSequenceIdentity = frame.ReadHostIdentity(GenerationKind.SequenceNumber)
+            };
     }
     private void SyncSelection()
     {

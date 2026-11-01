@@ -75,10 +75,22 @@ public sealed partial class ServiceRow(string name) : INotifyPropertyChanged
 public sealed record ServiceDetailData(long Time, string Name, string Description, ServiceConfiguration Config,
     uint StatusError, uint DescriptionError, uint DependentsError, uint HostError, uint Pid, uint State, ulong HostCreated, string[] Dependents)
 {
+    public ProcessIdentityInfo? HostCreationIdentity { get; init; }
+    public ProcessIdentityInfo? HostSequenceIdentity { get; init; }
     public bool MatchesHost(ServiceRow service, ProcessRow process) => StringComparer.OrdinalIgnoreCase.Equals(service.Name, Name)
         && service.State == 4 && State == 4 && service.Pid != 0 && service.Pid == Pid && process.Key.Pid == Pid
         && StatusError == 0 && HostError == 0 && HostCreated != 0 && !process.Ended
-        && process.Key.Kind == GenerationKind.CreationTime && process.Key.Generation == HostCreated;
+        && MatchesIdentity(process.Key);
+    private bool MatchesIdentity(ProcessKey key)
+    {
+        var identity = key.Kind switch {
+            GenerationKind.CreationTime => HostCreationIdentity,
+            GenerationKind.SequenceNumber => HostSequenceIdentity,
+            _ => null
+        };
+        return identity is { State: SampleState.Valid } host && !host.Boot.IsEmpty && host.Generation != 0
+            && host.Boot == key.Boot && host.Pid == key.Pid && host.Kind == key.Kind && host.Generation == key.Generation;
+    }
     public static unsafe ServiceDetailData Copy(in ServiceDetailInfo value) => new(value.MeasuredAtNs, value.Name.Copy(), value.Description.Copy(),
         ServiceConfiguration.Copy(value.Config), value.StatusError, value.DescriptionError, value.DependentsError, value.HostError,
         value.Pid, value.State, value.HostCreated100ns, ServiceConfiguration.Strings(value.Dependents, value.DependentCount));

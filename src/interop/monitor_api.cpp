@@ -1,5 +1,6 @@
 #include "monitor_api.h"
 #include "monitor_handle.hpp"
+#include "collectors/process_identity.hpp"
 #include <limits>
 #include <stdexcept>
 
@@ -9,6 +10,7 @@ struct NksFrame {
     std::shared_ptr<const nks::ResourceSnapshot> resourceSnapshot;
     std::wstring processError, resourceError;
     std::vector<NksProcess> processes;
+    std::vector<NksProcessCreation> processCreation;
     std::vector<NksProcessor> processors;
     std::vector<NksResource> resources;
     std::vector<NksGpu> gpus;
@@ -47,6 +49,7 @@ static_assert(sizeof(NksMemory) == 96 && sizeof(NksProcessData) == 208);
 static_assert(sizeof(NksResource) == 128 && sizeof(NksResourceData) == 32 && sizeof(NksFrameView) == 288);
 static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGpuData) == 16);
 static_assert(sizeof(NksHardwareFact) == 48 && sizeof(NksHardwareData) == 16);
+static_assert(sizeof(NksProcessCreation) == 32 && sizeof(NksProcessCreationData) == 16 && sizeof(NksProcessIdentityData) == 40);
 static_assert(static_cast<unsigned>(nks::SampleState::valid) == NKS_SAMPLE_VALID && static_cast<unsigned>(nks::SampleState::gap) == NKS_SAMPLE_GAP);
 static_assert(static_cast<unsigned>(nks::GenerationKind::creationTime) == NKS_GENERATION_CREATION_TIME && static_cast<unsigned>(nks::GenerationKind::sequenceNumber) == NKS_GENERATION_SEQUENCE_NUMBER);
 static_assert(static_cast<unsigned>(nks::ResourceKind::cpu) == NKS_RESOURCE_CPU && static_cast<unsigned>(nks::ResourceKind::network) == NKS_RESOURCE_NETWORK);
@@ -69,12 +72,15 @@ void NksFrame::build()
         const auto& source = *processSnapshot;
         facts(memoryId, source.memoryFacts); facts(cpuId, source.cpuFacts); facts(boardId, source.boardFacts);
         processes.reserve(source.processes.size());
+        processCreation.reserve(source.processes.size());
         for (const auto& item : source.processes) {
             const auto& c = item.counters;
             processes.push_back({source.bootTime, item.identity.pid, item.parentPid, item.identity.generation,
                 static_cast<uint32_t>(item.identity.generationKind), c.threads, c.handles, 0,
                 c.workingSetBytes, c.privateBytes, c.kernel100ns, c.user100ns, c.readIoBytes, c.writeIoBytes,
                 metric(item.cpuPercent), metric(item.readIoBytesPerSecond), metric(item.writeIoBytesPerSecond), string(item.name)});
+            processCreation.push_back({item.identity.pid, static_cast<uint32_t>(item.identity.generationKind), item.identity.generation,
+                item.created100ns, static_cast<uint32_t>(item.created100ns ? NKS_SAMPLE_VALID : NKS_SAMPLE_UNAVAILABLE), 0});
         }
         processors.reserve(source.processors.size());
         for (const auto& item : source.processors)
@@ -198,5 +204,26 @@ NksResult __cdecl nks_frame_get_boot_data(const NksFrame* frame, uint32_t size, 
 void __cdecl nks_frame_release(NksFrame* frame) noexcept
 {
     if (frame && frame->references.fetch_sub(1, std::memory_order_acq_rel) == 1) delete frame;
+}
+NksResult __cdecl nks_frame_get_process_creation_data(const NksFrame* frame, uint32_t size, NksProcessCreationData* result) noexcept
+{
+    if (!frame || !result) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksProcessCreationData)) return NKS_ABI_MISMATCH;
+    *result = {frame->processCreation.data(), count(frame->processCreation.size()), 0};
+    return frame->processSnapshot ? NKS_OK : NKS_NO_DATA;
+}
+NksResult __cdecl nks_process_query_identity(void* process, uint32_t kind, uint32_t size, NksProcessIdentityData* result) noexcept
+{
+    if (!process || !result
+        || (kind != NKS_GENERATION_CREATION_TIME && kind != NKS_GENERATION_SEQUENCE_NUMBER)) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksProcessIdentityData)) return NKS_ABI_MISMATCH;
+    *result = {0, 0, 0, kind, 0, NKS_SAMPLE_UNAVAILABLE, 0};
+    return invoke([&] {
+        const auto queried = nks::queryProcessIdentity(process, static_cast<nks::GenerationKind>(kind));
+        const auto& identity = queried.identity;
+        *result = {identity.boot.low, identity.boot.high, identity.pid, static_cast<uint32_t>(identity.generationKind),
+            identity.generation, static_cast<uint32_t>(queried.state), 0};
+        return NKS_OK;
+    });
 }
 int64_t __cdecl nks_monotonic_now_ns() noexcept { return nanos(std::chrono::steady_clock::now()); }
