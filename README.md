@@ -23,6 +23,7 @@ The current desktop prototype displays live processes and individual system devi
 - 🔧 **Service control** - Previews active dependencies, keeps the opened service objects through confirmation, and reports the observed result of start, stop, or restart.
 - 💽 **Process dumps** - Uses separate x64 and x86 helpers for minidumps and optional full-memory dumps. The client publishes a verified temporary file without replacing an existing destination.
 - 🧾 **Dump recovery** - Lists journaled unfinished captures on request and verifies file identity before offering completion or removal.
+- 📦 **Local updates** - Verifies publisher-pinned installers, retains a verified package for rollback, and hands installation to a separate worker after the GUI exits.
 - 🕒 **Process events** - Starts an ETW session on request and lists process start and stop events, provider losses, queue overflow, and decoding failures. Historical event rows remain read-only.
 - 📊 **Device view** - Lists individual disks, hardware GPUs, and physical network adapters, including disconnected adapters. Each item opens a graph and current counters.
 - 🌡️ **Disk detail** - Shows response time, queue length, IOPS, capacity, interface, and supported disk temperatures. Expanded NVMe health includes wear, spare capacity, operating hours, and media errors.
@@ -48,7 +49,7 @@ The current desktop prototype displays live processes and individual system devi
 - Visual Studio 2022 with the C++ desktop workload, MSVC 14.44, and the x64 and x86 compiler tools and SDK libraries.
 - Windows SDK 10.0.26100.0, including the Universal CRT.
 - Visual Studio CMake tools, CMake 3.31 or later.
-- PowerShell 7 or later.
+- PowerShell 7.2 or later.
 - .NET SDK 10.0.403 for the optional C# bindings and Native AOT interop check.
 
 Windows 10 runtime verification and management of 32-bit processes are implementation requirements. The current native collector has been exercised on Windows 11 x64; this does not establish the final application compatibility matrix.
@@ -78,7 +79,9 @@ To build an installer and a portable ZIP from the published WinUI application, u
 pwsh -NoProfile -File scripts/package.ps1 -Compiler ISCC.exe
 ```
 
-Use `-Compiler` with the compiler's full path if it is outside `PATH`. `-AppDirectory` selects a different publish directory. Packages are written to `build/packages` and contain the Native AOT application, Windows App SDK files, MSVC 14.44 DLLs, and license texts. The installer uses the current user's `LocalAppData/Programs/NKS Task Manager` directory and registers a Start menu shortcut and an uninstaller. These development packages are unsigned.
+Use `-Compiler` with the compiler's full path if it is outside `PATH`. `-AppDirectory` selects a different publish directory. Packages are written to `build/packages` and contain the Native AOT application, Windows App SDK files, MSVC 14.44 DLLs, and license texts. The installer uses the current user's `LocalAppData/Programs/NKS Task Manager` directory and registers a Start menu shortcut and an uninstaller. Development packages are unsigned unless signing is explicitly requested.
+
+To sign a build, select an existing code-signing certificate in `Cert:\CurrentUser\My` and an explicit Microsoft-signed `signtool.exe`. Pass `-SigningCertificateThumbprint` and `-SignTool` to both build and package scripts. The build derives the broker and update SPKI pins from that certificate; packaging checks the public build evidence and signs the NKS binaries and setup. Third-party DLL signatures are preserved. `-TimestampServer` accepts an explicit HTTPS timestamp URL. Private keys are not exported. Real signing and installation acceptance remain pending.
 
 ## Usage
 
@@ -143,6 +146,10 @@ The dump command uses the operating system's DbgHelp through `nks-dump-worker.ex
 The Dump menu also opens unfinished captures without requiring a selected process. A private journal records the temporary file and helper identity before capture and records the verified hash before publication. Recovery runs only on request. It preserves unknown or unverifiable entries, refuses changes while the original GUI or helper may still be alive, and asks before completing or removing an owned temporary file. A published final dump has no recovery deletion path. Journal storage is limited to 64 entries and 1 MiB. Crash and cancellation scenarios remain to be verified in the final test phase.
 
 The application does not expose a plugin API or scan extension folders. Helpers accept only their fixed protocol commands. Their runtime DLL search uses the application directory and Windows system directory; the dump helpers use only the system directory. Linker flags also restrict static import resolution. This follows the documented [Windows DLL search controls](https://learn.microsoft.com/en-us/cpp/build/reference/dependentloadflag). Packaged helpers are not a replacement for the signing and update checks still tracked in TODO.
+
+The Updates button opens the local installer inventory. Adding an installer verifies and caches it without installing. A prepared update requires the signed installer for the current exact version and revision as a rollback baseline. Confirmation names the current, selected, and rollback versions. The worker waits up to 30 seconds for the GUI to exit before launching the held, verified per-user setup. It does not request elevation or force other processes to close. Installer success is followed by a check of the installed application. Settings outside the installation directory are preserved.
+
+The updater uses a separate `UpdatePublisherSpkiSha256` build property and native `NKS_UPDATE_PUBLISHER_SPKI_SHA256` value. An empty pin refuses update operations before a helper starts. The signing workflow sets both publisher pins from the selected certificate. The installer attempts a cache-only registration of itself after installation; unsigned development installs remain usable if that step is refused. Automatic replacement of portable directories is not implemented. An unresolved committed or installing journal blocks another plan; manual recovery of that state and runtime acceptance remain pending.
 
 The WinUI Appearance menu selects the system, light, or dark appearance and saves the choice in the user profile. Theme changes update existing controls, charts, and dialogs. Runtime and visual acceptance of the theme changes remain pending. Elevation and accessibility acceptance remain open. Missing or stale measurements are labeled rather than displayed as measured zero. Virtual network interfaces are not yet exposed.
 

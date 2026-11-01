@@ -93,7 +93,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureProcessActions(); ConfigureProcessDump(); ConfigureProcessEvents(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
+        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureProcessActions(); ConfigureProcessDump(); ConfigureProcessEvents(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); ConfigureUpdates(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");
