@@ -8,10 +8,6 @@
 
 namespace nks {
 namespace {
-bool contains(const std::wstring& text, const std::wstring& query)
-{
-    return FindStringOrdinal(FIND_FROMSTART, text.c_str(), static_cast<int>(text.size()), query.c_str(), static_cast<int>(query.size()), TRUE) >= 0;
-}
 std::wstring number(double value, const wchar_t* unit)
 {
     std::wostringstream text;
@@ -107,8 +103,12 @@ void ProcessTable::setHeld(bool value)
 {
     if (held == value) return;
     if (value) {
+        heldRows.clear(); heldIndices.clear();
         heldRows.reserve(rows.size());
-        for (auto index : rows) heldRows.push_back(snapshot->processes[index]);
+        for (auto index : rows) {
+            heldIndices.emplace(snapshot->processes[index].identity.pid, heldRows.size());
+            heldRows.push_back(snapshot->processes[index]);
+        }
         endedRows.assign(rows.size(), false);
         held = true;
     } else {
@@ -144,6 +144,7 @@ void ProcessTable::update(std::shared_ptr<const ProcessSnapshot> value)
 {
     if (held) {
         snapshot = std::move(value);
+        indexSnapshot();
         std::unordered_map<std::uint32_t, const ProcessRecord*> current;
         if (snapshot) for (const auto& process : snapshot->processes) current.emplace(process.identity.pid, &process);
         for (std::size_t i = 0; i < heldRows.size(); ++i) {
@@ -154,27 +155,13 @@ void ProcessTable::update(std::shared_ptr<const ProcessSnapshot> value)
         InvalidateRect(window, nullptr, FALSE);
         return;
     }
-    std::vector<ProcessIdentity> selectedIds;
-    for (int i = ListView_GetNextItem(window, -1, LVNI_SELECTED); i >= 0; i = ListView_GetNextItem(window, i, LVNI_SELECTED))
-        if (const auto* item = record(i); item && !ended(i)) selectedIds.push_back(item->identity);
-    std::optional<ProcessIdentity> focusId;
-    const int top = ListView_GetTopIndex(window);
-    const int focus = ListView_GetNextItem(window, -1, LVNI_FOCUSED);
-    if (!topAnchor && top > 0) if (const auto* item = record(top)) { topAnchor = item->identity; topAnchorIndex = top; }
-    if (focus >= 0) if (const auto* item = record(focus)) focusId = item->identity;
-    heldRows.clear(); endedRows.clear();
+    const auto state = captureView();
+    heldRows.clear(); heldIndices.clear(); endedRows.clear();
     snapshot = std::move(value);
+    indexSnapshot();
     rebuild();
     resizeColumns();
-    ListView_SetItemState(window, -1, 0, LVIS_SELECTED | LVIS_FOCUSED);
-    for (std::size_t i = 0; i < rows.size(); ++i) {
-        const auto& id = snapshot->processes[rows[i]].identity;
-        if (std::find(selectedIds.begin(), selectedIds.end(), id) != selectedIds.end())
-            ListView_SetItemState(window, static_cast<int>(i), LVIS_SELECTED, LVIS_SELECTED);
-        if (focusId && id == *focusId)
-            ListView_SetItemState(window, static_cast<int>(i), LVIS_FOCUSED, LVIS_FOCUSED);
-    }
-    restoreScroll();
+    restoreView(state);
     InvalidateRect(window, nullptr, FALSE);
 }
 
@@ -183,39 +170,21 @@ void ProcessTable::filter(std::wstring text) { setHeld(false); search = std::mov
 void ProcessTable::rebuild()
 {
     rows.clear();
+    orderedRows.clear();
     depths.clear();
     branches.clear();
-    if (!snapshot) return;
+    if (!snapshot) { ListView_SetItemCountEx(window, 0, LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL); return; }
     for (std::size_t i = 0; i < snapshot->processes.size(); ++i) {
-        const auto& process = snapshot->processes[i];
-        const bool active = (process.cpuPercent.valid() && process.cpuPercent.value > 0)
-            || (process.readIoBytesPerSecond.valid() && process.readIoBytesPerSecond.value > 0)
-            || (process.writeIoBytesPerSecond.valid() && process.writeIoBytesPerSecond.value > 0);
-        if ((displayMode != ProcessMode::active || active) && (search.empty() || contains(process.name, search)
-            || std::to_wstring(process.identity.pid).find(search) != std::wstring::npos)) rows.push_back(i);
+        if (matches(snapshot->processes[i])) rows.push_back(i);
     }
-    const auto value = [&](const ProcessRecord& p) {
-        switch (sortColumn) {
-        case 1: return static_cast<double>(p.identity.pid);
-        case 2: return p.cpuPercent.valid() ? p.cpuPercent.value : -1;
-        case 3: return static_cast<double>(p.counters.workingSetBytes);
-        case 4: return static_cast<double>(p.counters.privateBytes);
-        case 5: return p.readIoBytesPerSecond.valid() ? p.readIoBytesPerSecond.value : -1;
-        default: return p.writeIoBytesPerSecond.valid() ? p.writeIoBytesPerSecond.value : -1;
-        }
-    };
     std::sort(rows.begin(), rows.end(), [&](std::size_t a, std::size_t b) {
-        const auto& left = snapshot->processes[a];
-        const auto& right = snapshot->processes[b];
-        const auto order = sortColumn == 0 ? CompareStringOrdinal(left.name.c_str(), static_cast<int>(left.name.size()),
-            right.name.c_str(), static_cast<int>(right.name.size()), TRUE) - CSTR_EQUAL
-            : value(left) < value(right) ? -1 : value(left) > value(right) ? 1 : 0;
-        if (order == 0) return left.identity.pid < right.identity.pid;
-        return descending ? order > 0 : order < 0;
+        return less(snapshot->processes[a], snapshot->processes[b]);
     });
+    orderedRows = rows;
     if (displayMode == ProcessMode::tree) buildTree();
     else { depths.resize(rows.size()); branches.resize(rows.size()); }
-    ListView_SetItemCountEx(window, static_cast<int>(rows.size()), LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
+    if (ListView_GetItemCount(window) != static_cast<int>(rows.size()))
+        ListView_SetItemCountEx(window, static_cast<int>(rows.size()), LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
 }
 
 void ProcessTable::buildTree()

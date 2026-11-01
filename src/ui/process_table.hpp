@@ -1,11 +1,13 @@
 #pragma once
 
 #include "core/process.hpp"
+#include "core/process_delta.hpp"
 #include <windows.h>
 #include <commctrl.h>
 #include <memory>
 #include <array>
 #include <optional>
+#include <unordered_map>
 
 namespace nks {
 
@@ -15,6 +17,7 @@ class ProcessTable {
 public:
     void create(HWND parent, HFONT font);
     void update(std::shared_ptr<const ProcessSnapshot> snapshot);
+    void update(std::shared_ptr<const ProcessSnapshot> snapshot, const ProcessChanges& changes);
     void filter(std::wstring text);
     void select(const ProcessIdentity& identity);
     void setStale(bool value) { stale = value; InvalidateRect(window, nullptr, FALSE); }
@@ -41,6 +44,18 @@ public:
     const ProcessRecord* selected() const;
     std::size_t count() const { return rows.size(); }
 private:
+    struct ViewState {
+        std::vector<ProcessIdentity> selected;
+        std::optional<ProcessIdentity> focus, mark, top;
+        int topIndex{};
+    };
+    ViewState captureView() const;
+    void restoreView(const ViewState& state);
+    void indexSnapshot();
+    bool matches(const ProcessRecord& process) const;
+    bool less(const ProcessRecord& left, const ProcessRecord& right) const;
+    void applyHeldChanges(std::shared_ptr<const ProcessSnapshot> snapshot, const ProcessChanges& changes);
+    void redrawRows(const std::vector<bool>& dirty);
     void rebuild();
     void buildTree();
     void restoreScroll();
@@ -51,6 +66,8 @@ private:
     HIMAGELIST images{};
     std::shared_ptr<const ProcessSnapshot> snapshot;
     std::vector<std::size_t> rows;
+    std::vector<std::size_t> orderedRows;
+    std::unordered_map<std::uint32_t, std::size_t> snapshotIndices, heldIndices;
     std::vector<unsigned> depths;
     std::vector<bool> branches;
     std::vector<ProcessIdentity> collapsed;

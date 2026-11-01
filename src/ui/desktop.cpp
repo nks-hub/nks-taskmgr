@@ -262,8 +262,9 @@ void Desktop::tick()
     tickServices();
     bool changed = false;
     if (auto sample = monitor.takeProcesses(processError)) {
+        const auto changes = processChanges(processes.get(), *sample);
         processes = std::move(sample);
-        table.update(processes);
+        table.update(processes, changes);
         changed = true;
     }
     if (auto sample = monitor.takeResources(resourceError)) {
