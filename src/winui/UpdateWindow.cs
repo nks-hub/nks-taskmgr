@@ -17,10 +17,17 @@ internal sealed class UpdateWindow : Window
         public override string ToString() => VersionLabel(Package.Version) + " · " + Display.Number(Package.Bytes / 1048576d, " MiB", 1)
             + (Package.Flags.HasFlag(UpdatePackageFlags.Current) ? " · současná verze" : Package.Flags.HasFlag(UpdatePackageFlags.Previous) ? " · předchozí verze" : " · připravený balíček");
     }
+    private sealed record RecoveryChoice(UpdateRecoveryCandidate Candidate)
+    {
+        public override string ToString() => VersionLabel(Candidate.OriginalVersion) + " · "
+            + (Candidate.CanRepair ? "lze připravit obnovu" : "obnova zatím není ověřená");
+    }
     private readonly Grid root = new() { Padding = new Thickness(22), RowSpacing = 14, Background = Display.Brush(0x171d21) };
-    private readonly TextBlock status = Text("Načítání…"), result = Text("");
+    private readonly TextBlock status = Text("Načítání…"), result = Text(""), location = Text(""), recoveryDetail = Text("");
+    private readonly StackPanel recoveryPanel = new() { Spacing = 8, Visibility = Visibility.Collapsed };
+    private readonly ComboBox recoveryChoices = new() { HorizontalAlignment = HorizontalAlignment.Stretch, FontFamily = UiTypography.Font, FontSize = 13 };
     private readonly ListView packages = new() { MinHeight = 100, MaxHeight = 240, SelectionMode = ListViewSelectionMode.Single, FontFamily = UiTypography.Font, FontSize = 13 };
-    private readonly Button refresh = Command("Načíst balíčky"), add = Command("Přidat instalátor…"), install = Command("Nainstalovat vybraný…"), rollback = Command("Vrátit předchozí verzi…"), cancel = Command("Zrušit");
+    private readonly Button refresh = Command("Načíst balíčky"), add = Command("Přidat instalátor…"), install = Command("Nainstalovat vybraný…"), rollback = Command("Vrátit předchozí verzi…"), repair = Command("Obnovit nedokončenou instalaci…"), cancel = Command("Zrušit");
     private readonly UpdateWorkerClient client = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly Action requestShutdown;
@@ -41,7 +48,8 @@ internal sealed class UpdateWindow : Window
         var heading = new StackPanel { Spacing = 7 };
         heading.Children.Add(Text("Aktualizace a návrat verze", 23));
         heading.Children.Add(Text("Aktuální sestavení: " + CurrentVersion()));
-        heading.Children.Add(Text("Vyberte podepsaný instalátor. Aktualizace této nabídky spravují instalaci v uživatelském profilu; přenosnou kopii zde nelze přepsat. Nastavení zůstává v profilu uživatele."));
+        heading.Children.Add(Text("Vyberte podepsaný instalátor. Ověřená instalace i přenosná kopie zachovají svůj režim. Nastavení mimo soubory aplikace se nepřepisuje."));
+        heading.Children.Add(location);
         root.Children.Add(heading);
         Grid.SetRow(status, 1); root.Children.Add(status);
         var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -53,16 +61,29 @@ internal sealed class UpdateWindow : Window
         root.SizeChanged += (_, args) => {
             tools.Orientation = actions.Orientation = args.NewSize.Width < 560 ? Orientation.Vertical : Orientation.Horizontal;
         };
-        Grid.SetRow(result, 5); root.Children.Add(result);
+        recoveryPanel.Children.Add(Text("Nedokončené instalace", 16));
+        recoveryPanel.Children.Add(recoveryChoices); recoveryPanel.Children.Add(recoveryDetail); recoveryPanel.Children.Add(repair);
+        var outcomes = new StackPanel { Spacing = 12 }; outcomes.Children.Add(recoveryPanel); outcomes.Children.Add(result);
+        Grid.SetRow(outcomes, 5); root.Children.Add(outcomes);
         AutomationProperties.SetName(packages, "Ověřené instalační balíčky v místní cache");
         AutomationProperties.SetAutomationId(packages, "update-packages");
         AutomationProperties.SetAutomationId(add, "update-add-installer");
         AutomationProperties.SetAutomationId(install, "update-install-selected");
         AutomationProperties.SetAutomationId(rollback, "update-rollback");
+        AutomationProperties.SetName(recoveryChoices, "Nejasné výsledky instalace v této složce");
+        AutomationProperties.SetAutomationId(repair, "update-repair");
         refresh.Click += async (_, _) => await RunAsync(ReadInventoryAsync);
         add.Click += async (_, _) => await RunAsync(AddInstallerAsync);
         install.Click += async (_, _) => { if (packages.SelectedItem is PackageChoice choice) await RunAsync(token => PrepareAsync(choice.Package.Sha256, token)); };
         rollback.Click += async (_, _) => await RunAsync(token => PrepareAsync(null, token));
+        repair.Click += async (_, _) => {
+            if (recoveryChoices.SelectedItem is RecoveryChoice choice && choice.Candidate.CanRepair)
+                await RunAsync(token => PrepareAsync(null, token, choice.Candidate.CandidateId));
+        };
+        recoveryChoices.SelectionChanged += (_, _) => {
+            recoveryDetail.Text = recoveryChoices.SelectedItem is RecoveryChoice choice ? RecoveryReason(choice.Candidate) : "";
+            RefreshButtons();
+        };
         cancel.Click += (_, _) => operation?.Cancel();
         packages.SelectionChanged += (_, _) => RefreshButtons();
         timer.Tick += (_, _) => RefreshButtons();
@@ -103,8 +124,7 @@ internal sealed class UpdateWindow : Window
         status.Text = "Ověřuji místní balíčky…";
         var value = await client.ListAsync(token);
         if (closed) return;
-        inventory = value;
-        packages.ItemsSource = value.Packages.Select(package => new PackageChoice(package)).ToArray();
+        ShowInventory(value);
         status.Text = StatusText(value.Status) + "\n" + JournalText(value.JournalState);
         result.Text = value.Status == UpdateStatus.Ok ? "Nová instalace začne až po kontrole plánu, vašem potvrzení a skutečném zavření této aplikace." : Bound(value.Detail);
     }
@@ -117,24 +137,43 @@ internal sealed class UpdateWindow : Window
         status.Text = "Ověřuji a ukládám vybraný instalátor…";
         var value = await client.CacheAsync(file.Path, token);
         if (closed) return;
-        inventory = value; packages.ItemsSource = value.Packages.Select(package => new PackageChoice(package)).ToArray();
+        ShowInventory(value);
         status.Text = StatusText(value.Status) + "\n" + JournalText(value.JournalState);
         result.Text = value.Status == UpdateStatus.Ok ? "Instalátor je uložený. Samotné přidání balíčku nic neinstaluje." : Bound(value.Detail);
     }
 
-    private async Task PrepareAsync(string? packageSha256, CancellationToken token)
+    private void ShowInventory(UpdateInventory value)
+    {
+        inventory = value;
+        packages.ItemsSource = value.Packages.Select(package => new PackageChoice(package)).ToArray();
+        location.Text = (value.Mode switch { UpdateInstallMode.Installed => "Registrovaná instalace", UpdateInstallMode.Portable => "Přenosná kopie", _ => "Režim složky není ověřený" })
+            + (value.InstallDirectory.Length == 0 ? "" : " · " + value.InstallDirectory);
+        if (value.CompatibilityDetail.Length > 0) location.Text += "\n" + Bound(value.CompatibilityDetail);
+        recoveryChoices.ItemsSource = value.RecoveryCandidates.Select(candidate => new RecoveryChoice(candidate)).ToArray();
+        recoveryPanel.Visibility = value.RecoveryCandidates.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+        recoveryDetail.Text = "";
+        if (value.RecoveryCandidates.Length > 0) recoveryChoices.SelectedIndex = 0;
+    }
+
+    private async Task PrepareAsync(string? packageSha256, CancellationToken token, string? recoveryCandidateId = null)
     {
         status.Text = "Připravuji ověřený plán…";
-        using var session = await client.PrepareAsync(packageSha256, token); prepared = session;
+        using var session = recoveryCandidateId is null ? await client.PrepareAsync(packageSha256, token)
+            : await client.PrepareRecoveryAsync(recoveryCandidateId, token);
+        prepared = session;
         if (closed || token.IsCancellationRequested) return;
         var plan = session.Plan;
         var content = new StackPanel { Spacing = 12, MinWidth = 320, MaxWidth = 620 };
         content.Children.Add(Text("Současná verze: " + VersionLabel(plan.CurrentVersion)));
         content.Children.Add(Text("Vybraná verze: " + VersionLabel(plan.SelectedVersion)));
-        content.Children.Add(Text("Uložený návrat po změně: " + VersionLabel(plan.PreviousVersion)));
+        if (!plan.IsRecovery) content.Children.Add(Text("Uložený návrat po změně: " + VersionLabel(plan.PreviousVersion)));
         content.Children.Add(Text("Cílová instalace: " + plan.InstallDirectory));
+        content.Children.Add(Text(plan.Mode == UpdateInstallMode.Portable
+            ? "Zůstane přenosná kopie. Nevytváří se registrace odinstalátoru ani zástupci aplikace."
+            : "Zůstane instalace pro aktuálního uživatele."));
+        if (plan.IsRecovery) content.Children.Add(Text("Znovu se nainstaluje ověřená původní verze. Dřívější nejasný výsledek se považuje za vyřešený až po dokončení a ověření nové instalace."));
         content.Children.Add(Text("Po potvrzení se tento program zavře a otevře se ověřený instalátor. Pomocník vyčká na skutečný zánik procesu. Pokud program zůstane otevřený, instalace se po 30 sekundách nespustí. Nastavení mimo instalační složku se nepřepisuje."));
-        var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = plan.Action == UpdateAction.Rollback ? "Vrátit předchozí verzi" : "Nainstalovat aktualizaci",
+        var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = plan.IsRecovery ? "Obnovit nedokončenou instalaci" : plan.Action == UpdateAction.Rollback ? "Vrátit předchozí verzi" : "Nainstalovat aktualizaci",
             Content = content, PrimaryButtonText = "Zavřít program a pokračovat", CloseButtonText = "Zrušit", DefaultButton = ContentDialogButton.Close };
         Appearance.Dialog(dialog); confirmation = dialog;
         dialog.PrimaryButtonClick += (_, args) => { if (token.IsCancellationRequested || UpdateProtocol.NowMs >= session.CommitDeadlineMonotonicMs) args.Cancel = true; };
@@ -160,10 +199,13 @@ internal sealed class UpdateWindow : Window
     private void RefreshButtons()
     {
         bool idle = !closed && !busy && !client.IsBusy && !handoffUncertain;
-        bool ready = idle && inventory?.Status == UpdateStatus.Ok;
-        refresh.IsEnabled = idle; add.IsEnabled = ready;
+        bool trusted = idle && inventory?.Status is UpdateStatus.Ok or UpdateStatus.Conflict;
+        bool ready = trusted && inventory!.StandardOperationsAllowed;
+        refresh.IsEnabled = idle; add.IsEnabled = trusted;
         install.IsEnabled = ready && packages.SelectedItem is PackageChoice choice && !choice.Package.Flags.HasFlag(UpdatePackageFlags.Current);
         rollback.IsEnabled = ready && inventory!.Packages.Any(package => package.Flags.HasFlag(UpdatePackageFlags.Previous));
+        recoveryChoices.IsEnabled = idle;
+        repair.IsEnabled = trusted && recoveryChoices.SelectedItem is RecoveryChoice recoveryChoice && recoveryChoice.Candidate.CanRepair;
         cancel.IsEnabled = busy && prepared?.CommitSent != true;
         if (confirmation is { } dialog && prepared is { } session)
             dialog.IsPrimaryButtonEnabled = !closed && operation?.IsCancellationRequested != true && UpdateProtocol.NowMs < session.CommitDeadlineMonotonicMs;
@@ -187,9 +229,21 @@ internal sealed class UpdateWindow : Window
         _ => "Předchozí stav vyžaduje ověření; instalace se neopakuje automaticky."
     };
     private static string VersionLabel(string version) {
+        if (string.IsNullOrWhiteSpace(version)) return "Neověřená verze";
         int plus = version.IndexOf('+');
         return plus >= 0 && version.Length > plus + 8 ? version[..plus] + " · " + version.Substring(plus + 1, 7) : version;
     }
+    private static string RecoveryReason(UpdateRecoveryCandidate candidate) => candidate.Safety switch {
+        UpdateRecoverySafety.Ready => "Lze připravit opravu z ověřeného původního instalátoru. Samotný výběr nic neinstaluje.",
+        UpdateRecoverySafety.WorkerAlive => "Původní aktualizační pomocník ještě běží. Obnova zatím není povolená.",
+        UpdateRecoverySafety.InstallerAlive => "Původní instalátor ještě běží. Vyčkejte na jeho ukončení.",
+        UpdateRecoverySafety.LifetimeUnknown => "Nelze ověřit, zda předchozí instalátor skončil. Soubory zůstávají zachované.",
+        UpdateRecoverySafety.OriginalSetupMissing => "Chybí ověřený instalátor původní verze. Přidejte jej do místních balíčků a obnovte přehled.",
+        UpdateRecoverySafety.ScopeMismatch => "Záznam není ověřený pro tuto složku aplikace.",
+        UpdateRecoverySafety.Resolved => "Tuto operaci už vyřešila jiná ověřená obnova.",
+        UpdateRecoverySafety.LegacySameBoot => "Starý záznam neobsahuje životnost instalátoru. V tomto spuštění Windows nelze prokázat jeho ukončení.",
+        _ => Bound(candidate.Detail)
+    };
     private static string CurrentVersion() {
         try { return VersionLabel(FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion ?? "Neznámá verze"); }
         catch (Exception error) when (error is IOException or Win32Exception) { return "Neznámá verze"; }
