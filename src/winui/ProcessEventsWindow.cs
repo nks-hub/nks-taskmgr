@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace NksTaskMgr.WinUI;
 
-internal sealed class ProcessEventsWindow : Window
+internal sealed partial class ProcessEventsWindow : Window
 {
     private const int MaximumRows = 10000;
     private const int MaximumEstimatedBytes = 3 * 1024 * 1024;
@@ -166,6 +166,7 @@ internal sealed class ProcessEventsWindow : Window
             if ((batchFlags & 2) != 0) notice.Text += " Relace ještě není uklizená.";
             if (dirty && hold.IsChecked != true) RefreshRows();
             UpdateCommands();
+            uiCheckBatch?.Invoke(info, events.Length, trafficCount);
             return events.Length + trafficCount;
         } catch (Exception error) when (InteropError(error)) { timer.Stop(); status.Text = "Čtení událostí selhalo: " + error.Message; return -1; }
     }
@@ -316,6 +317,7 @@ internal sealed class ProcessEventsWindow : Window
     private async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
         if (allowClose || closed) return;
+        if (uiCheckRunning) { args.Cancel = true; uiCheckCancellation?.Cancel(); return; }
         args.Cancel = true;
         if (closing || mainClosing) return;
         closing = true; UpdateCommands();

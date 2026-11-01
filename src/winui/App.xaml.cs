@@ -8,7 +8,9 @@ public partial class App : Application
         .FirstOrDefault(arg => arg.StartsWith("--smoke=", StringComparison.Ordinal))?[8..];
     internal static string? SortBenchmarkPath { get; } = Environment.GetCommandLineArgs()
         .FirstOrDefault(arg => arg.StartsWith("--bench-sort=", StringComparison.Ordinal))?[13..];
-    internal static void Trace(string stage) { if (SmokePath is not null) File.AppendAllText(SmokePath, stage + Environment.NewLine); }
+    internal static string? EventsCheckPath { get; } = Environment.GetCommandLineArgs()
+        .FirstOrDefault(arg => arg.StartsWith("--check-events=", StringComparison.Ordinal))?[15..];
+    internal static void Trace(string stage) { if ((SmokePath ?? EventsCheckPath) is { } path) File.AppendAllText(path, stage + Environment.NewLine); }
     private Window? window;
 
     public App()
@@ -19,6 +21,11 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        if (EventsCheckPath is { } path) {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+            var events = new ProcessEventsWindow(() => (0L, default(NksTaskMgr.Native.BootIdentifier), NksTaskMgr.Native.SampleState.Unavailable));
+            window = events; events.BeginUiChecks(path); events.Activate(); return;
+        }
         Trace("Constructing window");
         window = new MainWindow();
         window.Activate();
