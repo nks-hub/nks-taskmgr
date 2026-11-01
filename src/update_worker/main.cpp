@@ -1,4 +1,4 @@
-#include "execute.hpp"
+#include "cleanup.hpp"
 #include <algorithm>
 #include <atomic>
 #include <thread>
@@ -43,31 +43,71 @@ int bootstrap(const std::wstring& source)
     auto installed = openImage(parentPath(self.path) + L"\\NksTaskMgr.WinUI.exe", Role::application);
     auto installer = openImage(source, Role::installer);
     if (!sameVersion(worker, installed) || !sameVersion(installer, installed) || !equalId(worker.lease.fileId, self.fileId)) return 2;
-    Cache cache; static_cast<void>(cache.store(installer)); return 0;
+    nks::broker::Peer rootOwner; rootOwner.path = installed.lease.path; rootOwner.token = self.token;
+    Cache cache; rememberRoot(cache, classifyScope(rootOwner)); static_cast<void>(cache.store(installer)); return 0;
+}
+int cleanupSession(HANDLE input, HANDLE output, const Header& request, Cache& cache, const Context& context, std::atomic<ULONGLONG>& deadline) noexcept
+{
+    Header reply = request; bool accepted = false;
+    std::optional<CleanupPlan> plan;
+    try {
+        plan = prepareCleanup(cache, context, read(request, 40, 8));
+        plan->rootGuards.clear();
+        deadline.store(plan->deadline + 1000);
+        if (!send(output, request, Frame::ready, cleanupPayload(*plan))) return 3;
+        Header commit{};
+        if (!io(input, commit, false)) throw Error(Status::rejected, "Cleanup was not committed");
+        Header expected = request; write(expected, 6, static_cast<unsigned>(Command::cleanupCommit), 2);
+        std::copy(plan->manifest.begin(), plan->manifest.end(), expected.begin() + 88);
+        if (commit != expected || GetTickCount64() >= plan->deadline || !validHeader(commit, Command::cleanupCommit, 0)
+            || !eof(input) || !nks::broker::peerAlive(context.gui)) throw Error(Status::rejected, "Cleanup commit binding expired or changed");
+        reply = commit;
+        plan->confirmed = true; plan->mayHaveDeleted = true;
+        if (!send(output, commit, Frame::accepted, cleanupPayload(*plan, true))) return 3;
+        accepted = true;
+        deadline.store(GetTickCount64() + 120000);
+        applyCleanup(cache, context, *plan);
+        return send(output, commit, Frame::result, cleanupPayload(*plan)) ? 0 : 3;
+    } catch (const Error& error) {
+        if (accepted && plan) {
+            for (auto& item : plan->items) if (item.outcome == CleanupOutcome::eligible) {
+                item.outcome = CleanupOutcome::unknown; item.reason = CleanupReason::io;
+                item.detail = L"The worker did not confirm the final result of this item.";
+            }
+            send(output, reply, Frame::result, cleanupPayload(*plan, false, error.status, error.windows));
+        } else send(output, reply, Frame::rejected, cleanupPayload(CleanupPlan{}, false, error.status, error.windows));
+        return error.status == Status::io || error.status == Status::unknown ? 3 : 2;
+    } catch (...) {
+        if (!accepted) send(output, reply, Frame::rejected, cleanupPayload(CleanupPlan{}, false, Status::unknown, ERROR_GEN_FAILURE));
+        return 3;
+    }
 }
 int serve(std::atomic<ULONGLONG>& deadline)
 {
     const HANDLE input = GetStdHandle(STD_INPUT_HANDLE), output = GetStdHandle(STD_OUTPUT_HANDLE);
     if (GetFileType(input) != FILE_TYPE_PIPE || GetFileType(output) != FILE_TYPE_PIPE || input == output) return 2;
-    Header request{}, reply{}; bool received = false, accepted = false;
+    Header request{}, reply{}; bool received = false, accepted = false, cleaning = false;
     std::optional<Plan> staged;
     std::unique_ptr<Cache> cache;
     try {
         if (!io(input, request, false)) return 2;
         reply = request; received = true;
         const auto command = static_cast<Command>(read(request, 6, 2)); const auto length = static_cast<std::size_t>(read(request, 8, 4));
-        if (command < Command::list || command > Command::repair || command == Command::commit || !validHeader(request, command, length)) throw Error(Status::invalidRequest, "Invalid update request");
+        cleaning = command == Command::cleanupPreview || command == Command::cleanupCommit;
+        if (command < Command::list || command > Command::cleanupPreview || command == Command::commit || !validHeader(request, command, length)) throw Error(Status::invalidRequest, "Invalid update request");
         std::vector<std::byte> payload(length);
         if (!io(input, payload, false)) throw Error(Status::invalidRequest, "Truncated update request");
         const bool applying = command == Command::apply || command == Command::rollback || command == Command::repair;
-        if ((!applying && !eof(input)) || ((command == Command::list || command == Command::cache || command == Command::inspect) && !empty(selected(request)))
-            || ((command == Command::list || command == Command::plan) && !payload.empty()) || (applying && (payload.size() != 16 || empty(selected(request))))
+        if ((!applying && !cleaning && !eof(input)) || ((command == Command::list || command == Command::cache || command == Command::inspect || cleaning) && !empty(selected(request)))
+            || ((command == Command::list || command == Command::plan || cleaning) && !payload.empty()) || (applying && (payload.size() != 16 || empty(selected(request))))
             || ((command == Command::inspect || command == Command::repairPlan) && payload.size() != 16)
             || (command == Command::repairPlan && empty(selected(request))))
             throw Error(Status::invalidRequest, "Unexpected update request payload");
         const bool compatible = command == Command::list || command == Command::cache || command == Command::inspect
-            || command == Command::repairPlan || command == Command::repair;
+            || command == Command::repairPlan || command == Command::repair || cleaning;
         auto context = authenticate(request, applying, compatible); cache = std::make_unique<Cache>();
+        rememberRoot(*cache, context.scope);
+        if (cleaning) return cleanupSession(input, output, request, *cache, context, deadline);
         if (command == Command::list) {
             auto packages = cache->packages(); const auto entries = journalEntries(*cache); const auto previous = previousVersion(entries, context.installed, context.scope);
             const auto candidates = inspections(*cache, context);
@@ -124,10 +164,14 @@ int serve(std::atomic<ULONGLONG>& deadline)
             return 3;
         }
         if (cache && staged) try { journal(*cache, *staged, State::rejected, 4, error.windows); } catch (...) { }
-        if (received) send(output, reply, Frame::rejected, result(error.status, error.windows, State::rejected, explanation(error.what())));
+        if (received) send(output, reply, Frame::rejected, cleaning
+            ? cleanupPayload(CleanupPlan{}, false, error.status, error.windows)
+            : result(error.status, error.windows, State::rejected, explanation(error.what())));
         return error.status == Status::io || error.status == Status::unknown ? 3 : 2;
     } catch (...) {
-        if (received && !accepted) send(output, reply, Frame::rejected, result(Status::unknown, ERROR_GEN_FAILURE, State::unknown, L"Update operation did not complete."));
+        if (received && !accepted) send(output, reply, Frame::rejected, cleaning
+            ? cleanupPayload(CleanupPlan{}, false, Status::unknown, ERROR_GEN_FAILURE)
+            : result(Status::unknown, ERROR_GEN_FAILURE, State::unknown, L"Update operation did not complete."));
         return 3;
     }
 }

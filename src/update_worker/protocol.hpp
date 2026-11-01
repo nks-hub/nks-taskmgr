@@ -10,9 +10,10 @@
 namespace nks::update {
 constexpr std::uint32_t magic = 0x3150554e;
 constexpr std::size_t headerBytes = 128, resultBytes = 40, packageBytes = 144, planBytes = 352, inspectionBytes = 224;
+constexpr std::size_t cleanupBytes = 80, cleanupRowBytes = 160, maxCleanupItems = 128;
 constexpr std::size_t maxPayload = 65536, maxPackages = 8, maxPlans = 16, maxJournalFiles = 80;
 constexpr std::uint64_t maxPackageSize = 512ull * 1024 * 1024, maxCacheSize = 2ull * 1024 * 1024 * 1024;
-enum class Command : std::uint16_t { list = 1, cache, plan, apply, rollback, commit, inspect, repairPlan, repair };
+enum class Command : std::uint16_t { list = 1, cache, plan, apply, rollback, commit, inspect, repairPlan, repair, cleanupPreview = 10, cleanupCommit = 11 };
 enum class Frame : std::uint32_t { request, result, ready, accepted, rejected };
 enum class Status : std::uint32_t { ok, trustMissing, rejected, invalidRequest, cacheFull, conflict, notFound, io, guiAlive, installerFailed, verificationFailed, unknown, busy };
 enum class State : std::uint32_t { none, cached, planned, committed, waitingGui, installing, verified, rejected, guiAlive, installerFailed, verificationFailed, unknown };
