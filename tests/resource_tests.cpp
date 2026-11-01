@@ -1,6 +1,7 @@
 #include "core/resource.hpp"
 #include "core/history.hpp"
 #include "core/process_sampler.hpp"
+#include "collectors/gpu_telemetry.hpp"
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -11,11 +12,89 @@ nks::NamedCounter engine(const wchar_t* name, double value, nks::SampleState sta
 {
     return {name, {value, state, nks::MetricSource::performanceCounter}};
 }
+
+constexpr LUID adapterLuid{0x12345678, 0x1234567};
+constexpr D3DKMT_HANDLE adapterHandle = 42;
+NTSTATUS openStatus{}, queryStatus{};
+ULONG temperature{};
+unsigned openCalls{}, queryCalls{}, closeCalls{};
+
+NTSTATUS APIENTRY openAdapter(const D3DKMT_OPENADAPTERFROMLUID* adapter)
+{
+    ++openCalls;
+    require(adapter->AdapterLuid.LowPart == adapterLuid.LowPart && adapter->AdapterLuid.HighPart == adapterLuid.HighPart,
+        "Temperature query opened a different GPU");
+    if (openStatus >= 0) const_cast<D3DKMT_OPENADAPTERFROMLUID*>(adapter)->hAdapter = adapterHandle;
+    return openStatus;
+}
+
+NTSTATUS APIENTRY queryAdapter(const D3DKMT_QUERYADAPTERINFO* query)
+{
+    ++queryCalls;
+    require(openCalls == 1 && closeCalls == 0 && query->hAdapter == adapterHandle,
+        "Temperature query did not use its open adapter");
+    require(query->Type == KMTQAITYPE_ADAPTERPERFDATA && query->PrivateDriverDataSize == sizeof(D3DKMT_ADAPTER_PERFDATA),
+        "Wrong GPU temperature query layout");
+    auto& data = *static_cast<D3DKMT_ADAPTER_PERFDATA*>(query->pPrivateDriverData);
+    require(data.PhysicalAdapterIndex == 0, "Temperature query changed physical adapter index");
+    data.Temperature = temperature;
+    return queryStatus;
+}
+
+NTSTATUS APIENTRY closeAdapter(const D3DKMT_CLOSEADAPTER* adapter)
+{
+    ++closeCalls;
+    require(queryCalls == 1 && adapter->hAdapter == adapterHandle, "Temperature query closed a different adapter");
+    return 0;
+}
+
+void gpuTemperatureStates()
+{
+    constexpr auto denied = static_cast<NTSTATUS>(0xc0000022u);
+    constexpr auto unsupported = static_cast<NTSTATUS>(0xc00000bbu);
+    constexpr auto invalidParameter = static_cast<NTSTATUS>(0xc000000du);
+    constexpr auto invalidHandle = static_cast<NTSTATUS>(0xc0000008u);
+    const struct {
+        const char* name;
+        NTSTATUS open, query;
+        ULONG rawTemperature;
+        nks::SampleState state;
+        double value;
+    } cases[] = {
+        {"open access denied", denied, 0, 615, nks::SampleState::accessDenied, 0},
+        {"query access denied", 0, denied, 615, nks::SampleState::accessDenied, 0},
+        {"query not supported", 0, unsupported, 615, nks::SampleState::unsupported, 0},
+        {"query invalid parameter", 0, invalidParameter, 615, nks::SampleState::unsupported, 0},
+        {"temperature not reported", 0, 0, 0, nks::SampleState::unavailable, 0},
+        {"temperature uses tenths of Celsius", 0, 0, 615, nks::SampleState::valid, 61.5},
+        {"other open failure", invalidHandle, 0, 615, nks::SampleState::unavailable, 0},
+        {"other query failure", 0, invalidHandle, 615, nks::SampleState::unavailable, 0},
+    };
+    const nks::GpuAdapterFunctions functions{openAdapter, queryAdapter, closeAdapter};
+    unsigned failures = 0;
+    for (const auto& test : cases) {
+        openStatus = test.open; queryStatus = test.query; temperature = test.rawTemperature;
+        openCalls = queryCalls = closeCalls = 0;
+        try {
+            const auto result = nks::gpuTemperature(adapterLuid, functions);
+            require(result.state == test.state && result.value == test.value && result.source == nks::MetricSource::gpuAdapter,
+                "Wrong GPU temperature state, value or source");
+            require(openCalls == 1 && queryCalls == (test.open >= 0 ? 1u : 0u) && closeCalls == queryCalls,
+                "Temperature query leaked or closed an unopened adapter");
+            std::cout << "PASS GPU temperature " << test.name << '\n';
+        } catch (const std::exception& error) {
+            ++failures;
+            std::cerr << "FAIL GPU temperature " << test.name << ": " << error.what() << '\n';
+        }
+    }
+    require(failures == 0, "GPU temperature state regressions failed");
+}
 }
 
 int main()
 {
     try {
+        gpuTemperatureStates();
         auto rate = nks::networkRate(300, 100, 2);
         require(rate.valid() && rate.value == 800, "Network rate must use bits and actual seconds");
         require(nks::networkRate(300, 100, 0).state == nks::SampleState::gap, "Zero interval accepted");
