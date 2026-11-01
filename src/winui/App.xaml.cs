@@ -12,7 +12,9 @@ public partial class App : Application
         .FirstOrDefault(arg => arg.StartsWith("--check-events=", StringComparison.Ordinal))?[15..];
     internal static string? ActionsCheckPath { get; } = Environment.GetCommandLineArgs()
         .FirstOrDefault(arg => arg.StartsWith("--check-actions=", StringComparison.Ordinal))?[16..];
-    internal static void Trace(string stage) { if ((SmokePath ?? EventsCheckPath ?? ActionsCheckPath) is { } path) File.AppendAllText(path, stage + Environment.NewLine); }
+    internal static string? DumpCheckPath { get; } = Environment.GetCommandLineArgs()
+        .FirstOrDefault(arg => arg.StartsWith("--check-dump=", StringComparison.Ordinal))?[13..];
+    internal static void Trace(string stage) { if ((SmokePath ?? EventsCheckPath ?? ActionsCheckPath ?? DumpCheckPath) is { } path) File.AppendAllText(path, stage + Environment.NewLine); }
     private Window? window;
 
     public App()
@@ -31,6 +33,10 @@ public partial class App : Application
         if (ActionsCheckPath is { } actionsPath) {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(actionsPath))!);
             window = new ProcessActionsUiChecks(actionsPath); window.Activate(); return;
+        }
+        if (DumpCheckPath is { } dumpPath) {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dumpPath))!);
+            window = new ProcessDumpQaWindow(dumpPath); window.Activate(); return;
         }
         Trace("Constructing window");
         window = new MainWindow();
