@@ -38,6 +38,7 @@ $payload = Join-Path $stage 'app'
 New-Item -ItemType Directory -Path $payload,$OutputDirectory -Force | Out-Null
 foreach ($file in Get-ChildItem -LiteralPath $AppDirectory -Recurse -File | Where-Object Extension -ne '.pdb') {
     $relative = [IO.Path]::GetRelativePath($AppDirectory, $file.FullName)
+    if ($relative -in @('portable.nks', 'build-info.json')) { continue }
     $destination = Join-Path $payload $relative
     New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
     Copy-Item -LiteralPath $file.FullName -Destination $destination
@@ -75,11 +76,17 @@ foreach ($library in $assets.libraries.PSObject.Properties | Where-Object { $_.V
     }
 }
 if ($signer) { Invoke-NksSignPayload $payload $signer; $pins = Read-NksPinEvidence $payload }
-$files = @(Get-ChildItem -LiteralPath $payload -Recurse -File | ForEach-Object {
-    [ordered]@{ path=[IO.Path]::GetRelativePath($payload,$_.FullName); sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
-})
 $publicPins = if ($pins) { [ordered]@{ brokerPublisherSpkiSha256=$pins.brokerPublisherSpkiSha256; updatePublisherSpkiSha256=$pins.updatePublisherSpkiSha256 } } else { $null }
-[ordered]@{ version=$version; sourceRevision=$revision; publisherPins=$publicPins; files=$files } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $payload 'build-info.json') -Encoding utf8NoBOM
+function Write-PackageManifest {
+    $files = @(Get-ChildItem -LiteralPath $payload -Recurse -File | Where-Object {
+        [IO.Path]::GetRelativePath($payload, $_.FullName) -ine 'build-info.json'
+    } | Sort-Object FullName | ForEach-Object {
+        [ordered]@{ path=[IO.Path]::GetRelativePath($payload,$_.FullName); sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
+    })
+    [ordered]@{ version=$version; sourceRevision=$revision; publisherPins=$publicPins; files=$files }
+        | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $payload 'build-info.json') -Encoding utf8NoBOM
+}
+Write-PackageManifest
 
 & $compilerPath /Qp "/DAppDirectory=$payload" "/DAppVersion=$version" "/DSourceRevision=$revision" "/DOutputDirectory=$OutputDirectory" "/DOutputBaseName=$baseName-setup" (Join-Path $projectRoot 'installer\nks-taskmgr.iss')
 if ($LASTEXITCODE) { throw "Installer compilation failed: $LASTEXITCODE" }
@@ -93,6 +100,9 @@ if ($signer) {
         sha256=(Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash; publisherSpkiSha256=$signer.Pin; certificateThumbprint=$signer.Thumbprint }
         | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $OutputDirectory ($baseName + '-signature.json')) -Encoding utf8NoBOM
 }
+$portableMarker = "format=1`nappId=3DC15B35-D778-4DD6-AF81-55EC144B6575`n"
+[IO.File]::WriteAllText((Join-Path $payload 'portable.nks'), $portableMarker, [Text.UTF8Encoding]::new($false))
+Write-PackageManifest
 $archive = Join-Path $OutputDirectory ($baseName + '.zip')
 Compress-Archive -Path (Join-Path $payload '*') -DestinationPath $archive -Force
 Get-Item -LiteralPath $setup,$archive | Select-Object Name,Length,FullName
