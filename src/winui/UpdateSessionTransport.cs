@@ -15,7 +15,8 @@ internal sealed partial class UpdateWorkerProcess
     private UpdateWorkerProcess(Process process, SignedImageLease image, SafeFileHandle? job, string releaseVersion)
     { this.process = process; this.image = image; this.job = job; ReleaseVersion = releaseVersion; }
 
-    internal static UpdateWorkerProcess Start(string path, byte[] pin, string currentVersion, UpdatePlan? plan, CancellationToken cancellation, bool compatibleRelease = false)
+    internal static UpdateWorkerProcess Start(string path, byte[] pin, string currentVersion, UpdatePlan? plan, CancellationToken cancellation,
+        bool compatibleRelease = false, bool killOnClientExit = true)
     {
         cancellation.ThrowIfCancellationRequested();
         var image = SignedImageLease.Open(path, pin); Process? child = null; SafeFileHandle? job = null;
@@ -26,7 +27,7 @@ internal sealed partial class UpdateWorkerProcess
             if (plan is not null && (image.Identity != plan.StageHelperFileId || image.Length != plan.StageHelperBytes
                 || !CryptographicOperations.FixedTimeEquals(image.Hash(UpdateProtocol.MaximumPackageBytes, cancellation), UpdateProtocol.ParseHash(plan.StageHelperSha256))))
                 throw new InvalidDataException("Připravený pracovník neodpovídá schválenému plánu.");
-            if (plan is null) {
+            if (plan is null && killOnClientExit) {
                 job = CreateJobObject(0, 0);
                 if (job.IsInvalid) throw new Win32Exception(Marshal.GetLastPInvokeError());
                 var limits = new JobLimits { Basic = new BasicLimits { Flags = 0x2108, ActiveProcesses = 1 }, ProcessMemory = 128 * 1024 * 1024 };
@@ -64,18 +65,29 @@ internal sealed partial class UpdateWorkerProcess
     }
     internal async Task<UpdateResponse> ReadAsync(byte[] request, CancellationToken cancellation)
     {
+        var (header, payload) = await ReadBodyAsync(request, cancellation).ConfigureAwait(false);
+        return UpdateProtocol.Decode(header, payload, request);
+    }
+    internal async Task<UpdateCleanupResponse> ReadCleanupAsync(byte[] request, UpdateCleanupPlan? plan, CancellationToken cancellation)
+    {
+        var (header, payload) = await ReadBodyAsync(request, cancellation).ConfigureAwait(false);
+        return UpdateProtocol.DecodeCleanup(header, payload, request, plan);
+    }
+    private async Task<(byte[] Header, byte[] Payload)> ReadBodyAsync(byte[] request, CancellationToken cancellation)
+    {
         var header = new byte[UpdateProtocol.HeaderBytes];
         await process.StandardOutput.BaseStream.ReadExactlyAsync(header, cancellation).ConfigureAwait(false);
         var payload = new byte[UpdateProtocol.PayloadLength(header, request)];
         await process.StandardOutput.BaseStream.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
-        return UpdateProtocol.Decode(header, payload, request);
+        return (header, payload);
     }
-    internal async Task EndAsync(UpdateResponse response, CancellationToken cancellation)
+    internal Task EndAsync(UpdateResponse response, CancellationToken cancellation) => EndCleanupAsync(response.Status, cancellation);
+    internal async Task EndCleanupAsync(UpdateStatus status, CancellationToken cancellation)
     {
         var extra = new byte[1];
         if (await process.StandardOutput.BaseStream.ReadAsync(extra, cancellation).ConfigureAwait(false) != 0) throw new InvalidDataException("Data za koncem odpovědi aktualizací.");
         await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
-        if (response.Status == UpdateStatus.Ok && process.ExitCode != 0) throw new IOException("Pracovník nepotvrdil úspěšné dokončení odpovědi.");
+        if (status == UpdateStatus.Ok && process.ExitCode != 0) throw new IOException("Pracovník nepotvrdil úspěšné dokončení odpovědi.");
     }
     internal void Cancel()
     {

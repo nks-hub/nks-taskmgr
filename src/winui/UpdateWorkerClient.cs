@@ -12,7 +12,7 @@ internal sealed class UpdateWorkerClient : IDisposable
     private readonly CancellationTokenSource lifetime = new();
     private SignedImageLease? guiImage;
     private GuiContext? context;
-    private UpdateSession? prepared;
+    private IDisposable? prepared;
     private bool disposed;
     private sealed record GuiContext(ProcessKey Key, string Version, string Sha256, SignedImageLease.FileId FileId, ulong Bytes,
         string Directory, SignedImageLease.FileId RootFileId);
@@ -42,6 +42,33 @@ internal sealed class UpdateWorkerClient : IDisposable
     {
         _ = UpdateProtocol.ParseId(candidateId);
         return PrepareCoreAsync(null, candidateId, cancellation);
+    }
+
+    internal Task<UpdateCleanupSession> PrepareCleanupAsync(CancellationToken cancellation = default)
+    {
+        bool transferred = false;
+        return RunAsync(async (pin, token) => {
+            var gui = Context(pin, token);
+            UpdateWorkerProcess? worker = null;
+            try {
+                worker = UpdateWorkerProcess.Start(Path.Combine(AppContext.BaseDirectory, "nks-update-worker.exe"), pin, gui.Version, null,
+                    token, compatibleRelease: true, killOnClientExit: false);
+                var request = UpdateProtocol.Request(UpdateCommand.CleanupPreview, gui.Key);
+                using var abort = token.Register(() => _ = Task.Run(worker.Cancel));
+                await worker.WriteAsync(request, false, token).ConfigureAwait(false);
+                var preview = await worker.ReadCleanupAsync(request, null, token).ConfigureAwait(false);
+                if (preview.Frame != UpdateFrame.Ready || preview.Status != UpdateStatus.Ok)
+                    throw new UpdateException(preview.Status, UpdateProtocol.StatusText(preview.Status), preview.Error);
+                var plan = new UpdateCleanupPlan(preview.ManifestHash, preview.Deadline, preview.CacheRootFileId,
+                    preview.CompleteInventory, preview.Items, UpdateProtocol.CleanupSummary(preview.Items, preview.CompleteInventory));
+                token.ThrowIfCancellationRequested();
+                var session = new UpdateCleanupSession(plan, worker, request, () => Interlocked.Exchange(ref pending, 0), lifetime.Token, cancellation);
+                lock (sync) prepared = session;
+                transferred = true; return session;
+            } finally {
+                if (!transferred && worker is not null) await worker.RetireAsync(true).ConfigureAwait(false);
+            }
+        }, cancellation, () => transferred);
     }
 
     private Task<UpdateSession> PrepareCoreAsync(string? packageSha256, string? candidateId, CancellationToken cancellation)

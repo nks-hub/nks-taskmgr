@@ -6,7 +6,7 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-internal enum UpdateCommand : ushort { List = 1, Cache, Plan, Apply, Rollback, Commit, Inspect, RepairPlan, Repair }
+internal enum UpdateCommand : ushort { List = 1, Cache, Plan, Apply, Rollback, Commit, Inspect, RepairPlan, Repair, CleanupPreview, CleanupCommit }
 internal enum UpdateFrame : uint { Request, Result, Ready, Accepted, Rejected }
 internal enum UpdateStatus : uint { Ok, TrustMissing, Rejected, InvalidRequest, CacheFull, Conflict, NotFound, Io, GuiAlive, InstallerFailed, VerificationFailed, Unknown, Busy }
 internal enum UpdateJournalState : uint { None, Cached, Planned, Committed, WaitingGui, Installing, Verified, Rejected, GuiAlive, InstallerFailed, VerificationFailed, Unknown }
@@ -97,6 +97,104 @@ internal static class UpdateProtocol
     {
         var result = readyRequest.AsSpan(0, HeaderBytes).ToArray();
         BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(6), (ushort)UpdateCommand.Commit); W32(result, 8, 0); return result;
+    }
+    internal static byte[] CleanupCommitRequest(byte[] previewRequest, string manifestHash)
+    {
+        var result = CommitRequest(previewRequest);
+        BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(6), (ushort)UpdateCommand.CleanupCommit);
+        ParseHash(manifestHash).CopyTo(result, 88); return result;
+    }
+    internal static UpdateCleanupResponse DecodeCleanup(byte[] header, byte[] payload, byte[] request, UpdateCleanupPlan? plan)
+    {
+        if (plan is null && payload.Length < 80) {
+            var unsupported = Decode(header, payload, request);
+            if (unsupported.Frame == UpdateFrame.Rejected && unsupported.Status != UpdateStatus.Ok)
+                throw new UpdateException(unsupported.Status, "Podepsaný pracovník tento ruční úklid neposkytuje. Úklid nebyl potvrzen.", unsupported.Error);
+        }
+        if (payload.Length != PayloadLength(header, request) || payload.Length < 80) throw Bad();
+        var frame = (UpdateFrame)U32(header, 12); var status = (UpdateStatus)U32(payload, 0);
+        uint error = U32(payload, 4), count = U32(payload, 8), flags = U32(payload, 12);
+        string manifest = OptionalHash(payload, 16); ulong deadline = U64(payload, 48); var cacheRoot = Id(payload, 56);
+        if (status > UpdateStatus.Busy || count > 128 || (flags & ~7u) != 0 || status == UpdateStatus.Ok && error != 0) throw Bad();
+        if (frame == UpdateFrame.Rejected && status != UpdateStatus.Ok && count == 0 && payload.Length == 80 && (flags & 6) == 0)
+            return new(frame, status, error, false, false, false, manifest, deadline, cacheRoot, Array.Empty<UpdateCleanupItem>());
+        if (manifest.Length == 0 || !ValidId(cacheRoot)) throw Bad();
+        if (plan is null) {
+            if (frame != UpdateFrame.Ready || status != UpdateStatus.Ok || (flags & 6) != 0 || deadline <= NowMs || deadline > NowMs + 30000 || deadline > U64(request, 40)) throw Bad();
+            var hashed = (byte[])payload.Clone(); hashed.AsSpan(16, 32).Clear();
+            if (!CryptographicOperations.FixedTimeEquals(SHA256.HashData(hashed), ParseHash(manifest))) throw Bad();
+        } else {
+            if (frame is not (UpdateFrame.Accepted or UpdateFrame.Result) || (flags & 2) == 0
+                || manifest != plan.ManifestHash || deadline != plan.CommitDeadlineMonotonicMs || cacheRoot != plan.CacheRootFileId
+                || frame == UpdateFrame.Accepted && (status != UpdateStatus.Ok || count != 0 || payload.Length != 80)
+                || frame == UpdateFrame.Result && (((flags & 1) != 0) != plan.CompleteInventory || count != plan.Items.Count)) throw Bad();
+        }
+        var rows = new UpdateCleanupItem[count]; var ids = new HashSet<string>(StringComparer.Ordinal); int offset = 80;
+        for (int i = 0; i < rows.Length; ++i) {
+            if (offset > payload.Length - 160) throw Bad();
+            int at = offset; offset += 160;
+            string id = Hash(payload, at); var category = (UpdateCleanupCategory)U32(payload, at + 32);
+            var outcome = (UpdateCleanupOutcome)U32(payload, at + 36); var reason = (UpdateCleanupReason)U32(payload, at + 40);
+            uint rowFlags = U32(payload, at + 44), files = U32(payload, at + 56), dirs = U32(payload, at + 60);
+            uint deletedFiles = U32(payload, at + 64), deletedDirs = U32(payload, at + 68); ulong bytes = U64(payload, at + 48), deletedBytes = U64(payload, at + 72);
+            bool sizeKnown = (rowFlags & 1) != 0;
+            if (!ids.Add(id) || category is < UpdateCleanupCategory.Package or > UpdateCleanupCategory.Other || outcome > UpdateCleanupOutcome.Unknown
+                || reason > UpdateCleanupReason.AlreadyAbsent || (rowFlags & ~1u) != 0 || !sizeKnown && bytes != 0
+                || deletedFiles > files || deletedDirs > dirs || sizeKnown && deletedBytes > bytes
+                || U32(payload, at + 140) != 0 || U64(payload, at + 144) != 0 || U64(payload, at + 152) != 0) throw Bad();
+            string name = Text(payload, ref offset, U32(payload, at + 128)), detail = Text(payload, ref offset, U32(payload, at + 132)), path = Text(payload, ref offset, U32(payload, at + 136));
+            if (name.Length == 0) throw Bad();
+            if (path.Length != 0) ValidatePath(path);
+            var row = new UpdateCleanupItem(id, category, outcome, reason, sizeKnown ? bytes : null, files, dirs, deletedFiles, deletedDirs,
+                deletedBytes, U32(payload, at + 80), unchecked((int)U32(payload, at + 84)), Id(payload, at + 88), OptionalId(payload, at + 112), name, detail, path);
+            if (plan is null) {
+                if (outcome is not (UpdateCleanupOutcome.Eligible or UpdateCleanupOutcome.Kept or UpdateCleanupOutcome.Unknown)
+                    || deletedFiles != 0 || deletedDirs != 0 || deletedBytes != 0
+                    || outcome == UpdateCleanupOutcome.Eligible && (category == UpdateCleanupCategory.Other || path.Length == 0 || files == 0 && dirs == 0 || row.Error != 0 || row.NtStatus != 0)) throw Bad();
+            } else {
+                var original = plan.Items.SingleOrDefault(item => item.Id == row.Id) ?? throw Bad();
+                if (row.Category != original.Category || row.Bytes != original.Bytes || row.Files != original.Files || row.Directories != original.Directories
+                    || row.ScopeRootFileId != original.ScopeRootFileId || row.PlanId != original.PlanId || row.Name != original.Name || row.Path != original.Path
+                    || outcome == UpdateCleanupOutcome.Eligible || original.Outcome == UpdateCleanupOutcome.Kept && outcome != UpdateCleanupOutcome.Kept
+                    || original.Outcome != UpdateCleanupOutcome.Eligible && (deletedFiles != 0 || deletedDirs != 0 || deletedBytes != 0)
+                    || outcome == UpdateCleanupOutcome.Deleted && (deletedFiles != files || deletedDirs != dirs)
+                    || (deletedFiles != 0 || deletedDirs != 0 || deletedBytes != 0) && (flags & 4) == 0) throw Bad();
+            }
+            rows[i] = row;
+        }
+        if (offset != payload.Length) throw Bad();
+        return new(frame, status, error, (flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0, manifest, deadline, cacheRoot, Array.AsReadOnly(rows));
+    }
+    internal static UpdateCleanupSummary CleanupSummary(IReadOnlyList<UpdateCleanupItem> rows, bool complete)
+    {
+        var totals = new UpdateCleanupTotals[6];
+        for (int i = 0; i < totals.Length; ++i) totals[i] = new(0, 0, 0, 0);
+        try {
+            foreach (var row in rows) {
+                int bucket = (int)row.Outcome;
+                ulong remainingBytes = row.Bytes is { } bytes ? checked(bytes - row.DeletedBytes) : 0;
+                var current = totals[bucket];
+                if (row.Outcome != UpdateCleanupOutcome.Deleted)
+                    totals[bucket] = new(checked(current.Files + row.Files - row.DeletedFiles), checked(current.Directories + row.Directories - row.DeletedDirectories),
+                        checked(current.KnownBytes + remainingBytes), checked(current.UnknownSizeCount + (row.Bytes is null ? 1u : 0u)));
+                var deleted = totals[(int)UpdateCleanupOutcome.Deleted];
+                totals[(int)UpdateCleanupOutcome.Deleted] = new(checked(deleted.Files + row.DeletedFiles), checked(deleted.Directories + row.DeletedDirectories),
+                    checked(deleted.KnownBytes + row.DeletedBytes), deleted.UnknownSizeCount);
+            }
+        } catch (OverflowException error) { throw new InvalidDataException("Součty úklidu překračují číselný rozsah.", error); }
+        return new(totals[0], totals[1], totals[2], totals[3], totals[4], totals[5], complete);
+    }
+    internal static UpdateCleanupResult CleanupInterrupted(UpdateCleanupPlan plan, bool mayHaveDeleted, UpdateStatus status, uint error, string detail)
+    {
+        var rows = plan.Items.Select(item => item with { Outcome = mayHaveDeleted ? UpdateCleanupOutcome.Unknown : UpdateCleanupOutcome.Skipped,
+            Reason = UpdateCleanupReason.Cancelled, Detail = mayHaveDeleted ? "Výsledek mazání nebyl doručen; neopakujte požadavek naslepo." : "Potvrzení úklidu nebylo odesláno." }).ToArray();
+        var summary = CleanupSummary(rows, false);
+        if (mayHaveDeleted) summary = summary with {
+            Deleted = summary.Deleted with { CountsKnown = false }, Kept = summary.Kept with { CountsKnown = false },
+            Skipped = summary.Skipped with { CountsKnown = false }, Failed = summary.Failed with { CountsKnown = false },
+            Unknown = summary.Unknown with { CountsKnown = false }
+        };
+        return new(false, mayHaveDeleted, status, error, detail, Array.AsReadOnly(rows), summary);
     }
     internal static byte[] CachePayload(SignedImageLease source, byte[] hash)
     {
