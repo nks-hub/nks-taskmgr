@@ -69,12 +69,8 @@ internal sealed partial class ProcessDumpFile : IDisposable
         BinaryPrimitives.WriteUInt32LittleEndian(basic.AsSpan(32), 0x2000);
         unsafe { fixed (byte* bytes = basic) if (!SetFileInformationByHandle(Handle, 0, bytes, (uint)basic.Length)) throw LastError(); }
         if (!FlushFileBuffers(Handle)) throw LastError();
-        var rename = new byte[20 + fileName.Length * 2];
-        BinaryPrimitives.WriteInt64LittleEndian(rename.AsSpan(8), directories[^1].DangerousGetHandle());
-        BinaryPrimitives.WriteUInt32LittleEndian(rename.AsSpan(16), (uint)fileName.Length * 2);
-        System.Text.Encoding.Unicode.GetBytes(fileName, rename.AsSpan(20));
         cancellation.ThrowIfCancellationRequested();
-        unsafe { fixed (byte* bytes = rename) if (!SetFileInformationByHandle(Handle, 3, bytes, (uint)rename.Length)) throw LastError(); }
+        RenameEntry(Handle, directories[^1], fileName, replace: false);
         published = true;
         string? warning = null;
         try { Journal?.Remove(); }

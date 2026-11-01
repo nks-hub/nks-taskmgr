@@ -69,10 +69,20 @@ internal sealed partial class ProcessDumpFile
     internal static DumpFileIdentity FileIdentity(SafeFileHandle file) => ReadIdentity(file);
     internal static unsafe void RenameEntry(SafeFileHandle file, SafeFileHandle parent, string name, bool replace)
     {
-        var data = new byte[20 + name.Length * 2]; data[0] = replace ? (byte)1 : (byte)0;
-        BinaryPrimitives.WriteInt64LittleEndian(data.AsSpan(8), parent.DangerousGetHandle());
+        if (string.IsNullOrEmpty(name) || name is "." or ".." || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+            || name.EndsWith('.') || name.EndsWith(' ')) throw new ArgumentException("Přejmenování vyžaduje jeden platný název souboru.", nameof(name));
+        CheckDirectory(parent);
+        string directory = FinalName(parent).TrimEnd('\\') + "\\", source = FinalName(file);
+        if (!StringComparer.OrdinalIgnoreCase.Equals(source[..(source.LastIndexOf('\\') + 1)], directory))
+            throw new IOException("Soubor neleží v ověřeném rodičovském adresáři.");
+        var data = new byte[checked(24 + name.Length * 2)]; data[0] = replace ? (byte)1 : (byte)0;
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(16), (uint)name.Length * 2); System.Text.Encoding.Unicode.GetBytes(name, data.AsSpan(20));
-        fixed (byte* bytes = data) if (!SetFileInformationByHandle(file, 3, bytes, (uint)data.Length)) throw LastError();
+        // A leaf with no root renames within the held source directory. Reopening
+        // that directory for a relative root would conflict with the path leases.
+        fixed (byte* bytes = data) {
+            int status = NtSetInformationFile(file, out _, bytes, (uint)data.Length, 10);
+            if (status != 0) throw new Win32Exception(unchecked((int)RtlNtStatusToDosError(status)));
+        }
     }
     internal static unsafe void DeleteEntry(SafeFileHandle file) { byte delete = 1; if (!SetFileInformationByHandle(file, 4, &delete, 1)) throw LastError(); }
     internal static unsafe void CheckSingleFile(SafeFileHandle file)
@@ -97,4 +107,6 @@ internal sealed partial class ProcessDumpFile
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static unsafe partial bool GetFileInformationByHandle(SafeFileHandle file, void* information);
+    [LibraryImport("ntdll.dll")]
+    private static unsafe partial int NtSetInformationFile(SafeFileHandle file, out IoStatus status, void* information, uint length, int informationClass);
 }
