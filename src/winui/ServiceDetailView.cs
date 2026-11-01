@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Automation;
+using System.Collections.ObjectModel;
 using Windows.System;
 
 namespace NksTaskMgr.WinUI;
@@ -11,6 +12,11 @@ public sealed partial class MainWindow
     private readonly TextBlock serviceTitle = DetailLabel("Vyberte službu", 22), serviceName = DetailLabel("", 10), serviceDescription = DetailLabel("", 11);
     private readonly TextBlock serviceState = DetailLabel("", 11), serviceStartup = DetailLabel("", 11), serviceAccount = DetailLabel("", 11);
     private readonly TextBlock serviceGroup = DetailLabel("", 11), serviceCommand = DetailLabel("", 11), serviceDetailNote = DetailLabel("", 10);
+    private readonly TextBlock serviceReportedHost = DetailLabel("", 11), serviceHostIdentityNote = DetailLabel("", 10);
+    private readonly StackPanel serviceSharedHost = new() { Spacing = 8 };
+    private readonly ObservableCollection<ServiceRow> serviceHostPeers = [];
+    private readonly ListView serviceHostPeerList = new() { SelectionMode = ListViewSelectionMode.None, IsItemClickEnabled = true,
+        MaxHeight = 220, Padding = new Thickness(0), BorderThickness = new Thickness(0), HorizontalContentAlignment = HorizontalAlignment.Stretch };
     private readonly Button serviceHost = Button("Hostitelský proces →"), serviceOverviewTab = Button("Přehled"), serviceDependenciesTab = Button("Závislosti");
     private readonly StackPanel serviceOverview = new() { Spacing = 16 }, serviceDependencies = new() { Spacing = 8 };
     private readonly StackPanel serviceTabs = new() { Orientation = Orientation.Horizontal, Spacing = 3 };
@@ -34,12 +40,30 @@ public sealed partial class MainWindow
         serviceName.FontFamily = new FontFamily("Consolas");
         serviceHost.HorizontalAlignment = HorizontalAlignment.Left;
         serviceHost.Click += (_, _) => OpenServiceHost();
-        content.Children.Add(serviceHost);
+        content.Children.Add(serviceHost); content.Children.Add(serviceHostIdentityNote);
         foreach (var button in new[] { serviceOverviewTab, serviceDependenciesTab }) { button.Height = 27; serviceTabs.Children.Add(button); }
         serviceOverviewTab.Click += (_, _) => { dependenciesSelected = false; RefreshServiceDetail(); };
         serviceDependenciesTab.Click += (_, _) => { dependenciesSelected = true; RefreshServiceDetail(); }; content.Children.Add(serviceTabs);
         void Fact(string label, TextBlock value) { var group = new StackPanel { Spacing = 6 }; group.Children.Add(DetailLabel(label, 9)); group.Children.Add(value); serviceOverview.Children.Add(group); }
-        Fact("Stav služby", serviceState); Fact("Spouštění", serviceStartup); Fact("Účet", serviceAccount); Fact("Skupina", serviceGroup); Fact("Příkaz", serviceCommand);
+        Fact("Stav služby", serviceState); Fact("Hostitel podle správce služeb", serviceReportedHost);
+        Fact("Spouštění", serviceStartup); Fact("Účet", serviceAccount);
+        serviceSharedHost.Children.Add(DetailLabel("Další služby se stejným hlášeným PID", 11));
+        serviceHostPeerList.ItemsSource = serviceHostPeers;
+        serviceHostPeerList.ItemTemplate = serviceHostTemplates["ServiceHostPeerTemplate"] as DataTemplate;
+        var peerStyle = new Style { TargetType = typeof(ListViewItem) };
+        peerStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0)));
+        peerStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
+        serviceHostPeerList.ItemContainerStyle = peerStyle;
+        ScrollViewer.SetVerticalScrollBarVisibility(serviceHostPeerList, ScrollBarVisibility.Auto);
+        ScrollViewer.SetHorizontalScrollBarVisibility(serviceHostPeerList, ScrollBarVisibility.Disabled);
+        serviceHostPeerList.ItemClick += (_, args) => {
+            if (args.ClickedItem is ServiceRow peer && servicesModel?.Selected is { Pid: > 0 } selected
+                && peer.Pid == selected.Pid && ReferenceEquals(servicesModel.Find(peer.Name), peer)) SelectRelatedService(peer.Name);
+        };
+        AutomationProperties.SetName(serviceHostPeerList, "Další služby se stejným hlášeným PID");
+        AutomationProperties.SetAutomationId(serviceHostPeerList, "services-host-peers");
+        serviceSharedHost.Children.Add(serviceHostPeerList); serviceOverview.Children.Add(serviceSharedHost);
+        Fact("Skupina", serviceGroup); Fact("Příkaz", serviceCommand);
         content.Children.Add(serviceOverview); content.Children.Add(serviceDependencies); content.Children.Add(serviceDetailNote); serviceDetailScroll.Content = content;
     }
     private void OpenServiceHost()
@@ -68,6 +92,11 @@ public sealed partial class MainWindow
             : detail?.HostError > 0 ? "Hostitele nelze ověřit: " + ServiceText.Error(detail.HostError)
             : row?.State != 4 ? "Služba není spuštěná." : "Hostitelský proces se změnil nebo data nejsou aktuální.";
         ToolTipService.SetToolTip(serviceHost, hostHint); AutomationProperties.SetHelpText(serviceHost, hostHint);
+        serviceReportedHost.Text = row?.HostSummary ?? "—";
+        serviceHostIdentityNote.Text = row is null ? "" : row.Pid == 0 ? "Služba nehlásí žádný PID."
+            : (serviceHost.IsEnabled ? "Živý odkaz ověřuje hostitele vybrané služby." : "Živý odkaz není ověřený. " + hostHint)
+                + " Seskupení služeb vychází pouze z hlášeného PID, ne z ověřené totožnosti procesu.";
+        RefreshReportedHostServices(row);
         serviceOverview.Visibility = row is not null && !dependenciesSelected ? Visibility.Visible : Visibility.Collapsed;
         serviceDependencies.Visibility = row is not null && dependenciesSelected ? Visibility.Visible : Visibility.Collapsed;
         serviceOverviewTab.Background = Display.Brush(dependenciesSelected ? 0x1d252au : 0x28343bu);
@@ -95,11 +124,34 @@ public sealed partial class MainWindow
             button.HorizontalAlignment = HorizontalAlignment.Stretch; button.HorizontalContentAlignment = HorizontalAlignment.Left;
             AutomationProperties.SetName(button, "Závislost " + name);
             button.Click += (_, _) => {
-                if (servicesModel?.Find(name) is null || name.StartsWith('+')) return;
-                UpdateServices(() => { servicesModel.SetFilter(ServiceFilter.All); servicesModel.SetQuery(""); servicesModel.Select(name); });
-                search.Text = ""; serviceList.ScrollIntoView(servicesModel.Selected, ScrollIntoViewAlignment.Leading);
+                if (!name.StartsWith('+')) SelectRelatedService(name);
             };
             dependencyButtons.Add((button, name)); serviceDependencies.Children.Add(button);
         }
+    }
+    private void RefreshReportedHostServices(ServiceRow? row)
+    {
+        ServiceRow[] peers = row is null ? [] : servicesModel!.ReportedHostServices(row).Where(peer => !ReferenceEquals(peer, row))
+            .OrderBy(peer => peer.Title, StringComparer.OrdinalIgnoreCase).ThenBy(peer => peer.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+        serviceSharedHost.Visibility = peers.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        var wanted = peers.ToHashSet();
+        for (int i = serviceHostPeers.Count - 1; i >= 0; --i) if (!wanted.Contains(serviceHostPeers[i])) serviceHostPeers.RemoveAt(i);
+        for (int i = 0; i < peers.Length; ++i) {
+            if (i < serviceHostPeers.Count && ReferenceEquals(serviceHostPeers[i], peers[i])) continue;
+            int found = serviceHostPeers.IndexOf(peers[i]);
+            if (found >= 0) serviceHostPeers.Move(found, i); else serviceHostPeers.Insert(i, peers[i]);
+        }
+    }
+    private void SelectRelatedService(string name)
+    {
+        if (servicesModel?.Find(name) is not { } target) return;
+        UpdateServices(() => {
+            if (!servicesModel.Visible.Contains(target)) {
+                servicesModel.SetFilter(ServiceFilter.All); servicesModel.SetSharedHostsOnly(false); servicesModel.SetQuery("");
+            }
+            servicesModel.Select(name);
+        });
+        if (search.Text != servicesModel.Query) search.Text = servicesModel.Query;
+        serviceList.ScrollIntoView(servicesModel.Selected, ScrollIntoViewAlignment.Leading);
     }
 }

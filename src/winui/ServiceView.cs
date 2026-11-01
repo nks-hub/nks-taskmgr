@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Media;
 using NksTaskMgr.Native;
@@ -15,6 +16,8 @@ public sealed partial class MainWindow
     private readonly TextBlock serviceCount = Label("", 10, 0x95a4ad), serviceEmpty = Label("Načítám služby…", 12, 0x95a4ad);
     private readonly List<Button> serviceFilters = [];
     private readonly List<TextBlock> serviceCounters = [];
+    private readonly ToggleButton sharedServiceHosts = Choice("Společný PID");
+    private readonly ServiceHostTemplates serviceHostTemplates = new();
     private readonly ScrollViewer serviceDetailScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private bool updatingServices;
     private readonly RowDefinition serviceToolbarHeight = new() { Height = new GridLength(70) };
@@ -45,13 +48,24 @@ public sealed partial class MainWindow
         serviceWorkspace.RowDefinitions.Add(new RowDefinition()); serviceWorkspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0) });
         var inventory = new Grid(); inventory.RowDefinitions.Add(serviceToolbarHeight); inventory.RowDefinitions.Add(new RowDefinition());
         var toolbar = new Grid { Padding = new Thickness(16, 0, 16, 0), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 0, 0, 1) };
+        toolbar.ColumnDefinitions.Add(new ColumnDefinition()); toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         foreach (var filter in filters) {
             var button = Button(filter == ServiceFilter.All ? "Všechny" : filter == ServiceFilter.Running ? "Běžící" : filter == ServiceFilter.Stopped ? "Zastavené" : "Ostatní");
             button.Height = 27; button.Padding = new Thickness(8, 0, 8, 0); button.FontSize = 11;
             button.Click += (_, _) => UpdateServices(() => servicesModel!.SetFilter(filter)); serviceFilters.Add(button); controls.Children.Add(button);
         }
-        toolbar.Children.Add(controls); serviceCount.HorizontalAlignment = HorizontalAlignment.Right; serviceCount.VerticalAlignment = VerticalAlignment.Center; toolbar.Children.Add(serviceCount); inventory.Children.Add(toolbar);
+        sharedServiceHosts.Margin = new Thickness(8, 0, 0, 0); sharedServiceHosts.Padding = new Thickness(8, 0, 8, 0);
+        sharedServiceHosts.Checked += (_, _) => { if (!updatingServices) UpdateServices(() => servicesModel!.SetSharedHostsOnly(true)); };
+        sharedServiceHosts.Unchecked += (_, _) => { if (!updatingServices) UpdateServices(() => servicesModel!.SetSharedHostsOnly(false)); };
+        AutomationProperties.SetName(sharedServiceHosts, "Pouze služby se společným hlášeným PID");
+        AutomationProperties.SetAutomationId(sharedServiceHosts, "services-shared-hosts");
+        ToolTipService.SetToolTip(sharedServiceHosts, "Služby se stejným nenulovým PID hlášeným správcem služeb. Kombinuje se s filtrem stavu a hledáním.");
+        controls.Children.Add(sharedServiceHosts);
+        toolbar.Children.Add(new ScrollViewer { Content = controls, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
+        serviceCount.HorizontalAlignment = HorizontalAlignment.Right; serviceCount.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(serviceCount, 1); toolbar.Children.Add(serviceCount); inventory.Children.Add(toolbar);
         var table = new Grid { MinWidth = 706 }; table.RowDefinitions.Add(new RowDefinition { Height = new GridLength(39) }); table.RowDefinitions.Add(new RowDefinition());
         var columns = new Grid { Padding = new Thickness(18, 0, 18, 0), Background = Display.Brush(0x1d252a) };
         foreach (var width in new[] { new GridLength(1, GridUnitType.Star), new GridLength(105), new GridLength(140), new GridLength(65), new GridLength(150) }) columns.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
@@ -67,7 +81,7 @@ public sealed partial class MainWindow
         var style = new Style { TargetType = typeof(ListViewItem) };
         style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0))); style.Setters.Add(new Setter(FrameworkElement.HeightProperty, 57d));
         style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch)); serviceList.ItemContainerStyle = style;
-        serviceList.ItemTemplate = Application.Current.Resources["ServiceTemplate"].As<DataTemplate>();
+        serviceList.ItemTemplate = serviceHostTemplates["ServiceHostTemplate"].As<DataTemplate>();
         serviceList.ContainerContentChanging += (_, args) => {
             if (!args.InRecycleQueue && args.Item is ServiceRow row) AutomationProperties.SetName(args.ItemContainer, row.Title + " (" + row.Name + ")");
         };
@@ -99,16 +113,18 @@ public sealed partial class MainWindow
         if (servicesModel is null) return;
         servicesModel.SetActivity(active, model.Paused);
         if (!active) return;
+        var restoreScroll = PreserveServiceScroll();
         updatingServices = true; bool changed;
         try { changed = servicesModel.Tick(); } finally { updatingServices = false; }
-        if (changed || ticks % 10 == 0) RefreshServices();
+        if (changed || ticks % 10 == 0) { RefreshServices(); restoreScroll(); }
     }
     private void RefreshServices()
     {
         if (servicesModel is null) return;
         updatingServices = true;
-        try { serviceList.SelectedItem = servicesModel.Selected; } finally { updatingServices = false; }
+        try { serviceList.SelectedItem = servicesModel.Selected; sharedServiceHosts.IsChecked = servicesModel.SharedHostsOnly; } finally { updatingServices = false; }
         serviceCount.Text = ServiceText.Count(servicesModel.Visible.Count);
+        sharedServiceHosts.Content = "Společný PID (" + servicesModel.SharedHostCount + ")";
         serviceEmpty.Visibility = servicesModel.Visible.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         serviceEmpty.Text = servicesModel.Error.Length > 0 ? servicesModel.Error : servicesModel.Time == 0 ? "Načítám služby…" : "Žádná služba neodpovídá filtru.";
         var counts = new[] { servicesModel.All.Count, servicesModel.All.Count(row => row.State == 4), servicesModel.All.Count(row => row.State == 1), servicesModel.All.Count(row => row.State != 1 && row.State != 4) };
@@ -118,6 +134,22 @@ public sealed partial class MainWindow
             serviceFilters[i].Background = Display.Brush(i == (int)servicesModel.Filter ? 0x28343bu : 0x1d252au);
         }
         RefreshServiceDetail();
+    }
+    private Action PreserveServiceScroll()
+    {
+        var source = servicesModel!;
+        var scroll = Descendant<ScrollViewer>(serviceList);
+        double offset = scroll?.VerticalOffset ?? 0;
+        int index = (int)(offset / 57);
+        var anchor = index < source.Visible.Count ? source.Visible[index] : null;
+        double remainder = offset % 57;
+        return () => {
+            if (scroll is null || anchor is null) return;
+            int current = source.Visible.IndexOf(anchor);
+            double target = current >= 0 ? current * 57 + remainder : offset;
+            if (Math.Abs(target - scroll.VerticalOffset) < 0.5) return;
+            serviceList.UpdateLayout(); scroll.ChangeView(null, target, null, true);
+        };
     }
     private void ResizeServices()
     {

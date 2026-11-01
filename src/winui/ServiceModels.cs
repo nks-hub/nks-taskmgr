@@ -49,9 +49,13 @@ public sealed partial class ServiceRow(string name) : INotifyPropertyChanged
     public string Title { get; private set; } = name;
     public uint State { get; private set; }
     public uint Pid { get; private set; }
+    public int ReportedHostCount { get; private set; }
     public ServiceConfiguration Config { get; private set; } = ServiceConfiguration.Empty;
     public string StateText => ServiceText.State(State);
     public string PidText => Pid == 0 ? "—" : Pid.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    public string HostCountText => ReportedHostCount > 1 ? ServiceText.Count(ReportedHostCount) : "";
+    public string HostSummary => Pid == 0 ? "PID není hlášen." : "Hlášený PID " + PidText + " · " + ServiceText.Count(ReportedHostCount);
+    public string HostPeerDescription => StateText + " · " + Account;
     public string Startup => Config.Startup;
     public string Account => Config.Error == 0 ? Config.Account : ServiceText.Error(Config.Error);
     private SolidColorBrush? stateBrush;
@@ -65,6 +69,14 @@ public sealed partial class ServiceRow(string name) : INotifyPropertyChanged
         Title = source.Title.Copy(); State = source.State; Pid = source.Pid;
         if (!Config.Matches(source.Config)) Config = ServiceConfiguration.Copy(source.Config);
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty)); return true;
+    }
+    public void SetReportedHostCount(int count)
+    {
+        if (ReportedHostCount == count) return;
+        ReportedHostCount = count;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ReportedHostCount)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HostCountText)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HostSummary)));
     }
     public bool Matches(ServiceFilter filter, string query) => (filter switch {
         ServiceFilter.Running => State == 4, ServiceFilter.Stopped => State == 1, ServiceFilter.Other => State != 1 && State != 4, _ => true

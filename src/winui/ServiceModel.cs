@@ -7,6 +7,7 @@ public sealed class ServiceModel : IDisposable
 {
     private readonly NativeServices monitor = NativeServices.Open();
     private readonly Dictionary<string, ServiceRow> rows = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<uint, List<ServiceRow>> reportedHosts = [];
     private string selected = "", nativeSelected = "";
     private bool active, paused;
     private int sortColumn;
@@ -15,7 +16,9 @@ public sealed class ServiceModel : IDisposable
     public IReadOnlyCollection<ServiceRow> All => rows.Values;
     public string Query { get; private set; } = "";
     public ServiceFilter Filter { get; private set; }
-    public ServiceRow? Selected => rows.TryGetValue(selected, out var row) && row.Matches(Filter, Query) ? row : null;
+    public bool SharedHostsOnly { get; private set; }
+    public int SharedHostCount => reportedHosts.Values.Count(group => group.Count > 1);
+    public ServiceRow? Selected => rows.TryGetValue(selected, out var row) && Matches(row) ? row : null;
     public ServiceDetailData? Detail { get; private set; }
     public string Error { get; private set; } = "";
     public string DetailError { get; private set; } = "";
@@ -30,9 +33,11 @@ public sealed class ServiceModel : IDisposable
     }
     public void SetQuery(string value) { Query = value; Rebuild(); }
     public void SetFilter(ServiceFilter value) { Filter = value; Rebuild(); }
+    public void SetSharedHostsOnly(bool value) { SharedHostsOnly = value; Rebuild(); }
     public void Sort(int column) { descending = sortColumn == column ? !descending : column == 3; sortColumn = column; Rebuild(); }
     public void Select(string name) { if (rows.ContainsKey(name)) { selected = name; SyncSelection(); } }
     public ServiceRow? Find(string name) => rows.GetValueOrDefault(name);
+    public IReadOnlyList<ServiceRow> ReportedHostServices(ServiceRow row) => row.Pid != 0 && reportedHosts.TryGetValue(row.Pid, out var group) ? group : [];
     public bool Tick()
     {
         if (!active || paused) return false;
@@ -56,7 +61,7 @@ public sealed class ServiceModel : IDisposable
                 changed |= row.Update(value);
             }
             foreach (string name in rows.Keys.Where(name => !seen.Contains(name)).ToArray()) { rows.Remove(name); changed = true; }
-            if (changed) Rebuild();
+            if (changed) { UpdateReportedHosts(); Rebuild(); }
         }
         if ((view.Flags & ServiceFrameFlags.Detail) != 0 && Selected is { } selectedRow && ServiceConfiguration.Same(selectedRow.Name, view.Detail.Name))
             Detail = ServiceDetailData.Copy(view.Detail) with {
@@ -72,7 +77,7 @@ public sealed class ServiceModel : IDisposable
     }
     private void Rebuild()
     {
-        var visible = rows.Values.Where(row => row.Matches(Filter, Query)).ToList();
+        var visible = rows.Values.Where(Matches).ToList();
         visible.Sort((a, b) => {
             int value = sortColumn switch { 1 => a.State.CompareTo(b.State), 2 => StringComparer.OrdinalIgnoreCase.Compare(a.Startup, b.Startup),
                 3 => a.Pid.CompareTo(b.Pid), 4 => StringComparer.OrdinalIgnoreCase.Compare(a.Account, b.Account), _ => StringComparer.OrdinalIgnoreCase.Compare(a.Title, b.Title) };
@@ -87,6 +92,17 @@ public sealed class ServiceModel : IDisposable
             if (found >= 0) Visible.Move(found, i); else Visible.Insert(i, visible[i]);
         }
         SyncSelection();
+    }
+    private bool Matches(ServiceRow row) => row.Matches(Filter, Query) && (!SharedHostsOnly || row.ReportedHostCount > 1);
+    private void UpdateReportedHosts()
+    {
+        reportedHosts.Clear();
+        foreach (var row in rows.Values) {
+            if (row.Pid == 0) continue;
+            if (!reportedHosts.TryGetValue(row.Pid, out var group)) reportedHosts.Add(row.Pid, group = []);
+            group.Add(row);
+        }
+        foreach (var row in rows.Values) row.SetReportedHostCount(row.Pid != 0 ? reportedHosts[row.Pid].Count : 0);
     }
     public ProcessRow? Host(MonitorModel processes)
     {

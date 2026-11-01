@@ -1,0 +1,35 @@
+<ResourceDictionary
+    x:Class="NksTaskMgr.WinUI.ServiceHostTemplates"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:NksTaskMgr.WinUI">
+  <DataTemplate x:Key="ServiceHostTemplate" x:DataType="local:ServiceRow">
+    <Grid Height="56" Padding="18,0" BorderBrush="{ThemeResource NksDividerBrush}" BorderThickness="0,0,0,1"
+          ToolTipService.ToolTip="{x:Bind HostSummary, Mode=OneWay}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MinWidth="210" /><ColumnDefinition Width="105" />
+        <ColumnDefinition Width="140" /><ColumnDefinition Width="65" /><ColumnDefinition Width="150" />
+      </Grid.ColumnDefinitions>
+      <StackPanel VerticalAlignment="Center" Spacing="4" Margin="0,0,14,0">
+        <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Title, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+        <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Name}" FontSize="12" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+      <Border Grid.Column="1" Background="{ThemeResource NksServiceBadgeBrush}" CornerRadius="4" Padding="7,4" HorizontalAlignment="Left" VerticalAlignment="Center">
+        <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind StateText, Mode=OneWay}" Foreground="{x:Bind StateBrush, Mode=OneWay}" FontSize="12" />
+      </Border>
+      <TextBlock Grid.Column="2" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Startup, Mode=OneWay}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+      <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,15,0" Spacing="3">
+        <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind PidText, Mode=OneWay}" FontSize="12" HorizontalAlignment="Right" />
+        <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind HostCountText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Right" />
+      </StackPanel>
+      <TextBlock Grid.Column="4" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Account, Mode=OneWay}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+    </Grid>
+  </DataTemplate>
+  <DataTemplate x:Key="ServiceHostPeerTemplate" x:DataType="local:ServiceRow">
+    <StackPanel Padding="8" Spacing="3" ToolTipService.ToolTip="{x:Bind HostPeerDescription, Mode=OneWay}">
+      <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Title, Mode=OneWay}" FontSize="12" TextTrimming="CharacterEllipsis" />
+      <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Name}" FontSize="12" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+      <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind HostPeerDescription, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+    </StackPanel>
+  </DataTemplate>
+</ResourceDictionary>
