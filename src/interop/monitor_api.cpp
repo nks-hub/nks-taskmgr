@@ -80,7 +80,7 @@ void NksFrame::build()
     const auto facts = [&](const std::wstring& id, const std::vector<nks::HardwareFact>& values) {
         for (const auto& fact : values) hardware.push_back({string(id), string(fact.name), string(fact.value)});
     };
-    static const std::wstring memoryId = L"memory", cpuId = L"cpu", boardId = L"board", upsId = L"ups";
+    static const std::wstring memoryId = L"memory", cpuId = L"cpu", boardId = L"board", upsId = L"ups", cpuSensorsId = L"cpu-sensors";
     view.abi_version = NKS_MONITOR_ABI_VERSION;
     view.read_at_ns = nks_monotonic_now_ns();
     view.process_error = string(processError);
@@ -125,6 +125,7 @@ void NksFrame::build()
                 measurement(measured.temperature), measurement(measured.capacity), measurement(measured.sharedCapacity), measurement(measured.engineUtilization)});
         }
         facts(upsId, source.upsFacts);
+        facts(cpuSensorsId, source.cpuSensorFacts);
         resources.reserve(source.devices.size());
         gpuEngines.reserve(source.devices.size());
         for (const auto& item : source.devices) {
@@ -171,6 +172,13 @@ NksResult __cdecl nks_monitor_set_interval(NksMonitor* monitor, uint32_t interva
 {
     if (!monitor) return NKS_INVALID_ARGUMENT;
     return invoke([&] { monitor->monitor.setInterval(interval); return NKS_OK; });
+}
+
+NksResult __cdecl nks_monitor_set_cpu_sensors(NksMonitor* monitor, uint32_t enabled) noexcept
+{
+    if (!monitor || enabled > 1) return NKS_INVALID_ARGUMENT;
+    monitor->monitor.setCpuSensors(enabled != 0);
+    return NKS_OK;
 }
 
 NksResult __cdecl nks_monitor_read(NksMonitor* monitor, NksFrame** result) noexcept

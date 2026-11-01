@@ -42,7 +42,7 @@ void Monitor::start()
                 while (!stop.stop_requested()) {
                     if (!paused()) {
                         try {
-                            auto sample = collector.resources(stop);
+                            auto sample = collector.resources(stop, cpuSensorsState.load());
                             if (stop.stop_requested()) break;
                             try { history.append(sample); } catch (const std::exception&) { history.failed(); }
                             resourceSlot.publish(std::move(sample));

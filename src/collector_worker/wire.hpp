@@ -15,6 +15,7 @@ namespace nks::collector {
 
 constexpr std::size_t maximumPayload = 64 * 1024 * 1024;
 constexpr std::size_t headerBytes = 32;
+constexpr std::uint32_t protocolVersion = 2;
 enum class Kind : std::uint32_t { processes = 1, resources = 2, services = 3, serviceDetail = 4 };
 struct Header {
     Kind kind{};
@@ -105,7 +106,7 @@ private:
 inline std::vector<std::byte> encodeHeader(const Header& value) {
     if (value.payloadBytes > maximumPayload) throw std::length_error("Collector response exceeds limit");
     Writer out;
-    out.number<std::uint32_t>(0x31434b4e); out.number<std::uint32_t>(1);
+    out.number<std::uint32_t>(0x31434b4e); out.number(protocolVersion);
     out.number(static_cast<std::uint32_t>(value.kind)); out.number(value.status);
     out.number(value.requestId); out.number(value.payloadBytes); out.number<std::uint32_t>(0);
     return std::move(out.bytes);
@@ -114,7 +115,7 @@ inline std::vector<std::byte> encodeHeader(const Header& value) {
 inline Header decodeHeader(std::span<const std::byte> bytes) {
     if (bytes.size() != headerBytes) throw std::runtime_error("Invalid collector header size");
     Reader in(bytes);
-    if (in.number<std::uint32_t>() != 0x31434b4e || in.number<std::uint32_t>() != 1)
+    if (in.number<std::uint32_t>() != 0x31434b4e || in.number<std::uint32_t>() != protocolVersion)
         throw std::runtime_error("Invalid collector protocol version");
     Header value;
     const auto kind = in.number<std::uint32_t>();

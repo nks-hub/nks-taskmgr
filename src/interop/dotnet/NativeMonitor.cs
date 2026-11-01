@@ -196,6 +196,7 @@ public sealed class NativeMonitor : SafeHandleZeroOrMinusOneIsInvalid
 
     public void SetPaused(bool value) => Check(NativeMethods.SetPaused(this, value ? 1 : 0));
     public void SetInterval(uint milliseconds) => Check(NativeMethods.SetInterval(this, milliseconds));
+    public void SetCpuSensors(bool value) => Check(NativeMethods.SetCpuSensors(this, value ? 1u : 0u));
     public static long MonotonicNowNs => NativeMethods.MonotonicNowNs();
 
     public static unsafe ProcessIdentityInfo QueryProcessIdentity(SafeProcessHandle process, GenerationKind kind)
@@ -310,6 +311,8 @@ internal static partial class NativeMethods
     internal static partial NativeResult SetPaused(NativeMonitor monitor, int paused);
     [LibraryImport(Library, EntryPoint = "nks_monitor_set_interval")]
     internal static partial NativeResult SetInterval(NativeMonitor monitor, uint intervalMs);
+    [LibraryImport(Library, EntryPoint = "nks_monitor_set_cpu_sensors")]
+    internal static partial NativeResult SetCpuSensors(NativeMonitor monitor, uint enabled);
     [LibraryImport(Library, EntryPoint = "nks_monitor_read")]
     internal static partial NativeResult Read(NativeMonitor monitor, out NativeFrame frame);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_view")]

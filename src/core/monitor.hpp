@@ -48,6 +48,7 @@ public:
     bool paused() const { return pausedState.load(); }
     void setInterval(unsigned milliseconds);
     unsigned interval() const { return intervalMilliseconds.load(); }
+    void setCpuSensors(bool value) noexcept { cpuSensorsState.store(value); }
     std::shared_ptr<const ProcessSnapshot> takeProcesses(std::wstring& error) { return processSlot.take(error); }
     std::shared_ptr<const ResourceSnapshot> takeResources(std::wstring& error) { return resourceSlot.take(error); }
     std::unique_ptr<HistoryBatch> takeHistory() { return history.take(); }
@@ -59,6 +60,7 @@ private:
     SnapshotSlot<ResourceSnapshot> resourceSlot;
     HistoryStream history;
     std::atomic<bool> pausedState{};
+    std::atomic<bool> cpuSensorsState{};
     std::atomic<unsigned> intervalMilliseconds{1000};
     bool started{};
     std::mutex waitMutex;

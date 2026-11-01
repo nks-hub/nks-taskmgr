@@ -62,7 +62,7 @@ From a checked-out repository:
 pwsh -NoProfile -File scripts/build.ps1 -Configuration Release
 ```
 
-The executables are placed in `build/msvc/Release`. The desktop uses Win32 and Direct2D as the first UI candidate. The planned WinUI 3 and Native AOT comparison remains open.
+The executables are placed in `build/msvc/Release`. The Win32 candidate has a DirectComposition renderer through D3D11, DXGI, and Direct2D. It shares drawing code with a DC fallback and reports the selected rendering path. Runtime acceptance, device-loss recovery, and comparison with the WinUI 3 candidates remain open.
 
 The experimental C#/WinUI candidate shares the native DLL. Build it with .NET SDK 10.0.403:
 
@@ -125,7 +125,7 @@ Process details opens from the WinUI process toolbar for a selected live process
 
 The Memory and Handles tabs filter their loaded data. A handle's type and name are queried on request and describe the duplicated object observed at that time. Global object search starts explicitly from the process toolbar and reports its progress, skipped owners, and limits. It matches local DOS and NT path forms, batches results, and marks incomplete searches. Opening a live owner requires its full current process lifetime key. Repeated queries share at most two worker processes with two queued requests.
 
-The Hardware view includes a capability panel. It shows current measurement states, the last targeted read query, and the application's effective elevation state. Selecting a feature explains ordinary access, elevated access, and the required provider. CPU chip temperature remains marked as unimplemented. Runtime and permission acceptance of these additions remain pending.
+The Hardware view includes a capability panel. It shows current measurement states, the last targeted read query, and the application's effective elevation state. Selecting a feature explains ordinary access, elevated access, and the required provider. CPU temperature has an opt-in reader for a local HTTP API compatible with LibreHardwareMonitor. It reads timestamped CPU temperature metrics from 127.0.0.1:8085 at most once every five seconds while enabled, without starting a provider, driver, or elevated process. The provider identity is not authenticated. The view names the source, sensor ID, publication time, and age; missing or stale data is not a measured zero. The endpoint follows the [upstream HTTP contract](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/blob/1d74d0ea012cacbcdf858ab9c5dd8a862b25d6e6/LibreHardwareMonitor.Windows.Forms/Utilities/HttpServer.cs). Actual provider and sensor acceptance remain pending. Runtime and permission acceptance of these additions remain pending.
 
 The Applications view inventories visible windows only while that view is selected. It verifies each window owner's process lifetime and separates packaged application owners from their frame hosts. Ambiguous matches are skipped and reported as incomplete. Selecting a group keeps its member process table on the same screen; working sets are not summed into a group memory total. Runtime and visual acceptance remain pending.
 
