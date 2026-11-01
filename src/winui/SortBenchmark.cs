@@ -45,18 +45,20 @@ public sealed partial class MainWindow
         finally { CompositionTarget.Rendering -= Rendered; }
     }
 
-    private static unsafe IEnumerable<ProcessRow> ReplayRows()
+    private static unsafe IEnumerable<ProcessRow> ReplayRows(BootIdentifier boot)
     {
         var rows = new List<ProcessRow>(10_000);
         for (uint i = 1; i <= 10_000; ++i) {
             string name = "Process " + (i * 37 % 997).ToString("D3", CultureInfo.InvariantCulture);
-            var row = new ProcessRow(new ProcessKey(new(1, 2), i, GenerationKind.CreationTime, i));
+            var row = new ProcessRow(new ProcessKey(boot, i, GenerationKind.CreationTime, i));
             fixed (char* text = name) row.Update(new ProcessInfo {
+                Pid = row.Key.Pid, Generation = row.Key.Generation, GenerationKind = row.Key.Kind,
                 Name = new String16 { Data = text, Length = (uint)name.Length }, WorkingSetBytes = i * 7919 % 1_000_000,
                 PrivateBytes = i * 3571 % 1_000_000, CpuPercent = new Metric { State = SampleState.Valid, Value = i * 31 % 100 },
                 ReadIoBytesPerSecond = new Metric { State = SampleState.Valid, Value = i * 101 % 1000 },
                 WriteIoBytesPerSecond = new Metric { State = SampleState.Valid, Value = i * 137 % 1000 }
             });
+            row.SetCreatedTime(row.Key.Generation);
             rows.Add(row);
         }
         return rows;
@@ -69,11 +71,13 @@ public sealed partial class MainWindow
         ProcessIconView.SuppressForBenchmark = !iconsEnabled;
         string path = App.SortBenchmarkPath!;
         try {
+            if (model.BootIdentity.State != SampleState.Valid || model.BootIdentity.Identifier.IsEmpty)
+                throw new InvalidOperationException("Sort benchmark requires a verified boot identity.");
             model.SetPaused(true); model.SetMode(ProcessMode.All); model.SetQuery(""); ShowView(false);
             using var output = new StreamWriter(path, false);
             await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc,sort_model_ms,sort_header_ms,sort_overview_ms,slots_assign_ms,slots_restore_ms,slots_focus_ms,icons_enabled,icon_apply_ms,icon_apply_max_ms,icon_start_ms,icon_start_max_ms");
             foreach (string scenario in new[] { "live", "replay" }) {
-                if (scenario == "replay") model.ReplayForBenchmark(ReplayRows());
+                if (scenario == "replay") model.ReplayForBenchmark(ReplayRows(model.BootIdentity.Identifier));
                 SortProcesses(0); processList.UpdateLayout(); await NextRenderedFrame(); await NextRenderedFrame();
                 var selected = model.VisibleProcesses.Skip(model.VisibleProcesses.Count / 2).Take(2).ToArray();
                 foreach (var row in selected) processList.SelectedItems.Add(slotsByRow[row]);
