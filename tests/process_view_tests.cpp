@@ -17,6 +17,7 @@ nks::ProcessRecord process(const wchar_t* name, std::uint32_t pid, std::uint32_t
     nks::ProcessRecord value;
     value.name = name;
     value.identity = {{1, 2}, pid, nks::GenerationKind::creationTime, created};
+    value.created100ns = created;
     value.parentPid = parent;
     value.cpuPercent = {cpu, nks::SampleState::valid};
     return value;
@@ -35,6 +36,7 @@ void verify(nks::ProcessTable& table)
     auto moving = std::make_shared<nks::ProcessSnapshot>(*snapshot);
     moving->processes[0].cpuPercent.value = 7;
     moving->processes[1].identity.generation = 30;
+    moving->processes[1].created100ns = 30;
     moving->processes.push_back(process(L"D-new.exe", 500, 0, 50));
     table.update(moving);
     check(table.holding() && table.count() == 3, "A new process shifted held rows");
@@ -78,6 +80,7 @@ void verify(nks::ProcessTable& table)
     table.select(snapshot->processes[1].identity);
     auto reused = std::make_shared<nks::ProcessSnapshot>(*snapshot);
     reused->processes[1].identity.generation = 30;
+    reused->processes[1].created100ns = 30;
     table.update(reused);
     check(!table.selected(), "Selection followed a reused PID");
     check(table.depth(0) == 0 && table.depth(1) == 0 && table.depth(2) == 0, "Child attached to a newer reused parent PID");
@@ -147,6 +150,41 @@ void verify(nks::ProcessTable& table)
     table.setVisible(true);
     check(table.record(ListView_GetTopIndex(table.handle()))->identity == hiddenTop, "Updates in another view lost the saved scroll identity");
 }
+
+void verifySequenceTree(nks::ProcessTable& table)
+{
+    auto snapshot = std::make_shared<nks::ProcessSnapshot>();
+    snapshot->processes = {process(L"A-child.exe", 200, 100, 20), process(L"B-parent.exe", 100, 0, 10)};
+    snapshot->processes[0].identity.generationKind = nks::GenerationKind::sequenceNumber;
+    snapshot->processes[0].identity.generation = 100;
+    snapshot->processes[1].identity.generationKind = nks::GenerationKind::sequenceNumber;
+    snapshot->processes[1].identity.generation = 900;
+    table.setMode(nks::ProcessMode::tree);
+    table.update(snapshot);
+    check(table.count() == 2 && table.record(0)->identity == snapshot->processes[1].identity && table.depth(0) == 0,
+        "Sequence identity was interpreted as the parent creation time");
+    check(table.record(1)->identity == snapshot->processes[0].identity && table.depth(1) == 1 && table.hasChildren(0),
+        "Sequence child did not attach using the independent raw creation times");
+    table.select(snapshot->processes[0].identity);
+
+    auto newer = std::make_shared<nks::ProcessSnapshot>(*snapshot);
+    newer->processes[1].identity.generation = 1;
+    newer->processes[1].created100ns = 30;
+    table.update(newer);
+    check(table.count() == 2 && table.depth(0) == 0 && table.depth(1) == 0,
+        "A newer raw parent creation time was accepted because its sequence value was lower");
+    check(table.selected() && table.selected()->identity == snapshot->processes[0].identity,
+        "A changed sequence parent replaced the selected full child identity");
+
+    auto missingTime = std::make_shared<nks::ProcessSnapshot>(*snapshot);
+    missingTime->processes[1].created100ns = 0;
+    table.update(missingTime);
+    check(table.depth(0) == 0 && table.depth(1) == 0, "A valid sequence identity substituted for a missing raw creation time");
+    auto otherBoot = std::make_shared<nks::ProcessSnapshot>(*snapshot);
+    otherBoot->processes[1].identity.boot = {3, 4};
+    table.update(otherBoot);
+    check(table.depth(0) == 0 && table.depth(1) == 0, "A tree parent from another verified boot was accepted");
+}
 }
 
 int main()
@@ -160,6 +198,7 @@ int main()
         nks::ProcessTable table;
         table.create(parent, static_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT)));
         verify(table);
+        verifySequenceTree(table);
         DestroyWindow(parent);
         std::cout << checks << " process-view checks passed\n";
         return 0;
