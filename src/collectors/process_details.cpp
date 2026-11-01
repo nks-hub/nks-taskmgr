@@ -168,13 +168,14 @@ ProcessDetailsResult readProcessDetails(const ProcessDetailsRequest& request)
 {
     ProcessDetailsResult result;
     if (request.command == details::Command::signature) result.flags |= details::diskFile;
-    if (request.command == details::Command::owners) {
+    if (request.command == details::Command::owners || request.command == details::Command::applications) {
         if (request.target.boot.empty() || request.target.pid || request.target.generation
             || (request.target.generationKind != GenerationKind::creationTime && request.target.generationKind != GenerationKind::sequenceNumber)) {
             result.state = details::ResultState::invalidRequest; return result;
         }
-        readProcessOwners(request, result);
-        if (result.state != details::ResultState::ok) result.owners.clear();
+        if (request.command == details::Command::owners) readProcessOwners(request, result);
+        else readProcessApplications(request, result);
+        if (result.state != details::ResultState::ok) { result.owners.clear(); result.applications.clear(); }
         return result;
     }
     if (request.target.boot.empty() || !request.target.generation || (request.target.generationKind != GenerationKind::creationTime

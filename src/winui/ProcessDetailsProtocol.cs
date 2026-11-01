@@ -4,7 +4,7 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-internal enum ProcessDetailsCommand : ushort { Threads = 1, Modules = 2, Signature = 3, Memory = 4, Handles = 5, HandleInfo = 6, Owners = 7 }
+internal enum ProcessDetailsCommand : ushort { Threads = 1, Modules = 2, Signature = 3, Memory = 4, Handles = 5, HandleInfo = 6, Owners = 7, Applications = 8 }
 internal enum ProcessDetailsState : uint { Ok, AccessDenied, Unsupported, Unavailable, TargetChanged, InvalidRequest, LimitExceeded, Error }
 internal enum ProcessArchitecture : uint { Unknown, X86, X64, Arm64 }
 internal enum ModuleSignatureState : uint { Valid, Unsigned, Untrusted, Unavailable }
@@ -34,6 +34,7 @@ internal sealed record ProcessDetailsSnapshot(ProcessDetailsCommand Command, Pro
     internal ProcessHandleInfo[] Handles { get; init; } = [];
     internal ProcessHandleObservation? HandleInfo { get; init; }
     internal ProcessOwnerInfo[] Owners { get; init; } = [];
+    internal ProcessApplicationInfo[] Applications { get; init; } = [];
 }
 
 internal static partial class ProcessDetailsProtocol
@@ -45,7 +46,7 @@ internal static partial class ProcessDetailsProtocol
 
     internal static byte[] Request(ProcessDetailsCommand command, ProcessKey key, ulong requestId, ProcessModuleInfo? module, ulong? handle = null)
     {
-        bool owners = command == ProcessDetailsCommand.Owners;
+        bool owners = command is ProcessDetailsCommand.Owners or ProcessDetailsCommand.Applications;
         if (key.Boot.IsEmpty || key.Kind is not (GenerationKind.CreationTime or GenerationKind.SequenceNumber)
             || (owners ? key.Pid != 0 || key.Generation != 0 : key.Generation == 0))
             throw new ArgumentException("Proces nemá ověřitelnou identitu.", nameof(key));
@@ -86,7 +87,7 @@ internal static partial class ProcessDetailsProtocol
         if (length > MaximumResponseBytes || state > (uint)ProcessDetailsState.Error || architecture > (uint)ProcessArchitecture.Arm64)
             throw Invalid("Pracovník překročil protokol nebo datový limit.");
         uint expectedFlags = command == ProcessDetailsCommand.Signature ? 2u : 0u;
-        uint allowedFlags = command is ProcessDetailsCommand.Threads or ProcessDetailsCommand.HandleInfo or ProcessDetailsCommand.Owners ? 1u : expectedFlags;
+        uint allowedFlags = command is ProcessDetailsCommand.Threads or ProcessDetailsCommand.HandleInfo or ProcessDetailsCommand.Owners or ProcessDetailsCommand.Applications ? 1u : expectedFlags;
         if ((flags & ~allowedFlags) != 0 || (command == ProcessDetailsCommand.Signature && flags != expectedFlags))
             throw Invalid("Pracovník vrátil neplatné příznaky.");
         if (state != 0 && (length != 0 || rows != 0)) throw Invalid("Chybový výsledek obsahuje neověřená data.");
@@ -95,7 +96,8 @@ internal static partial class ProcessDetailsProtocol
             || command is ProcessDetailsCommand.Signature or ProcessDetailsCommand.HandleInfo && state == 0 && rows != 1
             || command == ProcessDetailsCommand.Memory && (rows > 65536 || state == 0 && length != rows * 40)
             || command == ProcessDetailsCommand.Handles && (rows > 65536 || state == 0 && length != rows * 24)
-            || command == ProcessDetailsCommand.Owners && rows > 32768)
+            || command == ProcessDetailsCommand.Owners && rows > 32768
+            || command == ProcessDetailsCommand.Applications && rows > 1024)
             throw Invalid("Pracovník vrátil neplatný počet záznamů.");
         return (int)length;
     }
@@ -104,6 +106,7 @@ internal static partial class ProcessDetailsProtocol
     {
         if (PayloadLength(header, request) != payload.Length) throw Invalid("Neúplný výsledek pracovníka.");
         var command = (ProcessDetailsCommand)BinaryPrimitives.ReadUInt16LittleEndian(header[6..]);
+        if (command == ProcessDetailsCommand.Applications) return ReadApplications(header, payload, request);
         if (command is >= ProcessDetailsCommand.Memory and <= ProcessDetailsCommand.Owners) return ReadObjects(header, payload, request);
         var state = (ProcessDetailsState)UInt(header, 12);
         var architecture = (ProcessArchitecture)UInt(header, 64);

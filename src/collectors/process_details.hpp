@@ -37,6 +37,13 @@ struct ProcessOwnerDetail {
     std::wstring name;
 };
 
+struct ProcessApplicationDetail {
+    ProcessIdentity owner, host;
+    std::uint64_t window{};
+    std::wstring title, appId, package;
+    SampleState appIdState{SampleState::unavailable}, packageState{SampleState::unavailable};
+};
+
 struct ProcessDetailsResult {
     details::ResultState state{details::ResultState::unavailable};
     DWORD win32Error{};
@@ -50,6 +57,7 @@ struct ProcessDetailsResult {
     std::vector<details::HandleEntry> handles;
     std::optional<ProcessHandleDetail> handleInfo;
     std::vector<ProcessOwnerDetail> owners;
+    std::vector<ProcessApplicationDetail> applications;
 };
 
 struct DetailHandleCloser {
@@ -63,5 +71,6 @@ void readProcessMemory(HANDLE process, ProcessDetailsResult& result);
 void readProcessHandles(HANDLE process, ProcessDetailsResult& result);
 void readProcessHandleInfo(HANDLE process, std::uint64_t value, ProcessDetailsResult& result);
 void readProcessOwners(const ProcessDetailsRequest& request, ProcessDetailsResult& result);
+void readProcessApplications(const ProcessDetailsRequest& request, ProcessDetailsResult& result);
 
 }

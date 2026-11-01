@@ -58,7 +58,8 @@ bool requestData(const nks::details::Request& header, const std::vector<std::byt
         || (!header.bootLow && !header.bootHigh)) return false;
     request.target = {{header.bootLow, header.bootHigh}, header.pid, static_cast<nks::GenerationKind>(header.generationKind), header.generation};
     request.command = header.command;
-    if (header.command == nks::details::Command::owners) return !header.pid && !header.generation && payload.empty();
+    if (header.command == nks::details::Command::owners || header.command == nks::details::Command::applications)
+        return !header.pid && !header.generation && payload.empty();
     if (!header.generation) return false;
     if (header.command == nks::details::Command::threads || header.command == nks::details::Command::modules
         || header.command == nks::details::Command::memory || header.command == nks::details::Command::handles) return payload.empty();
@@ -138,7 +139,17 @@ void responseData(nks::details::Response& header, const nks::ProcessDetailsResul
                 static_cast<std::uint32_t>(owner.name.size()), 0};
             payload.append(row); payload.text(owner.name);
         }
-    } else throw std::invalid_argument("Missing signature result");
+    } else if (header.command == nks::details::Command::applications) {
+        if (result.applications.size() > nks::details::maximumApplications) throw std::length_error("Invalid application count");
+        header.rowCount = static_cast<std::uint32_t>(result.applications.size());
+        for (const auto& app : result.applications) {
+            nks::details::Application row{app.window, app.owner.pid, static_cast<std::uint32_t>(app.owner.generationKind), app.owner.generation,
+                app.host.pid, static_cast<std::uint32_t>(app.host.generationKind), app.host.generation,
+                static_cast<std::uint32_t>(app.title.size()), static_cast<std::uint32_t>(app.appId.size()), static_cast<std::uint32_t>(app.package.size()),
+                static_cast<std::uint32_t>(app.appIdState), static_cast<std::uint32_t>(app.packageState), app.host.generation ? 1u : 0u};
+            payload.append(row); payload.text(app.title); payload.text(app.appId); payload.text(app.package);
+        }
+    } else throw std::invalid_argument("Missing details result");
     header.payloadBytes = static_cast<std::uint32_t>(payload.bytes.size());
 }
 

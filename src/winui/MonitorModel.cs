@@ -3,7 +3,7 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-public enum ProcessMode { All, Active, Tree }
+public enum ProcessMode { All, Active, Tree, Applications }
 
 public sealed partial class MonitorModel : IDisposable
 {
@@ -40,6 +40,9 @@ public sealed partial class MonitorModel : IDisposable
     public bool Held => held;
     public int SortColumn => sortColumn;
     public bool SortDescending => descending;
+    internal ApplicationGroupModel Applications { get; } = new();
+    internal void ApplyApplications(ProcessDetailsSnapshot snapshot) { Applications.Apply(snapshot); Rebuild(true); }
+    internal void SelectApplication(ProcessKey key) { held = false; Applications.Select(key); Rebuild(true); }
 
     public void SetPaused(bool value) { monitor.SetPaused(value); Paused = value; }
     public void SetInterval(uint value) { monitor.SetInterval(value); Interval = value; }
@@ -60,6 +63,7 @@ public sealed partial class MonitorModel : IDisposable
         bool changed = resumed;
         using var frame = monitor.Read();
         if (frame is not null) {
+            ReadMeasurements(frame);
             frame.Read(view => {
                 if ((view.Flags & FrameFlags.ProcessData) != 0)
                     BootIdentity = frame.ReadBootIdentity() ?? new BootIdentityInfo { State = SampleState.Unavailable };
@@ -202,7 +206,9 @@ public sealed partial class MonitorModel : IDisposable
         IEnumerable<ProcessRow> result = processes.Values.Where(row =>
             (Mode != ProcessMode.Active || (row.Cpu.State == SampleState.Valid && row.Cpu.Value > 0)
                 || (row.ReadIo.State == SampleState.Valid && row.ReadIo.Value > 0) || (row.WriteIo.State == SampleState.Valid && row.WriteIo.Value > 0))
-            && (query.Length == 0 || row.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || row.PidText.Contains(query, StringComparison.Ordinal)));
+            && (Mode != ProcessMode.Applications || Applications.Contains(row))
+            && (query.Length == 0 || Mode == ProcessMode.Applications && Applications.Selected?.CaptionMatches(query) == true
+                || row.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || row.PidText.Contains(query, StringComparison.Ordinal)));
         Comparison<ProcessRow> comparison = sortColumn switch {
             1 => (a, b) => a.Key.Pid.CompareTo(b.Key.Pid),
             2 => (a, b) => a.Cpu.Value.CompareTo(b.Cpu.Value),
@@ -223,8 +229,9 @@ public sealed partial class MonitorModel : IDisposable
     private void Rebuild(bool explicitChange = false)
     {
         if (held || (!explicitChange && !visualUpdates)) return;
+        if (Mode == ProcessMode.Applications) Applications.Refresh(processes.Values, query);
         var rows = Ordered();
-        if (Mode == ProcessMode.Tree && query.Length == 0) rows = ProcessTree.Order(rows, collapsed);
+        if (Mode is ProcessMode.Tree or ProcessMode.Applications && query.Length == 0) rows = ProcessTree.Order(rows, collapsed);
         else foreach (var row in rows) row.SetTree(0, false, false);
         VisibleProcesses.Apply(rows);
         collapsed.RemoveWhere(key => !processes.ContainsKey(key));

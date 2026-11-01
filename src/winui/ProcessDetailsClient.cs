@@ -32,6 +32,8 @@ internal sealed class ProcessDetailsClient : IDisposable
         => ReadCoreAsync(ProcessDetailsCommand.HandleInfo, key, null, value, true, cancellation);
     internal Task<ProcessDetailsSnapshot> ReadOwnersAsync(BootIdentifier boot, CancellationToken cancellation)
         => ReadCoreAsync(ProcessDetailsCommand.Owners, new(boot, 0, GenerationKind.SequenceNumber, 0), null, null, true, cancellation);
+    internal Task<ProcessDetailsSnapshot> ReadApplicationsAsync(BootIdentifier boot, GenerationKind preference, CancellationToken cancellation)
+        => ReadCoreAsync(ProcessDetailsCommand.Applications, new(boot, 0, preference, 0), null, null, true, cancellation);
 
     private async Task<ProcessDetailsSnapshot> ReadCoreAsync(ProcessDetailsCommand command, ProcessKey key,
         ProcessModuleInfo? module, ulong? handle, bool persistent, CancellationToken cancellation)

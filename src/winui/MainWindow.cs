@@ -299,9 +299,9 @@ public sealed partial class MainWindow : Window
         toolbar.ColumnDefinitions.Add(new ColumnDefinition());
         toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var filters = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
-        foreach (var mode in new[] { ProcessMode.All, ProcessMode.Active, ProcessMode.Tree }) {
-            var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : "Strom"); button.Height = 29;
-            button.Click += (_, _) => { model.SetMode(mode); RefreshProcesses(); }; filters.Children.Add(button);
+        foreach (var mode in new[] { ProcessMode.All, ProcessMode.Active, ProcessMode.Tree, ProcessMode.Applications }) {
+            var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : mode == ProcessMode.Tree ? "Strom" : "Aplikace"); button.Height = 29;
+            button.Click += (_, _) => SelectProcessMode(mode); filters.Children.Add(button);
         }
         filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0);
         toolbar.Children.Add(new ScrollViewer { Content = filters, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -313,10 +313,11 @@ public sealed partial class MainWindow : Window
         actions.Children.Add(columns); actions.Children.Add(exportSnapshot); actions.Children.Add(compareSnapshots); actions.Children.Add(processDetailsButton); actions.Children.Add(globalObjectSearchButton); toolbar.Children.Add(actions);
         Grid.SetColumn(actions, 1);
         Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
-        Grid.SetRow(processTable, 2); processPage.Children.Add(processTable);
+        var workspace = BuildApplicationGroups(processTable); Grid.SetRow(workspace, 2); processPage.Children.Add(workspace);
         var dock = new StackPanel { Padding = new Thickness(21, 18, 21, 18), Spacing = 12 };
-        dock.Children.Add(selectionTitle); dock.Children.Add(selectionFacts);
-        var selection = Card(dock); Grid.SetRow(selection, 3); processPage.Children.Add(selection);
+        dock.Children.Add(selectionTitle); dock.Children.Add(selectionFacts); dock.Children.Add(applicationFacts);
+        var selection = Card(new ScrollViewer { Content = dock, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
+        Grid.SetRow(selection, 3); processPage.Children.Add(selection);
         processPage.Visibility = Visibility.Collapsed; page.Children.Add(processPage);
     }
 
@@ -366,6 +367,7 @@ public sealed partial class MainWindow : Window
         processPage.RowDefinitions[0].Height = root.ActualHeight < 650 ? new GridLength(0) : new GridLength(108);
         ResizeServices();
         ResizeHardware();
+        ResizeApplicationGroups();
         if (performance) RefreshPerformance();
     }
 
@@ -409,6 +411,7 @@ public sealed partial class MainWindow : Window
 
     private void RefreshProcesses()
     {
+        RefreshApplicationGroups();
         processCount.Text = model.VisibleProcesses.Count + (model.Held ? " položek · pořadí přidrženo" : " položek");
         foreach (var resource in model.Resources.Where(row => row.Kind is ResourceKind.Cpu or ResourceKind.Memory)) {
             if (!overviewValues.TryGetValue(resource.Kind, out var value)) {

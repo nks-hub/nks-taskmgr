@@ -16,8 +16,9 @@ constexpr std::uint32_t maximumModules = 4096;
 constexpr std::uint32_t maximumMemoryRegions = 65536;
 constexpr std::uint32_t maximumHandles = 65536;
 constexpr std::uint32_t maximumOwners = 32768;
+constexpr std::uint32_t maximumApplications = 1024;
 
-enum class Command : std::uint16_t { threads = 1, modules = 2, signature = 3, memory = 4, handles = 5, handleInfo = 6, owners = 7 };
+enum class Command : std::uint16_t { threads = 1, modules = 2, signature = 3, memory = 4, handles = 5, handleInfo = 6, owners = 7, applications = 8 };
 enum class ResultState : std::uint32_t {
     ok, accessDenied, unsupported, unavailable, targetChanged, invalidRequest, limitExceeded, error
 };
@@ -92,6 +93,15 @@ struct Owner {
     std::uint64_t generation{};
     std::uint32_t nameChars{}, reserved{};
 };
+
+struct Application {
+    std::uint64_t window{};
+    std::uint32_t pid{}, generationKind{};
+    std::uint64_t generation{};
+    std::uint32_t hostPid{}, hostGenerationKind{};
+    std::uint64_t hostGeneration{};
+    std::uint32_t titleChars{}, appIdChars{}, packageChars{}, appIdState{}, packageState{}, flags{};
+};
 #pragma pack(pop)
 
 static_assert(std::endian::native == std::endian::little && sizeof(wchar_t) == 2);
@@ -101,5 +111,6 @@ static_assert(sizeof(Thread) == 56 && offsetof(Thread, timesState) == 40);
 static_assert(sizeof(Module) == 24 && sizeof(Signature) == 24);
 static_assert(sizeof(MemoryRegion) == 40 && offsetof(MemoryRegion, state) == 24);
 static_assert(sizeof(HandleEntry) == 24 && sizeof(HandleInfo) == 32 && sizeof(Owner) == 24);
+static_assert(sizeof(Application) == 64 && offsetof(Application, titleChars) == 40);
 
 }

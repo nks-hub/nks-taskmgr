@@ -2,14 +2,15 @@ namespace NksTaskMgr.WinUI;
 
 public static class ProcessTree
 {
+    public static bool IsVerifiedParent(ProcessRow child, ProcessRow parent) => child.ParentPid == parent.Key.Pid && child.Key.Pid != parent.Key.Pid
+        && !child.Key.Boot.IsEmpty && child.Key.Boot == parent.Key.Boot && child.Created100ns != 0 && parent.Created100ns != 0
+        && parent.Created100ns <= child.Created100ns;
     public static List<ProcessRow> Order(IReadOnlyList<ProcessRow> rows, IReadOnlySet<ProcessKey> collapsed)
     {
         var byPid = rows.ToDictionary(row => row.Key.Pid);
         var children = new Dictionary<ProcessKey, List<ProcessRow>>(); var roots = new List<ProcessRow>();
         foreach (var row in rows) {
-            if (row.ParentPid != row.Key.Pid && byPid.TryGetValue(row.ParentPid, out var parent)
-                && !row.Key.Boot.IsEmpty && row.Key.Boot == parent.Key.Boot
-                && row.Created100ns != 0 && parent.Created100ns != 0 && parent.Created100ns <= row.Created100ns) {
+            if (byPid.TryGetValue(row.ParentPid, out var parent) && IsVerifiedParent(row, parent)) {
                 if (!children.TryGetValue(parent.Key, out var list)) children.Add(parent.Key, list = []);
                 list.Add(row);
             } else roots.Add(row);
