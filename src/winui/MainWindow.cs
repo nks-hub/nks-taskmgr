@@ -95,7 +95,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 149, 164, 173);
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); ConfigureSnapshotExport(); BuildShell(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
+        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); BuildShell(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");
@@ -298,17 +298,22 @@ public sealed partial class MainWindow : Window
         processPage.RowSpacing = 0;
         var system = Card(overview, new Thickness(23, 20, 23, 20)); processPage.Children.Add(system);
         var toolbar = new Grid();
+        toolbar.ColumnDefinitions.Add(new ColumnDefinition());
+        toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var filters = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         foreach (var mode in new[] { ProcessMode.All, ProcessMode.Active, ProcessMode.Tree }) {
             var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : "Strom"); button.Height = 29;
             button.Click += (_, _) => { model.SetMode(mode); RefreshProcesses(); }; filters.Children.Add(button);
         }
-        filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0); toolbar.Children.Add(filters);
+        filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0);
+        toolbar.Children.Add(new ScrollViewer { Content = filters, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
         processTable = new ProcessTable(processList, SortProcesses);
         var columns = Button("Sloupce"); columns.Height = 29; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
         columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů");
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); toolbar.Children.Add(actions);
+        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); actions.Children.Add(compareSnapshots); toolbar.Children.Add(actions);
+        Grid.SetColumn(actions, 1);
         Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
         Grid.SetRow(processTable, 2); processPage.Children.Add(processTable);
         var dock = new StackPanel { Padding = new Thickness(21, 18, 21, 18), Spacing = 12 };
@@ -526,7 +531,10 @@ public sealed partial class MainWindow : Window
             App.Trace($"Services passed: count={servicesModel.All.Count};detail={servicesModel.Detail?.Name};resumed=True");
         }
         if (smokeServicesChecked && smokeSnapshotExport is { IsCompletedSuccessfully: true }) {
-            App.Trace($"aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported};ready={smokeModelsChecked};models={smokeModelsChecked};minimized={smokeMinimizedChecked};services={smokeServicesChecked};columns={smokeColumnsChecked};export=True;processes={model.Processes.Count};resources={model.Resources.Count};charts={coreCharts.Count}");
+            if (smokeSnapshotComparison is null) { smokeSnapshotComparison = SnapshotComparisonUiChecks.RunAsync(); return; }
+            if (!smokeSnapshotComparison.IsCompleted) return;
+            smokeSnapshotComparison.GetAwaiter().GetResult();
+            App.Trace($"aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported};ready={smokeModelsChecked};models={smokeModelsChecked};minimized={smokeMinimizedChecked};services={smokeServicesChecked};columns={smokeColumnsChecked};export=True;comparison=True;processes={model.Processes.Count};resources={model.Resources.Count};charts={coreCharts.Count}");
             Close();
         }
     }
