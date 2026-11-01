@@ -81,8 +81,8 @@ public sealed partial class ChartView : Grid
 
     public void Set(HistorySeries? value, HistorySeries? upload, long time, int window, double limit, uint stroke, bool showGrid = true, bool area = true, bool autoScale = false)
     {
-        if (!ReferenceEquals(series, value)) { cursorTime = null; pinned = false; HideCursor(); }
-        series = value; secondary = upload; now = time; seconds = window; maximum = limit; color = stroke; grid = showGrid; filled = area;
+        if (!ReferenceEquals(series, value) || !ReferenceEquals(secondary, upload)) SeriesChanged();
+        series = value; secondary = upload; now = time; seconds = Math.Max(1, window); maximum = limit; color = stroke; grid = showGrid; filled = area;
         if (autoScale) {
             long start = time - window * 1_000_000_000L;
             double observed = Math.Max(value?.Maximum(start, limit / 100) ?? 0, upload?.Maximum(start, limit / 100) ?? 0);
@@ -105,7 +105,7 @@ public sealed partial class ChartView : Grid
         if (series is null) {
             areaPath.Data = linePath.Data = secondaryPath.Data = null;
             foreach (var path in overlayPaths) path.Data = null;
-            UpdateCursor(); return;
+            ApplyTimeline(); return;
         }
         if (paintedColor != color) {
             var brush = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
@@ -120,6 +120,6 @@ public sealed partial class ChartView : Grid
         secondaryPath.Visibility = secondary is null ? Visibility.Collapsed : Visibility.Visible;
         secondaryPath.Data = secondary?.Build(width, height, now, seconds, maximum);
         for (int i = 0; i < overlays.Count; ++i) overlayPaths[i].Data = overlays[i].History.Build(width, height, now, seconds, maximum);
-        UpdateCursor();
+        ApplyTimeline();
     }
 }

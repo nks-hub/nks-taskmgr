@@ -38,11 +38,11 @@ public sealed partial class ChartView
 
     public void Configure(string name, ChartUnit valueUnit = ChartUnit.Percent, bool showAxes = true, string secondName = "Odesílání", bool interactive = true)
     {
-        if (primaryName != name || unit != valueUnit) { pinned = false; cursorTime = null; HideCursor(); }
+        if (primaryName != name || unit != valueUnit) SeriesChanged();
         primaryName = name; secondaryName = secondName; unit = valueUnit; axes = showAxes;
         scale.Visibility = timeline.Visibility = axes ? Visibility.Visible : Visibility.Collapsed;
         IsTabStop = interactive; IsHitTestVisible = interactive;
-        AutomationProperties.SetName(this, name + ". Šipky procházejí historii, Enter připne čas, Escape vrátí živý pohled.");
+        AutomationProperties.SetName(this, name + ". Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.");
         UpdateAxes();
     }
 
