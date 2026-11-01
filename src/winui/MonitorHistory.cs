@@ -8,7 +8,7 @@ public sealed partial class MonitorModel
         uint Group, uint Index, HistorySeries History);
     private readonly Dictionary<uint, CollectedSeries> collectedSeries = [];
     private ulong historySequence, historyLost, historyErrors;
-    private bool historyUnavailable;
+    private bool historyUnavailable, collectedBindingsDirty = true;
     public string HistoryWarning => historyUnavailable ? "Historie je nedostupná"
         : historyLost != 0 || historyErrors != 0 ? $"Historie: {historyLost:N0} neuchovaných vzorků, {historyErrors:N0} chyb" : "";
 
@@ -18,39 +18,43 @@ public sealed partial class MonitorModel
         try {
             using var batch = NativeHistory.Read(monitor);
             if (batch is null) { BindCollectedSeries(); return false; }
-            batch.Read(view => {
-                for (uint i = 0; i < view.DefinitionCount; ++i) {
-                    var definition = view.Definitions[i];
-                    if (definition.Id == 0 || definition.Id > 512 || !Enum.IsDefined(definition.Channel))
-                        throw new NativeMonitorException(NativeResult.AbiMismatch);
-                    if (collectedSeries.ContainsKey(definition.Id)) continue;
-                    if (definition.ResourceId.Length > 1024 || definition.DetailId.Length > 1024 || definition.Name.Length > 1024)
-                        throw new NativeMonitorException(NativeResult.AbiMismatch);
-                    collectedSeries.Add(definition.Id, new(definition.Channel, definition.ResourceId.Copy(), definition.DetailId.Copy(),
-                        definition.Name.Copy(), definition.Group, definition.Index, new HistorySeries()));
-                }
-                if (view.LostPoints != 0 || view.CaptureErrors != 0) BreakCollectedSeries();
-                historyLost += view.LostPoints; historyErrors += view.CaptureErrors;
-                for (uint i = 0; i < view.PointCount; ++i) {
-                    var point = view.Points[i];
-                    if (point.Sequence == 0 || point.TimeNs <= 0 || !collectedSeries.TryGetValue(point.Series, out var series))
-                        throw new NativeMonitorException(NativeResult.AbiMismatch);
-                    if (point.Sequence <= historySequence) continue;
-                    if (historySequence != 0 && point.Sequence != historySequence + 1) BreakCollectedSeries();
-                    historySequence = point.Sequence;
-                    var metric = point.Metric;
-                    if (metric.State == SampleState.Valid && (!double.IsFinite(metric.Value) || metric.Value < 0))
-                        metric = new Metric { State = SampleState.Error, Source = metric.Source };
-                    series.History.Append(point.TimeNs, metric);
-                }
-                changed = view.PointCount != 0 || view.LostPoints != 0 || view.CaptureErrors != 0;
-            });
+            batch.Read(view => changed = ApplyCollectedHistory(view));
             changed |= historyUnavailable; historyUnavailable = false;
-            BindCollectedSeries();
         } catch (Exception error) when (error is NativeMonitorException or EntryPointNotFoundException) {
             changed = !historyUnavailable; historyUnavailable = true; BreakCollectedSeries();
         }
         return changed;
+    }
+
+    internal unsafe bool ApplyCollectedHistory(HistoryView view)
+    {
+        for (uint i = 0; i < view.DefinitionCount; ++i) {
+            var definition = view.Definitions[i];
+            if (definition.Id == 0 || definition.Id > 512 || !Enum.IsDefined(definition.Channel))
+                throw new NativeMonitorException(NativeResult.AbiMismatch);
+            if (collectedSeries.ContainsKey(definition.Id)) continue;
+            if (definition.ResourceId.Length > 1024 || definition.DetailId.Length > 1024 || definition.Name.Length > 1024)
+                throw new NativeMonitorException(NativeResult.AbiMismatch);
+            collectedSeries.Add(definition.Id, new(definition.Channel, definition.ResourceId.Copy(), definition.DetailId.Copy(),
+                definition.Name.Copy(), definition.Group, definition.Index, new HistorySeries()));
+            collectedBindingsDirty = true;
+        }
+        if (view.LostPoints != 0 || view.CaptureErrors != 0) BreakCollectedSeries();
+        historyLost += view.LostPoints; historyErrors += view.CaptureErrors;
+        for (uint i = 0; i < view.PointCount; ++i) {
+            var point = view.Points[i];
+            if (point.Sequence == 0 || point.TimeNs <= 0 || !collectedSeries.TryGetValue(point.Series, out var series))
+                throw new NativeMonitorException(NativeResult.AbiMismatch);
+            if (point.Sequence <= historySequence) continue;
+            if (historySequence != 0 && point.Sequence != historySequence + 1) BreakCollectedSeries();
+            historySequence = point.Sequence;
+            var metric = point.Metric;
+            if (metric.State == SampleState.Valid && (!double.IsFinite(metric.Value) || metric.Value < 0))
+                metric = new Metric { State = SampleState.Error, Source = metric.Source };
+            series.History.Append(point.TimeNs, metric);
+        }
+        BindCollectedSeries();
+        return view.PointCount != 0 || view.LostPoints != 0 || view.CaptureErrors != 0;
     }
 
     private void BreakCollectedSeries()
@@ -60,6 +64,7 @@ public sealed partial class MonitorModel
 
     private void BindCollectedSeries()
     {
+        if (!collectedBindingsDirty) return;
         foreach (var series in collectedSeries.Values) {
             if (series.Channel == HistoryChannel.PageFile) { PageFile = series.History; continue; }
             if (series.Channel == HistoryChannel.Processor) {
@@ -78,5 +83,6 @@ public sealed partial class MonitorModel
                     break;
             }
         }
+        collectedBindingsDirty = false;
     }
 }

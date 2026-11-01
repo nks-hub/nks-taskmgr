@@ -67,6 +67,7 @@ public sealed partial class MonitorModel : IDisposable
     {
         bool resumed = updateView && !visualUpdates;
         visualUpdates = updateView;
+        if (resumed) collectedBindingsDirty = true;
         bool changed = resumed;
         using var frame = monitor.Read();
         if (frame is not null) {
@@ -81,7 +82,8 @@ public sealed partial class MonitorModel : IDisposable
             changed = true;
         }
         changed |= ReadCollectedHistory();
-        bool stale = !Paused && ProcessTime > 0 && NativeMonitor.MonotonicNowNs - ProcessTime > StaleAfterNs;
+        long now = NativeMonitor.MonotonicNowNs;
+        bool stale = !Paused && ProcessTime > 0 && now - ProcessTime > StaleAfterNs;
         if (stale != Stale) {
             Stale = stale;
             foreach (var row in processes.Values) row.SetStatus(false, stale, visualUpdates);
@@ -90,7 +92,7 @@ public sealed partial class MonitorModel : IDisposable
         CaptureProcessHistory();
         foreach (var resource in resources.Values) {
             long measured = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory ? ProcessTime : ResourceTime;
-            if (resource.SetStale(!Paused && measured > 0 && NativeMonitor.MonotonicNowNs - measured > StaleAfterNs, visualUpdates)) changed = true;
+            if (resource.SetStale(!Paused && measured > 0 && now - measured > StaleAfterNs, visualUpdates)) changed = true;
         }
         if (resumed) {
             SyncResources();
@@ -116,6 +118,7 @@ public sealed partial class MonitorModel : IDisposable
 
     private unsafe void Apply(FrameView view, ProcessCreationData creation, bool recordHistory, ProcessChangesData? changes = null)
     {
+        if ((view.Flags & (FrameFlags.ProcessData | FrameFlags.ResourceData)) != 0) collectedBindingsDirty = true;
         if ((view.Flags & FrameFlags.ProcessErrorChanged) != 0) ProcessError = view.ProcessError.Copy();
         if ((view.Flags & FrameFlags.ResourceErrorChanged) != 0) ResourceError = view.ResourceError.Copy();
         if ((view.Flags & FrameFlags.ProcessData) != 0) {

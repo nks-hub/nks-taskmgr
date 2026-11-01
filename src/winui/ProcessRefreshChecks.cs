@@ -10,6 +10,7 @@ public static partial class WinUiChecks
     {
         UnchangedProcessTree();
         SequenceProcessTree();
+        CollectedHistoryTopology();
         App.Trace("Process tree refresh passed: unchanged expanded/collapsed trees, search, flat mode and independent raw creation times");
     }
 
@@ -94,6 +95,92 @@ public static partial class WinUiChecks
         ApplyProcessFixture(model, [parent, child], creation);
         Require(rows[1].Created100ns == 5000 && model.VisibleProcesses.All(row => !row.HasChildren && row.Depth == 0),
             "A parent created after its child was accepted despite explicit raw creation times.");
+    }
+
+    private static unsafe void CollectedHistoryTopology()
+    {
+        using var model = new MonitorModel();
+        const long time = 1_000_000_000;
+        fixed (char* cpu = "cpu", disk = "fixture-disk", gpu = "fixture-gpu", engine = "engine-a") {
+            var definitions = stackalloc HistoryDefinitionInfo[4];
+            definitions[0] = new() { Id = 1, Channel = HistoryChannel.Processor, Group = 2, Index = 3,
+                ResourceId = new String16 { Data = cpu, Length = 3 } };
+            definitions[1] = new() { Id = 2, Channel = HistoryChannel.Primary,
+                ResourceId = new String16 { Data = disk, Length = 12 } };
+            definitions[2] = new() { Id = 3, Channel = HistoryChannel.Engine,
+                ResourceId = new String16 { Data = gpu, Length = 11 }, DetailId = new String16 { Data = engine, Length = 8 } };
+            var points = stackalloc CollectedHistoryPoint[4];
+            for (uint i = 0; i < 3; ++i) points[i] = new() { Sequence = i + 1, TimeNs = time, Series = i + 1,
+                Metric = new Metric { Value = (i + 1) * 10, State = SampleState.Valid, Source = MetricSource.PerformanceCounter } };
+            Require(model.ApplyCollectedHistory(new HistoryView { DefinitionCount = 3, Definitions = definitions, PointCount = 3, Points = points }),
+                "Collected definitions and points did not enter the production history path.");
+            Require(!model.ApplyCollectedHistory(default), "An empty history batch claimed a sample update.");
+
+            var resources = stackalloc ResourceInfo[2];
+            resources[0] = new() { Kind = ResourceKind.Disk, Id = definitions[1].ResourceId };
+            resources[1] = new() { Kind = ResourceKind.Gpu, Id = definitions[2].ResourceId };
+            var processor = new ProcessorInfo { Group = 2, Index = 3 };
+            void ApplyTargets(bool present) {
+                model.Apply(new FrameView { Flags = FrameFlags.ResourceData,
+                    Resources = new ResourceData { MeasuredAtNs = time, Resources = resources, ResourceCount = present ? 2u : 0 } });
+                var value = processor;
+                model.Apply(new FrameView { Flags = FrameFlags.ProcessData,
+                    Processes = new ProcessData { MeasuredAtNs = time, LogicalProcessors = present ? 1u : 0,
+                        Processors = &value, ProcessorCount = present ? 1u : 0 } });
+            }
+            ApplyTargets(true);
+            model.ApplyCollectedHistory(default);
+            var diskRow = model.Resources.Single(row => row.Id == "fixture-disk");
+            var gpuRow = model.Resources.Single(row => row.Id == "fixture-gpu");
+            var cpuHistory = model.Processors[(2, 3)];
+            var diskHistory = diskRow.History;
+            Require(cpuHistory.LastTime == time && cpuHistory.LastValue.Value == 10
+                && diskHistory.LastTime == time && diskHistory.LastValue.Value == 20,
+                "Definitions delivered before CPU/resource topology did not attach their retained points.");
+            Require(gpuRow.Gpu!.Engines.Count == 0, "The late-engine fixture already contains an engine.");
+            var sourceEngine = new GpuEngineInfo { Id = definitions[2].DetailId };
+            ApplyTargets(true);
+            gpuRow.Gpu.Apply(new GpuInfo { Engines = &sourceEngine, EngineCount = 1 }, gpuRow, time, false);
+            model.ApplyCollectedHistory(default);
+            var engineHistory = gpuRow.Gpu.Engines["engine-a"].History;
+            Require(engineHistory.LastTime == time && engineHistory.LastValue.Value == 30,
+                "A GPU engine added after its definition did not attach without another history batch.");
+
+            definitions[3] = new() { Id = 4, Channel = HistoryChannel.Dedicated, ResourceId = definitions[2].ResourceId };
+            points[3] = new() { Sequence = 4, TimeNs = time, Series = 4,
+                Metric = new Metric { Value = 40, State = SampleState.Valid, Source = MetricSource.Dxgi } };
+            model.ApplyCollectedHistory(new HistoryView { DefinitionCount = 1, Definitions = definitions + 3, PointCount = 1, Points = points + 3 });
+            var dedicated = gpuRow.Gpu.Dedicated;
+            Require(dedicated.LastValue.Value == 40, "A new definition did not bind an existing GPU model.");
+
+            ApplyTargets(false); model.ApplyCollectedHistory(default);
+            Require(!model.Processors.ContainsKey((2, 3)) && !model.Resources.Contains(diskRow) && !model.Resources.Contains(gpuRow),
+                "The topology-removal fixture retained a removed target.");
+            ApplyTargets(true);
+            var nextDisk = model.Resources.Single(row => row.Id == "fixture-disk");
+            var nextGpu = model.Resources.Single(row => row.Id == "fixture-gpu");
+            nextGpu.Gpu!.Apply(new GpuInfo { Engines = &sourceEngine, EngineCount = 1 }, nextGpu, time, false);
+            model.ApplyCollectedHistory(default);
+            Require(!ReferenceEquals(nextDisk, diskRow) && !ReferenceEquals(nextGpu, gpuRow)
+                && ReferenceEquals(nextDisk.History, diskHistory) && ReferenceEquals(model.Processors[(2, 3)], cpuHistory)
+                && ReferenceEquals(nextGpu.Gpu.Engines["engine-a"].History, engineHistory) && ReferenceEquals(nextGpu.Gpu.Dedicated, dedicated),
+                "Recreated CPU/resource/GPU targets lost their existing collected history references.");
+
+            model.ApplyCollectedHistory(new HistoryView { LostPoints = 1, CaptureErrors = 2 });
+            for (uint i = 0; i < 4; ++i) points[i] = new() { Sequence = i + 5, TimeNs = time + 2_000_000_000, Series = i + 1,
+                Metric = new Metric { Value = (i + 1) * 100, State = SampleState.Valid, Source = MetricSource.PerformanceCounter } };
+            model.ApplyCollectedHistory(new HistoryView { PointCount = 4, Points = points });
+            Require(ReferenceEquals(nextDisk.History, diskHistory) && ReferenceEquals(model.Processors[(2, 3)], cpuHistory)
+                && ReferenceEquals(nextGpu.Gpu.Engines["engine-a"].History, engineHistory) && ReferenceEquals(nextGpu.Gpu.Dedicated, dedicated)
+                && cpuHistory.LastValue.Value == 100 && diskHistory.LastValue.Value == 200 && engineHistory.LastValue.Value == 300
+                && dedicated.LastValue.Value == 400 && cpuHistory.At(time)?.Value.Value == 10
+                && cpuHistory.At(time + 1_000_000_000) is null && model.HistoryWarning.Length > 0,
+                "Appending without rebinding discarded values, reference identity or an explicit collection gap.");
+            Require(!model.ApplyCollectedHistory(default) && cpuHistory.Count == 2 && diskHistory.Count == 2
+                && engineHistory.Count == 2 && dedicated.Count == 2,
+                "An empty history batch changed retained point counts.");
+        }
+        App.Trace("Collected history topology passed: late CPU/resource/engine, new definitions, recreation, reference reuse and explicit gaps");
     }
 }
 
