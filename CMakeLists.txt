@@ -59,7 +59,7 @@ target_link_libraries(nks-resource-sample PRIVATE nks_native)
 target_compile_options(nks-resource-sample PRIVATE /W4 /WX /utf-8 /permissive-)
 
 add_executable(nks-icon-worker src/icon_worker/main.cpp)
-target_link_libraries(nks-icon-worker PRIVATE shell32 ole32 gdi32)
+target_link_libraries(nks-icon-worker PRIVATE nks_native shell32 ole32 gdi32)
 target_compile_options(nks-icon-worker PRIVATE /W4 /WX /utf-8 /permissive-)
 target_link_options(nks-icon-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'")
 
