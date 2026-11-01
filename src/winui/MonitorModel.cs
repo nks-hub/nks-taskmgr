@@ -7,6 +7,7 @@ public enum ProcessMode { All, Active, Tree }
 
 public sealed class MonitorModel : IDisposable
 {
+    internal const long StaleAfterNs = 3_000_000_000;
     private readonly NativeMonitor monitor = NativeMonitor.Open();
     private readonly Dictionary<ProcessKey, ProcessRow> processes = [];
     private readonly Dictionary<string, ResourceRow> resources = [];
@@ -18,6 +19,7 @@ public sealed class MonitorModel : IDisposable
     public ProcessRows VisibleProcesses { get; } = [];
     public ObservableCollection<ResourceRow> Resources { get; } = [];
     public IReadOnlyCollection<ProcessRow> Processes => processes.Values;
+    internal IEnumerable<ResourceRow> AllResources => resources.Values;
     public Dictionary<(uint Group, uint Index), HistorySeries> Processors { get; } = [];
     public HistorySeries PageFile { get; } = new();
     public Dictionary<string, Dictionary<string, string>> Hardware { get; } = [];
@@ -26,6 +28,7 @@ public sealed class MonitorModel : IDisposable
     public string CpuModel { get; private set; } = string.Empty;
     public uint LogicalProcessors { get; private set; }
     public long ProcessTime { get; private set; }
+    public long ProcessWallTimeUnixNs { get; private set; }
     public long ResourceTime { get; private set; }
     public double CollectionMs { get; private set; }
     public string ProcessError { get; private set; } = string.Empty;
@@ -65,7 +68,7 @@ public sealed class MonitorModel : IDisposable
             frame.ReadHardware(ApplyHardware);
             changed = true;
         }
-        bool stale = !Paused && ProcessTime > 0 && NativeMonitor.MonotonicNowNs - ProcessTime > 3_000_000_000;
+        bool stale = !Paused && ProcessTime > 0 && NativeMonitor.MonotonicNowNs - ProcessTime > StaleAfterNs;
         if (stale != Stale) {
             Stale = stale;
             foreach (var row in processes.Values) row.SetStatus(false, stale, visualUpdates);
@@ -73,7 +76,7 @@ public sealed class MonitorModel : IDisposable
         }
         foreach (var resource in resources.Values) {
             long measured = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory ? ProcessTime : ResourceTime;
-            if (resource.SetStale(!Paused && measured > 0 && NativeMonitor.MonotonicNowNs - measured > 3_000_000_000, visualUpdates)) changed = true;
+            if (resource.SetStale(!Paused && measured > 0 && NativeMonitor.MonotonicNowNs - measured > StaleAfterNs, visualUpdates)) changed = true;
         }
         if (resumed) {
             SyncResources();
@@ -89,7 +92,7 @@ public sealed class MonitorModel : IDisposable
         if ((view.Flags & FrameFlags.ProcessErrorChanged) != 0) ProcessError = view.ProcessError.Copy();
         if ((view.Flags & FrameFlags.ResourceErrorChanged) != 0) ResourceError = view.ResourceError.Copy();
         if ((view.Flags & FrameFlags.ProcessData) != 0) {
-            ProcessTime = view.Processes.MeasuredAtNs; Memory = view.Processes.Memory;
+            ProcessTime = view.Processes.MeasuredAtNs; ProcessWallTimeUnixNs = view.Processes.WallTimeUnixNs; Memory = view.Processes.Memory;
             CollectionMs = view.Processes.CollectionNs / 1_000_000d;
             LogicalProcessors = view.Processes.LogicalProcessors;
             CpuModel = view.Processes.CpuModel.Copy();

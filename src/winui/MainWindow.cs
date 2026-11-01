@@ -95,7 +95,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 149, 164, 173);
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); BuildShell(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
+        ConfigureResources(); ConfigureSnapshotExport(); BuildShell(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");
@@ -306,7 +306,9 @@ public sealed partial class MainWindow : Window
         filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0); toolbar.Children.Add(filters);
         processTable = new ProcessTable(processList, SortProcesses);
         var columns = Button("Sloupce"); columns.Height = 29; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
-        columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů"); toolbar.Children.Add(columns);
+        columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů");
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); toolbar.Children.Add(actions);
         Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
         Grid.SetRow(processTable, 2); processPage.Children.Add(processTable);
         var dock = new StackPanel { Padding = new Thickness(21, 18, 21, 18), Spacing = 12 };
@@ -370,6 +372,7 @@ public sealed partial class MainWindow : Window
         try {
             bool minimized = IsIconic(windowHandle);
             bool changed = model.Tick(!minimized && view != DesktopView.Services);
+            exportSnapshot.IsEnabled = !exporting && model.ProcessTime > 0;
             TickServices(!minimized && view == DesktopView.Services);
             if (changed && !minimized) {
                 if (selectedResource is null || !model.Resources.Contains(selectedResource)) resourceList.SelectedItem = model.Resources.FirstOrDefault();
@@ -428,6 +431,7 @@ public sealed partial class MainWindow : Window
     private void RunSmoke()
     {
         if (smokePath is null) return;
+        if (smokeSnapshotExport is { IsCompleted: true }) smokeSnapshotExport.GetAwaiter().GetResult();
         bool ready = model.Processes.Any(row => row.Key.Pid == Environment.ProcessId && row.Key.Generation != 0)
             && model.Resources.Count > 2 && model.Resources.Any(row => row.Kind == ResourceKind.Cpu)
             && resourceList.ActualHeight > 0 && selectedResource is not null;
@@ -449,7 +453,7 @@ public sealed partial class MainWindow : Window
         }
         if (!smokeMinimizedChecked) return;
         if (ready && !smokeModelsChecked) {
-            WinUiChecks.ModelInvariants(model); WinUiChecks.ProcessNotifications(); smokeModelsChecked = true;
+            WinUiChecks.ModelInvariants(model); WinUiChecks.ProcessNotifications(); smokeSnapshotExport = WinUiChecks.SnapshotExportChecks(SnapshotDocument.Capture(model)); smokeModelsChecked = true;
             smokeReadyAt = ticks;
             ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);
             var overviewButtons = overview.Children.ToArray();
@@ -520,8 +524,8 @@ public sealed partial class MainWindow : Window
             smokeServicesChecked = true;
             App.Trace($"Services passed: count={servicesModel.All.Count};detail={servicesModel.Detail?.Name};resumed=True");
         }
-        if (smokeServicesChecked) {
-            App.Trace($"aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported};ready={smokeModelsChecked};models={smokeModelsChecked};minimized={smokeMinimizedChecked};services={smokeServicesChecked};columns={smokeColumnsChecked};processes={model.Processes.Count};resources={model.Resources.Count};charts={coreCharts.Count}");
+        if (smokeServicesChecked && smokeSnapshotExport is { IsCompletedSuccessfully: true }) {
+            App.Trace($"aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported};ready={smokeModelsChecked};models={smokeModelsChecked};minimized={smokeMinimizedChecked};services={smokeServicesChecked};columns={smokeColumnsChecked};export=True;processes={model.Processes.Count};resources={model.Resources.Count};charts={coreCharts.Count}");
             Close();
         }
     }
