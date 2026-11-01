@@ -28,6 +28,13 @@ public sealed partial class MainWindow
         resourceDescription.Text = resource.Kind == ResourceKind.Cpu ? model.LogicalProcessors + " logických procesorů"
             : resource.Kind == ResourceKind.Memory && model.Memory.State == SampleState.Valid
                 ? Display.Number(model.Memory.PhysicalBytes / 1073741824d, " GiB celkem") : resource.Description;
+        var measurement = model.MeasurementFor(resource, false);
+        resourceDescription.Text += " · " + MeasurementText.Summary(measurement);
+        string context = MeasurementText.Describe(measurement, resource.Primary, resource.Stale);
+        if (resource.Kind == ResourceKind.Cpu && cpuMode > 0)
+            context += "\n\nGrafy logických procesorů:\n" + MeasurementText.DescribeFormat(model.MeasurementFor(resource, true));
+        ToolTipService.SetToolTip(resourceDescription, context);
+        AutomationProperties.SetHelpText(resourceDescription, context);
         bool valid = !resource.Stale && resource.Primary.State == SampleState.Valid;
         resourceValue.FontSize = valid ? 24 : 13;
         resourceValue.Foreground = performanceInk;

@@ -77,6 +77,8 @@ public sealed partial class ChartView
             if (overlays.Count >= 5) text += "\n5 nejvytíženějších z " + (overlays.Count + 1);
         }
         text += "\n" + Display.Number(Math.Max(0, (now - (sample?.Time ?? time)) / 1_000_000_000d), " s zpět") + (pinned ? " · připnuto" : " · kliknutím připnout");
+        if (sample is { } observed) text += "\nZdroj primárního vzorku: " + MeasurementText.Source(observed.Value.Source);
+        text += "\nČasové okno tohoto bodu není v historii uložené.";
         reading.Text = text; AutomationProperties.SetHelpText(this, text);
         double x = fraction * canvas.ActualWidth;
         cursor.X1 = cursor.X2 = x; cursor.Y1 = 0; cursor.Y2 = canvas.ActualHeight;

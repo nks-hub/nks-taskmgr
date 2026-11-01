@@ -1,4 +1,5 @@
 #include "monitor_api.h"
+#include "measurement_api.h"
 #include "monitor_handle.hpp"
 #include "collectors/process_identity.hpp"
 #include <limits>
@@ -16,6 +17,8 @@ struct NksFrame {
     std::vector<NksGpu> gpus;
     std::vector<std::vector<NksGpuEngine>> gpuEngines;
     std::vector<NksHardwareFact> hardware;
+    NksProcessMeasurements processMeasurements{};
+    std::vector<NksResourceMeasurements> resourceMeasurements;
     NksFrameView view{};
     void build();
 };
@@ -40,6 +43,11 @@ uint32_t count(std::size_t size)
 NksString16 string(const std::wstring& value) { return {value.data(), count(value.size()), 0}; }
 NksMetric metric(nks::Metric<double> value) { return {value.value, static_cast<uint32_t>(value.state), static_cast<uint32_t>(value.source)}; }
 int64_t nanos(std::chrono::steady_clock::time_point value) { return std::chrono::duration_cast<std::chrono::nanoseconds>(value.time_since_epoch()).count(); }
+NksMeasurementMetadata measurement(const nks::MeasurementMetadata& value)
+{
+    return {static_cast<uint8_t>(value.unit), static_cast<uint8_t>(value.normalization), static_cast<uint8_t>(value.basis),
+        static_cast<uint8_t>(value.intervalState), value.normalizationDivisor, value.observedAtNs, value.intervalNs, value.cadenceNs};
+}
 }
 
 static_assert(sizeof(wchar_t) == 2 && sizeof(void*) == 8);
@@ -50,6 +58,12 @@ static_assert(sizeof(NksResource) == 128 && sizeof(NksResourceData) == 32 && siz
 static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGpuData) == 16);
 static_assert(sizeof(NksHardwareFact) == 48 && sizeof(NksHardwareData) == 16);
 static_assert(sizeof(NksProcessCreation) == 32 && sizeof(NksProcessCreationData) == 16 && sizeof(NksProcessIdentityData) == 40);
+static_assert(sizeof(NksMeasurementMetadata) == 32 && offsetof(NksMeasurementMetadata, observed_at_ns) == 8);
+static_assert(sizeof(NksProcessMeasurements) == 192 && sizeof(NksResourceMeasurements) == 240 && sizeof(NksMeasurementData) == 216);
+static_assert(static_cast<unsigned>(nks::MeasurementUnit::operationsPerSecond) == NKS_UNIT_OPERATIONS_PER_SECOND);
+static_assert(static_cast<unsigned>(nks::MeasurementNormalization::deviceActiveTime) == NKS_NORMALIZATION_DEVICE_ACTIVE_TIME);
+static_assert(static_cast<unsigned>(nks::MeasurementBasis::providerDefined) == NKS_BASIS_PROVIDER_DEFINED);
+static_assert(static_cast<unsigned>(nks::MeasurementIntervalState::unavailable) == NKS_INTERVAL_UNAVAILABLE);
 static_assert(static_cast<unsigned>(nks::SampleState::valid) == NKS_SAMPLE_VALID && static_cast<unsigned>(nks::SampleState::gap) == NKS_SAMPLE_GAP);
 static_assert(static_cast<unsigned>(nks::GenerationKind::creationTime) == NKS_GENERATION_CREATION_TIME && static_cast<unsigned>(nks::GenerationKind::sequenceNumber) == NKS_GENERATION_SEQUENCE_NUMBER);
 static_assert(static_cast<unsigned>(nks::ResourceKind::cpu) == NKS_RESOURCE_CPU && static_cast<unsigned>(nks::ResourceKind::network) == NKS_RESOURCE_NETWORK);
@@ -70,6 +84,9 @@ void NksFrame::build()
     view.processes.memory.state = view.processes.memory.page_file_state = NKS_SAMPLE_UNAVAILABLE;
     if (processSnapshot) {
         const auto& source = *processSnapshot;
+        const auto& measured = source.measurements;
+        processMeasurements = {measurement(measured.processCpu), measurement(measured.processIo), measurement(measured.processMemory),
+            measurement(measured.systemCpu), measurement(measured.logicalCpu), measurement(measured.systemMemory)};
         facts(memoryId, source.memoryFacts); facts(cpuId, source.cpuFacts); facts(boardId, source.boardFacts);
         processes.reserve(source.processes.size());
         processCreation.reserve(source.processes.size());
@@ -95,6 +112,12 @@ void NksFrame::build()
     }
     if (resourceSnapshot) {
         const auto& source = *resourceSnapshot;
+        resourceMeasurements.reserve(source.devices.size());
+        for (const auto& item : source.devices) {
+            const auto& measured = item.measurements;
+            resourceMeasurements.push_back({string(item.id), measurement(measured.primary), measurement(measured.secondary), measurement(measured.tertiary),
+                measurement(measured.temperature), measurement(measured.capacity), measurement(measured.sharedCapacity), measurement(measured.engineUtilization)});
+        }
         facts(upsId, source.upsFacts);
         resources.reserve(source.devices.size());
         gpuEngines.reserve(source.devices.size());
@@ -173,6 +196,15 @@ NksResult __cdecl nks_frame_get_view(const NksFrame* frame, uint32_t size, NksFr
     if (!frame || !result) return NKS_INVALID_ARGUMENT;
     if (size != sizeof(NksFrameView)) return NKS_ABI_MISMATCH;
     *result = frame->view;
+    return NKS_OK;
+}
+
+NksResult __cdecl nks_frame_get_measurement_data(const NksFrame* frame, uint32_t size, NksMeasurementData* result) noexcept
+{
+    if (!frame || !result) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksMeasurementData)) return NKS_ABI_MISMATCH;
+    *result = {NKS_MEASUREMENT_ABI_VERSION, frame->view.flags & (NKS_PROCESS_DATA | NKS_RESOURCE_DATA), frame->processMeasurements,
+        frame->resourceMeasurements.data(), count(frame->resourceMeasurements.size()), 0};
     return NKS_OK;
 }
 

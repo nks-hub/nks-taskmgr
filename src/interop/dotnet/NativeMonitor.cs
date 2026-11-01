@@ -222,7 +222,7 @@ public sealed class NativeMonitor : SafeHandleZeroOrMinusOneIsInvalid
     protected override bool ReleaseHandle() { NativeMethods.Destroy(handle); return true; }
 }
 
-public sealed class NativeFrame : SafeHandleZeroOrMinusOneIsInvalid
+public sealed partial class NativeFrame : SafeHandleZeroOrMinusOneIsInvalid
 {
     public NativeFrame() : base(true) { }
 
