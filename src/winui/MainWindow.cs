@@ -93,7 +93,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); BuildShell(); ConfigureAppearance(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
+        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); BuildShell(); ConfigureAppearance(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");
@@ -310,7 +310,7 @@ public sealed partial class MainWindow : Window
         var columns = Button("Sloupce"); columns.Height = 29; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
         columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů");
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); actions.Children.Add(compareSnapshots); toolbar.Children.Add(actions);
+        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); actions.Children.Add(compareSnapshots); actions.Children.Add(processDetailsButton); toolbar.Children.Add(actions);
         Grid.SetColumn(actions, 1);
         Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
         Grid.SetRow(processTable, 2); processPage.Children.Add(processTable);
@@ -381,9 +381,12 @@ public sealed partial class MainWindow : Window
                 if (selectedResource is null || !model.Resources.Contains(selectedResource)) resourceList.SelectedItem = model.Resources.FirstOrDefault();
                 if (performance) RefreshPerformance(); else if (view == DesktopView.Processes) RefreshProcesses(); else if (view == DesktopView.Hardware) RefreshHardware();
             }
-            if (++ticks % 10 == 0 && !minimized) footer.Text = view == DesktopView.Services ? ServicesFooter() : (model.Paused ? "Pozastaveno" : "Živá data") + $" · {model.Processes.Count} procesů · stáří "
-                + Display.Number((NativeMonitor.MonotonicNowNs - model.ProcessTime) / 1_000_000_000d, " s")
-                + (model.ProcessError.Length == 0 ? "" : " · " + model.ProcessError) + (model.ResourceError.Length == 0 ? "" : " · " + model.ResourceError);
+            if (++ticks % 10 == 0 && !minimized) {
+                footer.Text = view == DesktopView.Services ? ServicesFooter() : (model.Paused ? "Pozastaveno" : "Živá data") + $" · {model.Processes.Count} procesů · stáří "
+                    + Display.Number((NativeMonitor.MonotonicNowNs - model.ProcessTime) / 1_000_000_000d, " s")
+                    + (model.ProcessError.Length == 0 ? "" : " · " + model.ProcessError) + (model.ResourceError.Length == 0 ? "" : " · " + model.ResourceError);
+                if (model.HistoryWarning.Length != 0) footer.Text += " · " + model.HistoryWarning;
+            }
             RunSmoke();
             if (App.SortBenchmarkPath is not null && ticks >= 20 && model.Processes.Count > 0) RunSortBenchmark();
         } catch (NativeMonitorException error) {
@@ -426,6 +429,7 @@ public sealed partial class MainWindow : Window
     private void RefreshSelection()
     {
         if (updatingProcessSlots) return;
+        UpdateProcessDetailsCommand();
         if (SelectedProcess is not { } row) { selectionTitle.Text = "Vyberte proces"; selectionFacts.Text = "Ctrl a Shift vyberou více řádků."; return; }
         selectionTitle.Text = row.Ended ? row.Name + " · ukončeno" : row.Name;
         selectionFacts.Text = $"PID {row.PidText} · {row.Threads} vláken · {row.Handles} popisovačů · CPU {row.CpuText} · {row.WorkingText}";
