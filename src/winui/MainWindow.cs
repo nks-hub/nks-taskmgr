@@ -93,7 +93,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); BuildShell(); ConfigureAppearance(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
+        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");
@@ -310,7 +310,7 @@ public sealed partial class MainWindow : Window
         var columns = Button("Sloupce"); columns.Height = 29; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
         columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů");
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); actions.Children.Add(compareSnapshots); actions.Children.Add(processDetailsButton); toolbar.Children.Add(actions);
+        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); actions.Children.Add(compareSnapshots); actions.Children.Add(processDetailsButton); actions.Children.Add(globalObjectSearchButton); toolbar.Children.Add(actions);
         Grid.SetColumn(actions, 1);
         Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
         Grid.SetRow(processTable, 2); processPage.Children.Add(processTable);
