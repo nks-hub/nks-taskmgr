@@ -2,6 +2,9 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <Version>0.1.0</Version>
+    <Product>NKS Task Manager</Product>
+    <Title>NKS Task Manager</Title>
+    <Company>NKS Hub</Company>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -24,9 +27,11 @@
     <DumpWorkerPath Condition="'$(DumpWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-dump-worker.exe</DumpWorkerPath>
     <DumpWorkerX86Path Condition="'$(DumpWorkerX86Path)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc-dump-x86\Release\nks-dump-worker-x86.exe</DumpWorkerX86Path>
     <ElevationBrokerPath Condition="'$(ElevationBrokerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-elevation-broker.exe</ElevationBrokerPath>
+    <UpdateWorkerPath Condition="'$(UpdateWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-update-worker.exe</UpdateWorkerPath>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyMetadata Include="Nks.BrokerPublisherSpkiSha256" Value="$(BrokerPublisherSpkiSha256)" />
+    <AssemblyMetadata Include="Nks.UpdatePublisherSpkiSha256" Value="$(UpdatePublisherSpkiSha256)" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.261008100" />
     <ProjectReference Include="..\interop\dotnet\NksTaskMgr.Native.csproj" />
@@ -39,11 +44,13 @@
     <None Include="$(DumpWorkerPath)" Link="nks-dump-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Include="$(DumpWorkerX86Path)" Link="nks-dump-worker-x86.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Include="$(ElevationBrokerPath)" Link="nks-elevation-broker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="$(UpdateWorkerPath)" Link="nks-update-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\..\assets\app.ico" Link="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\..\assets\app.png" Link="app.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
   <Target Name="RequireNativeMonitor" BeforeTargets="PrepareForBuild">
     <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(BrokerPublisherSpkiSha256)', '^([0-9a-fA-F]{64})?$'))" Text="BrokerPublisherSpkiSha256 must be empty or 64 hexadecimal characters." />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(UpdatePublisherSpkiSha256)', '^([0-9a-fA-F]{64})?$'))" Text="UpdatePublisherSpkiSha256 must be empty or 64 hexadecimal characters." />
     <Error Condition="!Exists('$(NativeMonitorPath)')" Text="Build the native Release library before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(IconWorkerPath)')" Text="Build the native Release icon worker before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(DetailsWorkerPath)')" Text="Build the native Release details worker before publishing the WinUI candidate." />
@@ -53,5 +60,6 @@
     <Error Condition="!Exists('$(DumpWorkerPath)')" Text="Build the native Release x64 dump worker before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(DumpWorkerX86Path)')" Text="Build the native Release x86 dump worker before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(ElevationBrokerPath)')" Text="Build the native Release elevation broker before publishing the WinUI candidate." />
+    <Error Condition="!Exists('$(UpdateWorkerPath)')" Text="Build the native Release update worker before publishing the WinUI candidate." />
   </Target>
 </Project>
