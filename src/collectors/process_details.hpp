@@ -11,6 +11,7 @@ struct ProcessDetailsRequest {
     ProcessIdentity target;
     details::Command command{};
     std::uint64_t moduleBase{};
+    std::uint64_t handleValue{};
     std::wstring modulePath;
 };
 
@@ -26,6 +27,16 @@ struct ProcessFileSignature {
     std::wstring path, publisher;
 };
 
+struct ProcessHandleDetail {
+    details::HandleInfo info;
+    std::wstring type, name;
+};
+
+struct ProcessOwnerDetail {
+    ProcessIdentity identity;
+    std::wstring name;
+};
+
 struct ProcessDetailsResult {
     details::ResultState state{details::ResultState::unavailable};
     DWORD win32Error{};
@@ -35,6 +46,10 @@ struct ProcessDetailsResult {
     std::vector<details::Thread> threads;
     std::vector<ProcessModuleDetail> modules;
     std::optional<ProcessFileSignature> signature;
+    std::vector<details::MemoryRegion> memory;
+    std::vector<details::HandleEntry> handles;
+    std::optional<ProcessHandleDetail> handleInfo;
+    std::vector<ProcessOwnerDetail> owners;
 };
 
 struct DetailHandleCloser {
@@ -44,5 +59,9 @@ using DetailHandle = std::unique_ptr<void, DetailHandleCloser>;
 
 ProcessDetailsResult readProcessDetails(const ProcessDetailsRequest& request);
 void readFileSignatureOnDisk(const std::wstring& path, ProcessDetailsResult& result);
+void readProcessMemory(HANDLE process, ProcessDetailsResult& result);
+void readProcessHandles(HANDLE process, ProcessDetailsResult& result);
+void readProcessHandleInfo(HANDLE process, std::uint64_t value, ProcessDetailsResult& result);
+void readProcessOwners(const ProcessDetailsRequest& request, ProcessDetailsResult& result);
 
 }

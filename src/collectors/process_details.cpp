@@ -168,14 +168,29 @@ ProcessDetailsResult readProcessDetails(const ProcessDetailsRequest& request)
 {
     ProcessDetailsResult result;
     if (request.command == details::Command::signature) result.flags |= details::diskFile;
+    if (request.command == details::Command::owners) {
+        if (request.target.boot.empty() || request.target.pid || request.target.generation
+            || (request.target.generationKind != GenerationKind::creationTime && request.target.generationKind != GenerationKind::sequenceNumber)) {
+            result.state = details::ResultState::invalidRequest; return result;
+        }
+        readProcessOwners(request, result);
+        if (result.state != details::ResultState::ok) result.owners.clear();
+        return result;
+    }
     if (request.target.boot.empty() || !request.target.generation || (request.target.generationKind != GenerationKind::creationTime
         && request.target.generationKind != GenerationKind::sequenceNumber)) { result.state = details::ResultState::invalidRequest; return result; }
-    DetailHandle process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, request.target.pid));
+    DWORD access = PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE;
+    if (request.command == details::Command::memory || request.command == details::Command::handles) access |= PROCESS_QUERY_INFORMATION;
+    if (request.command == details::Command::handleInfo) access |= PROCESS_DUP_HANDLE;
+    DetailHandle process(OpenProcess(access, FALSE, request.target.pid));
     if (!process) { fail(result, GetLastError()); return result; }
     if (!verifyTarget(process.get(), request.target, result)) return result;
     DWORD error = 0; result.architecture = architecture(process.get(), error);
     if (error) { fail(result, error); return result; }
     if (request.command == details::Command::threads) readThreads(request.target.pid, result);
+    else if (request.command == details::Command::memory) readProcessMemory(process.get(), result);
+    else if (request.command == details::Command::handles) readProcessHandles(process.get(), result);
+    else if (request.command == details::Command::handleInfo) readProcessHandleInfo(process.get(), request.handleValue, result);
     else if (request.command == details::Command::modules || request.command == details::Command::signature) {
         readModules(request.target.pid, result);
         if (request.command == details::Command::signature && result.state == details::ResultState::ok) {
@@ -189,6 +204,7 @@ ProcessDetailsResult readProcessDetails(const ProcessDetailsRequest& request)
     } else result.state = details::ResultState::invalidRequest;
     if (!verifyTarget(process.get(), request.target, result) || result.state != details::ResultState::ok) {
         result.threads.clear(); result.modules.clear(); result.signature.reset();
+        result.memory.clear(); result.handles.clear(); result.handleInfo.reset();
     }
     return result;
 }

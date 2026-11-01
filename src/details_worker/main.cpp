@@ -11,12 +11,18 @@
 
 namespace {
 
-bool readAll(HANDLE pipe, void* destination, DWORD size)
+bool readAll(HANDLE pipe, void* destination, DWORD size, bool* ended = nullptr)
 {
     auto* bytes = static_cast<std::byte*>(destination);
+    const auto initialSize = size;
     while (size) {
         DWORD received{};
-        if (!ReadFile(pipe, bytes, size, &received, nullptr) || !received) return false;
+        if (!ReadFile(pipe, bytes, size, &received, nullptr)) {
+            const auto error = GetLastError();
+            if (ended && size == initialSize && (error == ERROR_BROKEN_PIPE || error == ERROR_HANDLE_EOF)) *ended = true;
+            return false;
+        }
+        if (!received) { if (ended && size == initialSize) *ended = true; return false; }
         bytes += received; size -= received;
     }
     return true;
@@ -48,11 +54,19 @@ bool validText(std::wstring_view text)
 
 bool requestData(const nks::details::Request& header, const std::vector<std::byte>& payload, nks::ProcessDetailsRequest& request)
 {
-    if (header.reserved || header.generationKind < 1 || header.generationKind > 2 || !header.generation
+    if (header.reserved || header.generationKind < 1 || header.generationKind > 2
         || (!header.bootLow && !header.bootHigh)) return false;
     request.target = {{header.bootLow, header.bootHigh}, header.pid, static_cast<nks::GenerationKind>(header.generationKind), header.generation};
     request.command = header.command;
-    if (header.command == nks::details::Command::threads || header.command == nks::details::Command::modules) return payload.empty();
+    if (header.command == nks::details::Command::owners) return !header.pid && !header.generation && payload.empty();
+    if (!header.generation) return false;
+    if (header.command == nks::details::Command::threads || header.command == nks::details::Command::modules
+        || header.command == nks::details::Command::memory || header.command == nks::details::Command::handles) return payload.empty();
+    if (header.command == nks::details::Command::handleInfo) {
+        if (payload.size() != sizeof(request.handleValue)) return false;
+        std::memcpy(&request.handleValue, payload.data(), sizeof(request.handleValue));
+        return request.handleValue != 0;
+    }
     if (header.command != nks::details::Command::signature || payload.size() < 12) return false;
     std::uint32_t chars{};
     std::memcpy(&request.moduleBase, payload.data(), 8); std::memcpy(&chars, payload.data() + 8, 4);
@@ -105,19 +119,35 @@ void responseData(nks::details::Response& header, const nks::ProcessDetailsResul
         nks::details::Signature row{signature.state, signature.source, signature.trustCode, 0,
             static_cast<std::uint32_t>(signature.path.size()), static_cast<std::uint32_t>(signature.publisher.size())};
         header.rowCount = 1; payload.append(row); payload.text(signature.path); payload.text(signature.publisher);
+    } else if (header.command == nks::details::Command::memory) {
+        if (result.memory.empty() || result.memory.size() > nks::details::maximumMemoryRegions) throw std::length_error("Invalid memory region count");
+        header.rowCount = static_cast<std::uint32_t>(result.memory.size());
+        for (const auto& region : result.memory) payload.append(region);
+    } else if (header.command == nks::details::Command::handles) {
+        if (result.handles.size() > nks::details::maximumHandles) throw std::length_error("Invalid handle count");
+        header.rowCount = static_cast<std::uint32_t>(result.handles.size());
+        for (const auto& handle : result.handles) payload.append(handle);
+    } else if (header.command == nks::details::Command::handleInfo && result.handleInfo) {
+        header.rowCount = 1;
+        payload.append(result.handleInfo->info); payload.text(result.handleInfo->type); payload.text(result.handleInfo->name);
+    } else if (header.command == nks::details::Command::owners) {
+        if (result.owners.empty() || result.owners.size() > nks::details::maximumOwners) throw std::length_error("Invalid owner count");
+        header.rowCount = static_cast<std::uint32_t>(result.owners.size());
+        for (const auto& owner : result.owners) {
+            nks::details::Owner row{owner.identity.pid, static_cast<std::uint32_t>(owner.identity.generationKind), owner.identity.generation,
+                static_cast<std::uint32_t>(owner.name.size()), 0};
+            payload.append(row); payload.text(owner.name);
+        }
     } else throw std::invalid_argument("Missing signature result");
     header.payloadBytes = static_cast<std::uint32_t>(payload.bytes.size());
 }
 
-}
-
-int main(int argc, char** argv)
+int serveRequest(HANDLE input, HANDLE output, bool server)
 {
-    if (argc != 2 || std::string_view(argv[1]) != "--stdio") return 2;
-    const HANDLE input = GetStdHandle(STD_INPUT_HANDLE), output = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (GetFileType(input) != FILE_TYPE_PIPE || GetFileType(output) != FILE_TYPE_PIPE) return 2;
     nks::details::Request request{};
-    if (!readAll(input, &request, sizeof(request)) || request.magicValue != nks::details::magic
+    bool ended = false;
+    if (!readAll(input, &request, sizeof(request), &ended)) return ended && server ? 1 : 3;
+    if (request.magicValue != nks::details::magic
         || request.protocolVersion != nks::details::version || request.payloadBytes > nks::details::maximumRequestPayload) return 3;
     nks::details::Response response{};
     response.command = request.command; response.requestId = request.requestId;
@@ -127,9 +157,11 @@ int main(int argc, char** argv)
     try {
         bytes.resize(request.payloadBytes);
         if (!readAll(input, bytes.data(), request.payloadBytes)) return 3;
-        BYTE extra{}; DWORD received{};
-        if (ReadFile(input, &extra, 1, &received, nullptr)) { if (received) return 3; }
-        else if (const auto error = GetLastError(); error != ERROR_BROKEN_PIPE && error != ERROR_HANDLE_EOF) return 3;
+        if (!server) {
+            BYTE extra{}; DWORD received{};
+            if (ReadFile(input, &extra, 1, &received, nullptr)) { if (received) return 3; }
+            else if (const auto error = GetLastError(); error != ERROR_BROKEN_PIPE && error != ERROR_HANDLE_EOF) return 3;
+        }
         nks::ProcessDetailsRequest detail;
         if (!requestData(request, bytes, detail)) response.state = nks::details::ResultState::invalidRequest;
         else {
@@ -144,4 +176,20 @@ int main(int argc, char** argv)
         response.flags = response.command == nks::details::Command::signature ? nks::details::diskFile : 0;
     }
     return writeAll(output, &response, sizeof(response)) && writeAll(output, bytes.data(), response.payloadBytes) ? 0 : 4;
+}
+
+}
+
+int main(int argc, char** argv)
+{
+    if (argc != 2) return 2;
+    const bool server = std::string_view(argv[1]) == "--stdio-server";
+    if (!server && std::string_view(argv[1]) != "--stdio") return 2;
+    const HANDLE input = GetStdHandle(STD_INPUT_HANDLE), output = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (GetFileType(input) != FILE_TYPE_PIPE || GetFileType(output) != FILE_TYPE_PIPE) return 2;
+    do {
+        const auto status = serveRequest(input, output, server);
+        if (status) return status == 1 ? 0 : status;
+    } while (server);
+    return 0;
 }
