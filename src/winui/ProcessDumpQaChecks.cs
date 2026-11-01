@@ -89,22 +89,23 @@ internal static partial class ProcessDumpQaChecks
                 }
             }
 
-            var own = children[0];
+            foreach (var mismatchChild in children)
             foreach (bool wrongRaw in new[] { false, true }) {
-                CheckOriginal(own);
-                var target = wrongRaw ? own.Target with { Created100ns = own.Target.Created100ns + 1 }
-                    : own.Target with { Key = own.Target.Key with { Generation = own.Target.Key.Generation + 1 } };
-                string path = Path.Combine(runDirectory, wrongRaw ? "wrong-raw.dmp" : "wrong-generation.dmp");
+                CheckOriginal(mismatchChild);
+                var target = wrongRaw ? mismatchChild.Target with { Created100ns = mismatchChild.Target.Created100ns + 1 }
+                    : mismatchChild.Target with { Key = mismatchChild.Target.Key with { Generation = mismatchChild.Target.Key.Generation + 1 } };
+                string path = Path.Combine(runDirectory, mismatchChild.Architecture + (wrongRaw ? "-wrong-raw.dmp" : "-wrong-generation.dmp"));
                 bool refused = false;
                 try { _ = await client.CaptureAsync(target, ProcessDumpMode.Mini, path, cancellation).ConfigureAwait(false); }
                 catch (IOException) { refused = true; }
                 cleanup &= await WaitIdleAsync(client, log).ConfigureAwait(false);
                 Require(refused && !File.Exists(path) && client.CleanupError is null, "A mismatching full generation/raw FILETIME produced a dump or unconfirmed cleanup.");
-                CheckOriginal(own);
+                CheckOriginal(mismatchChild);
                 await CheckNoOwnedJournalsAsync(runDirectory, cancellation).ConfigureAwait(false);
-                log("dump-qa mismatch-refused;field=" + (wrongRaw ? "rawCreated" : "generation") + ";saved=False;childStillOriginal=True");
+                log("dump-qa mismatch-refused;architecture=" + mismatchChild.Architecture + ";field=" + (wrongRaw ? "rawCreated" : "generation") + ";saved=False;childStillOriginal=True");
             }
 
+            var own = children[0];
             string sentinel = Path.Combine(runDirectory, "existing-sentinel.dmp");
             byte[] content = "NKS dump QA existing file must remain unchanged\r\n"u8.ToArray();
             using (var file = new FileStream(sentinel, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {

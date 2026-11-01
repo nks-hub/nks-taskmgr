@@ -27,7 +27,12 @@ internal sealed partial class ProcessDumpSession : IDisposable
             if (architecture == ProcessArchitecture.Unknown) throw new IOException("Architektura cíle není pro dump x86/x64 podporovaná.");
             VerifyTarget(targetHandle, target); cancellation.ThrowIfCancellationRequested();
             file = new ProcessDumpFile(path, target, mode);
-            byte[] request = ProcessDumpProtocol.Request(target, mode, file);
+            // WOW64 may not expose ProcessSequenceNumber. The original x64 handle
+            // still verifies the full key and liveness before capture and publication.
+            var workerTarget = architecture == ProcessArchitecture.X86 && target.Key.Kind == GenerationKind.SequenceNumber
+                ? target with { Key = target.Key with { Kind = GenerationKind.CreationTime, Generation = target.Created100ns } }
+                : target;
+            byte[] request = ProcessDumpProtocol.Request(workerTarget, mode, file);
             file.Journal!.StartingHelper();
             var process = Start(architecture, cancellation);
             file.Journal.WorkerReady(process, request);

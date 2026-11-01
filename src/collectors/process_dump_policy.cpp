@@ -82,8 +82,10 @@ bool verifyDumpProcess(const Request& request, HANDLE process, Result& result)
     result.observedCreated100ns = (static_cast<std::uint64_t>(created.dwHighDateTime) << 32) | created.dwLowDateTime;
     const auto actual = queryProcessIdentity(process, request.key.generationKind);
     if (actual.state != SampleState::valid) {
-        result.state = actual.state == SampleState::accessDenied ? State::denied : State::unavailable;
-        result.error = actual.state == SampleState::accessDenied ? ERROR_ACCESS_DENIED : ERROR_INVALID_DATA; return false;
+        result.state = actual.state == SampleState::accessDenied ? State::denied
+            : actual.state == SampleState::unsupported ? State::unsupported : State::unavailable;
+        result.error = actual.state == SampleState::accessDenied ? ERROR_ACCESS_DENIED
+            : actual.state == SampleState::unsupported ? ERROR_NOT_SUPPORTED : ERROR_INVALID_DATA; return false;
     }
     if (actual.identity != request.key || result.observedCreated100ns != request.created100ns) {
         result.state = State::targetChanged; result.error = ERROR_RETRY; return false;
