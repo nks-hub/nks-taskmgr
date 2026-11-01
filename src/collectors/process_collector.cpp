@@ -165,10 +165,17 @@ ProcessSnapshot ProcessCollector::collect()
     result.boot = boot;
     result.bootTime = bootTime;
     result.processes = collectProcesses(result.measuredAt, result.wallTime);
+    result.measurements.processCpu = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::wholeMachine,
+        MeasurementBasis::elapsedDelta, measurementTime(result.measuredAt));
+    result.measurements.processIo = measurementMetadata(MeasurementUnit::bytesPerSecond, MeasurementNormalization::none,
+        MeasurementBasis::elapsedDelta, measurementTime(result.measuredAt));
+    result.measurements.processMemory = measurementMetadata(MeasurementUnit::bytes, MeasurementNormalization::none,
+        MeasurementBasis::gauge, measurementTime(result.measuredAt));
     const auto parsedAt = std::chrono::steady_clock::now();
     static const auto memoryFacts = memoryHardware(), cpuFacts = processorHardware(), boardFacts = boardHardware();
     result.memoryFacts = memoryFacts; result.cpuFacts = cpuFacts; result.boardFacts = boardFacts;
     result.logicalProcessors = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+    result.measurements.processCpu.normalizationDivisor = result.logicalProcessors;
     static const auto model = processorName();
     result.cpuModel = model;
     if (!result.logicalProcessors)
@@ -181,6 +188,11 @@ ProcessSnapshot ProcessCollector::collect()
     for (USHORT number = 0; number < groupCount; ++number)
         groups.push_back({number, GetActiveProcessorCount(number)});
     const auto times = queryProcessorTimes(groups, queryGroup);
+    const auto processorObserved = measurementTime(std::chrono::steady_clock::now());
+    result.measurements.systemCpu = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::wholeMachine,
+        MeasurementBasis::counterRatio, processorObserved);
+    result.measurements.logicalCpu = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::logicalProcessor,
+        MeasurementBasis::counterRatio, processorObserved);
     result.processorState = times.state;
     result.systemIdle100ns = times.idle100ns;
     result.systemKernel100ns = times.kernel100ns;
@@ -188,6 +200,8 @@ ProcessSnapshot ProcessCollector::collect()
     result.processors = times.processors;
 
     result.memory = querySystemMemory(queryProcesses);
+    result.measurements.systemMemory = measurementMetadata(MeasurementUnit::bytes, MeasurementNormalization::none,
+        MeasurementBasis::gauge, measurementTime(std::chrono::steady_clock::now()));
     if (EnumPageFilesW(pageFiles, &result.memory)) result.memory.pageFileState = SampleState::valid;
     static const auto installed = [] { ULONGLONG kilobytes = 0; GetPhysicallyInstalledSystemMemory(&kilobytes); return kilobytes * 1024; }();
     result.memory.installedBytes = installed;

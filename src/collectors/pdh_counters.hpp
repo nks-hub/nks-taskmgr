@@ -14,12 +14,14 @@ public:
     PdhCounters& operator=(const PdhCounters&) = delete;
     bool collect();
     std::vector<NamedCounter> read(std::size_t index) const;
+    MeasurementMetadata measurement(std::size_t index) const;
     bool available(std::size_t index) const { return counters.at(index) != nullptr; }
 private:
     void retryMissing();
     PDH_HQUERY query{};
     std::array<PDH_HCOUNTER, 12> counters{};
     std::chrono::steady_clock::time_point retryAt{};
+    std::int64_t observedAtNs{}, previousObservedAtNs{};
 };
 
 }

@@ -28,6 +28,7 @@ struct ResourceRecord {
     double sharedCapacity{};
     std::vector<GpuEngine> engines;
     Metric<double> temperature{0, SampleState::unavailable, MetricSource::gpuAdapter};
+    ResourceMeasurements measurements;
 };
 
 struct ResourceSnapshot {

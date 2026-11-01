@@ -79,6 +79,8 @@ std::vector<ResourceRecord> systemResources(const ProcessSnapshot& snapshot)
     cpu.description = snapshot.cpuModel.empty() ? std::to_wstring(snapshot.logicalProcessors) + L" logických procesorů" : snapshot.cpuModel;
     cpu.primary = snapshot.systemCpuPercent;
     cpu.capacity = 100;
+    cpu.measurements.primary = snapshot.measurements.systemCpu;
+    cpu.measurements.capacity = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::wholeMachine, MeasurementBasis::gauge, 0);
     ResourceRecord memory;
     memory.id = L"memory";
     memory.kind = ResourceKind::memory;
@@ -92,6 +94,8 @@ std::vector<ResourceRecord> systemResources(const ProcessSnapshot& snapshot)
         memory.primary.state = SampleState::error;
     memory.secondary = {static_cast<double>(snapshot.memory.availableBytes), memory.primary.state, MetricSource::performanceInfo};
     memory.tertiary = {static_cast<double>(snapshot.memory.committedBytes), memory.primary.state, MetricSource::performanceInfo};
+    memory.measurements.primary = memory.measurements.secondary = memory.measurements.tertiary = memory.measurements.capacity
+        = snapshot.measurements.systemMemory;
     return {std::move(cpu), std::move(memory)};
 }
 

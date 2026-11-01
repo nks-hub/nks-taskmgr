@@ -37,7 +37,23 @@ PdhCounters::~PdhCounters() { if (query) PdhCloseQuery(query); }
 bool PdhCounters::collect()
 {
     if (std::chrono::steady_clock::now() >= retryAt) retryMissing();
-    return query && PdhCollectQueryData(query) == ERROR_SUCCESS;
+    if (!query) return false;
+    const auto status = PdhCollectQueryData(query);
+    previousObservedAtNs = observedAtNs;
+    observedAtNs = measurementTime(std::chrono::steady_clock::now());
+    return status == ERROR_SUCCESS;
+}
+
+MeasurementMetadata PdhCounters::measurement(std::size_t index) const
+{
+    constexpr std::array units{MeasurementUnit::percent, MeasurementUnit::bytesPerSecond, MeasurementUnit::bytesPerSecond,
+        MeasurementUnit::percent, MeasurementUnit::bytes, MeasurementUnit::bytes, MeasurementUnit::seconds, MeasurementUnit::seconds,
+        MeasurementUnit::seconds, MeasurementUnit::count, MeasurementUnit::operationsPerSecond, MeasurementUnit::operationsPerSecond};
+    const auto unit = units.at(index);
+    const auto basis = index == 4 || index == 5 || index == 9 ? MeasurementBasis::gauge : MeasurementBasis::providerDefined;
+    const auto normalization = index == 0 ? MeasurementNormalization::deviceActiveTime : MeasurementNormalization::none;
+    // Cooked PDH values do not expose their calculation window in this API.
+    return measurementMetadata(unit, normalization, basis, observedAtNs, previousObservedAtNs);
 }
 
 std::vector<NamedCounter> PdhCounters::read(std::size_t index) const

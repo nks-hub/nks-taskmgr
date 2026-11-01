@@ -29,6 +29,21 @@ Metric<double> rate(std::uint64_t current, std::uint64_t before, double seconds)
 
 void ProcessSampler::apply(ProcessSnapshot& snapshot)
 {
+    const auto observed = measurementTime(snapshot.measuredAt);
+    const auto beforeObserved = previous ? measurementTime(previous->measuredAt) : 0;
+    auto& metadata = snapshot.measurements;
+    metadata.processCpu = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::wholeMachine,
+        MeasurementBasis::elapsedDelta, observed, beforeObserved, snapshot.logicalProcessors);
+    metadata.processIo = measurementMetadata(MeasurementUnit::bytesPerSecond, MeasurementNormalization::none,
+        MeasurementBasis::elapsedDelta, observed, beforeObserved);
+    metadata.processMemory = measurementMetadata(MeasurementUnit::bytes, MeasurementNormalization::none,
+        MeasurementBasis::gauge, observed, beforeObserved);
+    metadata.systemCpu = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::wholeMachine,
+        MeasurementBasis::counterRatio, metadata.systemCpu.observedAtNs, previous ? previous->measurements.systemCpu.observedAtNs : 0);
+    metadata.logicalCpu = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::logicalProcessor,
+        MeasurementBasis::counterRatio, metadata.logicalCpu.observedAtNs, previous ? previous->measurements.logicalCpu.observedAtNs : 0);
+    metadata.systemMemory = measurementMetadata(MeasurementUnit::bytes, MeasurementNormalization::none,
+        MeasurementBasis::gauge, metadata.systemMemory.observedAtNs, previous ? previous->measurements.systemMemory.observedAtNs : 0);
     snapshot.systemCpuPercent = {0, SampleState::first, MetricSource::processorTime};
     for (auto& processor : snapshot.processors) processor.cpuPercent = {0, SampleState::first, MetricSource::processorTime};
     for (auto& process : snapshot.processes) {
@@ -40,7 +55,8 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
         previous = snapshot;
         return;
     }
-    const auto seconds = std::chrono::duration<double>(snapshot.measuredAt - previous->measuredAt).count();
+    const auto intervalNs = std::chrono::duration_cast<std::chrono::nanoseconds>(snapshot.measuredAt - previous->measuredAt).count();
+    const auto seconds = static_cast<double>(intervalNs) / 1'000'000'000.;
     if (seconds <= 0 || seconds > 30 || snapshot.logicalProcessors == 0
         || snapshot.logicalProcessors != previous->logicalProcessors) {
         for (auto& process : snapshot.processes) {
@@ -53,6 +69,8 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
         previous = snapshot;
         return;
     }
+    setMeasurementInterval(metadata.processCpu, intervalNs, true);
+    setMeasurementInterval(metadata.processIo, intervalNs, true);
 
     std::unordered_map<ProcessIdentity, const ProcessRecord*, IdentityHash> old;
     old.reserve(previous->processes.size());

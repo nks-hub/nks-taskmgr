@@ -80,6 +80,10 @@ void ResourceCollector::inventory()
             disk.id = L"disk:" + std::wstring(detail->DevicePath);
             disk.title = L"Disk";
             disk.description = name;
+            disk.measurements.primary = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::deviceActiveTime, MeasurementBasis::providerDefined, 0);
+            disk.measurements.secondary = disk.measurements.tertiary = measurementMetadata(MeasurementUnit::bytesPerSecond,
+                MeasurementNormalization::none, MeasurementBasis::providerDefined, 0);
+            disk.measurements.capacity = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::deviceActiveTime, MeasurementBasis::gauge, 0);
             disk.facts = diskHardware(detail->DevicePath);
             const auto handle = CreateFileW(detail->DevicePath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
                 nullptr, OPEN_EXISTING, 0, nullptr);
@@ -124,6 +128,18 @@ void ResourceCollector::inventory()
                 gpu.description = description.Description;
                 gpu.capacity = static_cast<double>(description.DedicatedVideoMemory);
                 gpu.sharedCapacity = static_cast<double>(description.SharedSystemMemory);
+                const auto observedAt = measurementTime(std::chrono::steady_clock::now());
+                const auto old = std::find_if(devices.begin(), devices.end(), [&](const auto& item) { return item.id == gpu.id; });
+                gpu.measurements.capacity = gpu.measurements.sharedCapacity = measurementMetadata(MeasurementUnit::bytes,
+                    MeasurementNormalization::none, MeasurementBasis::gauge, observedAt, old == devices.end() ? 0 : old->measurements.capacity.observedAtNs);
+                gpu.measurements.primary = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::busiestGpuEngine, MeasurementBasis::providerDefined, 0);
+                gpu.measurements.engineUtilization = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::none, MeasurementBasis::providerDefined, 0);
+                gpu.measurements.secondary = gpu.measurements.tertiary = measurementMetadata(MeasurementUnit::bytes, MeasurementNormalization::none, MeasurementBasis::gauge, 0);
+                gpu.measurements.temperature = measurementMetadata(MeasurementUnit::celsius, MeasurementNormalization::none, MeasurementBasis::gauge, 0);
+                if (old != devices.end()) {
+                    gpu.temperature = old->temperature;
+                    gpu.measurements.temperature = old->measurements.temperature;
+                }
                 nextLuids.emplace(gpu.id, gpu.id);
                 nextLuidValues.emplace(gpu.id, description.AdapterLuid);
                 next.push_back(std::move(gpu));
@@ -164,12 +180,16 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
     if (GetIfTable2(&raw) != NO_ERROR) {
         for (auto item : lastNetworks) {
             item.primary.state = item.secondary.state = SampleState::unavailable;
+            setMeasurementInterval(item.measurements.primary, 0, false);
+            setMeasurementInterval(item.measurements.secondary, 0, false);
             item.status = L"Měření nedostupné";
             snapshot.devices.push_back(std::move(item));
         }
         previousNetworks.clear();
         return;
     }
+    const auto observed = std::chrono::steady_clock::now();
+    const auto observedNs = measurementTime(observed);
     std::unique_ptr<MIB_IF_TABLE2, decltype(&FreeMibTable)> table(raw, FreeMibTable);
     std::map<std::uint64_t, NetworkBefore> next;
     lastNetworks.clear();
@@ -191,12 +211,20 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
         network.primary = {0, connected ? SampleState::first : SampleState::unavailable, MetricSource::networkInterface};
         network.secondary = network.primary;
         const auto before = previousNetworks.find(row.InterfaceLuid.Value);
+        const auto beforeNs = before == previousNetworks.end() ? 0 : measurementTime(before->second.measuredAt);
+        network.measurements.primary = network.measurements.secondary = measurementMetadata(MeasurementUnit::bitsPerSecond,
+            MeasurementNormalization::none, MeasurementBasis::elapsedDelta, observedNs, beforeNs);
+        network.measurements.capacity = measurementMetadata(MeasurementUnit::bitsPerSecond, MeasurementNormalization::none,
+            MeasurementBasis::gauge, observedNs, beforeNs);
         if (connected && before != previousNetworks.end() && before->second.connected) {
-            const auto seconds = std::chrono::duration<double>(snapshot.measuredAt - before->second.measuredAt).count();
+            const auto intervalNs = std::chrono::duration_cast<std::chrono::nanoseconds>(observed - before->second.measuredAt).count();
+            const auto seconds = static_cast<double>(intervalNs) / 1'000'000'000.;
             network.primary = networkRate(row.InOctets, before->second.received, seconds);
             network.secondary = networkRate(row.OutOctets, before->second.sent, seconds);
+            setMeasurementInterval(network.measurements.primary, intervalNs, network.primary.valid());
+            setMeasurementInterval(network.measurements.secondary, intervalNs, network.secondary.valid());
         }
-        next.emplace(row.InterfaceLuid.Value, NetworkBefore{row.InOctets, row.OutOctets, connected, snapshot.measuredAt});
+        next.emplace(row.InterfaceLuid.Value, NetworkBefore{row.InOctets, row.OutOctets, connected, observed});
         lastNetworks.push_back(network);
         snapshot.devices.push_back(std::move(network));
     }
@@ -235,14 +263,21 @@ ResourceSnapshot ResourceCollector::collect()
             continue;
         }
         if (item.kind == ResourceKind::gpu) {
+            item.measurements.primary = item.measurements.engineUtilization = counters.measurement(3);
+            item.measurements.primary.normalization = MeasurementNormalization::busiestGpuEngine;
+            item.measurements.secondary = counters.measurement(4);
+            item.measurements.tertiary = counters.measurement(5);
             item.primary = busiestGpuEngine(engines, gpuLuids.at(item.id));
             item.engines = gpuEngines(engines, gpuLuids.at(item.id));
             item.secondary = gpuMemoryUsage(dedicated, item.id);
             item.tertiary = gpuMemoryUsage(shared, item.id);
             if (telemetryDue) {
                 item.temperature = gpuTemperature(gpuLuidValues.at(item.id));
+                item.measurements.temperature = measurementMetadata(MeasurementUnit::celsius, MeasurementNormalization::none,
+                    MeasurementBasis::gauge, measurementTime(std::chrono::steady_clock::now()), item.measurements.temperature.observedAtNs);
                 const auto cached = std::find_if(devices.begin(), devices.end(), [&](const auto& device) { return device.id == item.id; });
                 cached->temperature = item.temperature;
+                cached->measurements.temperature = item.measurements.temperature;
             }
             continue;
         }
@@ -263,9 +298,12 @@ ResourceSnapshot ResourceCollector::collect()
         }
         if (!instance.empty()) item.title = L"Disk " + instance;
         item.primary = find(idle, instance);
+        item.measurements.primary = counters.measurement(0);
         if (item.primary.valid()) item.primary.value = std::clamp(100 - item.primary.value, 0.0, 100.0);
         item.secondary = find(reads, instance);
         item.tertiary = find(writes, instance);
+        item.measurements.secondary = counters.measurement(1);
+        item.measurements.tertiary = counters.measurement(2);
         constexpr std::array labels{L"Průměrná odezva", L"Odezva čtení", L"Odezva zápisu", L"Fronta požadavků", L"Čtení IOPS", L"Zápis IOPS"};
         for (std::size_t i = 0; i < diskDetails.size(); ++i)
             item.facts.push_back({labels[i], diskValue(find(diskDetails[i], instance), i < 3 ? 1000 : 1, i < 3 ? L" ms" : i > 3 ? L" operací/s" : L" požadavků")});

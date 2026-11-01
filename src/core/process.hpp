@@ -1,5 +1,6 @@
 #pragma once
 #include "hardware.hpp"
+#include "measurement.hpp"
 
 #include <chrono>
 #include <cstdint>
@@ -106,6 +107,7 @@ struct ProcessSnapshot {
     Metric<double> systemCpuPercent{0, SampleState::first, MetricSource::processorTime};
     SystemMemory memory;
     std::vector<ProcessRecord> processes;
+    ProcessMeasurements measurements;
 };
 
 }
