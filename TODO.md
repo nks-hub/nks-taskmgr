@@ -159,7 +159,7 @@ P0 znamená nutný základ nebo podmínku správnosti, P1 další základní fun
 - [ ] T25 P1 · Sběr: přiřadit diskové a síťové přenosy k životnosti procesu; závisí na T07,T24; hotovo při rozlišení I/O od disku, známém přenosu a odmítnutí nejasné identity.
 - [ ] T26 P1 · Sběr/UI: zobrazit krátce žijící procesy a ukončené položky; závisí na T09,T24; hotovo při řízeném krátkém procesu a označení mezer při výpadku zdroje.
 - [x] T27 P0 · Export: uložit snímek s výběrem polí a skrytím citlivých hodnot; závisí na T07,T17; WinUI náhled, skutečné uložení i absence testovacího tajného řetězce ve výchozím exportu jsou ověřené podle F48. Přijetí ostatních UI kandidátů a celé aplikace zůstává v T54/T48.
-- [ ] T28 P1 · Jádro/UI: porovnat dva snímky; závisí na T09,T27; hotovo při rozlišení vzniku, konce a změny bez sloučení dvou generací stejného PID.
+- [ ] T28 P1 · Jádro/UI: porovnat dva snímky; závisí na T09,T27; hotovo při rozlišení vzniku, konce a změny bez sloučení dvou generací stejného PID. Rozpracované jádro prošlo ve Windows 11 VM i bez správce včetně skutečných exportů, obrácených časových údajů, vadných vstupů a limitů; načtení dvou snímků po 10 000 procesech trvalo 453 ms a porovnání 85 ms. UI a nezávislé review se dokončují, nejde o měření celé aplikace.
 - [ ] T29 P1 · Grafy/UI: propojit výběr času, špičky a detail procesu; závisí na T16,T25,T26,T28; hotovo při společném kurzoru, časovém výběru a zákazu živých akcí nad historickým záznamem.
 - [ ] T30 P0 · UI: vysvětlit chybějící práva, zdroje a schopnosti; závisí na T03,T18,T21,T22,T24; hotovo při pravdivé matici běžný uživatel/správce/ovladač a funkčním běhu bez ovladače.
 
