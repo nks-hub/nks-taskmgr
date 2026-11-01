@@ -19,18 +19,19 @@ void require(bool value, const char* text) { if (!value) throw std::runtime_erro
 struct NativeEntry {
     std::vector<std::byte> bytes;
     NativeEntry() : bytes(offsetof(SYSTEM_PROCESS_INFORMATION, Threads) + 128) { }
-    void set(const std::function<void(SYSTEM_PROCESS_INFORMATION&)>& change) {
+    void set(const std::function<void(SYSTEM_PROCESS_INFORMATION&)>& change, std::size_t offset = 0) {
         SYSTEM_PROCESS_INFORMATION raw{};
-        std::memcpy(&raw, bytes.data(), offsetof(SYSTEM_PROCESS_INFORMATION, Threads));
+        std::memcpy(&raw, bytes.data() + offset, offsetof(SYSTEM_PROCESS_INFORMATION, Threads));
         change(raw);
-        std::memcpy(bytes.data(), &raw, offsetof(SYSTEM_PROCESS_INFORMATION, Threads));
+        std::memcpy(bytes.data() + offset, &raw, offsetof(SYSTEM_PROCESS_INFORMATION, Threads));
     }
-    void named(const wchar_t* name) {
+    void named(const wchar_t* name, std::size_t textOffset = offsetof(SYSTEM_PROCESS_INFORMATION, Threads),
+        std::size_t entryOffset = 0) {
         const auto length = std::wcslen(name) * sizeof(wchar_t);
-        auto* text = bytes.data() + offsetof(SYSTEM_PROCESS_INFORMATION, Threads);
-        require(length <= bytes.size() - offsetof(SYSTEM_PROCESS_INFORMATION, Threads), "Test process name exceeds test entry");
+        auto* text = bytes.data() + textOffset;
+        require(length <= bytes.size() - textOffset, "Test process name exceeds test buffer");
         std::memcpy(text, name, length);
-        set([&](auto& raw) { raw.ImageName.Buffer = reinterpret_cast<PWSTR>(text); raw.ImageName.Length = static_cast<USHORT>(length); raw.ImageName.MaximumLength = static_cast<USHORT>(length); });
+        set([&](auto& raw) { raw.ImageName.Buffer = reinterpret_cast<PWSTR>(text); raw.ImageName.Length = static_cast<USHORT>(length); raw.ImageName.MaximumLength = static_cast<USHORT>(length); }, entryOffset);
     }
 };
 
@@ -111,6 +112,70 @@ int main() {
         {"thread count exceeds entry", [] { rejected([](auto& e) { e.set([](auto& r) { r.NumberOfThreads = 0xffffffff; }); }); }},
         {"odd UTF-16 byte length", [] { rejected([](auto& e) { e.set([](auto& r) { r.ImageName.Length = 1; r.ImageName.MaximumLength = 2; }); }); }},
         {"name pointer outside allocation", [] { rejected([](auto& e) { e.set([](auto& r) { r.ImageName.Buffer = reinterpret_cast<PWSTR>(1); r.ImageName.Length = r.ImageName.MaximumLength = 4; }); }); }},
+        {"name pointer inside fixed header", [] { rejected([](auto& e) { e.set([&](auto& r) { r.ImageName.Buffer = reinterpret_cast<PWSTR>(e.bytes.data() + offsetof(SYSTEM_PROCESS_INFORMATION, BasePriority)); r.ImageName.Length = r.ImageName.MaximumLength = 4; }); }); }},
+        {"name pointer inside thread array", [] { rejected([](auto& e) { e.named(L"thread.exe"); e.set([](auto& r) { r.NumberOfThreads = 1; }); }); }},
+        {"name begins before thread array ends", [] { rejected([](auto& e) { e.named(L"overlap.exe", offsetof(SYSTEM_PROCESS_INFORMATION, Threads) + sizeof(SYSTEM_THREAD_INFORMATION) - sizeof(wchar_t)); e.set([](auto& r) { r.NumberOfThreads = 1; }); }); }},
+        {"name belongs to following process entry", [] { rejected([](auto& e) {
+            const auto size = e.bytes.size();
+            e.bytes.resize(size * 2);
+            e.named(L"next.exe", size + offsetof(SYSTEM_PROCESS_INFORMATION, Threads));
+            e.set([size](auto& r) { r.NextEntryOffset = static_cast<ULONG>(size); });
+        }); }},
+        {"name belongs to preceding process entry", [] { rejected([](auto& e) {
+            const auto size = e.bytes.size();
+            e.bytes.resize(size * 2);
+            e.named(L"previous.exe");
+            e.named(L"previous.exe", offsetof(SYSTEM_PROCESS_INFORMATION, Threads), size);
+            e.set([size](auto& r) { r.NextEntryOffset = static_cast<ULONG>(size); });
+        }); }},
+        {"name extends into following process entry", [] { rejected([](auto& e) {
+            const auto size = e.bytes.size();
+            e.bytes.resize(size * 2);
+            e.set([&](auto& r) { r.NextEntryOffset = static_cast<ULONG>(size); r.ImageName.Buffer = reinterpret_cast<PWSTR>(e.bytes.data() + size - sizeof(wchar_t)); r.ImageName.Length = r.ImageName.MaximumLength = 4; });
+        }); }},
+        {"name extends beyond final process entry", [] { rejected([](auto& e) {
+            e.set([&](auto& r) { r.ImageName.Buffer = reinterpret_cast<PWSTR>(e.bytes.data() + e.bytes.size() - sizeof(wchar_t)); r.ImageName.Length = r.ImageName.MaximumLength = 4; });
+        }); }},
+        {"small entries cannot repeatedly copy a shared maximum-length name", [] { rejected([](auto& e) {
+            constexpr auto fixed = offsetof(SYSTEM_PROCESS_INFORMATION, Threads);
+            constexpr std::size_t count = 128;
+            e.bytes.resize(count * fixed + 65534);
+            const std::wstring name(32767, L'x');
+            e.named(name.c_str(), count * fixed);
+            for (std::size_t i = 0; i < count; ++i)
+                e.set([&](auto& r) { r.NextEntryOffset = i + 1 < count ? static_cast<ULONG>(fixed) : 0;
+                    r.ImageName.Buffer = reinterpret_cast<PWSTR>(e.bytes.data() + count * fixed);
+                    r.ImageName.Length = r.ImageName.MaximumLength = 65534; }, i * fixed);
+        }); }},
+        {"name fits exactly after threads at final entry boundary", [] {
+            NativeEntry e;
+            const auto text = offsetof(SYSTEM_PROCESS_INFORMATION, Threads) + sizeof(SYSTEM_THREAD_INFORMATION);
+            e.bytes.resize(text + 4 * sizeof(wchar_t));
+            e.named(L"last", text);
+            e.set([](auto& r) { r.NumberOfThreads = 1; });
+            require(nks::parseProcesses(e.bytes, {}).front().name == L"last", "Exact-boundary process name was rejected");
+        }},
+        {"distinct process names fit exactly before next entry", [] {
+            NativeEntry e;
+            const auto size = e.bytes.size();
+            e.bytes.resize(size * 2);
+            e.named(L"first123", size - 8 * sizeof(wchar_t));
+            e.named(L"second", size * 2 - 6 * sizeof(wchar_t), size);
+            e.set([size](auto& r) { r.NextEntryOffset = static_cast<ULONG>(size); });
+            const auto rows = nks::parseProcesses(e.bytes, {});
+            require(rows.size() == 2 && rows[0].name == L"first123" && rows[1].name == L"second", "Valid adjacent process names changed");
+        }},
+        {"empty name does not require a buffer pointer", [] {
+            NativeEntry e;
+            e.set([](auto& r) { r.ImageName.Buffer = reinterpret_cast<PWSTR>(1); r.ImageName.MaximumLength = 65535; });
+            require(nks::parseProcesses(e.bytes, {}).front().name == L"System Idle Process", "Empty process name lost its fallback");
+        }},
+        {"unused name capacity does not limit readable name bytes", [] {
+            NativeEntry e;
+            e.named(L"capacity.exe");
+            e.set([](auto& r) { r.ImageName.MaximumLength = 65535; });
+            require(nks::parseProcesses(e.bytes, {}).front().name == L"capacity.exe", "Unused name capacity changed parsing");
+        }},
         {"negative CPU counter", [] { rejected([](auto& e) { e.set([](auto& r) { r.KernelTime.QuadPart = -1; }); }); }},
         {"missing creation time is explicit", [] { NativeEntry e; const auto rows = nks::parseProcesses(e.bytes, {1, 2}); require(rows[0].identity.generationKind == nks::GenerationKind::missing, "Missing identity was treated as known"); }},
         {"maximum even UNICODE_STRING length", [] { NativeEntry e; e.bytes.resize(offsetof(SYSTEM_PROCESS_INFORMATION, Threads) + 65534); const std::wstring name(32767, L'x'); e.named(name.c_str()); const auto rows = nks::parseProcesses(e.bytes, {1, 2}); require(rows[0].name == name, "Maximum-length name was truncated"); }},

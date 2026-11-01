@@ -31,10 +31,12 @@ std::vector<ProcessRecord> parseProcesses(std::span<const std::byte> buffer, Boo
         if ((raw.ImageName.Length % sizeof(wchar_t)) != 0 || raw.ImageName.Length > raw.ImageName.MaximumLength)
             throw std::runtime_error("Invalid process name length");
         const auto nameAddress = reinterpret_cast<std::uintptr_t>(raw.ImageName.Buffer);
-        const auto bufferAddress = reinterpret_cast<std::uintptr_t>(buffer.data());
-        if (raw.ImageName.Length && (nameAddress < bufferAddress || nameAddress - bufferAddress > buffer.size()
-            || raw.ImageName.Length > buffer.size() - (nameAddress - bufferAddress)))
-            throw std::runtime_error("Process name points outside query buffer");
+        const auto entryAddress = reinterpret_cast<std::uintptr_t>(buffer.data() + offset);
+        const auto nameOffset = nameAddress - entryAddress;
+        const auto namesBegin = fixedSize + raw.NumberOfThreads * sizeof(SYSTEM_THREAD_INFORMATION);
+        if (raw.ImageName.Length && (nameAddress < entryAddress || nameOffset < namesBegin
+            || nameOffset > entrySize || raw.ImageName.Length > entrySize - nameOffset))
+            throw std::runtime_error("Process name exceeds entry name area");
 
         const auto pid = reinterpret_cast<std::uintptr_t>(raw.UniqueProcessId);
         const auto parent = reinterpret_cast<std::uintptr_t>(raw.InheritedFromUniqueProcessId);
