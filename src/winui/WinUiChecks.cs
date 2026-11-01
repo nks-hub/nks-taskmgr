@@ -108,6 +108,7 @@ public static partial class WinUiChecks
             "Unavailable measurement became a numeric value.");
         Require(Display.Metric(new Metric { State = SampleState.Valid, Value = 0 }, " %") == "0,0 %", "Measured zero was lost.");
         Require(model.TopConsumers(false).All(row => row.Key.Pid != 0 && row.Cpu.State == SampleState.Valid), "Idle time was shown as CPU consumption.");
+        ProcessRefresh();
         DeepTree();
         Graphs();
     }

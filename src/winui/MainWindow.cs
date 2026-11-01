@@ -103,7 +103,7 @@ public sealed partial class MainWindow : Window
         App.Trace("Resource source assigned");
         processList.ItemsSource = processSlots;
         processList.ItemContainerTransitions = new Microsoft.UI.Xaml.Media.Animation.TransitionCollection();
-        PreserveProcessView();
+        PreserveProcessView(model);
         App.Trace("Process source assigned");
         var resourceTemplate = Application.Current.Resources["ResourceTemplate"];
         App.Trace("Resource template: " + resourceTemplate.GetType().FullName);
@@ -453,6 +453,7 @@ public sealed partial class MainWindow : Window
         }
         if (!smokeMinimizedChecked) return;
         if (ready && !smokeModelsChecked) {
+            CheckHeldProcessRefresh();
             WinUiChecks.ModelInvariants(model); WinUiChecks.ProcessNotifications(); smokeSnapshotExport = WinUiChecks.SnapshotExportChecks(SnapshotDocument.Capture(model)); smokeModelsChecked = true;
             smokeReadyAt = ticks;
             ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);

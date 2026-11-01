@@ -23,35 +23,37 @@ public sealed partial class MainWindow
         if (scroll) processList.ScrollIntoView(slot, ScrollIntoViewAlignment.Leading);
     }
 
-    private void PreserveProcessView()
+    private Action PreserveProcessView(MonitorModel source)
     {
         ProcessRow[] selected = [];
         ProcessRow? anchor = null, focused = null, primary = null;
         double remainder = 0;
         ScrollViewer? scroll = null;
         bool bound = false;
-        model.VisibleProcesses.Replacing += () => {
+        void Replacing()
+        {
             bound = ReferenceEquals(processList.ItemsSource, processSlots);
             if (!bound) return;
             selected = processList.SelectedItems.OfType<ProcessSlot>().Select(slot => slot.Row).ToArray();
             primary = SelectedProcess;
             scroll ??= Descendant<ScrollViewer>(processList);
             int index = (int)((scroll?.VerticalOffset ?? 0) / 34);
-            anchor = index > 0 && index < model.VisibleProcesses.Count ? model.VisibleProcesses[index] : null;
+            anchor = index > 0 && index < source.VisibleProcesses.Count ? source.VisibleProcesses[index] : null;
             remainder = (scroll?.VerticalOffset ?? 0) % 34;
             var focus = FocusManager.GetFocusedElement(root.XamlRoot) as DependencyObject;
             while (focus is not null && focus is not ListViewItem) focus = VisualTreeHelper.GetParent(focus);
             focused = ((focus as ListViewItem)?.Content as ProcessSlot)?.Row;
             updatingProcessSlots = true;
-        };
-        model.VisibleProcesses.Replaced += () => {
+        }
+        void Replaced()
+        {
             if (!bound) return;
             long began = Stopwatch.GetTimestamp();
             processList.SelectedItems.Clear();
-            while (processSlots.Count > model.VisibleProcesses.Count) processSlots.RemoveAt(processSlots.Count - 1);
+            while (processSlots.Count > source.VisibleProcesses.Count) processSlots.RemoveAt(processSlots.Count - 1);
             slotsByRow.Clear();
-            for (int i = 0; i < model.VisibleProcesses.Count; ++i) {
-                var row = model.VisibleProcesses[i];
+            for (int i = 0; i < source.VisibleProcesses.Count; ++i) {
+                var row = source.VisibleProcesses[i];
                 if (i == processSlots.Count) processSlots.Add(new ProcessSlot(row)); else processSlots[i].Assign(row);
                 slotsByRow.Add(row, processSlots[i]);
             }
@@ -59,11 +61,11 @@ public sealed partial class MainWindow
             if (primary is not null && slotsByRow.TryGetValue(primary, out var main)) processList.SelectedItems.Add(main);
             foreach (var row in selected) if (row != primary && slotsByRow.TryGetValue(row, out var slot)) processList.SelectedItems.Add(slot);
             if (anchor is not null) {
-                int index = model.VisibleProcesses.IndexOf(anchor);
+                int index = source.VisibleProcesses.IndexOf(anchor);
                 if (index >= 0) scroll?.ChangeView(null, index * 34 + remainder, null, true);
             }
             long restored = Stopwatch.GetTimestamp();
-            if (focused is not null && model.VisibleProcesses.Contains(focused)) {
+            if (focused is not null && source.VisibleProcesses.Contains(focused)) {
                 processList.UpdateLayout();
                 (processList.ContainerFromItem(slotsByRow[focused]) as ListViewItem)?.Focus(FocusState.Keyboard);
             }
@@ -71,6 +73,12 @@ public sealed partial class MainWindow
             slotsRestoreMs = Stopwatch.GetElapsedTime(assigned, restored).TotalMilliseconds;
             slotsFocusMs = Stopwatch.GetElapsedTime(restored).TotalMilliseconds;
             updatingProcessSlots = false; RefreshSelection();
+        }
+        source.VisibleProcesses.Replacing += Replacing;
+        source.VisibleProcesses.Replaced += Replaced;
+        return () => {
+            source.VisibleProcesses.Replacing -= Replacing;
+            source.VisibleProcesses.Replaced -= Replaced;
         };
     }
 

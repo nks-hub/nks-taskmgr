@@ -87,7 +87,8 @@ public sealed class MonitorModel : IDisposable
         return changed;
     }
 
-    private unsafe void Apply(FrameView view)
+    // Frame buffers remain owned by the caller and are copied before this returns.
+    internal unsafe void Apply(FrameView view)
     {
         if ((view.Flags & FrameFlags.ProcessErrorChanged) != 0) ProcessError = view.ProcessError.Copy();
         if ((view.Flags & FrameFlags.ResourceErrorChanged) != 0) ResourceError = view.ResourceError.Copy();
@@ -209,8 +210,8 @@ public sealed class MonitorModel : IDisposable
     {
         if (held || (!explicitChange && !visualUpdates)) return;
         var rows = Ordered();
-        foreach (var row in rows) row.SetTree(0, false, false);
         if (Mode == ProcessMode.Tree && query.Length == 0) rows = ProcessTree.Order(rows, collapsed);
+        else foreach (var row in rows) row.SetTree(0, false, false);
         VisibleProcesses.Apply(rows);
         collapsed.RemoveWhere(key => !processes.ContainsKey(key));
     }
