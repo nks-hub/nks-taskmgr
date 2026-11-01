@@ -13,6 +13,7 @@ internal sealed record ProcessDumpResult(ProcessDumpState State, uint Error, uin
     ulong FileBytes, ulong ObservedCreated100ns, string Sha256, DumpFileIdentity FileId)
 {
     internal string? SavedPath { get; init; }
+    internal string? RecoveryWarning { get; init; }
 }
 
 internal static class ProcessDumpProtocol

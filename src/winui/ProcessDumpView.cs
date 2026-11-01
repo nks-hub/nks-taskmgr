@@ -11,6 +11,8 @@ public sealed partial class MainWindow
 {
     private readonly Button processDumpButton = Button("Dump");
     private readonly ProcessDumpClient processDumpClient = new();
+    private readonly MenuFlyoutItem captureDumpCommand = new() { Text = "Vytvořit dump procesu…" };
+    private DumpRecoveryWindow? dumpRecoveryWindow;
     private CancellationTokenSource? dumpOperation;
     private ContentDialog? dumpDialog;
     private TextBlock? dumpCleanup;
@@ -20,11 +22,21 @@ public sealed partial class MainWindow
 
     private void ConfigureProcessDump()
     {
-        processDumpButton.Height = 29; processDumpButton.IsEnabled = false;
-        AutomationProperties.SetName(processDumpButton, "Vytvořit dump paměti vybraného procesu");
+        processDumpButton.Height = 29;
+        captureDumpCommand.IsEnabled = false;
+        AutomationProperties.SetName(processDumpButton, "Dump procesu a nedokončené dumpy");
         AutomationProperties.SetAutomationId(processDumpButton, "process-dump");
-        processDumpButton.Click += async (_, _) => await CreateProcessDumpAsync();
-        Closed += (_, _) => { dumpClosed = true; dumpOperation?.Cancel(); dumpDialog?.Hide(); processDumpClient.Dispose(); };
+        var menu = new MenuFlyout(); menu.Items.Add(captureDumpCommand);
+        var recovery = new MenuFlyoutItem { Text = "Nedokončené dumpy…" }; menu.Items.Add(recovery); processDumpButton.Flyout = menu;
+        captureDumpCommand.Click += async (_, _) => await CreateProcessDumpAsync();
+        recovery.Click += (_, _) => {
+            if (dumpRecoveryWindow is null) {
+                var window = new DumpRecoveryWindow(); dumpRecoveryWindow = window;
+                window.Closed += (_, _) => { if (ReferenceEquals(dumpRecoveryWindow, window)) dumpRecoveryWindow = null; };
+            }
+            dumpRecoveryWindow.Activate();
+        };
+        Closed += (_, _) => { dumpClosed = true; dumpOperation?.Cancel(); dumpDialog?.Hide(); dumpRecoveryWindow?.Close(); processDumpClient.Dispose(); };
     }
     private bool CanDump(ProcessRow row) => model.IsCurrent(row) && !row.Stale && !row.Key.Boot.IsEmpty && row.Key.Pid is not (0 or 4)
         && row.Key.Kind is GenerationKind.CreationTime or GenerationKind.SequenceNumber && row.Key.Generation != 0 && row.Created100ns != 0;
@@ -32,7 +44,8 @@ public sealed partial class MainWindow
         && row.Key == target.Key && row.Created100ns == target.Created100ns && ReferenceEquals(SelectedProcess, row) && processList.SelectedItems.Count == 1;
     private void RefreshProcessDump()
     {
-        processDumpButton.IsEnabled = !dumping && !processDumpClient.IsBusy && processList.SelectedItems.Count == 1 && SelectedProcess is { } row && CanDump(row);
+        processDumpButton.IsEnabled = !dumpClosed && !dumping;
+        captureDumpCommand.IsEnabled = !dumping && !processDumpClient.IsBusy && processList.SelectedItems.Count == 1 && SelectedProcess is { } row && CanDump(row);
         ToolTipService.SetToolTip(processDumpButton, processDumpClient.CleanupError ?? (processDumpClient.IsBusy ? "Probíhá dump nebo úklid vlastního dočasného souboru." : "Dump x64 nebo 32bitového procesu po potvrzení obsahu a cílového souboru"));
         if (dumpCleanup is { } cleanup) cleanup.Text = processDumpClient.CleanupError ?? (processDumpClient.IsBusy ? "Čekám na dokončení pracovníka a vypořádání vlastního dočasného souboru…" : "");
         if (dumping && !DumpSelectionCurrent()) { dumpOperation?.Cancel(); if (dumpDialog is { } dialog) dialog.IsPrimaryButtonEnabled = false; }
@@ -90,7 +103,7 @@ public sealed partial class MainWindow
                 resultText.Text = DumpResultText(result);
             } catch (Exception error) when (error is IOException or TimeoutException or OperationCanceledException or ArgumentException) {
                 resultText.Text = (error is OperationCanceledException ? "Čekání bylo zrušeno." : error.Message)
-                    + "\nDump není potvrzený jako uložený. Pokud vznikl finální soubor těsně před zrušením, zůstane zachovaný. Nedokončený vlastní dočasný soubor se uklidí po konci pracovníka.";
+                    + "\nDump není potvrzený jako uložený. Finální soubor vzniklý těsně před zrušením zůstane zachovaný. Hotová nepublikovaná data zůstanou pro ruční obnovu; nedokončený vlastní soubor se po konci pracovníka uklidí.";
             } finally {
                 running = false; if (!dumpClosed) { dialog.CloseButtonText = "Zavřít"; RefreshProcessDump(); }
             }
@@ -119,7 +132,8 @@ public sealed partial class MainWindow
     {
         if (result.State == ProcessDumpState.Captured && result.SavedPath is { } path) return "Dump byl uložen.\n" + path
             + "\n" + (result.Architecture == ProcessArchitecture.X86 ? "x86 (WOW64)" : "x64") + " · " + Display.Number(result.FileBytes / 1048576d, " MiB", 1)
-            + "\nPříznaky zachycení: 0x" + result.CaptureFlags.ToString("X8") + "\nSHA-256: " + result.Sha256;
+            + "\nPříznaky zachycení: 0x" + result.CaptureFlags.ToString("X8") + "\nSHA-256: " + result.Sha256
+            + (result.RecoveryWarning is null ? "" : "\n" + result.RecoveryWarning);
         string message = result.State switch {
             ProcessDumpState.Denied => "Windows nebo pravidla ochrany cíle dump odmítly.", ProcessDumpState.Unsupported => "Architektura nebo potřebná funkce není podporovaná.",
             ProcessDumpState.TargetChanged => "Proces skončil nebo se změnila jeho identita.", ProcessDumpState.Unavailable => "Cíl není dostupný.",

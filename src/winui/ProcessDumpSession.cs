@@ -26,9 +26,11 @@ internal sealed partial class ProcessDumpSession : IDisposable
             var architecture = nativeMachine == 0x8664 ? machine switch { 0x14c => ProcessArchitecture.X86, 0 => ProcessArchitecture.X64, _ => ProcessArchitecture.Unknown } : ProcessArchitecture.Unknown;
             if (architecture == ProcessArchitecture.Unknown) throw new IOException("Architektura cíle není pro dump x86/x64 podporovaná.");
             VerifyTarget(targetHandle, target); cancellation.ThrowIfCancellationRequested();
-            file = new ProcessDumpFile(path);
+            file = new ProcessDumpFile(path, target, mode);
             byte[] request = ProcessDumpProtocol.Request(target, mode, file);
+            file.Journal!.StartingHelper();
             var process = Start(architecture, cancellation);
+            file.Journal.WorkerReady(process, request);
             await process.StandardInput.BaseStream.WriteAsync(request, cancellation).ConfigureAwait(false); process.StandardInput.Close();
             var output = process.StandardOutput.BaseStream;
             var response = new byte[ProcessDumpProtocol.ResponseBytes];
@@ -57,7 +59,10 @@ internal sealed partial class ProcessDumpSession : IDisposable
             try {
                 if (process is not null) await process.WaitForExitAsync().ConfigureAwait(false);
             } finally {
-                try { file?.Dispose(); }
+                try {
+                    file?.Dispose();
+                    if (file?.ReadyPreserved == true) CleanupError = "Hotový nepublikovaný dump zůstal v přehledu nedokončených dumpů. Obnova je dostupná po ukončení původní aplikace.";
+                }
                 catch (IOException error) { CleanupError = error.Message; throw; }
             }
         }

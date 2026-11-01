@@ -24,7 +24,7 @@ internal sealed class ProcessDumpClient : IDisposable
             var token = linked.Token;
             using var stop = token.Register(session.Cancel);
             var work = Task.Run(async () => {
-                try { return await session.CaptureAsync(target, mode, path, token).ConfigureAwait(false); }
+                try { using var io = await DumpRecoveryIo.EnterAsync(token).ConfigureAwait(false); return await session.CaptureAsync(target, mode, path, token).ConfigureAwait(false); }
                 finally {
                     Volatile.Write(ref cleanupError, session.CleanupError); session.Dispose();
                     lock (sync) if (ReferenceEquals(active, session)) active = null;
