@@ -38,9 +38,45 @@ internal static class SnapshotComparisonChecks
         var value = Node(original); mutate(value); Reject(Encoding.UTF8.GetBytes(value.ToJsonString()), message);
     }
 
+    private static void UnicodeChecks(SnapshotDocument fixture)
+    {
+        string named = Encoding.UTF8.GetString(Export(fixture, SnapshotFields.Default | SnapshotFields.Names));
+        byte[] invalidValue = Encoding.UTF8.GetBytes(named);
+        int nameOffset = invalidValue.AsSpan().IndexOf("example.exe"u8);
+        Require(nameOffset >= 0, "Unicode test nemá exportovaný název.");
+        invalidValue[nameOffset] = 0xff;
+        var cases = new (string Name, byte[] Json)[] {
+            ("high surrogate property", Encoding.UTF8.GetBytes("{\"\\uD800\":0}")),
+            ("low surrogate property", Encoding.UTF8.GetBytes("{\"\\uDC00\":0}")),
+            ("high surrogate name value", Encoding.UTF8.GetBytes(named.Replace("\"example.exe\"", "\"\\uD800\"", StringComparison.Ordinal))),
+            ("low surrogate name value", Encoding.UTF8.GetBytes(named.Replace("\"example.exe\"", "\"\\uDC00\"", StringComparison.Ordinal))),
+            ("high surrogate unknown value", Encoding.UTF8.GetBytes(named[..^1] + ",\"extra\":\"\\uD800\"}")),
+            ("low surrogate unknown value", Encoding.UTF8.GetBytes(named[..^1] + ",\"extra\":\"\\uDC00\"}")),
+            ("pooled high surrogate name value", Encoding.UTF8.GetBytes(named.Replace("\"example.exe\"", "\"" + new string('x', 256) + "\\uD800\"", StringComparison.Ordinal))),
+            ("invalid UTF8 property", [0x7b, 0x22, 0xff, 0x22, 0x3a, 0x30, 0x7d]),
+            ("invalid UTF8 name value", invalidValue),
+        };
+        foreach (var test in cases) {
+            Reject(test.Json, "Vadný Unicode byl přijat: " + test.Name);
+            Console.WriteLine("PASS Unicode " + test.Name);
+        }
+        string paired = named.Replace("\"example.exe\"", "\"\\uD83D\\uDE00\"", StringComparison.Ordinal);
+        paired = paired[..^1] + ",\"\\uD83D\\uDE00\":0}";
+        Require(SnapshotComparison.Read(Encoding.UTF8.GetBytes(paired)).Processes[0].Name == "\U0001f600",
+            "Platný surrogate pair se nenačetl beze změny.");
+        Console.WriteLine("PASS Unicode valid surrogate pair property and name value");
+        Require(SnapshotComparison.Read(Encoding.UTF8.GetBytes(paired.Replace("\\uD83D\\uDE00", "\U0001f600", StringComparison.Ordinal)))
+            .Processes[0].Name == "\U0001f600", "Platný čtyřbajtový UTF8 znak se nenačetl beze změny.");
+        string longName = new string('x', 256) + "\U0001f600";
+        Require(SnapshotComparison.Read(Export(fixture with { Processes = [fixture.Processes[0] with { Name = longName }] },
+            SnapshotFields.Default | SnapshotFields.Names)).Processes[0].Name == longName, "Dlouhý platný Unicode název se změnil.");
+        Console.WriteLine("PASS Unicode valid raw UTF8 and long name");
+    }
+
     public static async Task RunAsync()
     {
         var fixture = Fixture();
+        UnicodeChecks(fixture);
         byte[] exported = Export(fixture);
         var before = SnapshotComparison.Read(exported);
         Require(before.Processes.Count == 1 && before.Processes[0].Name is null && before.Processes[0].IdentityVerified,
@@ -182,6 +218,9 @@ internal static class SnapshotComparisonChecks
             string file = Path.Combine(directory, "export.json");
             await File.WriteAllBytesAsync(file, exported);
             Require((await SnapshotComparison.ReadAsync(file)).Processes[0].Key == before.Processes[0].Key, "Načtení skutečného souboru změnilo identitu.");
+            await File.WriteAllTextAsync(file, "{\"\\uD800\":0}");
+            try { await SnapshotComparison.ReadAsync(file); throw new InvalidOperationException("Asynchronní čtení přijalo vadný Unicode."); }
+            catch (InvalidDataException) { }
             try { await SnapshotComparison.ReadAsync(file, cancellation.Token); throw new InvalidOperationException("Čtení souboru ignorovalo zrušení."); } catch (OperationCanceledException) { }
             using (var large = new FileStream(file, FileMode.Create, FileAccess.Write)) large.SetLength(SnapshotComparison.MaximumFileBytes + 1L);
             try { await SnapshotComparison.ReadAsync(file); throw new InvalidOperationException("Nadměrný soubor byl přijat."); } catch (InvalidDataException) { }

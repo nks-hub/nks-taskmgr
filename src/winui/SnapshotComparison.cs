@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Frozen;
 using System.Globalization;
 using System.Text.Json;
@@ -296,8 +297,10 @@ internal static class SnapshotComparison
             cancel.ThrowIfCancellationRequested();
             if (++tokens > MaximumTokens) throw Invalid("Snímek obsahuje příliš mnoho položek JSON.");
             int depth = reader.CurrentDepth;
-            if (reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName && reader.ValueSpan.Length > MaximumStringBytes)
-                throw Invalid("Příliš dlouhý text ve snímku.");
+            if (reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName) {
+                if (reader.ValueSpan.Length > MaximumStringBytes) throw Invalid("Příliš dlouhý text ve snímku.");
+                ValidateText(ref reader);
+            }
             if (reader.TokenType == JsonTokenType.PropertyName) {
                 if (++properties[depth - 1] > 64) throw Invalid("Příliš mnoho vlastností objektu.");
                 nextLimit = reader.ValueTextEquals("processes"u8) ? MaximumProcesses : reader.ValueTextEquals("devices"u8) ? MaximumDevices
@@ -311,6 +314,17 @@ internal static class SnapshotComparison
             if (reader.TokenType == JsonTokenType.EndArray) arrays[depth] = false;
             if (reader.TokenType == JsonTokenType.StartObject) properties[depth] = 0;
         }
+    }
+
+    private static void ValidateText(ref Utf8JsonReader reader)
+    {
+        char[]? rented = null;
+        Span<char> decoded = reader.ValueSpan.Length <= 256 ? stackalloc char[256]
+            : rented = ArrayPool<char>.Shared.Rent(reader.ValueSpan.Length);
+        // The token kind is checked by the caller, so this exception identifies invalid Unicode.
+        try { reader.CopyString(decoded); }
+        catch (InvalidOperationException error) { throw new InvalidDataException("Snímek obsahuje neplatný Unicode.", error); }
+        finally { if (rented is not null) ArrayPool<char>.Shared.Return(rented, clearArray: true); }
     }
 
     private static void ValidateProperties(JsonElement value, CancellationToken cancel)
