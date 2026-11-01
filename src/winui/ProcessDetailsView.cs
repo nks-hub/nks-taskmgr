@@ -46,7 +46,7 @@ public sealed partial class MainWindow
     }
 }
 
-internal sealed class ProcessDetailsView : Window
+internal sealed partial class ProcessDetailsView : Window
 {
     private static readonly CultureInfo Czech = CultureInfo.GetCultureInfo("cs-CZ");
     private readonly ProcessDetailsClient client;
@@ -74,14 +74,16 @@ internal sealed class ProcessDetailsView : Window
         Title = "Podrobnosti procesu · NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.Resize(new SizeInt32(1100, 780));
         Appearance.Attach(this, layout);
-        foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
+        foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
             layout.RowDefinitions.Add(new RowDefinition { Height = height });
         title.Text = Flat(name) + " · PID " + key.Pid.ToString(Czech); title.TextWrapping = TextWrapping.Wrap;
+        title.MaxLines = 2; title.TextTrimming = TextTrimming.CharacterEllipsis;
         title.Foreground = Display.Brush(0xe9eef0); title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
         layout.Children.Add(title);
         var commands = new Grid { ColumnSpacing = 8 };
         commands.ColumnDefinitions.Add(new ColumnDefinition()); commands.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var modes = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 }; modes.Children.Add(threads); modes.Children.Add(modules);
+        ConfigureObjects(modes);
         var control = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 }; control.Children.Add(refresh); control.Children.Add(cancel);
         commands.Children.Add(modes); commands.Children.Add(control); Grid.SetColumn(control, 1); Grid.SetRow(commands, 1); layout.Children.Add(commands);
         state.TextWrapping = TextWrapping.Wrap; Grid.SetRow(state, 2); layout.Children.Add(state);
@@ -95,7 +97,7 @@ internal sealed class ProcessDetailsView : Window
         inspector.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); inspector.RowDefinitions.Add(new RowDefinition()); inspector.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         inspector.Children.Add(verify); inspector.Children.Add(detail); Grid.SetRow(detail, 1);
         signatureNote.TextWrapping = TextWrapping.Wrap; inspector.Children.Add(signatureNote); Grid.SetRow(signatureNote, 2); body.Children.Add(inspector);
-        Grid.SetRow(body, 3); layout.Children.Add(body); Grid.SetRow(count, 4); layout.Children.Add(count);
+        Grid.SetRow(body, 4); layout.Children.Add(body); Grid.SetRow(count, 5); layout.Children.Add(count);
         Identify(list, "process-details-list", "Vlákna nebo moduly vybraného procesu");
         Identify(detail, "process-details-selection", "Údaje vybraného vlákna nebo modulu pouze pro čtení");
         Identify(state, "process-details-status", "Stav načítání podrobností");
@@ -108,10 +110,10 @@ internal sealed class ProcessDetailsView : Window
         refresh.Click += async (_, _) => await ReadAsync(mode);
         cancel.Click += (_, _) => operation?.Cancel();
         verify.Click += async (_, _) => { if (SelectedModule is { } module) await ReadAsync(ProcessDetailsCommand.Signature, module); };
-        list.SelectionChanged += (_, _) => { signature = null; signatureTime = null; UpdateDetail(); UpdateAvailability(); };
+        list.SelectionChanged += (_, _) => SelectionUpdated();
         layout.SizeChanged += (_, _) => Resize();
         Activated += async (_, _) => { if (!activated) { activated = true; await ReadAsync(ProcessDetailsCommand.Threads); } };
-        Closed += (_, _) => { closed = true; operation?.Cancel(); };
+        Closed += (_, _) => { closed = true; operation?.Cancel(); filterOperation?.Cancel(); searchTimer.Stop(); };
         Content = layout; UpdateAvailability(); Resize();
     }
 
@@ -120,8 +122,7 @@ internal sealed class ProcessDetailsView : Window
     private static TextBlock Label(string value, double size) => new() { Text = value, FontFamily = UiTypography.Font, FontSize = size, Foreground = Display.Brush(0x95a4ad) };
     private static void Identify(DependencyObject value, string id, string name) { AutomationProperties.SetAutomationId(value, id); AutomationProperties.SetName(value, name); }
     private static string Flat(string value) => value.Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ');
-    private ProcessModuleInfo? SelectedModule => mode == ProcessDetailsCommand.Modules && list.SelectedIndex >= 0 && moduleSnapshot is not null
-        && list.SelectedIndex < moduleSnapshot.Modules.Length ? moduleSnapshot.Modules[list.SelectedIndex] : null;
+    private ProcessModuleInfo? SelectedModule => mode == ProcessDetailsCommand.Modules ? list.SelectedItem as ProcessModuleInfo : null;
 
     private void Resize()
     {
@@ -137,30 +138,44 @@ internal sealed class ProcessDetailsView : Window
     {
         if (closed) return;
         bool current = !targetChanged && isCurrent(), busy = operation is not null;
-        threads.IsEnabled = modules.IsEnabled = refresh.IsEnabled = current && !busy;
+        threads.IsEnabled = !busy && (current || threadSnapshot is not null);
+        modules.IsEnabled = !busy && (current || moduleSnapshot is not null);
+        memory.IsEnabled = !busy && (current || memorySnapshot is not null);
+        handles.IsEnabled = !busy && (current || handlesSnapshot is not null);
+        refresh.IsEnabled = current && !busy;
         cancel.IsEnabled = busy;
         verify.Visibility = signatureNote.Visibility = mode == ProcessDetailsCommand.Modules ? Visibility.Visible : Visibility.Collapsed;
         verify.IsEnabled = current && !busy && SelectedModule is { Path.Length: > 0 };
+        observeObject.IsEnabled = current && !busy && SelectedHandle is not null;
+        observeObject.Visibility = mode == ProcessDetailsCommand.Handles ? Visibility.Visible : Visibility.Collapsed;
         if (!current) { operation?.Cancel(); state.Text = "Proces skončil nebo jeho identita už neodpovídá. Zobrazené údaje jsou poslední načtený snímek."; }
         threads.Background = Display.Brush(mode == ProcessDetailsCommand.Threads ? 0x28343bu : 0x1d252au);
         modules.Background = Display.Brush(mode == ProcessDetailsCommand.Modules ? 0x28343bu : 0x1d252au);
+        memory.Background = Display.Brush(mode == ProcessDetailsCommand.Memory ? 0x28343bu : 0x1d252au);
+        handles.Background = Display.Brush(mode == ProcessDetailsCommand.Handles ? 0x28343bu : 0x1d252au);
     }
 
     private async Task SelectModeAsync(ProcessDetailsCommand selected)
     {
         if (operation is not null || closed) return;
         mode = selected; signature = null; signatureTime = null; ShowRows(); UpdateAvailability();
-        if ((selected == ProcessDetailsCommand.Threads ? threadSnapshot : moduleSnapshot) is null) await ReadAsync(selected);
+        if (SnapshotFor(selected) is null) await ReadAsync(selected);
     }
 
-    private async Task ReadAsync(ProcessDetailsCommand command, ProcessModuleInfo? module = null)
+    private async Task ReadAsync(ProcessDetailsCommand command, ProcessModuleInfo? module = null, ProcessHandleInfo? handle = null)
     {
         if (closed || operation is not null) return;
         if (targetChanged || !isCurrent()) { UpdateAvailability(); return; }
         using var current = new CancellationTokenSource(); operation = current; UpdateAvailability();
-        state.Text = command == ProcessDetailsCommand.Signature ? "Ověřuji soubor vybraného modulu na disku…" : "Načítám " + (command == ProcessDetailsCommand.Threads ? "vlákna…" : "moduly…");
+        state.Text = command switch { ProcessDetailsCommand.Signature => "Ověřuji soubor vybraného modulu na disku…",
+            ProcessDetailsCommand.HandleInfo => "Zjišťuji aktuální typ a název vybraného objektu…", _ => "Načítám " + ModeName(command) + "…" };
         try {
-            var snapshot = await client.ReadAsync(command, Key, module, current.Token);
+            var snapshot = await (command switch {
+                ProcessDetailsCommand.Memory => client.ReadMemoryAsync(Key, current.Token),
+                ProcessDetailsCommand.Handles => client.ReadHandlesAsync(Key, current.Token),
+                ProcessDetailsCommand.HandleInfo when handle is not null => client.ReadHandleInfoAsync(Key, handle.Value, current.Token),
+                _ => client.ReadAsync(command, Key, module, current.Token)
+            });
             if (closed) return;
             current.Token.ThrowIfCancellationRequested();
             if (!isCurrent() || snapshot.State == ProcessDetailsState.TargetChanged) {
@@ -168,8 +183,16 @@ internal sealed class ProcessDetailsView : Window
             }
             if (snapshot.State != ProcessDetailsState.Ok) { state.Text = ErrorText(snapshot); return; }
             if (command == ProcessDetailsCommand.Signature) { signature = snapshot.Signature; signatureTime = snapshot.ReceivedAt; UpdateDetail(); }
+            else if (command == ProcessDetailsCommand.HandleInfo) {
+                if (ReferenceEquals(handle, SelectedHandle)) { observation = snapshot.HandleInfo; observationHandle = handle; observationTime = snapshot.ReceivedAt; UpdateDetail(); }
+            }
             else {
-                if (command == ProcessDetailsCommand.Threads) threadSnapshot = snapshot; else { moduleSnapshot = snapshot; signature = null; signatureTime = null; }
+                switch (command) {
+                    case ProcessDetailsCommand.Threads: threadSnapshot = snapshot; break;
+                    case ProcessDetailsCommand.Modules: moduleSnapshot = snapshot; signature = null; signatureTime = null; break;
+                    case ProcessDetailsCommand.Memory: memorySnapshot = snapshot; break;
+                    case ProcessDetailsCommand.Handles: handlesSnapshot = snapshot; break;
+                }
                 mode = command; ShowRows();
             }
             state.Text = Architecture(snapshot.Architecture) + " · načteno " + snapshot.ReceivedAt.LocalDateTime.ToString("HH:mm:ss", Czech)
@@ -182,25 +205,17 @@ internal sealed class ProcessDetailsView : Window
 
     private void ShowRows()
     {
-        var snapshot = mode == ProcessDetailsCommand.Threads ? threadSnapshot : moduleSnapshot;
-        list.ItemsSource = mode == ProcessDetailsCommand.Threads
-            ? threadSnapshot?.Threads : moduleSnapshot?.Modules;
-        if (snapshot is null) {
-            count.Text = "Seznam " + (mode == ProcessDetailsCommand.Threads ? "vláken" : "modulů") + " zatím není načtený.";
-            list.SelectedIndex = -1; UpdateDetail(); return;
-        }
-        int rows = mode == ProcessDetailsCommand.Threads ? threadSnapshot?.Threads.Length ?? 0 : moduleSnapshot?.Modules.Length ?? 0;
-        count.Text = rows.ToString(Czech) + (mode == ProcessDetailsCommand.Threads ? " vláken" : " modulů")
-            + " · snímek z " + snapshot.ReceivedAt.LocalDateTime.ToString("HH:mm:ss", Czech) + " · Obnovit načte nový";
-        list.SelectedIndex = rows > 0 ? 0 : -1; UpdateDetail();
+        ClearObservation(); applyingRows = true;
+        try { list.ItemsSource = null; } finally { applyingRows = false; }
+        ConfigureFilters(); QueueFilter(true); UpdateDetail();
     }
 
     private void UpdateDetail()
     {
-        if (list.SelectedIndex < 0) { detail.Text = "Vyberte řádek ze seznamu."; return; }
+        if (UpdateObjectDetail()) return;
+        if (list.SelectedItem is null) { detail.Text = "Vyberte řádek ze seznamu."; return; }
         var text = new StringBuilder();
-        if (mode == ProcessDetailsCommand.Threads && threadSnapshot is not null && list.SelectedIndex < threadSnapshot.Threads.Length) {
-            var thread = threadSnapshot.Threads[list.SelectedIndex];
+        if (list.SelectedItem is ProcessThreadInfo thread) {
             text.Append("TID ").Append(thread.Id.ToString(Czech)).AppendLine().AppendLine();
             text.Append("Základní priorita: ").Append(thread.BasePriority.ToString(Czech)).AppendLine();
             text.Append("Relativní priorita: ").Append(thread.PriorityState == SampleState.Valid ? thread.RelativePriority.ToString(Czech) : MetricState(thread.PriorityState, thread.PriorityError)).AppendLine();
