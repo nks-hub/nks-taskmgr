@@ -35,10 +35,16 @@ internal sealed class ProcessActionsClient : IDisposable
             _ = work.ContinueWith(task => _ = task.Exception, CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             var result = await work.WaitAsync(linked.Token).ConfigureAwait(false);
-            CapabilityReports.ObserveActions(result);
+            if (request.Command != ProcessActionCommand.TerminateTree) CapabilityReports.ObserveActions(result);
             return result;
         } catch (OperationCanceledException error) when (deadline.IsCancellationRequested && !cancellation.IsCancellationRequested && !lifetime.IsCancellationRequested) {
+            if (request.Command == ProcessActionCommand.TerminateTree)
+                throw new ProcessTreeActionsUnknownException("Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.", session.TreePlan, error);
             throw new TimeoutException("Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.", error);
+        } catch (OperationCanceledException error) when (request.Command == ProcessActionCommand.TerminateTree) {
+            throw new ProcessTreeActionsUnknownException("Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést.", session.TreePlan, error);
+        } catch (Exception error) when (request.Command == ProcessActionCommand.TerminateTree && error is IOException or InvalidDataException) {
+            throw new ProcessTreeActionsUnknownException("Chybí úplný ověřený výsledek stromu. Akce se mohly provést. " + error.Message, session.TreePlan, error);
         } finally {
             if (linked.IsCancellationRequested) session.Cancel();
             if (!started) { session.Dispose(); Interlocked.Exchange(ref pending, 0); }

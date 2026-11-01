@@ -12,6 +12,8 @@ internal sealed partial class ProcessActionsSession : IDisposable
     private SafeFileHandle? job;
     private Process? child;
     private bool canceled;
+    private ProcessTreeActionsPlan? treePlan;
+    internal ProcessTreeActionsPlan? TreePlan => Volatile.Read(ref treePlan);
 
     internal async Task<ProcessActionsBatch> ExecuteAsync(byte[] request, CancellationToken cancellation)
     {
@@ -27,16 +29,28 @@ internal sealed partial class ProcessActionsSession : IDisposable
             if (accepted) await output.ReadExactlyAsync(header, cancellation).ConfigureAwait(false);
             else if (ProcessActionsProtocol.Frame(header) == ProcessActionFrame.Results)
                 throw new InvalidDataException("Pracovník neověřil přijetí požadavku před výsledkem.");
+            bool tree = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(6)) == (ushort)ProcessActionCommand.TerminateTree;
+            int plans = 0;
+            while (tree && ProcessActionsProtocol.Frame(header) == ProcessActionFrame.TreePlan) {
+                if (!accepted || ++plans > 3) throw new InvalidDataException("Neplatná posloupnost plánů stromu.");
+                var bytes = new byte[ProcessActionsProtocol.PayloadLength(header, request)];
+                await output.ReadExactlyAsync(bytes, cancellation).ConfigureAwait(false);
+                var plan = ProcessTreeActionsProtocol.Plan(bytes, request, checked((int)System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(12))), TreePlan, false);
+                Volatile.Write(ref treePlan, plan);
+                await output.ReadExactlyAsync(header, cancellation).ConfigureAwait(false);
+            }
             var payload = new byte[ProcessActionsProtocol.PayloadLength(header, request)];
             await output.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
-            var result = ProcessActionsProtocol.Response(header, payload, request) with { Accepted = accepted };
+            var result = tree && ProcessActionsProtocol.Frame(header) == ProcessActionFrame.TreeResults
+                ? ProcessTreeActionsProtocol.Results(header, payload, request, TreePlan ?? throw new InvalidDataException("Chybí doložený plán stromu."))
+                : ProcessActionsProtocol.Response(header, payload, request) with { Accepted = accepted, Tree = TreePlan };
             if (accepted && result.Frame == ProcessActionFrame.Rejected)
                 throw new InvalidDataException("Pracovník odmítl požadavek až po potvrzení přijetí.");
             var end = new byte[1];
             if (await output.ReadAsync(end, cancellation).ConfigureAwait(false) != 0)
                 throw new InvalidDataException("Pracovník vrátil data za koncem výsledku.");
             await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
-            if (process.ExitCode != 0 && result.Frame == ProcessActionFrame.Results)
+            if (process.ExitCode != 0 && result.Frame is ProcessActionFrame.Results or ProcessActionFrame.TreeResults)
                 throw new IOException("Pracovník skončil bez potvrzeného výsledku akce.");
             return result;
         } catch (Exception error) when (cancellation.IsCancellationRequested && error is IOException or InvalidDataException or ObjectDisposedException or Win32Exception) {

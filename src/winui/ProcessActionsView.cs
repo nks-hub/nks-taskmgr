@@ -13,7 +13,7 @@ public sealed partial class MainWindow
     private ProcessRow[] processActionTargets = [];
     private ContentDialog? processActionDialog;
     private Func<bool>? processActionInputReady;
-    private bool processActionBusy, processActionsClosed;
+    private bool processActionBusy, processActionsClosed, processActionDispatched;
 
     private void ConfigureProcessActions()
     {
@@ -21,7 +21,7 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(processActionsButton, "Akce s vybranými živými procesy");
         AutomationProperties.SetAutomationId(processActionsButton, "process-actions");
         var menu = new MenuFlyout();
-        foreach (var command in new[] { ProcessActionCommand.CloseWindows, ProcessActionCommand.Terminate,
+        foreach (var command in new[] { ProcessActionCommand.CloseWindows, ProcessActionCommand.Terminate, ProcessActionCommand.TerminateTree,
             ProcessActionCommand.Suspend, ProcessActionCommand.Resume, ProcessActionCommand.Priority, ProcessActionCommand.Affinity }) {
             var item = new MenuFlyoutItem { Text = ActionTitle(command) + "…" };
             item.Click += async (_, _) => await StartProcessActionAsync(command); menu.Items.Add(item);
@@ -50,7 +50,7 @@ public sealed partial class MainWindow
             : "Zavření oken, ukončení, pozastavení, priorita a afinita živých procesů stejného uživatele a relace");
         if (!processActionBusy) return;
         bool current = ActionSelectionUnchanged(processActionTargets);
-        if (!current) processActionOperation?.Cancel();
+        if (!current && !processActionDispatched) processActionOperation?.Cancel();
         if (processActionInputReady is { } ready && processActionDialog is { } dialog)
             dialog.IsPrimaryButtonEnabled = current && ready();
     }
@@ -63,6 +63,9 @@ public sealed partial class MainWindow
         processActionBusy = true; processActionTargets = rows;
         using var operation = new CancellationTokenSource(); processActionOperation = operation; RefreshProcessActions();
         try {
+            if (command == ProcessActionCommand.TerminateTree && rows.Length != 1) {
+                await ActionMessageAsync("Ukončit strom", rows, "Vyberte jeden živý kořen. Potomky znovu zjistí a ověří pracovník."); return;
+            }
             if (command == ProcessActionCommand.Affinity && rows.Length != 1) {
                 await ActionMessageAsync("Afinita procesorů", rows, "Vyberte jeden proces. Afinita se nastavuje v jediné ověřené skupině procesorů."); return;
             }
@@ -86,7 +89,7 @@ public sealed partial class MainWindow
                 error is OperationCanceledException ? "Výběr už není aktuální nebo byl dotaz zrušen. Změna nebyla odeslána." : error.Message + " Změna nebyla odeslána.");
         } finally {
             processActionOperation = null; processActionTargets = []; processActionDialog = null; processActionInputReady = null;
-            processActionBusy = false; if (!processActionsClosed) RefreshProcessActions();
+            processActionBusy = processActionDispatched = false; if (!processActionsClosed) RefreshProcessActions();
         }
     }
 
@@ -156,8 +159,11 @@ public sealed partial class MainWindow
         bool running = true; Task? work = null;
         async Task Run() {
             try {
+                processActionDispatched = request.Command != ProcessActionCommand.Query;
                 var result = await processActionsClient.ExecuteAsync(request, operation.Token);
                 content.Children.Clear(); AddActionResults(content, rows, result);
+            } catch (ProcessTreeActionsUnknownException error) {
+                content.Children.Clear(); AddUnknownTreeResults(content, rows[0], error.Plan, error.Message);
             } catch (Exception error) when (error is IOException or InvalidDataException or TimeoutException or OperationCanceledException) {
                 content.Children.Clear();
                 string reason = error is OperationCanceledException ? "Čekání bylo zrušeno nebo se změnil vybraný proces." : error.Message;
@@ -205,12 +211,14 @@ public sealed partial class MainWindow
     };
     private static string ActionTitle(ProcessActionCommand command) => command switch {
         ProcessActionCommand.CloseWindows => "Požádat o zavření oken", ProcessActionCommand.Terminate => "Ukončit proces",
+        ProcessActionCommand.TerminateTree => "Ukončit strom",
         ProcessActionCommand.Suspend => "Pozastavit proces", ProcessActionCommand.Resume => "Obnovit běh procesu",
         ProcessActionCommand.Priority => "Změnit prioritu", ProcessActionCommand.Affinity => "Afinita procesorů", _ => "Nastavení procesu"
     };
     private static string ActionExplanation(ProcessActionCommand command) => command switch {
         ProcessActionCommand.CloseWindows => "Pošle požadavek zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.",
         ProcessActionCommand.Terminate => "Ukončí vybrané procesy bez nabídky uložení. Neuložená data mohou být ztracena.",
+        ProcessActionCommand.TerminateTree => "Pracovník znovu zjistí potomky tohoto kořene a ukončí ověřené děti před rodičem. Neuložená data mohou být ztracena. Nejvýše 256 cílů, tři průchody a pět sekund. Průchod není atomický; nově vzniklé nebo neověřitelné potomky nemusí zahrnout. Zrušení čekání provedené zásahy nevrací.",
         ProcessActionCommand.Suspend => "Požádá systém o pozastavení procesu. Jeho okna přestanou reagovat a prostředky zůstanou obsazené.",
         ProcessActionCommand.Resume => "Požádá systém o obnovení procesu. Výsledek nezaručuje běh všech vláken pozastavených jinými nástroji.",
         ProcessActionCommand.Priority => "Nastaví prioritu plánování času CPU u vybraných procesů. Priorita reálného času není v nabídce.",
@@ -220,6 +228,7 @@ public sealed partial class MainWindow
 
     private static void AddActionResults(StackPanel content, ProcessRow[] rows, ProcessActionsBatch result)
     {
+        if (result.Command == ProcessActionCommand.TerminateTree) { AddTreeActionResults(content, rows[0], result); return; }
         content.Children.Add(ActionText("Odpověď " + result.ReceivedAt.LocalDateTime.ToString("HH:mm:ss") + " · " + ActionTitle(result.Command)));
         foreach (var row in rows) {
             string text = ActionTargetName(row) + "\n";
@@ -232,11 +241,12 @@ public sealed partial class MainWindow
     private static string ActionResultText(ProcessActionResult result, ProcessActionCommand command)
     {
         string text = result.Outcome switch {
-            ProcessActionOutcome.Inspected => "Nastavení bylo načteno.", ProcessActionOutcome.Applied => command == ProcessActionCommand.Terminate ? "Ukončení bylo potvrzeno." : "Změna byla ověřena zpětným čtením.",
+            ProcessActionOutcome.Inspected => "Nastavení bylo načteno.", ProcessActionOutcome.Applied => command is ProcessActionCommand.Terminate or ProcessActionCommand.TerminateTree ? "Konec tohoto procesu byl potvrzen." : "Změna byla ověřena zpětným čtením.",
             ProcessActionOutcome.CloseRequested => "Požadavek zavření byl odeslán; zavření není potvrzené.", ProcessActionOutcome.TerminationRequested => "Požadavek ukončení byl přijat; konec procesu zatím není potvrzený.",
             ProcessActionOutcome.NativeRequestAccepted => "Systém přijal požadavek. Stav všech vláken není potvrzený.", ProcessActionOutcome.Refused => "Akce byla odmítnuta.",
             ProcessActionOutcome.IdentityChanged => result.Flags.HasFlag(ProcessActionFlags.MayHaveApplied) ? "Identita procesu se změnila; výsledek není ověřený." : "Identita procesu se změnila. Akce nebyla provedena.",
             ProcessActionOutcome.AlreadyExited => "Proces už skončil.",
+            ProcessActionOutcome.NotPerformed => "Zásah nebyl proveden.",
             ProcessActionOutcome.Unsupported => "Operace není pro tento cíl podporovaná.", ProcessActionOutcome.Unverified => "Výsledek nebyl ověřen. Akce se mohla provést.", _ => "Akce skončila chybou."
         };
         if (result.Reason != ProcessActionReason.None) text += " " + ActionReasonText(result.Reason);
@@ -256,6 +266,8 @@ public sealed partial class MainWindow
         ProcessActionReason.MultipleGroups => "Více skupin procesorů není podporováno.", ProcessActionReason.PartialClose => "Některá okna požadavek nepřijala.",
         ProcessActionReason.ReadbackMismatch => "Zpětné čtení nepotvrdilo požadovanou hodnotu.", ProcessActionReason.ProtectionUnverifiable => "Ochranu cíle nelze ověřit.",
         ProcessActionReason.ParentUnavailable => "Identitu řídicí aplikace nelze ověřit.", ProcessActionReason.AlreadySame => "Hodnota už byla nastavená.",
-        ProcessActionReason.WindowLimit => "Byl překročen omezený počet oken.", ProcessActionReason.NativeUnavailable => "Potřebná systémová funkce není dostupná.", _ => ""
+        ProcessActionReason.WindowLimit => "Byl překročen omezený počet oken.", ProcessActionReason.NativeUnavailable => "Potřebná systémová funkce není dostupná.",
+        ProcessActionReason.TreeBoundary => "Vazbu na potvrzený strom nelze ověřit.", ProcessActionReason.TreeBudget => "Pro tento cíl nezbyl čas v omezeném průchodu.",
+        ProcessActionReason.TreeCensus => "Nový inventář stromu není dostupný.", ProcessActionReason.TreeUncertain => "Zásah nebyl bezpečně ověřitelný.", _ => ""
     };
 }

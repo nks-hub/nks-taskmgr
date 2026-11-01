@@ -4,16 +4,17 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-internal enum ProcessActionCommand : ushort { Query, CloseWindows, Terminate, Suspend, Resume, Priority, Affinity }
-internal enum ProcessActionFrame : uint { Accepted, Results, Rejected, Failed }
+internal enum ProcessActionCommand : ushort { Query, CloseWindows, Terminate, Suspend, Resume, Priority, Affinity, TerminateTree }
+internal enum ProcessActionFrame : uint { Accepted, Results, Rejected, Failed, TreePlan, TreeResults }
 internal enum ProcessActionOutcome : uint {
     Inspected, Applied, CloseRequested, TerminationRequested, NativeRequestAccepted, Refused,
-    IdentityChanged, AlreadyExited, Error, Unsupported, Unverified
+    IdentityChanged, AlreadyExited, Error, Unsupported, Unverified, NotPerformed
 }
 internal enum ProcessActionReason : uint {
     None, InvalidTarget, OwnOrParent, SystemTarget, Critical, Protected, OwnerMismatch, AccessDenied,
     IdentityUnverifiable, RawTimeMismatch, NoWindows, WindowMismatch, InvalidArgument, MultipleGroups,
-    PartialClose, ReadbackMismatch, ProtectionUnverifiable, ParentUnavailable, AlreadySame, WindowLimit, NativeUnavailable
+    PartialClose, ReadbackMismatch, ProtectionUnverifiable, ParentUnavailable, AlreadySame, WindowLimit, NativeUnavailable,
+    TreeBoundary, TreeBudget, TreeCensus, TreeUncertain
 }
 [Flags]
 internal enum ProcessActionFlags : uint {
@@ -29,6 +30,7 @@ internal sealed record ProcessActionsBatch(ProcessActionCommand Command, Process
     ProcessActionResult[] Results, DateTimeOffset ReceivedAt)
 {
     internal bool Accepted { get; init; }
+    internal ProcessTreeActionsPlan? Tree { get; init; }
 }
 
 internal static class ProcessActionsProtocol
@@ -38,8 +40,10 @@ internal static class ProcessActionsProtocol
 
     internal static byte[] Request(ProcessActionsRequest request)
     {
-        if ((ushort)request.Command > (ushort)ProcessActionCommand.Affinity || request.Targets.Length is < 1 or > 64)
+        if ((ushort)request.Command > (ushort)ProcessActionCommand.TerminateTree || request.Targets.Length is < 1 or > 64)
             throw new ArgumentException("Akce vyžaduje 1 až 64 vybraných procesů.", nameof(request));
+        if (request.Command == ProcessActionCommand.TerminateTree && request.Targets.Length != 1)
+            throw new ArgumentException("Ukončení stromu vyžaduje jeden potvrzený kořen.", nameof(request));
         if (request.Command == ProcessActionCommand.Affinity) {
             if (request.Targets.Length != 1 || request.Argument == 0 || request.Group > ushort.MaxValue)
                 throw new ArgumentException("Afinita vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů.", nameof(request));
@@ -74,6 +78,8 @@ internal static class ProcessActionsProtocol
             || !header.Slice(16, 24).SequenceEqual(request.Slice(16, 24)) || ULong(header, 48) != 0 || ULong(header, 56) != 0)
             throw Invalid("Pracovník vrátil jiný požadavek nebo neplatnou hlavičku.");
         uint bytes = UInt(header, 8), count = UInt(header, 12); var frame = Frame(header);
+        if (BinaryPrimitives.ReadUInt16LittleEndian(request[6..]) == (ushort)ProcessActionCommand.TerminateTree)
+            return ProcessTreeActionsProtocol.PayloadLength(header, frame, bytes, count);
         if ((uint)frame > (uint)ProcessActionFrame.Failed || bytes > 112 * 64
             || (frame is ProcessActionFrame.Accepted or ProcessActionFrame.Results
                 ? count != UInt(request, 12) || UInt(header, 44) != 0 || bytes != (frame == ProcessActionFrame.Accepted ? 0 : count * 112)
