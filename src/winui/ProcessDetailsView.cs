@@ -25,7 +25,7 @@ public sealed partial class MainWindow
         ToolTipService.SetToolTip(processDetailsButton, "Vlákna, moduly a podpis souboru");
         processDetailsButton.Click += (_, _) => {
             if (SelectedProcess is not { } row || !CanReadDetails(row)) return;
-            if (processDetailsWindow is not null && processDetailsWindow.Key != row.Key) processDetailsWindow.Close();
+            if (processDetailsWindow is { } previous && previous.Key != row.Key) { processDetailsWindow = null; previous.Close(); }
             if (processDetailsWindow is null) {
                 var window = new ProcessDetailsView(processDetailsClient, row.Key, row.Name, () => model.IsCurrent(row));
                 processDetailsWindow = window;
