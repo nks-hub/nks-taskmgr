@@ -10,6 +10,7 @@ namespace nks {
 struct HistoryPoint {
     std::chrono::steady_clock::time_point time;
     Metric<double> metric;
+    bool breakBefore{};
 };
 
 class HistorySeries {
@@ -17,15 +18,19 @@ public:
     static constexpr std::size_t capacity = 2401;
     void append(HistoryPoint point) {
         if (length && point.time <= at(length - 1).time) return;
+        point.breakBefore = point.breakBefore || breakNext;
+        breakNext = false;
         points[(begin + length) % capacity] = point;
         if (length == capacity) begin = (begin + 1) % capacity;
         else ++length;
     }
     const HistoryPoint& at(std::size_t index) const { return points[(begin + index) % capacity]; }
     std::size_t size() const { return length; }
+    void interrupt() { breakNext = true; }
 private:
     std::array<HistoryPoint, capacity> points{};
     std::size_t begin{}, length{};
+    bool breakNext{};
 };
 
 class ResourceHistory {
@@ -46,6 +51,7 @@ public:
         return match == series.end() ? nullptr : &match->second;
     }
     std::size_t size() const { return series.size(); }
+    void interrupt() { for (auto& [id, values] : series) values.interrupt(); }
     void appendGpu(const ResourceRecord& gpu, std::chrono::steady_clock::time_point time) {
         append(gpu.id + L":dedicated", {time, gpu.secondary});
         append(gpu.id + L":shared", {time, gpu.tertiary});

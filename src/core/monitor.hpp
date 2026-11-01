@@ -2,6 +2,7 @@
 
 #include "process.hpp"
 #include "resource.hpp"
+#include "history_stream.hpp"
 #include <atomic>
 #include <condition_variable>
 #include <memory>
@@ -49,11 +50,14 @@ public:
     unsigned interval() const { return intervalMilliseconds.load(); }
     std::shared_ptr<const ProcessSnapshot> takeProcesses(std::wstring& error) { return processSlot.take(error); }
     std::shared_ptr<const ResourceSnapshot> takeResources(std::wstring& error) { return resourceSlot.take(error); }
+    std::unique_ptr<HistoryBatch> takeHistory() { return history.take(); }
+    void historyDeliveryFailed() noexcept { history.failed(); }
 
 private:
     void wait(std::stop_token stop);
     SnapshotSlot<ProcessSnapshot> processSlot;
     SnapshotSlot<ResourceSnapshot> resourceSlot;
+    HistoryStream history;
     std::atomic<bool> pausedState{};
     std::atomic<unsigned> intervalMilliseconds{1000};
     bool started{};

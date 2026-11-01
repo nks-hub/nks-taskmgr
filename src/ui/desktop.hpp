@@ -28,6 +28,7 @@ private:
     void setFonts();
     void layout();
     void tick();
+    bool readHistory();
     void changeView(DesktopView value);
     void paint(HDC destination = nullptr);
     void paintPerformance(float width, float height);
@@ -94,6 +95,7 @@ private:
     std::shared_ptr<const ResourceSnapshot> hardware;
     std::vector<ResourceRecord> resources;
     ResourceHistory history;
+    std::uint64_t historySequence{}, historyLost{}, historyErrors{};
     Monitor monitor;
     ServiceTable serviceTable;
     ServiceMonitor serviceMonitor;

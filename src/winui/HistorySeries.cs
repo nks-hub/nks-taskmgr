@@ -7,8 +7,10 @@ namespace NksTaskMgr.WinUI;
 public sealed class HistorySeries
 {
     private const int Capacity = 2401;
-    private readonly long[] times = new long[Capacity];
-    private readonly Metric[] values = new Metric[Capacity];
+    private long[] times = [];
+    private Metric[] values = [];
+    private bool[] breaks = [];
+    private bool breakNext;
     private int first, count;
     public int Count => count;
     public long LastTime => count == 0 ? 0 : times[(first + count - 1) % Capacity];
@@ -18,11 +20,14 @@ public sealed class HistorySeries
     public void Append(long time, Metric value)
     {
         if (count > 0 && time <= LastTime) return;
+        if (times.Length == 0) { times = new long[Capacity]; values = new Metric[Capacity]; breaks = new bool[Capacity]; }
         int slot = (first + count) % Capacity;
         if (count == Capacity) first = (first + 1) % Capacity;
         else ++count;
-        times[slot] = time; values[slot] = value;
+        times[slot] = time; values[slot] = value; breaks[slot] = breakNext; breakNext = false;
     }
+
+    public void BreakNext() => breakNext = true;
 
     public double Maximum(long start, double minimum)
     {
@@ -46,6 +51,7 @@ public sealed class HistorySeries
         int slot = (first + low) % Capacity;
         if (low > 0) {
             int previous = (slot + Capacity - 1) % Capacity;
+            if (breaks[slot] && time > times[previous] && time < times[slot]) return null;
             if (Math.Abs(time - times[previous]) < Math.Abs(times[slot] - time)) slot = previous;
         }
         return Math.Abs(times[slot] - time) <= 1_250_000_000 ? (times[slot], values[slot]) : null;
@@ -72,7 +78,7 @@ public sealed class HistorySeries
             int slot = (first + i) % Capacity;
             if (times[slot] < start) continue;
             var value = values[slot];
-            if (value.State != SampleState.Valid || (prior > 0 && times[slot] - prior > 2_500_000_000)) Close();
+            if (breaks[slot] || value.State != SampleState.Valid || (prior > 0 && times[slot] - prior > 2_500_000_000)) Close();
             prior = times[slot];
             if (value.State != SampleState.Valid) continue;
             last = new Point(Math.Clamp((double)(times[slot] - start) / duration, 0, 1) * width,

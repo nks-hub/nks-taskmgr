@@ -24,8 +24,9 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     public bool Stale { get; private set; }
     private SolidColorBrush? color;
     public SolidColorBrush Color => color ??= Display.Brush(Display.ResourceColor(Kind));
-    public HistorySeries History { get; } = new();
-    public HistorySeries Upload { get; } = new();
+    public HistorySeries History { get; private set; } = new();
+    public HistorySeries Upload { get; private set; } = new();
+    internal void AttachHistory(HistorySeries series, bool upload) { if (upload) Upload = series; else History = series; }
     public Geometry? Preview { get; private set; }
     public Geometry? UploadPreview { get; private set; }
     public string Value => Stale ? "Zastaralá data" : Kind == ResourceKind.Network && Primary.State == SampleState.Valid
@@ -40,12 +41,14 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
         Stale = value; if (notify) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value))); return true;
     }
 
-    public void Update(string title, string description, string status, Metric primary, Metric secondary, Metric tertiary, double capacity, long time, bool notify = true)
+    public void Update(string title, string description, string status, Metric primary, Metric secondary, Metric tertiary, double capacity, long time, bool notify = true, bool recordHistory = true)
     {
         Title = title; Description = description; Status = status;
         Primary = primary; Secondary = secondary; Tertiary = tertiary; Capacity = capacity;
-        History.Append(time, primary);
-        if (Kind == ResourceKind.Network) Upload.Append(time, secondary);
+        if (recordHistory) {
+            History.Append(time, primary);
+            if (Kind == ResourceKind.Network) Upload.Append(time, secondary);
+        }
         if (notify) RefreshPreview();
     }
 

@@ -138,6 +138,7 @@ void Desktop::graph(const HistorySeries* series, D2D1_RECT_F box, D2D1_COLOR_F c
     };
     for (std::size_t i = 0; i < series->size(); ++i) {
         const auto& point = series->at(i);
+        if (point.breakBefore) flush();
         if (point.time < start) continue;
         if (!point.metric.valid()) { flush(); continue; }
         if (i && point.time - series->at(i - 1).time > std::chrono::milliseconds(2500)) flush();
@@ -226,6 +227,8 @@ void Desktop::paint(HDC destination)
             + decimal(std::chrono::duration<double>(std::chrono::steady_clock::now() - services->measuredAt).count(), L" s");
         if (!serviceError.empty()) footer += L"  ·  Sběr selhal: " + serviceError;
     }
+    if (historyLost || historyErrors) footer += L" · Historie: " + std::to_wstring(historyLost)
+        + L" neuchovaných vzorků, " + std::to_wstring(historyErrors) + L" chyb";
     text(footer, rect(frame.inventoryX, height - 21, width - frame.inventoryX - 25, 18), 9, muted);
     if (target->EndDraw() == D2DERR_RECREATE_TARGET) { brush.Reset(); target.Reset(); }
     if (saved) RestoreDC(dc, saved);

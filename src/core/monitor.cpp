@@ -17,12 +17,18 @@ void Monitor::start()
         processThread = std::jthread([this](std::stop_token stop) {
             SetThreadDescription(GetCurrentThread(), L"NKS process collector");
             try {
-                ProcessCollector collector;
+                ProcessCollector collector(ProcessIdentityPreference::sequenceNumberWhenSupported);
                 ProcessSampler sampler;
                 while (!stop.stop_requested()) {
                     if (!paused()) {
-                        try { auto sample = collector.collect(); sampler.apply(sample); processSlot.publish(std::move(sample)); }
-                        catch (const std::exception& error) { processSlot.fail(error.what()); }
+                        try {
+                            auto sample = collector.collect(); sampler.apply(sample);
+                            try { history.append(sample); } catch (const std::exception&) { history.failed(); }
+                            processSlot.publish(std::move(sample));
+                        } catch (const std::exception& error) {
+                            try { history.appendGap(true, std::chrono::steady_clock::now()); } catch (const std::exception&) { history.failed(); }
+                            processSlot.fail(error.what());
+                        }
                     }
                     wait(stop);
                 }
@@ -34,8 +40,14 @@ void Monitor::start()
                 ResourceCollector collector;
                 while (!stop.stop_requested()) {
                     if (!paused()) {
-                        try { resourceSlot.publish(collector.collect()); }
-                        catch (const std::exception& error) { resourceSlot.fail(error.what()); }
+                        try {
+                            auto sample = collector.collect();
+                            try { history.append(sample); } catch (const std::exception&) { history.failed(); }
+                            resourceSlot.publish(std::move(sample));
+                        } catch (const std::exception& error) {
+                            try { history.appendGap(false, std::chrono::steady_clock::now()); } catch (const std::exception&) { history.failed(); }
+                            resourceSlot.fail(error.what());
+                        }
                     }
                     wait(stop);
                 }

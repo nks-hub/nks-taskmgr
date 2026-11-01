@@ -264,23 +264,13 @@ void Desktop::tick()
     if (auto sample = monitor.takeProcesses(processError)) {
         processes = std::move(sample);
         table.update(processes);
-        for (const auto& item : systemResources(*processes)) history.append(item.id, {processes->measuredAt, item.primary});
-        for (const auto& processor : processes->processors)
-            history.append(L"cpu:" + std::to_wstring(processor.group) + L":" + std::to_wstring(processor.index), {processes->measuredAt, processor.cpuPercent});
-        history.append(L"pagefile", {processes->measuredAt, {static_cast<double>(processes->memory.pageFileUsedBytes), processes->memory.pageFileState, MetricSource::performanceInfo}});
         changed = true;
     }
     if (auto sample = monitor.takeResources(resourceError)) {
         hardware = std::move(sample);
-        for (const auto& item : hardware->devices) {
-            history.append(item.id, {hardware->measuredAt, item.primary});
-            if (item.kind == ResourceKind::network) history.append(item.id + L":up", {hardware->measuredAt, item.secondary});
-            if (item.kind == ResourceKind::gpu) {
-                history.appendGpu(item, hardware->measuredAt);
-            }
-        }
         changed = true;
     }
+    changed = readHistory() || changed;
     const auto now = std::chrono::steady_clock::now();
     const auto staleProcesses = !monitor.paused() && processes && now - processes->measuredAt > std::chrono::seconds(3);
     const auto staleResources = !monitor.paused() && hardware && now - hardware->measuredAt > std::chrono::seconds(3);

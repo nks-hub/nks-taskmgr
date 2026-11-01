@@ -30,6 +30,7 @@ add_library(nks_native STATIC
     src/collectors/hardware_windows.cpp
     src/collectors/ups_hardware.cpp
     src/core/monitor.cpp
+    src/core/history_stream.cpp
     src/core/service.cpp
     src/core/service_monitor.cpp
     src/collectors/service_collector.cpp
@@ -44,7 +45,7 @@ target_compile_definitions(nks_native PRIVATE PHNT_VERSION=117)
 target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32 gdi32)
 target_compile_options(nks_native PRIVATE /W4 /WX /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
 
-add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/services_api.cpp)
+add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/services_api.cpp src/interop/history_api.cpp)
 target_include_directories(nks-monitor PUBLIC src)
 target_compile_definitions(nks-monitor PRIVATE NKS_MONITOR_EXPORTS)
 target_compile_options(nks-monitor PRIVATE /W4 /WX /utf-8 /permissive-)
@@ -63,7 +64,7 @@ target_link_libraries(nks-icon-worker PRIVATE nks_native shell32 ole32 gdi32)
 target_compile_options(nks-icon-worker PRIVATE /W4 /WX /utf-8 /permissive-)
 target_link_options(nks-icon-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'")
 
-add_executable(nks-taskmgr WIN32 src/app/desktop_main.cpp src/app/app.rc src/ui/desktop.cpp src/ui/desktop_paint.cpp src/ui/control_paint.cpp src/ui/performance_paint.cpp src/ui/process_paint.cpp src/ui/process_table.cpp src/ui/service_table.cpp src/ui/service_view.cpp src/ui/service_paint.cpp)
+add_executable(nks-taskmgr WIN32 src/app/desktop_main.cpp src/app/app.rc src/ui/desktop.cpp src/ui/desktop_paint.cpp src/ui/history_view.cpp src/ui/control_paint.cpp src/ui/performance_paint.cpp src/ui/process_paint.cpp src/ui/process_table.cpp src/ui/service_table.cpp src/ui/service_view.cpp src/ui/service_paint.cpp)
 target_link_libraries(nks-taskmgr PRIVATE nks_native d2d1 dwrite dwmapi comctl32 uxtheme)
 target_compile_options(nks-taskmgr PRIVATE /W4 /WX /utf-8 /permissive-)
 

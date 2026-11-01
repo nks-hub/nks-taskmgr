@@ -5,7 +5,7 @@ namespace NksTaskMgr.WinUI;
 
 public enum ProcessMode { All, Active, Tree }
 
-public sealed class MonitorModel : IDisposable
+public sealed partial class MonitorModel : IDisposable
 {
     internal const long StaleAfterNs = 3_000_000_000;
     private readonly NativeMonitor monitor = NativeMonitor.Open();
@@ -21,7 +21,7 @@ public sealed class MonitorModel : IDisposable
     public IReadOnlyCollection<ProcessRow> Processes => processes.Values;
     internal IEnumerable<ResourceRow> AllResources => resources.Values;
     public Dictionary<(uint Group, uint Index), HistorySeries> Processors { get; } = [];
-    public HistorySeries PageFile { get; } = new();
+    public HistorySeries PageFile { get; private set; } = new();
     public Dictionary<string, Dictionary<string, string>> Hardware { get; } = [];
     public MemoryInfo Memory { get; private set; }
     public BootIdentityInfo BootIdentity { get; private set; } = new() { State = SampleState.Unavailable };
@@ -63,11 +63,16 @@ public sealed class MonitorModel : IDisposable
             frame.Read(view => {
                 if ((view.Flags & FrameFlags.ProcessData) != 0)
                     BootIdentity = frame.ReadBootIdentity() ?? new BootIdentityInfo { State = SampleState.Unavailable };
-                Apply(view); if ((view.Flags & FrameFlags.ResourceData) != 0) frame.ReadGpu(ApplyGpu);
+                bool applied = false;
+                if ((view.Flags & FrameFlags.ProcessData) != 0)
+                    frame.ReadProcessCreationTimes(creation => { Apply(view, creation, false); applied = true; });
+                if (!applied) Apply(view, default, false);
+                if ((view.Flags & FrameFlags.ResourceData) != 0) frame.ReadGpu(data => ApplyGpu(data, false));
             });
             frame.ReadHardware(ApplyHardware);
             changed = true;
         }
+        changed |= ReadCollectedHistory();
         bool stale = !Paused && ProcessTime > 0 && NativeMonitor.MonotonicNowNs - ProcessTime > StaleAfterNs;
         if (stale != Stale) {
             Stale = stale;
@@ -82,13 +87,15 @@ public sealed class MonitorModel : IDisposable
             SyncResources();
             Rebuild();
             foreach (var row in VisibleProcesses) row.NotifyUpdated();
-            foreach (var resource in resources.Values) resource.RefreshPreview();
         }
+        if (changed && visualUpdates) foreach (var resource in resources.Values) resource.RefreshPreview();
         return changed;
     }
 
     // Frame buffers remain owned by the caller and are copied before this returns.
-    internal unsafe void Apply(FrameView view)
+    internal void Apply(FrameView view) => Apply(view, default, true);
+
+    private unsafe void Apply(FrameView view, ProcessCreationData creation, bool recordHistory)
     {
         if ((view.Flags & FrameFlags.ProcessErrorChanged) != 0) ProcessError = view.ProcessError.Copy();
         if ((view.Flags & FrameFlags.ResourceErrorChanged) != 0) ResourceError = view.ResourceError.Copy();
@@ -104,19 +111,26 @@ public sealed class MonitorModel : IDisposable
                 seen.Add(key);
                 if (!processes.TryGetValue(key, out var row)) processes.Add(key, row = new ProcessRow(key));
                 row.Update(source, visualUpdates);
+                ulong created = 0;
+                if (i < creation.ProcessCount && creation.Processes != null) {
+                    var metadata = creation.Processes[i];
+                    if (metadata.Pid == key.Pid && metadata.Kind == key.Kind && metadata.Generation == key.Generation
+                        && metadata.State == SampleState.Valid) created = metadata.Created100ns;
+                } else if (key.Kind == GenerationKind.CreationTime) created = key.Generation;
+                row.SetCreatedTime(created);
             }
             foreach (var key in processes.Keys.Where(key => !seen.Contains(key)).ToArray()) {
                 processes[key].SetStatus(true, false, visualUpdates); processes.Remove(key);
             }
-            Resource("cpu", ResourceKind.Cpu).Update("Procesor", CpuModel, string.Empty, view.Processes.CpuPercent, default, default, 100, ProcessTime, visualUpdates);
+            Resource("cpu", ResourceKind.Cpu).Update("Procesor", CpuModel, string.Empty, view.Processes.CpuPercent, default, default, 100, ProcessTime, visualUpdates && recordHistory, recordHistory);
             var memory = new Metric { Value = Memory.PhysicalBytes - Math.Min(Memory.PhysicalBytes, Memory.AvailableBytes), State = Memory.State, Source = MetricSource.PerformanceInfo };
-            Resource("memory", ResourceKind.Memory).Update("Paměť", "Fyzická paměť", string.Empty, memory, default, default, Memory.PhysicalBytes, ProcessTime, visualUpdates);
-            PageFile.Append(ProcessTime, new Metric { Value = Memory.PageFileUsedBytes, State = Memory.PageFileState, Source = MetricSource.PerformanceInfo });
+            Resource("memory", ResourceKind.Memory).Update("Paměť", "Fyzická paměť", string.Empty, memory, default, default, Memory.PhysicalBytes, ProcessTime, visualUpdates && recordHistory, recordHistory);
+            if (recordHistory) PageFile.Append(ProcessTime, new Metric { Value = Memory.PageFileUsedBytes, State = Memory.PageFileState, Source = MetricSource.PerformanceInfo });
             var processorKeys = new HashSet<(uint, uint)>();
             for (uint i = 0; i < view.Processes.ProcessorCount; ++i) {
                 var processor = view.Processes.Processors[i]; var key = (processor.Group, processor.Index); processorKeys.Add(key);
                 if (!Processors.TryGetValue(key, out var series)) Processors.Add(key, series = new HistorySeries());
-                series.Append(ProcessTime, processor.CpuPercent);
+                if (recordHistory) series.Append(ProcessTime, processor.CpuPercent);
             }
             foreach (var key in Processors.Keys.Where(key => !processorKeys.Contains(key)).ToArray()) Processors.Remove(key);
             if (!held && visualUpdates) Rebuild();
@@ -127,7 +141,7 @@ public sealed class MonitorModel : IDisposable
             for (uint i = 0; i < view.Resources.ResourceCount; ++i) {
                 var source = view.Resources.Resources[i]; var id = source.Id.Copy(); seen.Add(id);
                 Resource(id, source.Kind).Update(source.Title.Copy(), source.Description.Copy(), source.Status.Copy(),
-                    source.Primary, source.Secondary, source.Tertiary, source.Capacity, ResourceTime, visualUpdates);
+                    source.Primary, source.Secondary, source.Tertiary, source.Capacity, ResourceTime, visualUpdates && recordHistory, recordHistory);
             }
             foreach (var id in resources.Keys.Where(id => !seen.Contains(id)).ToArray()) {
                 if (visualUpdates) Resources.Remove(resources[id]);
@@ -149,11 +163,11 @@ public sealed class MonitorModel : IDisposable
         return row;
     }
 
-    private unsafe void ApplyGpu(GpuData data)
+    private unsafe void ApplyGpu(GpuData data, bool recordHistory = true)
     {
         for (uint i = 0; i < data.GpuCount; ++i) {
             var gpu = data.Gpus[i];
-            if (resources.TryGetValue(gpu.ResourceId.Copy(), out var row)) row.Gpu?.Apply(gpu, row, ResourceTime);
+            if (resources.TryGetValue(gpu.ResourceId.Copy(), out var row)) row.Gpu?.Apply(gpu, row, ResourceTime, recordHistory);
         }
     }
 
