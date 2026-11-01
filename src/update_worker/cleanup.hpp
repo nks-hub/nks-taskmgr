@@ -39,6 +39,8 @@ struct CleanupPlan {
     std::vector<Image> rootGuards;
 };
 void rememberRoot(Cache& cache, const Scope& scope);
+PlanId rollbackJournalAnchor(const std::vector<JournalEntry>& entries, const std::wstring& currentVersion,
+    const std::wstring& previous, const Scope& scope);
 CleanupPlan prepareCleanup(Cache& cache, const Context& context, ULONGLONG requestDeadline = 0);
 void applyCleanup(Cache& cache, const Context& context, CleanupPlan& plan);
 std::vector<std::byte> cleanupPayload(const CleanupPlan& plan, bool accepted = false, Status status = Status::ok, DWORD windows = 0);

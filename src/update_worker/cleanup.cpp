@@ -139,6 +139,20 @@ void rememberRoot(Cache& cache, const Scope& scope)
     writeNew(path, bytes);
 }
 
+PlanId rollbackJournalAnchor(const std::vector<JournalEntry>& entries, const std::wstring& currentVersion,
+    const std::wstring& previous, const Scope& scope)
+{
+    if (previous.empty()) return {};
+    const JournalEntry* anchor = nullptr;
+    for (const auto& entry : entries) {
+        if (entry.legacy || !belongs(entry.plan, scope) || entry.plan.mode() != scope.mode || entry.state != State::verified
+            || !entry.resultVerified || entry.plan.action == Action::repair || entry.plan.selectedVersion() != currentVersion
+            || entry.plan.currentVersion() != previous) continue;
+        if (!anchor || entry.time > anchor->time || (entry.time == anchor->time && entry.plan.id > anchor->plan.id)) anchor = &entry;
+    }
+    return anchor ? anchor->plan.id : PlanId{};
+}
+
 CleanupPlan prepareCleanup(Cache& cache, const Context& context, ULONGLONG requestDeadline)
 {
     CleanupPlan preview; preview.root = cache.rootId();
@@ -216,7 +230,11 @@ CleanupPlan prepareCleanup(Cache& cache, const Context& context, ULONGLONG reque
             if ((sameRoot(root.id, root.id) && !sameRoot(root.id, scope.id)) || (root.mode != InstallMode::unknown && root.mode != scope.mode))
                 throw Error(Status::unknown, "Managed root no longer matches its recorded identity and mode");
             validRoots.insert(identity); addVersion(versions, application.version, CleanupReason::current);
-            addVersion(versions, previousVersion(entries, application, scope), CleanupReason::previous);
+            const auto previous = previousVersion(entries, application, scope);
+            addVersion(versions, previous, CleanupReason::previous);
+            const auto rollbackAnchor = rollbackJournalAnchor(entries, application.version, previous, scope);
+            if (std::any_of(rollbackAnchor.begin(), rollbackAnchor.end(), [](auto value) { return value != std::byte{}; }))
+                retainedRecords.insert(hex(rollbackAnchor));
             const JournalEntry* anchor = nullptr;
             for (const auto& entry : entries) if (belongs(entry.plan, scope)) {
                 const bool exact = entry.state == State::verified && entry.resultVerified && entry.plan.selectedVersion() == application.version;
