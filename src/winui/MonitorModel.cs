@@ -108,6 +108,12 @@ public sealed partial class MonitorModel : IDisposable
     // Frame buffers remain owned by the caller and are copied before this returns.
     internal void Apply(FrameView view) => Apply(view, default, true);
 
+    internal void Apply(FrameView view, ProcessCreationData creation, BootIdentityInfo bootIdentity)
+    {
+        BootIdentity = bootIdentity;
+        Apply(view, creation, true);
+    }
+
     private unsafe void Apply(FrameView view, ProcessCreationData creation, bool recordHistory, ProcessChangesData? changes = null)
     {
         if ((view.Flags & FrameFlags.ProcessErrorChanged) != 0) ProcessError = view.ProcessError.Copy();

@@ -9,8 +9,10 @@ public static partial class WinUiChecks
     internal static unsafe void ProcessNotifications()
     {
         var row = new ProcessRow(new ProcessKey(new(1, 2), 42, GenerationKind.CreationTime, 1));
+        row.SetCreatedTime(1);
         fixed (char* name = "Example") {
-            var source = new ProcessInfo { Name = new String16 { Data = name, Length = 7 }, CpuPercent = new Metric { State = SampleState.First, Source = MetricSource.NativeProcess } };
+            var source = new ProcessInfo { Pid = 42, Generation = 1, GenerationKind = GenerationKind.CreationTime,
+                Name = new String16 { Data = name, Length = 7 }, CpuPercent = new Metric { State = SampleState.First, Source = MetricSource.NativeProcess } };
             row.Update(source);
             var changed = new List<string?>();
             row.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
@@ -85,9 +87,15 @@ public static partial class WinUiChecks
     {
         Require(!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported, "WinUI probe is not Native AOT.");
         var own = model.Processes.Single(row => row.Key.Pid == Environment.ProcessId);
-        Require(own.Key.Kind == GenerationKind.CreationTime && own.Key.Generation != 0, "WinUI lost native process identity.");
+        Require((own.Key.Kind is GenerationKind.CreationTime or GenerationKind.SequenceNumber) && own.Key.Generation != 0,
+            "WinUI lost a supported native process identity.");
         Require(model.BootIdentity.State == SampleState.Valid && !model.BootIdentity.Identifier.IsEmpty
             && own.Key.Boot == model.BootIdentity.Identifier, "WinUI lost the full boot GUID.");
+        using var ownProcess = System.Diagnostics.Process.GetCurrentProcess();
+        var identity = NativeMonitor.QueryProcessIdentity(ownProcess.SafeHandle, own.Key.Kind);
+        Require(identity.State == SampleState.Valid && identity.Boot == own.Key.Boot && identity.Pid == own.Key.Pid
+            && identity.Kind == own.Key.Kind && identity.Generation == own.Key.Generation && model.IsCurrent(own),
+            "The displayed full process identity does not match the actual current process handle.");
         var distinctBoot = own.Key with { Boot = own.Key.Boot with { High = own.Key.Boot.High ^ 1 } };
         Require(distinctBoot != own.Key, "Process identity ignored the upper half of the boot GUID.");
         model.SetHeld(true); model.SetQuery(own.PidText);
@@ -121,14 +129,17 @@ public static partial class WinUiChecks
         var rows = new List<ProcessRow>();
         for (uint i = 1; i <= 10_000; ++i) {
             var row = new ProcessRow(new ProcessKey(new(1, 2), i, GenerationKind.CreationTime, i));
-            row.Update(new ProcessInfo { ParentPid = i - 1 }); rows.Add(row);
+            row.Update(new ProcessInfo { Pid = i, Generation = i, GenerationKind = GenerationKind.CreationTime, ParentPid = i - 1 });
+            row.SetCreatedTime(i); rows.Add(row);
         }
         var expanded = ProcessTree.Order(rows, new HashSet<ProcessKey>());
         Require(expanded.Count == 10_000 && expanded[^1].Depth == 12, "Deep tree failed or exceeded the indentation limit.");
         Require(ProcessTree.Order(rows, new HashSet<ProcessKey> { rows[0].Key }).Count == 1, "Collapsed deep tree leaked descendants.");
         var a = new ProcessRow(new ProcessKey(new(1, 2), 1, GenerationKind.CreationTime, 10));
         var b = new ProcessRow(new ProcessKey(new(1, 2), 2, GenerationKind.CreationTime, 10));
-        a.Update(new ProcessInfo { ParentPid = 2 }); b.Update(new ProcessInfo { ParentPid = 1 });
+        a.Update(new ProcessInfo { Pid = 1, Generation = 10, GenerationKind = GenerationKind.CreationTime, ParentPid = 2 });
+        b.Update(new ProcessInfo { Pid = 2, Generation = 10, GenerationKind = GenerationKind.CreationTime, ParentPid = 1 });
+        a.SetCreatedTime(10); b.SetCreatedTime(10);
         Require(ProcessTree.Order(new[] { a, b }, new HashSet<ProcessKey>()).Count == 2, "A parent cycle lost a process or hung the UI.");
     }
 
@@ -151,10 +162,25 @@ public static partial class WinUiChecks
         row.Update(new ServiceInfo { State = 4, Pid = 314, Config = new ServiceConfigInfo { Error = 5 } });
         Require(row.Startup == "Chybí oprávnění (5)", "Service access denial became a startup value.");
         var host = new ProcessRow(new ProcessKey(new(1, 2), 314, GenerationKind.CreationTime, 100));
-        var detail = new ServiceDetailData(NativeMonitor.MonotonicNowNs, "demosvc", "", ServiceConfiguration.Empty, 0, 0, 0, 0, 314, 4, 100, []);
+        host.SetCreatedTime(100);
+        var detail = new ServiceDetailData(NativeMonitor.MonotonicNowNs, "demosvc", "", ServiceConfiguration.Empty, 0, 0, 0, 0, 314, 4, 100, []) {
+            HostCreationIdentity = ServiceHostFixtureIdentity(host.Key)
+        };
         Require(detail.MatchesHost(row, host), "Service host lost its case-insensitive identity.");
         Require(!detail.MatchesHost(row, new ProcessRow(new ProcessKey(new(1, 2), 314, GenerationKind.CreationTime, 101))), "A recycled host PID opened a different process.");
         Require(!(detail with { HostError = 5 }).MatchesHost(row, host), "An unverified service host became selectable.");
+        var sequenceHost = new ProcessRow(host.Key with { Kind = GenerationKind.SequenceNumber, Generation = 900 });
+        sequenceHost.SetCreatedTime(100);
+        var sequenceDetail = detail with { HostSequenceIdentity = ServiceHostFixtureIdentity(sequenceHost.Key) };
+        Require(sequenceDetail.MatchesHost(row, sequenceHost), "A verified service sequence identity was confused with its raw creation time.");
+        var reusedSequenceHost = new ProcessRow(sequenceHost.Key with { Generation = 901 }); reusedSequenceHost.SetCreatedTime(100);
+        var anotherBootHost = new ProcessRow(sequenceHost.Key with { Boot = new BootIdentifier(1, 3) }); anotherBootHost.SetCreatedTime(100);
+        Require(!sequenceDetail.MatchesHost(row, reusedSequenceHost) && !sequenceDetail.MatchesHost(row, anotherBootHost),
+            "A service sequence identity accepted a reused PID or another boot.");
         host.SetStatus(true, false); Require(!detail.MatchesHost(row, host), "An ended service host remained selectable.");
     }
+
+    private static ProcessIdentityInfo ServiceHostFixtureIdentity(ProcessKey key) => new() {
+        BootLow = key.Boot.Low, BootHigh = key.Boot.High, Pid = key.Pid, Kind = key.Kind, Generation = key.Generation, State = SampleState.Valid
+    };
 }
