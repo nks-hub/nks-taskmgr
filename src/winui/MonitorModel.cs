@@ -80,6 +80,7 @@ public sealed partial class MonitorModel : IDisposable
             foreach (var row in processes.Values) row.SetStatus(false, stale, visualUpdates);
             changed = true;
         }
+        CaptureProcessHistory();
         foreach (var resource in resources.Values) {
             long measured = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory ? ProcessTime : ResourceTime;
             if (resource.SetStale(!Paused && measured > 0 && NativeMonitor.MonotonicNowNs - measured > StaleAfterNs, visualUpdates)) changed = true;

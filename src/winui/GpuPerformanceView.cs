@@ -28,7 +28,7 @@ public sealed partial class MainWindow
             AutomationProperties.SetName(choice, "GPU engine " + (i + 1));
             var value = Label("", 10, 0xcc9bb6); value.HorizontalAlignment = HorizontalAlignment.Right; value.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(value, 1); line.Children.Add(choice); line.Children.Add(value); tile.Children.Add(line);
-            var plot = new ChartView { Height = 130 }; tile.Children.Add(plot); gpuTiles.Add((tile, choice, plot, value));
+            var plot = new ChartView { Height = 130, Timeline = performanceTimeline }; tile.Children.Add(plot); gpuTiles.Add((tile, choice, plot, value));
             choice.SelectionChanged += (_, _) => { if (!rebuildingGpu && selectedResource?.Kind == ResourceKind.Gpu) RefreshPerformance(); };
             gpuEngines.Children.Add(tile);
         }

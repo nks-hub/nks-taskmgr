@@ -183,7 +183,7 @@ public sealed partial class MainWindow
             if (cpuMode == 2) processors.Children.Add(coreOverlay);
             for (int i = 0; i < keys.Length; ++i) {
                 if (cpuMode == 2) break;
-                var core = new ChartView { Height = coreHeight };
+                var core = new ChartView { Height = coreHeight, Timeline = performanceTimeline };
                 core.Configure($"Logický procesor {keys[i].Group}:{keys[i].Index}", showAxes: false, interactive: cpuMode == 1);
                 AutomationProperties.SetName(core, $"Logický procesor {keys[i].Group}:{keys[i].Index}");
                 coreCharts.Add(keys[i], core);
