@@ -2,6 +2,13 @@
 AppId={{3DC15B35-D778-4DD6-AF81-55EC144B6575}
 AppName=NKS Task Manager
 AppVersion={#AppVersion}
+VersionInfoVersion={#AppVersion}
+VersionInfoProductVersion={#AppVersion}
+VersionInfoProductTextVersion={#AppVersion}+{#SourceRevision}
+VersionInfoTextVersion={#AppVersion}+{#SourceRevision}
+VersionInfoProductName=NKS Task Manager
+VersionInfoDescription=NKS Task Manager Setup
+VersionInfoOriginalFileName=NksTaskMgrSetup.exe
 AppPublisher=NKS Hub
 AppComments=Build {#SourceRevision}
 DefaultDirName={localappdata}\Programs\NKS Task Manager
@@ -20,8 +27,7 @@ OutputDir={#OutputDirectory}
 OutputBaseFilename={#OutputBaseName}
 Compression=lzma2/max
 SolidCompression=yes
-CloseApplications=yes
-CloseApplicationsFilter=NksTaskMgr.WinUI.exe,nks-icon-worker.exe
+CloseApplications=no
 RestartApplications=no
 
 [Languages]
@@ -40,3 +46,28 @@ Name: "{autodesktop}\NKS Task Manager"; Filename: "{app}\NksTaskMgr.WinUI.exe"; 
 
 [Run]
 Filename: "{app}\NksTaskMgr.WinUI.exe"; Description: "{cm:LaunchProgram,NKS Task Manager}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    try
+      if Exec(ExpandConstant('{app}\nks-update-worker.exe'),
+          '--cache-installer "' + ExpandConstant('{srcexe}') + '"',
+          ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      begin
+        if ResultCode = 0 then
+          Log('Verified installer cache recorded.')
+        else
+          Log('Installer cache is unavailable for this build.');
+      end
+      else
+        Log('Installer cache helper could not start.');
+    except
+      Log('Installer cache helper was unavailable.');
+    end;
+  end;
+end;

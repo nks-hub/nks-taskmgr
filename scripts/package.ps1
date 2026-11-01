@@ -1,23 +1,37 @@
+#requires -Version 7.2
 param(
     [string]$AppDirectory = '',
     [string]$Compiler = 'ISCC.exe',
-    [string]$OutputDirectory = ''
+    [string]$OutputDirectory = '',
+    [ValidatePattern('^([0-9a-fA-F]{40})?$')][string]$SigningCertificateThumbprint = '',
+    [string]$SignTool = '',
+    [string]$TimestampServer = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'sign.ps1') -AppDirectory $AppDirectory -SigningCertificateThumbprint $SigningCertificateThumbprint -SignTool $SignTool -TimestampServer $TimestampServer
+$signer = $null
+if ($SigningCertificateThumbprint) { $signer = Get-NksSigningContext $SigningCertificateThumbprint $SignTool $TimestampServer }
+elseif ($SignTool -or $TimestampServer) { throw 'Signing options require SigningCertificateThumbprint.' }
 if (!$AppDirectory) { $AppDirectory = Join-Path $projectRoot 'build\winui-aot' }
 if (!$OutputDirectory) { $OutputDirectory = Join-Path $projectRoot 'build\packages' }
 $AppDirectory = (Resolve-Path -LiteralPath $AppDirectory).Path
 $compilerPath = (Get-Command $Compiler -ErrorAction Stop).Source
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
-foreach ($required in @('NksTaskMgr.WinUI.exe', 'nks-monitor.dll', 'nks-icon-worker.exe', 'nks-details-worker.exe', 'nks-collector-worker.exe', 'nks-actions-worker.exe', 'nks-service-actions-worker.exe', 'nks-dump-worker.exe', 'nks-dump-worker-x86.exe', 'nks-elevation-broker.exe', 'app.ico', 'NksTaskMgr.WinUI.pri')) {
+foreach ($required in @((Get-NksOwnedArtifactNames) + @('app.ico', 'NksTaskMgr.WinUI.pri'))) {
     if (!(Test-Path -LiteralPath (Join-Path $AppDirectory $required))) { throw "Publish the complete WinUI application first: missing $required." }
 }
 $information = [Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $AppDirectory 'NksTaskMgr.WinUI.exe'))
-$version = $information.ProductVersion.Split('+')[0]
-$revision = $information.ProductVersion.Split('+')[-1]
-if ($version -notmatch '^\d+\.\d+\.\d+$' -or $revision -notmatch '^[0-9a-fA-F]{40}$') { throw 'The published application must include a version and Git revision.' }
+if ($information.ProductVersion -notmatch '^(?<version>\d+\.\d+\.\d+)\+(?<revision>[0-9a-fA-F]{40})$') { throw 'The published application must include a version and Git revision.' }
+$version = $Matches.version
+$revision = $Matches.revision
+$pins = $null
+if (Test-Path -LiteralPath (Join-Path $AppDirectory 'build-pins.json') -PathType Leaf) {
+    $pins = Read-NksPinEvidence $AppDirectory
+    Assert-NksArtifactEvidence $AppDirectory $pins
+    if ($pins.sourceRevision -ine $revision) { throw 'The public build pin evidence belongs to another source revision.' }
+} elseif ($signer) { throw 'A signed package requires build-pins.json from scripts/build.ps1.' }
 $baseName = "NksTaskMgr-$version-$($revision.Substring(0,7))-win-x64"
 $stage = Join-Path $projectRoot ('build\package-staging\' + [guid]::NewGuid().ToString('N'))
 $payload = Join-Path $stage 'app'
@@ -60,13 +74,25 @@ foreach ($library in $assets.libraries.PSObject.Properties | Where-Object { $_.V
         }
     }
 }
+if ($signer) { Invoke-NksSignPayload $payload $signer; $pins = Read-NksPinEvidence $payload }
 $files = @(Get-ChildItem -LiteralPath $payload -Recurse -File | ForEach-Object {
     [ordered]@{ path=[IO.Path]::GetRelativePath($payload,$_.FullName); sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
 })
-[ordered]@{ version=$version; sourceRevision=$revision; files=$files } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $payload 'build-info.json') -Encoding utf8
+$publicPins = if ($pins) { [ordered]@{ brokerPublisherSpkiSha256=$pins.brokerPublisherSpkiSha256; updatePublisherSpkiSha256=$pins.updatePublisherSpkiSha256 } } else { $null }
+[ordered]@{ version=$version; sourceRevision=$revision; publisherPins=$publicPins; files=$files } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $payload 'build-info.json') -Encoding utf8NoBOM
 
 & $compilerPath /Qp "/DAppDirectory=$payload" "/DAppVersion=$version" "/DSourceRevision=$revision" "/DOutputDirectory=$OutputDirectory" "/DOutputBaseName=$baseName-setup" (Join-Path $projectRoot 'installer\nks-taskmgr.iss')
 if ($LASTEXITCODE) { throw "Installer compilation failed: $LASTEXITCODE" }
+$setup = Join-Path $OutputDirectory ($baseName + '-setup.exe')
+$setupInfo = [Diagnostics.FileVersionInfo]::GetVersionInfo($setup)
+if ($setupInfo.ProductName -cne 'NKS Task Manager' -or $setupInfo.FileDescription -cne 'NKS Task Manager Setup' -or
+    $setupInfo.OriginalFilename -cne 'NksTaskMgrSetup.exe' -or $setupInfo.ProductVersion -cne "$version+$revision") { throw 'The compiled setup PE role does not match the payload.' }
+if ($signer) {
+    Invoke-NksSignSetup $setup $version $revision $signer
+    [ordered]@{ schemaVersion=1; sourceRevision=$revision; productVersion="$version+$revision"; name=[IO.Path]::GetFileName($setup);
+        sha256=(Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash; publisherSpkiSha256=$signer.Pin; certificateThumbprint=$signer.Thumbprint }
+        | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $OutputDirectory ($baseName + '-signature.json')) -Encoding utf8NoBOM
+}
 $archive = Join-Path $OutputDirectory ($baseName + '.zip')
 Compress-Archive -Path (Join-Path $payload '*') -DestinationPath $archive -Force
-Get-Item -LiteralPath (Join-Path $OutputDirectory ($baseName + '-setup.exe')),$archive | Select-Object Name,Length,FullName
+Get-Item -LiteralPath $setup,$archive | Select-Object Name,Length,FullName

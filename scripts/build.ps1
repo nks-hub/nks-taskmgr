@@ -1,3 +1,4 @@
+#requires -Version 7.2
 param(
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [switch]$Test,
@@ -5,11 +6,25 @@ param(
     [switch]$Fresh,
     [switch]$WinUI,
     [string]$DotNet = 'dotnet',
-    [ValidatePattern('^([0-9a-fA-F]{64})?$')][string]$BrokerPublisherSpkiSha256 = ''
+    [ValidatePattern('^([0-9a-fA-F]{64})?$')][string]$BrokerPublisherSpkiSha256 = '',
+    [ValidatePattern('^([0-9a-fA-F]{64})?$')][string]$UpdatePublisherSpkiSha256 = '',
+    [ValidatePattern('^([0-9a-fA-F]{40})?$')][string]$SigningCertificateThumbprint = '',
+    [string]$SignTool = '',
+    [string]$TimestampServer = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'sign.ps1') -SigningCertificateThumbprint $SigningCertificateThumbprint -SignTool $SignTool -TimestampServer $TimestampServer
+$signer = $null
+if ($SigningCertificateThumbprint) {
+    if (!$WinUI) { throw 'Use -WinUI when requesting a signed application payload.' }
+    $signer = Get-NksSigningContext $SigningCertificateThumbprint $SignTool $TimestampServer
+    foreach ($pin in @($BrokerPublisherSpkiSha256, $UpdatePublisherSpkiSha256)) {
+        if ($pin -and $pin -ine $signer.Pin) { throw 'An explicit build pin differs from the selected certificate SPKI SHA-256.' }
+    }
+    $BrokerPublisherSpkiSha256 = $UpdatePublisherSpkiSha256 = $signer.Pin
+} elseif ($SignTool -or $TimestampServer) { throw 'Signing options require SigningCertificateThumbprint.' }
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
 if (-not (Test-Path -LiteralPath $vswhere)) { throw 'Visual Studio Installer was not found.' }
 $visualStudio = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
@@ -34,7 +49,9 @@ Push-Location $projectRoot
 try {
     # The x86 and x64 registry views can point to different SDK installations.
     $env:UCRTContentRoot = $sdkRoot
-    $configureArguments = @('--preset', 'windows-msvc', "-DNKS_BROKER_PUBLISHER_SPKI_SHA256=$BrokerPublisherSpkiSha256")
+    $sourceRevision = (& git -C $projectRoot rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or $sourceRevision -notmatch '^[0-9a-fA-F]{40}$') { throw 'A full Git source revision is required for build pin evidence.' }
+    $configureArguments = @('--preset', 'windows-msvc', "-DNKS_BROKER_PUBLISHER_SPKI_SHA256=$BrokerPublisherSpkiSha256", "-DNKS_UPDATE_PUBLISHER_SPKI_SHA256=$UpdatePublisherSpkiSha256")
     if ($Fresh) { $configureArguments += '--fresh' }
     & $cmake @configureArguments
     if ($LASTEXITCODE) { throw "CMake configuration failed: $LASTEXITCODE" }
@@ -45,6 +62,13 @@ try {
     if ($LASTEXITCODE) { throw "x86 dump helper configuration failed: $LASTEXITCODE" }
     & $cmake --build build\msvc-dump-x86 --config $Configuration --target nks-dump-worker-x86 --parallel 4
     if ($LASTEXITCODE) { throw "x86 dump helper build failed: $LASTEXITCODE" }
+    $cache = Get-Content -LiteralPath (Join-Path $projectRoot 'build\msvc\CMakeCache.txt')
+    foreach ($definition in @(@('NKS_BROKER_PUBLISHER_SPKI_SHA256', $BrokerPublisherSpkiSha256), @('NKS_UPDATE_PUBLISHER_SPKI_SHA256', $UpdatePublisherSpkiSha256))) {
+        $entry = @($cache | Where-Object { $_.StartsWith($definition[0] + ':STRING=', [StringComparison]::Ordinal) })
+        if ($entry.Count -ne 1 -or $entry[0].Split('=', 2)[1] -ine $definition[1]) { throw 'The configured native publisher pin does not match the build request.' }
+    }
+    if ((& git -C $projectRoot rev-parse HEAD).Trim() -ine $sourceRevision) { throw 'The source revision changed during the native build. Rebuild before signing.' }
+    Write-NksPinEvidence (Join-Path $projectRoot "build\msvc\$Configuration") $sourceRevision $BrokerPublisherSpkiSha256 $UpdatePublisherSpkiSha256
     if ($Test) {
         & $ctest --preset $preset
         if ($LASTEXITCODE) { throw "Tests failed: $LASTEXITCODE" }
@@ -55,11 +79,25 @@ try {
     }
     if ($WinUI) {
         $winuiOutput = Join-Path $projectRoot 'build\winui-aot'
-        $nativeMonitor = Join-Path $projectRoot "build\msvc\$Configuration\nks-monitor.dll"
-        $iconWorker = Join-Path $projectRoot "build\msvc\$Configuration\nks-icon-worker.exe"
+        $nativeDirectory = Join-Path $projectRoot "build\msvc\$Configuration"
         $dumpWorkerX86 = Join-Path $projectRoot "build\msvc-dump-x86\$Configuration\nks-dump-worker-x86.exe"
-        & $DotNet publish src\winui\NksTaskMgr.WinUI.csproj -c $Configuration -r win-x64 -o $winuiOutput "-p:NativeMonitorPath=$nativeMonitor" "-p:IconWorkerPath=$iconWorker" "-p:DumpWorkerX86Path=$dumpWorkerX86" "-p:BrokerPublisherSpkiSha256=$BrokerPublisherSpkiSha256"
+        $publishProperties = @{
+            NativeMonitorPath='nks-monitor.dll'; IconWorkerPath='nks-icon-worker.exe'; DetailsWorkerPath='nks-details-worker.exe';
+            CollectorWorkerPath='nks-collector-worker.exe'; ActionsWorkerPath='nks-actions-worker.exe'; ServiceActionsWorkerPath='nks-service-actions-worker.exe';
+            DumpWorkerPath='nks-dump-worker.exe'; ElevationBrokerPath='nks-elevation-broker.exe'; UpdateWorkerPath='nks-update-worker.exe'
+        }
+        $publishArguments = @('publish', 'src\winui\NksTaskMgr.WinUI.csproj', '-c', $Configuration, '-r', 'win-x64', '-o', $winuiOutput,
+            "-p:DumpWorkerX86Path=$dumpWorkerX86", "-p:BrokerPublisherSpkiSha256=$BrokerPublisherSpkiSha256", "-p:UpdatePublisherSpkiSha256=$UpdatePublisherSpkiSha256")
+        foreach ($property in $publishProperties.GetEnumerator()) { $publishArguments += "-p:$($property.Key)=$(Join-Path $nativeDirectory $property.Value)" }
+        & $DotNet @publishArguments
         if ($LASTEXITCODE) { throw "WinUI Native AOT publication failed: $LASTEXITCODE" }
+        foreach ($name in (Get-NksOwnedArtifactNames)) {
+            if (!(Test-Path -LiteralPath (Join-Path $winuiOutput $name) -PathType Leaf)) { throw "The published payload is missing $name." }
+        }
+        $product = [Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $winuiOutput 'NksTaskMgr.WinUI.exe'))
+        if ($product.ProductVersion.Split('+')[-1] -ine $sourceRevision) { throw 'The published GUI source revision differs from its build evidence.' }
+        Write-NksPinEvidence $winuiOutput $sourceRevision $BrokerPublisherSpkiSha256 $UpdatePublisherSpkiSha256
+        if ($signer) { Invoke-NksSignPayload $winuiOutput $signer }
         if ($Test) {
             $resultPath = Join-Path ([IO.Path]::GetTempPath()) ("nks-winui-" + [guid]::NewGuid().ToString('N') + '.txt')
             $candidate = Start-Process -FilePath (Join-Path $winuiOutput 'NksTaskMgr.WinUI.exe') -ArgumentList "--smoke=$resultPath" -WindowStyle Hidden -PassThru
