@@ -17,6 +17,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 add_compile_definitions(UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN WINVER=0x0A00 _WIN32_WINNT=0x0A00)
 
+set(NKS_BROKER_PUBLISHER_SPKI_SHA256 "" CACHE STRING "SHA-256 of the permitted broker publisher public key")
+if(NOT NKS_BROKER_PUBLISHER_SPKI_SHA256 STREQUAL "")
+    string(LENGTH "${NKS_BROKER_PUBLISHER_SPKI_SHA256}" broker_pin_length)
+    if(NOT broker_pin_length EQUAL 64 OR NOT NKS_BROKER_PUBLISHER_SPKI_SHA256 MATCHES "^[0-9a-fA-F]+$")
+        message(FATAL_ERROR "NKS_BROKER_PUBLISHER_SPKI_SHA256 must be empty or 64 hexadecimal characters.")
+    endif()
+endif()
+
 add_library(nks_native STATIC
     src/collectors/process_query.c
     src/collectors/process_parser.cpp
@@ -89,6 +97,23 @@ target_compile_definitions(nks-actions-worker PRIVATE PHNT_VERSION=117)
 target_link_libraries(nks-actions-worker PRIVATE nks_native user32)
 target_compile_options(nks-actions-worker PRIVATE /W4 /WX /utf-8 /permissive-)
 target_link_options(nks-actions-worker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
+
+add_executable(nks-elevation-broker
+    src/elevation_broker/main.cpp
+    src/elevation_broker/bridge.cpp
+    src/elevation_broker/server.cpp
+    src/elevation_broker/consent.cpp
+    src/core/broker_trust.cpp
+    src/core/broker_pipe.cpp
+    src/collectors/process_actions.cpp
+    src/collectors/process_tree_actions.cpp
+)
+target_include_directories(nks-elevation-broker SYSTEM PRIVATE third_party/phnt/include)
+target_compile_definitions(nks-elevation-broker PRIVATE PHNT_VERSION=117
+    NKS_BROKER_PUBLISHER_SPKI_SHA256="${NKS_BROKER_PUBLISHER_SPKI_SHA256}")
+target_link_libraries(nks-elevation-broker PRIVATE nks_native user32 comctl32 shell32 ole32 wintrust crypt32 bcrypt advapi32)
+target_compile_options(nks-elevation-broker PRIVATE /W4 /WX /utf-8 /permissive-)
+target_link_options(nks-elevation-broker PRIVATE "/MANIFESTUAC:level='asInvoker' uiAccess='false'" /DEPENDENTLOADFLAG:0xA00)
 
 add_executable(nks-service-actions-worker
     src/service_actions_worker/main.cpp

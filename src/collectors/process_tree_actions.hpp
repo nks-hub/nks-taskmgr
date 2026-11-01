@@ -14,5 +14,5 @@ struct TreeResult {
     std::uint32_t ordinal{}, flags{nonAtomic}, passes{}, residualCount{};
 };
 using PublishTreePlan = std::function<bool(const TreeResult&)>;
-TreeResult terminateProcessTree(const Context& context, const Target& root, const PublishTreePlan& publish);
+TreeResult terminateProcessTree(const Context& context, const Target& root, const PublishTreePlan& publish, HANDLE heldRoot = nullptr);
 }

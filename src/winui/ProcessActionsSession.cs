@@ -12,8 +12,10 @@ internal sealed partial class ProcessActionsSession : IDisposable
     private SafeFileHandle? job;
     private Process? child;
     private bool canceled;
+    private readonly bool elevated;
     private ProcessTreeActionsPlan? treePlan;
     internal ProcessTreeActionsPlan? TreePlan => Volatile.Read(ref treePlan);
+    internal ProcessActionsSession(bool elevated = false) => this.elevated = elevated;
 
     internal async Task<ProcessActionsBatch> ExecuteAsync(byte[] request, CancellationToken cancellation)
     {
@@ -69,6 +71,8 @@ internal sealed partial class ProcessActionsSession : IDisposable
     private Process Start(CancellationToken cancellation)
     {
         cancellation.ThrowIfCancellationRequested();
+        using var trusted = elevated ? ElevationBrokerTrust.Open() : null;
+        cancellation.ThrowIfCancellationRequested();
         var ownedJob = CreateJobObject(0, 0);
         if (ownedJob.IsInvalid) { int error = Marshal.GetLastPInvokeError(); ownedJob.Dispose(); throw new Win32Exception(error); }
         try {
@@ -79,13 +83,14 @@ internal sealed partial class ProcessActionsSession : IDisposable
                 cancellation.ThrowIfCancellationRequested();
                 ObjectDisposedException.ThrowIf(canceled, this);
                 job = ownedJob;
-                var start = new ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, "nks-actions-worker.exe")) {
+                var start = new ProcessStartInfo(trusted?.Path ?? Path.Combine(AppContext.BaseDirectory, "nks-actions-worker.exe")) {
                     WorkingDirectory = AppContext.BaseDirectory, UseShellExecute = false, CreateNoWindow = true,
                     RedirectStandardInput = true, RedirectStandardOutput = true, StandardInputEncoding = new UTF8Encoding(false)
                 };
                 start.ArgumentList.Add("--stdio");
                 child = Process.Start(start) ?? throw new IOException("Pracovníka akcí se nepodařilo spustit.");
                 if (!AssignProcessToJobObject(ownedJob, child.SafeHandle)) throw new Win32Exception(Marshal.GetLastPInvokeError());
+                trusted?.VerifyProcess(child);
                 return child;
             }
         } catch {

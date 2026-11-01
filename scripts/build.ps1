@@ -4,7 +4,8 @@ param(
     [switch]$Benchmark,
     [switch]$Fresh,
     [switch]$WinUI,
-    [string]$DotNet = 'dotnet'
+    [string]$DotNet = 'dotnet',
+    [ValidatePattern('^([0-9a-fA-F]{64})?$')][string]$BrokerPublisherSpkiSha256 = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -33,7 +34,7 @@ Push-Location $projectRoot
 try {
     # The x86 and x64 registry views can point to different SDK installations.
     $env:UCRTContentRoot = $sdkRoot
-    $configureArguments = @('--preset', 'windows-msvc')
+    $configureArguments = @('--preset', 'windows-msvc', "-DNKS_BROKER_PUBLISHER_SPKI_SHA256=$BrokerPublisherSpkiSha256")
     if ($Fresh) { $configureArguments += '--fresh' }
     & $cmake @configureArguments
     if ($LASTEXITCODE) { throw "CMake configuration failed: $LASTEXITCODE" }
@@ -57,7 +58,7 @@ try {
         $nativeMonitor = Join-Path $projectRoot "build\msvc\$Configuration\nks-monitor.dll"
         $iconWorker = Join-Path $projectRoot "build\msvc\$Configuration\nks-icon-worker.exe"
         $dumpWorkerX86 = Join-Path $projectRoot "build\msvc-dump-x86\$Configuration\nks-dump-worker-x86.exe"
-        & $DotNet publish src\winui\NksTaskMgr.WinUI.csproj -c $Configuration -r win-x64 -o $winuiOutput "-p:NativeMonitorPath=$nativeMonitor" "-p:IconWorkerPath=$iconWorker" "-p:DumpWorkerX86Path=$dumpWorkerX86"
+        & $DotNet publish src\winui\NksTaskMgr.WinUI.csproj -c $Configuration -r win-x64 -o $winuiOutput "-p:NativeMonitorPath=$nativeMonitor" "-p:IconWorkerPath=$iconWorker" "-p:DumpWorkerX86Path=$dumpWorkerX86" "-p:BrokerPublisherSpkiSha256=$BrokerPublisherSpkiSha256"
         if ($LASTEXITCODE) { throw "WinUI Native AOT publication failed: $LASTEXITCODE" }
         if ($Test) {
             $resultPath = Join-Path ([IO.Path]::GetTempPath()) ("nks-winui-" + [guid]::NewGuid().ToString('N') + '.txt')

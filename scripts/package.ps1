@@ -11,7 +11,7 @@ if (!$OutputDirectory) { $OutputDirectory = Join-Path $projectRoot 'build\packag
 $AppDirectory = (Resolve-Path -LiteralPath $AppDirectory).Path
 $compilerPath = (Get-Command $Compiler -ErrorAction Stop).Source
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
-foreach ($required in @('NksTaskMgr.WinUI.exe', 'nks-monitor.dll', 'nks-icon-worker.exe', 'nks-details-worker.exe', 'nks-collector-worker.exe', 'nks-actions-worker.exe', 'nks-service-actions-worker.exe', 'nks-dump-worker.exe', 'nks-dump-worker-x86.exe', 'app.ico', 'NksTaskMgr.WinUI.pri')) {
+foreach ($required in @('NksTaskMgr.WinUI.exe', 'nks-monitor.dll', 'nks-icon-worker.exe', 'nks-details-worker.exe', 'nks-collector-worker.exe', 'nks-actions-worker.exe', 'nks-service-actions-worker.exe', 'nks-dump-worker.exe', 'nks-dump-worker-x86.exe', 'nks-elevation-broker.exe', 'app.ico', 'NksTaskMgr.WinUI.pri')) {
     if (!(Test-Path -LiteralPath (Join-Path $AppDirectory $required))) { throw "Publish the complete WinUI application first: missing $required." }
 }
 $information = [Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $AppDirectory 'NksTaskMgr.WinUI.exe'))

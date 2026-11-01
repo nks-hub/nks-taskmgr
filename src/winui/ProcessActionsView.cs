@@ -9,6 +9,7 @@ public sealed partial class MainWindow
 {
     private readonly Button processActionsButton = Button("Akce");
     private readonly ProcessActionsClient processActionsClient = new();
+    private readonly ElevationBrokerClient elevationBrokerClient = new();
     private CancellationTokenSource? processActionOperation;
     private ProcessRow[] processActionTargets = [];
     private ContentDialog? processActionDialog;
@@ -27,8 +28,15 @@ public sealed partial class MainWindow
             item.Click += async (_, _) => await StartProcessActionAsync(command); menu.Items.Add(item);
         }
         processActionsButton.Flyout = menu;
+        var administrator = new MenuFlyoutSubItem { Text = "Se zvýšenými právy správce" };
+        foreach (var command in new[] { ProcessActionCommand.CloseWindows, ProcessActionCommand.Terminate, ProcessActionCommand.TerminateTree,
+            ProcessActionCommand.Suspend, ProcessActionCommand.Resume, ProcessActionCommand.Priority, ProcessActionCommand.Affinity }) {
+            var item = new MenuFlyoutItem { Text = ActionTitle(command) + " jako správce…" };
+            item.Click += async (_, _) => await StartProcessActionAsync(command, elevated: true); administrator.Items.Add(item);
+        }
+        menu.Items.Add(new MenuFlyoutSeparator()); menu.Items.Add(administrator);
         Closed += (_, _) => {
-            processActionsClosed = true; processActionOperation?.Cancel(); processActionDialog?.Hide(); processActionsClient.Dispose();
+            processActionsClosed = true; processActionOperation?.Cancel(); processActionDialog?.Hide(); processActionsClient.Dispose(); elevationBrokerClient.Dispose();
         };
     }
 
@@ -45,8 +53,8 @@ public sealed partial class MainWindow
     private void RefreshProcessActions()
     {
         var rows = ActionSelection();
-        processActionsButton.IsEnabled = !processActionBusy && !processActionsClient.IsBusy && rows.Length is > 0 and <= 64 && rows.All(Actionable);
-        ToolTipService.SetToolTip(processActionsButton, processActionsClient.IsBusy ? "Čekám na ukončení vlastního pracovníka před další akcí." : rows.Length > 64 ? "Vyberte nejvýše 64 procesů."
+        processActionsButton.IsEnabled = !processActionBusy && !processActionsClient.IsBusy && !elevationBrokerClient.IsBusy && rows.Length is > 0 and <= 64 && rows.All(Actionable);
+        ToolTipService.SetToolTip(processActionsButton, processActionsClient.IsBusy || elevationBrokerClient.IsBusy ? "Čekám na ukončení vlastního pracovníka nebo zvýšeného požadavku. Neopakujte akci." : rows.Length > 64 ? "Vyberte nejvýše 64 procesů."
             : "Zavření oken, ukončení, pozastavení, priorita a afinita živých procesů stejného uživatele a relace");
         if (!processActionBusy) return;
         bool current = ActionSelectionUnchanged(processActionTargets);
@@ -55,7 +63,7 @@ public sealed partial class MainWindow
             dialog.IsPrimaryButtonEnabled = current && ready();
     }
 
-    private async Task StartProcessActionAsync(ProcessActionCommand command)
+    private async Task StartProcessActionAsync(ProcessActionCommand command, bool elevated = false)
     {
         if (processActionBusy || processActionsClosed) return;
         var rows = ActionSelection();
@@ -72,7 +80,7 @@ public sealed partial class MainWindow
             ProcessActionsBatch? query = null;
             if (command is ProcessActionCommand.Priority or ProcessActionCommand.Affinity) {
                 footer.Text = "Načítám současnou prioritu a afinitu vybraných procesů…";
-                query = await processActionsClient.ExecuteAsync(ActionRequest(ProcessActionCommand.Query, rows), operation.Token);
+                query = await ExecuteActionRequestAsync(ActionRequest(ProcessActionCommand.Query, rows), elevated, operation.Token);
                 if (query.Frame != ProcessActionFrame.Results || query.Results.Any(row => row.Outcome != ProcessActionOutcome.Inspected)) {
                     await ActionResultsAsync("Nastavení procesu není dostupné", rows, query); return;
                 }
@@ -83,7 +91,7 @@ public sealed partial class MainWindow
             if (!ActionSelectionUnchanged(rows) || operation.IsCancellationRequested) {
                 await ActionMessageAsync("Výběr se změnil", rows, "Akce nebyla odeslána. Vyberte znovu živý proces."); return;
             }
-            await ExecuteProcessActionAsync(request, rows, operation);
+            await ExecuteProcessActionAsync(request, rows, operation, elevated);
         } catch (Exception error) when (error is IOException or InvalidDataException or TimeoutException or OperationCanceledException) {
             if (!processActionsClosed) await ActionMessageAsync("Dotaz na nastavení nebyl dokončen", rows,
                 error is OperationCanceledException ? "Výběr už není aktuální nebo byl dotaz zrušen. Změna nebyla odeslána." : error.Message + " Změna nebyla odeslána.");
@@ -152,15 +160,19 @@ public sealed partial class MainWindow
         return choiceResult == ContentDialogResult.Primary ? ActionRequest(command, rows, argument, group) : null;
     }
 
-    private async Task ExecuteProcessActionAsync(ProcessActionsRequest request, ProcessRow[] rows, CancellationTokenSource operation)
+    private Task<ProcessActionsBatch> ExecuteActionRequestAsync(ProcessActionsRequest request, bool elevated, CancellationToken cancellation)
+        => elevated ? elevationBrokerClient.ExecuteAsync(request, cancellation) : processActionsClient.ExecuteAsync(request, cancellation);
+
+    private async Task ExecuteProcessActionAsync(ProcessActionsRequest request, ProcessRow[] rows, CancellationTokenSource operation, bool elevated = false)
     {
         var content = new StackPanel { Spacing = 10 }; content.Children.Add(ActionText("Čekám na výsledek pracovníka. Zrušení čekání nevrátí již provedenou akci."));
+        if (elevated) content.Children.Add(ActionText("Výslovně žádáte zvýšení práv. Následuje UAC (nejvýše 90 s) a vlastní potvrzení správce (60 s); samotná akce má limit 5 s. Nepotvrzený požadavek se automaticky neopakuje."));
         var dialog = ActionDialog(ActionTitle(request.Command), content); dialog.CloseButtonText = "Zrušit čekání";
         bool running = true; Task? work = null;
         async Task Run() {
             try {
                 processActionDispatched = request.Command != ProcessActionCommand.Query;
-                var result = await processActionsClient.ExecuteAsync(request, operation.Token);
+                var result = await ExecuteActionRequestAsync(request, elevated, operation.Token);
                 content.Children.Clear(); AddActionResults(content, rows, result);
             } catch (ProcessTreeActionsUnknownException error) {
                 content.Children.Clear(); AddUnknownTreeResults(content, rows[0], error.Plan, error.Message);
@@ -228,6 +240,8 @@ public sealed partial class MainWindow
 
     private static void AddActionResults(StackPanel content, ProcessRow[] rows, ProcessActionsBatch result)
     {
+        string brokerStatus = ElevationBrokerClient.Status(result.Error);
+        if (brokerStatus.Length > 0) content.Children.Add(ActionText(brokerStatus));
         if (result.Command == ProcessActionCommand.TerminateTree) { AddTreeActionResults(content, rows[0], result); return; }
         content.Children.Add(ActionText("Odpověď " + result.ReceivedAt.LocalDateTime.ToString("HH:mm:ss") + " · " + ActionTitle(result.Command)));
         foreach (var row in rows) {

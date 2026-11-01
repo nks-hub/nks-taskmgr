@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+namespace nks::broker { class Consent; }
 namespace nks::actions {
 struct HandleCloser { void operator()(HANDLE value) const noexcept { if (value && value != INVALID_HANDLE_VALUE) CloseHandle(value); } };
 using Handle = std::unique_ptr<void, HandleCloser>;
@@ -33,6 +34,13 @@ struct Context {
     ProcessIdentity parentKey;
     Reason denial{Reason::parentUnavailable};
     bool ready{};
+    std::vector<DWORD> protectedPids;
+    Handle brokerClient;
+    ProcessIdentity brokerClientKey;
+    bool brokerConsented() const noexcept { return consented; }
+private:
+    bool consented{};
+    friend class nks::broker::Consent;
 };
 
 Context actionContext();

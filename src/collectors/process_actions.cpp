@@ -3,6 +3,7 @@
 #include "process_actions.hpp"
 #include <array>
 #include <limits>
+#include <algorithm>
 
 namespace nks::actions {
 namespace {
@@ -105,6 +106,11 @@ void metadata(HANDLE process, Result& result)
 bool parentAlive(const Context& context)
 {
     if (!context.ready || !context.parent || WaitForSingleObject(context.parent.get(), 0) != WAIT_TIMEOUT) return false;
+    if (context.brokerClient) {
+        const auto client = queryProcessIdentity(context.brokerClient.get(), context.brokerClientKey.generationKind);
+        if (WaitForSingleObject(context.brokerClient.get(), 0) != WAIT_TIMEOUT
+            || client.state != SampleState::valid || client.identity != context.brokerClientKey) return false;
+    }
     const auto parent = queryProcessIdentity(context.parent.get(), context.parentKey.generationKind);
     return parent.state == SampleState::valid && parent.identity == context.parentKey;
 }
@@ -211,14 +217,16 @@ void applyHeldAction(const Context& context, Command command, std::uint64_t argu
 {
     const auto pid = result.target.key.pid;
     if (!pid || pid == 4) { refuse(result, Reason::systemTarget); return; }
-    if (pid == context.ownPid || pid == context.parentPid) { refuse(result, Reason::ownOrParent); return; }
+    if (pid == context.ownPid || pid == context.parentPid
+        || std::find(context.protectedPids.begin(), context.protectedPids.end(), pid) != context.protectedPids.end()) { refuse(result, Reason::ownOrParent); return; }
     if (!parentAlive(context)) { refuse(result, context.ready ? Reason::parentUnavailable : context.denial); return; }
     if (!process) { refuse(result, Reason::identityUnverifiable, ERROR_INVALID_HANDLE); return; }
     if (!verify(process, result, true) || protectedTarget(process, result)) return;
     std::vector<std::byte> user; DWORD session = 0;
     if (!tokenIdentity(process, user, session)) { refuse(result, Reason::protectionUnverifiable, lastError()); return; }
     if (!session || systemUser(user)) { refuse(result, Reason::systemTarget); return; }
-    if (session != context.session || !EqualSid(user.data(), const_cast<std::byte*>(context.user.data()))) { refuse(result, Reason::ownerMismatch); return; }
+    if (session != context.session || (!context.brokerConsented()
+        && !EqualSid(user.data(), const_cast<std::byte*>(context.user.data())))) { refuse(result, Reason::ownerMismatch); return; }
     metadata(process, result);
     if (command == Command::query) { result.outcome = Outcome::inspected; lifeAfter(process, command, result); return; }
     if (command == Command::affinity && (!(result.flags & affinityAvailable) || result.group != group)) {

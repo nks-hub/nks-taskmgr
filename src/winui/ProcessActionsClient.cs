@@ -7,16 +7,18 @@ internal sealed class ProcessActionsClient : IDisposable
     private ProcessActionsSession? active;
     private int pending;
     private bool disposed;
+    private readonly bool elevated;
     internal bool IsBusy => Volatile.Read(ref pending) != 0;
+    internal ProcessActionsClient(bool elevated = false) => this.elevated = elevated;
 
     internal async Task<ProcessActionsBatch> ExecuteAsync(ProcessActionsRequest request, CancellationToken cancellation)
     {
         lock (sync) ObjectDisposedException.ThrowIf(disposed, this);
         if (Interlocked.CompareExchange(ref pending, 1, 0) != 0)
             throw new IOException("Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek.");
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(elevated ? 175 : 5));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellation, lifetime.Token, deadline.Token);
-        var session = new ProcessActionsSession();
+        var session = new ProcessActionsSession(elevated);
         bool started = false;
         try {
             var bytes = ProcessActionsProtocol.Request(request);
@@ -35,12 +37,14 @@ internal sealed class ProcessActionsClient : IDisposable
             _ = work.ContinueWith(task => _ = task.Exception, CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             var result = await work.WaitAsync(linked.Token).ConfigureAwait(false);
-            if (request.Command != ProcessActionCommand.TerminateTree) CapabilityReports.ObserveActions(result);
+            if (!elevated && request.Command != ProcessActionCommand.TerminateTree) CapabilityReports.ObserveActions(result);
             return result;
+        } catch (ElevationBrokerTrustException) { throw;
         } catch (OperationCanceledException error) when (deadline.IsCancellationRequested && !cancellation.IsCancellationRequested && !lifetime.IsCancellationRequested) {
             if (request.Command == ProcessActionCommand.TerminateTree)
                 throw new ProcessTreeActionsUnknownException("Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.", session.TreePlan, error);
-            throw new TimeoutException("Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.", error);
+            throw new TimeoutException(elevated ? "Čekání na zvýšení práv nebo výsledek skončilo. Výsledek případné akce není známý."
+                : "Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.", error);
         } catch (OperationCanceledException error) when (request.Command == ProcessActionCommand.TerminateTree) {
             throw new ProcessTreeActionsUnknownException("Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést.", session.TreePlan, error);
         } catch (Exception error) when (request.Command == ProcessActionCommand.TerminateTree && error is IOException or InvalidDataException) {

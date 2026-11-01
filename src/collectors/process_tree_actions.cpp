@@ -106,12 +106,15 @@ void execute(const Context& context, TreeNode& node, std::uint32_t& order)
 }
 }
 
-TreeResult terminateProcessTree(const Context& context, const Target& root, const PublishTreePlan& publish)
+TreeResult terminateProcessTree(const Context& context, const Target& root, const PublishTreePlan& publish, HANDLE heldRoot)
 {
     const auto began = Clock::now();
     TreeResult tree; tree.root = root; tree.nodes.reserve(maximumTreeTargets);
     TreeNode first; first.result.target = root;
-    first.process.reset(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE | PROCESS_TERMINATE, FALSE, root.key.pid));
+    if (heldRoot) {
+        HANDLE copy = nullptr;
+        if (DuplicateHandle(GetCurrentProcess(), heldRoot, GetCurrentProcess(), &copy, 0, FALSE, DUPLICATE_SAME_ACCESS)) first.process.reset(copy);
+    } else first.process.reset(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE | PROCESS_TERMINATE, FALSE, root.key.pid));
     if (first.process) applyHeldAction(context, Command::query, 0, 0, first.process.get(), first.result);
     else {
         first.result.outcome = Outcome::refused; first.result.error = GetLastError();

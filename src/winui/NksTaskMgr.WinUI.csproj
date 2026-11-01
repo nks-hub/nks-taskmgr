@@ -23,8 +23,10 @@
     <ServiceActionsWorkerPath Condition="'$(ServiceActionsWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-service-actions-worker.exe</ServiceActionsWorkerPath>
     <DumpWorkerPath Condition="'$(DumpWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-dump-worker.exe</DumpWorkerPath>
     <DumpWorkerX86Path Condition="'$(DumpWorkerX86Path)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc-dump-x86\Release\nks-dump-worker-x86.exe</DumpWorkerX86Path>
+    <ElevationBrokerPath Condition="'$(ElevationBrokerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-elevation-broker.exe</ElevationBrokerPath>
   </PropertyGroup>
   <ItemGroup>
+    <AssemblyMetadata Include="Nks.BrokerPublisherSpkiSha256" Value="$(BrokerPublisherSpkiSha256)" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.261008100" />
     <ProjectReference Include="..\interop\dotnet\NksTaskMgr.Native.csproj" />
@@ -36,10 +38,12 @@
     <None Include="$(ServiceActionsWorkerPath)" Link="nks-service-actions-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Include="$(DumpWorkerPath)" Link="nks-dump-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Include="$(DumpWorkerX86Path)" Link="nks-dump-worker-x86.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+    <None Include="$(ElevationBrokerPath)" Link="nks-elevation-broker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\..\assets\app.ico" Link="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <Content Include="..\..\assets\app.png" Link="app.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
   <Target Name="RequireNativeMonitor" BeforeTargets="PrepareForBuild">
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(BrokerPublisherSpkiSha256)', '^([0-9a-fA-F]{64})?$'))" Text="BrokerPublisherSpkiSha256 must be empty or 64 hexadecimal characters." />
     <Error Condition="!Exists('$(NativeMonitorPath)')" Text="Build the native Release library before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(IconWorkerPath)')" Text="Build the native Release icon worker before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(DetailsWorkerPath)')" Text="Build the native Release details worker before publishing the WinUI candidate." />
@@ -48,5 +52,6 @@
     <Error Condition="!Exists('$(ServiceActionsWorkerPath)')" Text="Build the native Release service actions worker before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(DumpWorkerPath)')" Text="Build the native Release x64 dump worker before publishing the WinUI candidate." />
     <Error Condition="!Exists('$(DumpWorkerX86Path)')" Text="Build the native Release x86 dump worker before publishing the WinUI candidate." />
+    <Error Condition="!Exists('$(ElevationBrokerPath)')" Text="Build the native Release elevation broker before publishing the WinUI candidate." />
   </Target>
 </Project>
