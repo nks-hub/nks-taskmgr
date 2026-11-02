@@ -14,12 +14,22 @@ public partial class App : Application
         .FirstOrDefault(arg => arg.StartsWith("--check-actions=", StringComparison.Ordinal))?[16..];
     internal static string? DumpCheckPath { get; } = Environment.GetCommandLineArgs()
         .FirstOrDefault(arg => arg.StartsWith("--check-dump=", StringComparison.Ordinal))?[13..];
-    internal static void Trace(string stage) { if ((SmokePath ?? EventsCheckPath ?? ActionsCheckPath ?? DumpCheckPath) is { } path) File.AppendAllText(path, stage + Environment.NewLine); }
+    internal static string? ApplicationGroupsCheckPath { get; } = Environment.GetCommandLineArgs()
+        .FirstOrDefault(arg => arg.StartsWith("--check-applications=", StringComparison.Ordinal))?[21..];
+    internal static bool ApplicationGroupsUnhandledError { get; private set; }
+    internal static void Trace(string stage) { if ((SmokePath ?? EventsCheckPath ?? ActionsCheckPath ?? DumpCheckPath ?? ApplicationGroupsCheckPath) is { } path) File.AppendAllText(path, stage + Environment.NewLine); }
     private Window? window;
 
     public App()
     {
-        UnhandledException += (_, args) => Trace(args.Exception.ToString());
+        UnhandledException += (_, args) => {
+            Trace(args.Exception.ToString());
+            if (ApplicationGroupsCheckPath is not null) {
+                ApplicationGroupsUnhandledError = true;
+                Environment.ExitCode = 1;
+                args.Handled = true;
+            }
+        };
         InitializeComponent();
     }
 
@@ -38,8 +48,12 @@ public partial class App : Application
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dumpPath))!);
             window = new ProcessDumpQaWindow(dumpPath); window.Activate(); return;
         }
+        if (ApplicationGroupsCheckPath is { } applicationPath)
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(applicationPath))!);
         Trace("Constructing window");
-        window = new MainWindow();
-        window.Activate();
+        var main = new MainWindow();
+        window = main;
+        main.Activate();
+        if (ApplicationGroupsCheckPath is not null) main.BeginApplicationGroupChecks();
     }
 }

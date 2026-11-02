@@ -376,7 +376,7 @@ public sealed partial class MainWindow : Window
 
     private void Tick()
     {
-        if (sortBenchmarkRunning) return;
+        if (sortBenchmarkRunning || App.ApplicationGroupsCheckPath is not null) return;
         long cpuTick = BeginLiveCpuTick();
         try {
             bool minimized = IsIconic(windowHandle);

@@ -4,7 +4,8 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-public sealed class ApplicationGroupRow(ProcessKey key) : INotifyPropertyChanged
+[WinRT.GeneratedBindableCustomProperty]
+public sealed partial class ApplicationGroupRow(ProcessKey key) : INotifyPropertyChanged
 {
     public ProcessKey Key { get; } = key;
     public string Title { get; private set; } = "";

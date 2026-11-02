@@ -10,6 +10,7 @@ public sealed partial class MainWindow
 {
     private readonly Grid applicationWorkspace = new() { ColumnSpacing = 10, RowSpacing = 6 };
     private readonly ListView applicationGroups = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
+    private readonly ApplicationGroupTemplates applicationTemplates = new();
     private readonly ComboBox applicationChoice = new() { DisplayMemberPath = nameof(ApplicationGroupRow.Title), HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 32 };
     private readonly TextBlock applicationStatus = Label("", 11, 0x95a4ad), applicationFacts = Label("", 11, 0x95a4ad);
     private readonly CancellationTokenSource applicationLifetime = new();
@@ -30,7 +31,7 @@ public sealed partial class MainWindow
         var note = new ScrollViewer { Content = applicationStatus, MaxHeight = 80, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         sidebar.Children.Add(note); sidebar.Children.Add(applicationGroups); Grid.SetRow(applicationGroups, 1);
         applicationGroups.ItemsSource = applicationChoice.ItemsSource = model.Applications.Visible;
-        var templates = new ApplicationGroupTemplates(); applicationGroups.ItemTemplate = (DataTemplate)templates["ApplicationGroup"];
+        applicationGroups.ItemTemplate = (DataTemplate)applicationTemplates["ApplicationGroup"];
         var style = new Style { TargetType = typeof(ListViewItem) };
         style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0))); style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
         applicationGroups.ItemContainerStyle = style;
