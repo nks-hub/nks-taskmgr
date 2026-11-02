@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
@@ -32,7 +33,7 @@ struct Winsock {
     ~Winsock() { WSACleanup(); }
 };
 
-struct Reply { unsigned status{200}; std::string body; bool stall{}; };
+struct Reply { unsigned status{200}; std::string body; bool stall{}, gated{}; };
 
 class Provider {
 public:
@@ -53,16 +54,25 @@ public:
         require(listen(listener.value, 4) == 0, "Fixture listen failed");
         worker = std::jthread([this](std::stop_token stop) { serve(stop); });
     }
-    ~Provider() { worker.request_stop(); if (worker.joinable()) worker.join(); }
+    ~Provider() {
+        { std::lock_guard lock(mutex); worker.request_stop(); }
+        ready.notify_all(); if (worker.joinable()) worker.join();
+    }
     Provider(const Provider&) = delete;
     Provider& operator=(const Provider&) = delete;
 
     void reply(Reply value) {
         std::unique_lock lock(mutex);
         require(ready.wait_for(lock, 2s, [&] { return !busy; }), "Previous fixture connection did not finish");
-        next = std::move(value);
+        next = std::move(value); released = false;
     }
     std::uint64_t connections() const { return accepted.load(); }
+    void waitForRequest(std::uint64_t count) {
+        std::unique_lock lock(mutex);
+        require(ready.wait_for(lock, 2s, [&] { return requests.load() >= count || !failure.empty(); }), "Fixture request did not arrive");
+        require(failure.empty(), failure.c_str());
+    }
+    void release() { std::lock_guard lock(mutex); released = true; ready.notify_all(); }
     void idle() {
         std::unique_lock lock(mutex);
         require(ready.wait_for(lock, 2s, [&] { return !busy; }), "Fixture connection remained open");
@@ -104,6 +114,13 @@ private:
         }
         require(request.starts_with("GET /metrics?archivelength=0&lastvalue=1&timestamps=1 HTTP/1.1\r\n"),
             "Collector used an unexpected HTTP method or sensor endpoint");
+        { std::lock_guard lock(mutex); ++requests; }
+        ready.notify_all();
+        if (value.gated) {
+            std::unique_lock lock(mutex);
+            require(ready.wait_for(lock, 2s, [&] { return released || stop.stop_requested(); }), "Owned fixture response gate expired");
+            if (stop.stop_requested()) return;
+        }
         if (value.stall) {
             const auto deadline = std::chrono::steady_clock::now() + 6s;
             while (!stop.stop_requested() && std::chrono::steady_clock::now() < deadline) {
@@ -140,10 +157,11 @@ private:
     Socket listener;
     std::jthread worker;
     std::atomic<std::uint64_t> accepted{};
+    std::atomic<std::uint64_t> requests{};
     std::mutex mutex;
     std::condition_variable ready;
     Reply next;
-    bool busy{};
+    bool busy{}, released{};
     std::string failure;
 };
 
@@ -193,12 +211,23 @@ const std::wstring& reading(const Facts& values)
     return found->value;
 }
 
+Facts waitForRead(auto&& poll)
+{
+    const auto deadline = std::chrono::steady_clock::now() + 4s;
+    do {
+        auto values = poll();
+        if (fact(values, L"Poslední čtení API") != L"Dosud neproběhlo") return values;
+        std::this_thread::sleep_for(10ms);
+    } while (std::chrono::steady_clock::now() < deadline);
+    throw std::runtime_error("Background sensor read did not publish within its bounded deadline");
+}
+
 Facts collect(Provider& provider, Reply reply)
 {
     provider.reply(std::move(reply));
     const auto before = provider.connections();
     nks::CpuSensors sensors;
-    auto facts = sensors.collect(true);
+    auto facts = waitForRead([&] { return sensors.collect(true); });
     provider.idle();
     require(provider.connections() == before + 1, "Sensor read did not make exactly one fixture request");
     return facts;
@@ -221,14 +250,14 @@ void enabledAndDisabled(Provider& provider)
 
     const auto published = publishedTime();
     provider.reply({200, metric("61.5", published.milliseconds)});
-    const auto on = resources.collect(true);
+    const auto on = waitForRead([&] { return resources.collect(true).cpuSensorFacts; });
     provider.idle();
-    require(provider.connections() == before + 1 && fact(on.cpuSensorFacts, L"Stav") == L"Publikované CPU vzorky",
+    require(provider.connections() == before + 1 && fact(on, L"Stav") == L"Publikované CPU vzorky",
         "Opt-in resource collection did not publish a CPU temperature");
-    require(reading(on.cpuSensorFacts).starts_with(L"61.5 °C") && reading(on.cpuSensorFacts).find(published.utc) != std::wstring::npos,
+    require(reading(on).starts_with(L"61.5 °C") && reading(on).find(published.utc) != std::wstring::npos,
         "Temperature units or the exact source UTC timestamp changed");
-    require(fact(on.cpuSensorFacts, L"Zdroj").find(L"identita poskytovatele neověřena") != std::wstring::npos
-        && fact(on.cpuSensorFacts, L"Adresa čtení").starts_with(L"http://127.0.0.1:8085/metrics"),
+    require(fact(on, L"Zdroj").find(L"identita poskytovatele neověřena") != std::wstring::npos
+        && fact(on, L"Adresa čtení").starts_with(L"http://127.0.0.1:8085/metrics"),
         "The external compatible source was represented as verified hardware");
     const auto disabled = resources.collect(false);
     provider.noRequestsFor(100ms);
@@ -242,7 +271,9 @@ void cacheAndDisable(Provider& provider)
     provider.reply({200, metric("52.5", unixMs())});
     const auto before = provider.connections();
     nks::CpuSensors sensors;
-    const auto first = sensors.collect(true);
+    const auto loading = sensors.collect(true);
+    require(fact(loading, L"Stav") == L"Načítání čidel" && fact(loading, L"Poslední čtení API") == L"Dosud neproběhlo" && !hasReading(loading), "First asynchronous read invented a temperature or completion time");
+    const auto first = waitForRead([&] { return sensors.collect(true); });
     provider.idle();
     const auto cached = sensors.collect(true);
     provider.noRequestsFor(100ms);
@@ -252,7 +283,9 @@ void cacheAndDisable(Provider& provider)
     require(!hasReading(disabled) && fact(disabled, L"Stav").starts_with(L"Vypnuto")
         && provider.connections() == before + 1, "Disabling sensors retained a live reading or issued a request");
     provider.reply({200, metric("53.5", unixMs())});
-    const auto restarted = sensors.collect(true);
+    const auto restarting = sensors.collect(true);
+    require(!hasReading(restarting) && fact(restarting, L"Poslední čtení API") == L"Dosud neproběhlo", "Re-enabling exposed the disabled cache");
+    const auto restarted = waitForRead([&] { return sensors.collect(true); });
     provider.idle();
     require(provider.connections() == before + 2 && reading(restarted).starts_with(L"53.5 °C"), "Re-enabling reused the disabled source's cached reading");
     std::cout << "PASS cache, disable without requests, fresh read after re-enable\n";
@@ -296,15 +329,69 @@ void boundedTimeout(Provider& provider)
 {
     provider.reply({200, {}, true});
     const auto before = provider.connections();
-    const auto began = std::chrono::steady_clock::now();
     nks::CpuSensors sensors;
-    const auto facts = sensors.collect(true);
+    const auto began = std::chrono::steady_clock::now();
+    const auto loading = sensors.collect(true);
+    const auto collectElapsed = std::chrono::steady_clock::now() - began;
+    require(collectElapsed < 300ms && !hasReading(loading), "Resource collection waited for the unresponsive HTTP source");
+    const auto facts = waitForRead([&] { return sensors.collect(true); });
     const auto elapsed = std::chrono::steady_clock::now() - began;
     require(fact(facts, L"Stav") == L"Poskytovatel nedostupný" && !hasReading(facts), "An unresponsive source became a measured temperature");
     require(elapsed < 4s, "Sensor timeout exceeded the collector's five-second parent deadline");
     provider.idle();
     require(provider.connections() == before + 1, "Timeout did not exercise the owned unresponsive provider");
     std::cout << "PASS bounded unresponsive provider: " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << " ms\n";
+}
+
+void noAutonomousPolling(Provider& provider)
+{
+    provider.reply({200, metric("54.5", unixMs())});
+    const auto before = provider.connections();
+    nks::CpuSensors sensors;
+    require(hasReading(waitForRead([&] { return sensors.collect(true); })), "Initial background sample was missing");
+    provider.idle();
+    provider.noRequestsFor(5200ms);
+    require(provider.connections() == before + 1, "The idle collector autonomously polled CPU sensors during pause");
+    sensors.collect(true);
+    provider.waitForRequest(before + 2);
+    provider.idle();
+    require(provider.connections() == before + 2, "The next actual collect did not schedule an expired cache read");
+    std::cout << "PASS five-second expiry schedules only on collect, no autonomous pause queries\n";
+}
+
+void disableInflight(Provider& provider)
+{
+    provider.reply({200, metric("44.5", unixMs()), false, true});
+    const auto before = provider.connections();
+    nks::CpuSensors sensors;
+    sensors.collect(true); provider.waitForRequest(before + 1);
+    const auto began = std::chrono::steady_clock::now();
+    const auto off = sensors.collect(false);
+    require(std::chrono::steady_clock::now() - began < 300ms && !hasReading(off), "Disabling waited for the in-flight HTTP request");
+    const auto on = sensors.collect(true);
+    require(!hasReading(on) && fact(on, L"Stav") == L"Načítání čidel", "A retired generation reappeared when re-enabled");
+    provider.release(); provider.idle();
+    provider.reply({200, metric("55.5", unixMs())});
+    const auto fresh = waitForRead([&] { return sensors.collect(true); });
+    require(provider.connections() == before + 2 && reading(fresh).starts_with(L"55.5 °C"), "A cancelled response replaced the new generation's sample");
+    std::cout << "PASS nonblocking in-flight disable, stale-generation discard, fresh re-enable\n";
+}
+
+void boundedDestruction(Provider& provider)
+{
+    provider.reply({200, {}, true});
+    const auto before = provider.connections();
+    auto sensors = std::make_unique<nks::CpuSensors>();
+    sensors->collect(true); provider.waitForRequest(before + 1);
+    const auto began = std::chrono::steady_clock::now();
+    sensors.reset();
+    const auto elapsed = std::chrono::steady_clock::now() - began;
+    std::cerr << "DIAG destructionElapsedMs=" << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()
+        << ";limitMs=4000;connectionsBefore=" << before << ";connectionsAfter=" << provider.connections() << '\n';
+    require(elapsed < 4s, "Sensor reader destruction exceeded the existing four-second HTTP bound");
+    provider.idle(); provider.noRequestsFor(100ms);
+    require(provider.connections() == before + 1, "Sensor destruction started another request");
+    std::cout << "PASS bounded stop and join during owned stalled HTTP request\n";
 }
 }
 
@@ -318,6 +405,9 @@ int main()
         valuesAndFreshness(provider);
         invalidInputs(provider);
         boundedTimeout(provider);
+        noAutonomousPolling(provider);
+        disableInflight(provider);
+        boundedDestruction(provider);
         std::cout << "CPU sensors: production collector with owned loopback fixture; real hardware remains unverified\n";
         return 0;
     } catch (const PortUnavailable& error) {

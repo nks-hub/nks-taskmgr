@@ -49,7 +49,7 @@ public sealed partial class MonitorModel
         yield return new("Stav CPU čidel", CpuSensorStatus);
         if (CpuSensorGate is not null || !Hardware.TryGetValue("cpu-sensors", out var facts)) yield break;
         foreach (var (name, value) in facts) {
-            if (name is "Stav" or "Zdroj" or "Adresa čtení" or "Poslední čtení API" or "Význam měření" or "Platnost čtení" or "Omezení") continue;
+            if (name is "Stav" or "Zdroj" or "Adresa čtení" or "Poslední čtení API" or "Význam měření" or "Platnost čtení" or "Aktualizace" or "Omezení") continue;
             int separator = value.IndexOf(" · ", StringComparison.Ordinal);
             string reading = value;
             if (separator > 0 && value[..separator].EndsWith(" °C", StringComparison.Ordinal)) {

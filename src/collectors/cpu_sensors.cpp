@@ -13,6 +13,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <system_error>
 
 namespace nks {
 namespace {
@@ -30,6 +31,12 @@ struct HttpHandle {
 };
 
 struct SensorFailure { SampleState state; DWORD error; const wchar_t* detail; };
+struct SensorCancelled {};
+
+void checkCancelled(std::stop_token stop)
+{
+    if (stop.stop_requested()) throw SensorCancelled{};
+}
 
 void requireHttp(bool success)
 {
@@ -39,8 +46,9 @@ void requireHttp(bool success)
         error, L"Místní čtecí server není dostupný nebo neodpověděl včas"};
 }
 
-std::string response()
+std::string response(std::stop_token stop)
 {
+    checkCancelled(stop);
     HttpHandle session(WinHttpOpen(L"NksTaskMgr CPU sensors/1", WINHTTP_ACCESS_TYPE_NO_PROXY,
         WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0));
     requireHttp(session.value != nullptr);
@@ -54,8 +62,11 @@ std::string response()
     requireHttp(WinHttpSetOption(request.value, WINHTTP_OPTION_REDIRECT_POLICY, &redirect, sizeof(redirect)) != FALSE);
     DWORD disabled = WINHTTP_DISABLE_COOKIES | WINHTTP_DISABLE_AUTHENTICATION;
     requireHttp(WinHttpSetOption(request.value, WINHTTP_OPTION_DISABLE_FEATURE, &disabled, sizeof(disabled)) != FALSE);
+    checkCancelled(stop);
     requireHttp(WinHttpSendRequest(request.value, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) != FALSE);
+    checkCancelled(stop);
     requireHttp(WinHttpReceiveResponse(request.value, nullptr) != FALSE);
+    checkCancelled(stop);
     DWORD status{}, size = sizeof(status);
     requireHttp(WinHttpQueryHeaders(request.value, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
         WINHTTP_HEADER_NAME_BY_INDEX, &status, &size, WINHTTP_NO_HEADER_INDEX) != FALSE);
@@ -66,9 +77,11 @@ std::string response()
     std::array<char, 8192> buffer{};
     const auto deadline = GetTickCount64() + 1500;
     for (;;) {
+        checkCancelled(stop);
         if (GetTickCount64() >= deadline) throw SensorFailure{SampleState::unavailable, ERROR_TIMEOUT, L"Čtení čidel překročilo časový limit"};
         DWORD received{};
         requireHttp(WinHttpReadData(request.value, buffer.data(), static_cast<DWORD>(buffer.size()), &received) != FALSE);
+        checkCancelled(stop);
         if (!received) break;
         if (received > maximumBody - body.size()) throw std::length_error("CPU sensor response exceeds byte limit");
         body.append(buffer.data(), received);
@@ -200,37 +213,89 @@ std::wstring utc(std::int64_t milliseconds)
 
 }
 
-void CpuSensors::read()
+CpuSensors::Reading CpuSensors::read(std::stop_token stop)
 {
-    samples.clear(); detail.clear();
+    Reading result;
     try {
-        samples = parse(response());
-        state = samples.empty() ? SampleState::unsupported : SampleState::valid;
-        if (samples.empty()) detail = L"API neposkytlo teplotní čidlo typu CPU";
+        result.samples = parse(response(stop));
+        result.state = result.samples.empty() ? SampleState::unsupported : SampleState::valid;
+        if (result.samples.empty()) result.detail = L"API neposkytlo teplotní čidlo typu CPU";
     } catch (const SensorFailure& failure) {
-        state = failure.state; detail = std::wstring(failure.detail) + L" (" + std::to_wstring(failure.error) + L")";
+        result.state = failure.state; result.detail = std::wstring(failure.detail) + L" (" + std::to_wstring(failure.error) + L")";
     } catch (const std::runtime_error&) {
-        state = SampleState::error; detail = L"Neplatné nebo nepodporované senzorové údaje; vyžaduje se číselná teplota a čas vzorku";
+        result.state = SampleState::error; result.detail = L"Neplatné nebo nepodporované senzorové údaje; vyžaduje se číselná teplota a čas vzorku";
     } catch (const std::length_error&) {
-        state = SampleState::error; detail = L"Čtecí API překročilo bezpečný limit odpovědi";
+        result.state = SampleState::error; result.detail = L"Čtecí API překročilo bezpečný limit odpovědi";
     }
-    lastReadUnixMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    checkCancelled(stop);
+    result.readAtUnixMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    return result;
 }
 
-std::vector<HardwareFact> CpuSensors::collect(bool enabled)
+CpuSensors::~CpuSensors()
 {
-    if (!enabled) {
-        samples.clear(); detail.clear(); lastRead = {}; lastReadUnixMs = 0;
+    {
+        std::lock_guard lock(mutex);
+        enabled = false; queued = false; ++generation;
+        requestStop.request_stop();
+    }
+    worker.request_stop(); ready.notify_all();
+    if (worker.joinable()) worker.join();
+}
+
+void CpuSensors::run(std::stop_token stop)
+{
+    SetThreadDescription(GetCurrentThread(), L"NKS CPU sensor reader");
+    while (!stop.stop_requested()) {
+        std::unique_lock lock(mutex);
+        if (!ready.wait(lock, stop, [this] { return queued; })) break;
+        const auto version = requestGeneration;
+        const auto token = requestStop.get_token();
+        queued = false; reading = true;
+        lock.unlock();
+        std::shared_ptr<const Reading> result;
+        bool failure{};
+        try { result = std::make_shared<Reading>(read(token)); }
+        catch (const SensorCancelled&) {}
+        catch (const std::exception&) { failure = true; }
+        lock.lock();
+        reading = false;
+        if (enabled && generation == version && !token.stop_requested()) {
+            // Only collect() schedules another request; pause leaves this thread idle.
+            latest.swap(result); failed = failure; lastFinished = std::chrono::steady_clock::now();
+        }
+        lock.unlock();
+    }
+}
+
+std::vector<HardwareFact> CpuSensors::collect(bool requested)
+{
+    std::shared_ptr<const Reading> snapshot, retired;
+    bool failure{}, pending{};
+    {
+        std::lock_guard lock(mutex);
+        if (!requested) {
+            if (enabled) { enabled = false; queued = false; ++generation; requestStop.request_stop(); }
+            latest.swap(retired); failed = false; lastFinished = {};
+        } else {
+            if (!enabled) { enabled = true; ++generation; }
+            const auto now = std::chrono::steady_clock::now();
+            if (!worker.joinable() && (lastFinished == std::chrono::steady_clock::time_point{} || now - lastFinished >= std::chrono::seconds(5))) {
+                try { worker = std::jthread([this](std::stop_token stop) { run(stop); }); }
+                catch (const std::system_error&) { failed = true; lastFinished = now; }
+            }
+            if (worker.joinable() && !reading && !queued && (lastFinished == std::chrono::steady_clock::time_point{} || now - lastFinished >= std::chrono::seconds(5))) {
+                requestStop = std::stop_source{}; requestGeneration = generation; queued = true; ready.notify_one();
+            }
+            snapshot = latest; failure = failed; pending = queued || reading;
+        }
+    }
+    if (!requested)
         return {{L"Stav", L"Vypnuto; žádné dotazy na čidla"}};
-    }
-    const auto now = std::chrono::steady_clock::now();
-    if (lastRead == std::chrono::steady_clock::time_point{} || now - lastRead >= std::chrono::seconds(5)) {
-        read(); lastRead = std::chrono::steady_clock::now();
-    }
     const auto unixMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     std::size_t current{};
     std::vector<HardwareFact> facts;
-    for (const auto& sample : samples) {
+    if (snapshot) for (const auto& sample : snapshot->samples) {
         const bool fresh = sample.publishedAtUnixMs <= unixMs && unixMs - sample.publishedAtUnixMs <= 15000;
         if (fresh) ++current;
         std::wostringstream value; value.imbue(std::locale::classic());
@@ -240,14 +305,18 @@ std::vector<HardwareFact> CpuSensors::collect(bool enabled)
         else value << L" · publikovaný čas je v budoucnu";
         facts.push_back({sample.name + L" [" + sample.id + L"]", value.str()});
     }
-    const auto status = state == SampleState::valid ? (current == samples.size() ? L"Publikované CPU vzorky" : L"Zastaralé nebo částečně zastaralé vzorky")
+    const auto state = snapshot ? snapshot->state : failure ? SampleState::error : SampleState::first;
+    const auto status = state == SampleState::first ? L"Načítání čidel"
+        : state == SampleState::valid ? (current == snapshot->samples.size() ? L"Publikované CPU vzorky" : L"Zastaralé nebo částečně zastaralé vzorky")
         : state == SampleState::accessDenied ? L"Přístup zamítnut" : state == SampleState::unsupported ? L"Nepodporováno"
         : state == SampleState::error ? L"Chyba čtecího API" : L"Poskytovatel nedostupný";
     facts.insert(facts.begin(), {{L"Stav", status}, {L"Zdroj", L"Místní HTTP API kompatibilní s LibreHardwareMonitor; identita poskytovatele neověřena"},
-        {L"Adresa čtení", endpoint}, {L"Poslední čtení API", utc(lastReadUnixMs)},
+        {L"Adresa čtení", endpoint}, {L"Poslední čtení API", snapshot ? utc(snapshot->readAtUnixMs) : L"Dosud neproběhlo"},
         {L"Význam měření", L"Teplotní čidla typu CPU; °C, poslední publikovaný vzorek, nikoli ACPI thermal zone"},
         {L"Platnost čtení", L"Čtení nejvýše jednou za 5 s; stáří publikovaného UTC vzorku nejvýše 15 s. Změna hodin může vzorek zneplatnit."}});
-    if (!detail.empty()) facts.push_back({L"Omezení", detail});
+    facts.push_back({L"Aktualizace", pending ? L"Čtení probíhá" : L"Čeká na další čtení"});
+    if (snapshot && !snapshot->detail.empty()) facts.push_back({L"Omezení", snapshot->detail});
+    if (failure) facts.push_back({L"Omezení", L"Pracovní vlákno nemohlo dokončit čtení"});
     return facts;
 }
 
