@@ -24,8 +24,14 @@ public static partial class WinUiChecks
         try { await rendered.Task.WaitAsync(TimeSpan.FromSeconds(5)); }
         finally { CompositionTarget.Rendering -= Frame; }
         table.UpdateLayout(); list.UpdateLayout();
-        int rows = AlignedRealizedRows(table, list);
-        App.Trace($"Process table lifetime passed: minimized=True;restored=True;columnChange=True;actualX=True;rows={rows}");
+        try {
+            int rows = AlignedRealizedRows(table, list);
+            App.Trace($"Process table lifetime passed: minimized=True;restored=True;columnChange=True;actualX=True;rows={rows}");
+        } catch (InvalidOperationException error) when (error.Message == ProcessBindingSourceError) {
+            try { await ProbeProcessTableBindingAsync(table, list, error); }
+            catch (Exception probeError) { TraceProcessBindingProbeError(error, "probe", probeError); }
+            throw;
+        }
     }
 
     private static T? Find<T>(DependencyObject element) where T : DependencyObject
@@ -90,7 +96,7 @@ public static partial class WinUiChecks
         var source = content as ProcessSlot;
         if (source is null) {
             TraceColumnMismatch(table, list, row, item, content, loopIndex, "The realized process row lost its source slot.");
-            throw new InvalidOperationException("The realized process row lost its source slot.");
+            throw CaptureProcessTableBindingFailure(list, item, loopIndex);
         }
         Check(ReferenceEquals(name.Row, source.Row) && name.Margin == source.Row.Indent, "A recycled process name retained another row or depth.");
         Check(name.NameLabel.Text == source.Row.Name + (source.Row.Ended ? " · ukončeno" : source.Row.Stale ? " · zastaralé" : ""),
