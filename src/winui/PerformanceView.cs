@@ -75,8 +75,8 @@ public sealed partial class MainWindow
             pageFile.Configure("Použitý swap", ChartUnit.Bytes);
             pageFile.Set(model.PageFile, null, now, rangeSeconds, Math.Max(1, model.Memory.PageFileBytes), 0xdfaf76, autoScale: scaleChoice.IsChecked == true);
         }
-        double duration = resource.History.Count == 0 ? 0 : Math.Min(rangeSeconds, (resource.History.LastTime - resource.History.FirstTime) / 1_000_000_000d);
-        retained.Text = Display.Number(duration, " s uchováno") + " · " + resource.History.Count + " vzorků · okno " + rangeSeconds + " s";
+        double duration = resource.History.Count == 0 ? 0 : (resource.History.LastTime - resource.History.FirstTime) / 1_000_000_000d;
+        retained.Text = "Historie " + Display.Number(duration, " s") + " · " + resource.History.Count + " vzorků · zobrazeno " + rangeSeconds + " s";
         string nextFacts = resource.Id + ":" + (memory ? model.Memory.State.ToString() : "") + ":" + string.Join('|', resource.HardwareFacts.Keys);
         if (factsKey != nextFacts) {
             diskDetailsExpanded = diskDetailsResource == resource.Id && diskDetails?.IsExpanded == true;
