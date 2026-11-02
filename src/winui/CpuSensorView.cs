@@ -36,8 +36,31 @@ public sealed partial class MonitorModel
             ? "Čeká na odpověď po zapnutí CPU čidel" : null;
 
     internal string CpuSensorStatus => CpuSensorGate
-        ?? (Hardware.TryGetValue("cpu-sensors", out var facts) ? facts.GetValueOrDefault("Stav") : null)
-        ?? "Čeká na první odpověď čtecího API";
+        ?? (Hardware.TryGetValue("cpu-sensors", out var facts) ? facts.GetValueOrDefault("Stav") switch {
+            "Poskytovatel nedostupný" => "Externí program s čidly neběží nebo není dostupný",
+            "Chyba čtecího API" => "Externí program neposkytl použitelné údaje z čidel",
+            "Nepodporováno" => "Externí program neposkytuje podporované teplotní čidlo CPU",
+            var status => status
+        } : null)
+        ?? "Čeká na první odpověď externího programu s čidly";
+
+    internal IEnumerable<KeyValuePair<string, string>> CpuSensorSummaryFacts()
+    {
+        yield return new("Stav CPU čidel", CpuSensorStatus);
+        if (CpuSensorGate is not null || !Hardware.TryGetValue("cpu-sensors", out var facts)) yield break;
+        foreach (var (name, value) in facts) {
+            if (name is "Stav" or "Zdroj" or "Adresa čtení" or "Poslední čtení API" or "Význam měření" or "Platnost čtení" or "Omezení") continue;
+            int separator = value.IndexOf(" · ", StringComparison.Ordinal);
+            string reading = value;
+            if (separator > 0 && value[..separator].EndsWith(" °C", StringComparison.Ordinal)) {
+                reading = value[..separator];
+                if (!value.Contains(" · publikovaný vzorek", StringComparison.Ordinal)) reading += " · zastaralý nebo nejistý vzorek";
+            }
+            int identifier = name.LastIndexOf(" [", StringComparison.Ordinal);
+            string title = identifier > 0 && name.EndsWith(']') ? name[..identifier] : name;
+            yield return new("Teplota · " + title, reading);
+        }
+    }
 
     internal Dictionary<string, string> CpuSensorFacts()
     {
@@ -49,16 +72,30 @@ public sealed partial class MonitorModel
 
 public sealed partial class MainWindow
 {
+    private CheckBox cpuSensorChoice = null!;
+    private Expander cpuSensorDetails = null!;
+    private readonly HardwareFactRows cpuSensorDetailsRows = new();
+
     private void AddCpuSensorChoice(StackPanel body)
     {
-        var choice = new CheckBox { Content = new TextBlock { Text = "Číst CPU čidla z již běžícího místního HTTP API", TextWrapping = TextWrapping.Wrap }, IsChecked = false };
-        var help = Label("Volitelně: API kompatibilní s LibreHardwareMonitor na 127.0.0.1:8085, GET /metrics. Poskytovatel a jeho čidla musí být již spuštěné samostatně. Aplikace nic neinstaluje ani nespouští. Identita poskytovatele není ověřena; jiný port nebo staré API nejsou podporované.", 12, 0x95a4ad);
+        cpuSensorChoice = new CheckBox { Content = new TextBlock { Text = "Číst teplotu CPU z externího monitoru čidel", TextWrapping = TextWrapping.Wrap }, IsChecked = false };
+        var help = Label("Vyžaduje již spuštěný program kompatibilní s LibreHardwareMonitor. Tato aplikace jej neinstaluje ani nespouští. Identita externího zdroje není ověřena.", 12, 0x95a4ad);
         help.TextWrapping = TextWrapping.Wrap;
-        choice.Click += (_, _) => {
-            model.SetCpuSensors(choice.IsChecked == true);
-            choice.IsChecked = model.CpuSensorsEnabled;
+        cpuSensorChoice.Click += (_, _) => {
+            model.SetCpuSensors(cpuSensorChoice.IsChecked == true);
+            cpuSensorChoice.IsChecked = model.CpuSensorsEnabled;
             RefreshHardware();
         };
-        body.Children.Add(choice); body.Children.Add(help);
+        body.Children.Add(cpuSensorChoice); body.Children.Add(help);
+    }
+
+    private void AddCpuSensorDetails(StackPanel body)
+    {
+        var content = new StackPanel { Spacing = 12 };
+        var help = Label("Čte se místní HTTP API kompatibilní s LibreHardwareMonitor na 127.0.0.1:8085, GET /metrics. Poskytovatel a jeho čidla musí být již spuštěné samostatně. Aplikace nic neinstaluje ani nespouští. Identita poskytovatele není ověřena; jiný port nebo staré API nejsou podporované.", 12, 0x95a4ad);
+        help.TextWrapping = TextWrapping.Wrap;
+        content.Children.Add(help); content.Children.Add(cpuSensorDetailsRows.Panel);
+        cpuSensorDetails = new Expander { Header = "Podrobnosti externích čidel", Content = content, IsExpanded = false, HorizontalAlignment = HorizontalAlignment.Stretch };
+        body.Children.Add(cpuSensorDetails);
     }
 }

@@ -477,6 +477,7 @@ public sealed partial class MainWindow : Window
         if (!smokeMinimizedChecked) return;
         if (ready && !smokeModelsChecked) {
             CheckHeldProcessRefresh();
+            CheckHardwareRefresh();
             WinUiChecks.ModelInvariants(model); WinUiChecks.ProcessNotifications(); smokeSnapshotExport = WinUiChecks.SnapshotExportChecks(SnapshotDocument.Capture(model)); smokeModelsChecked = true;
             smokeReadyAt = ticks;
             ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);
@@ -512,7 +513,7 @@ public sealed partial class MainWindow : Window
             cpuMode = 2; RefreshPerformance();
             CheckResourceViews();
             ShowView(DesktopView.Hardware); root.UpdateLayout();
-            if (hardwareSections.Values.Any(section => section.Children.Count == 0) || hardwareCards.ActualWidth <= 0)
+            if (hardwareSections.Values.Any(section => section.Panel.Children.Count == 0) || hardwareCards.ActualWidth <= 0)
                 throw new InvalidOperationException("Hardware overview did not render its facts.");
             App.Trace("Hardware overview passed: CPU, RAM, mainboard and UPS availability");
         }
