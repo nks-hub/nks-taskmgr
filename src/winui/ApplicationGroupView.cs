@@ -89,7 +89,11 @@ public sealed partial class MainWindow
         if (model.Held) { model.Applications.RefreshMetrics(true); applicationStatus.Text += " · pořadí a skupiny přidrženy"; }
         applicationFacts.Text = applicationStatus.Text + "\n" + ApplicationFacts();
         ResizeApplicationGroups();
-        if (view == DesktopView.Processes && !IsIconic(windowHandle) && !model.Paused && applicationRequest is null
+    }
+
+    private void RefreshApplicationInventory()
+    {
+        if (view == DesktopView.Processes && model.Mode == ProcessMode.Applications && !model.Paused && applicationRequest is null
             && NativeMonitor.MonotonicNowNs >= nextApplicationRead && model.BootIdentity is { State: SampleState.Valid } boot && !boot.Identifier.IsEmpty) {
             var kind = model.Processes.Any(row => row.Key.Kind == GenerationKind.SequenceNumber) ? GenerationKind.SequenceNumber : GenerationKind.CreationTime;
             var cancellation = CancellationTokenSource.CreateLinkedTokenSource(applicationLifetime.Token); applicationRequest = cancellation;

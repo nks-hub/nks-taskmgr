@@ -376,7 +376,7 @@ public sealed partial class MainWindow : Window
 
     private void Tick()
     {
-        if (sortBenchmarkRunning || App.ApplicationGroupsCheckPath is not null) return;
+        if (sortBenchmarkRunning || applicationTemplateCheckRunning) return;
         long cpuTick = BeginLiveCpuTick();
         try {
             bool minimized = IsIconic(windowHandle);
@@ -387,6 +387,7 @@ public sealed partial class MainWindow : Window
             if (!minimized) {
                 bool canExport = !exporting && model.ProcessTime > 0;
                 if (exportSnapshot.IsEnabled != canExport) exportSnapshot.IsEnabled = canExport;
+                RefreshApplicationInventory();
             }
             TickServices(!minimized && view == DesktopView.Services);
             if (changed && !minimized) {

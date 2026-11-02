@@ -53,6 +53,7 @@ internal sealed class ApplicationGroupModel
     internal bool Updating { get; private set; }
     internal string Error { get; private set; } = "";
     internal bool HasInventory => receivedAt > 0;
+    internal long ReceivedAt => receivedAt;
     internal bool Stale => HasInventory && NativeMonitor.MonotonicNowNs - receivedAt > 8_000_000_000;
     internal bool Partial => partial || missingLinks || Stale || Error.Length > 0;
     internal void Apply(ProcessDetailsSnapshot snapshot)
