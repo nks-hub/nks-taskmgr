@@ -4,6 +4,66 @@
 #include <limits>
 
 namespace nks {
+namespace {
+
+using PdhArrayRead = PDH_STATUS (WINAPI*)(PDH_HCOUNTER, DWORD, LPDWORD, LPDWORD, PPDH_FMT_COUNTERVALUE_ITEM_W);
+constexpr DWORD retainedArrayBytes = 256 * 1024, maximumArrayBytes = 16 * 1024 * 1024;
+
+std::vector<NamedCounter> counterArrayValues(PDH_FMT_COUNTERVALUE_ITEM_W* items, DWORD count, DWORD capacity)
+{
+    if (count > capacity / sizeof(*items)) return {};
+    std::vector<NamedCounter> result;
+    result.reserve(count);
+    for (DWORD i = 0; i < count; ++i) {
+        const auto& value = items[i].FmtValue;
+        const bool valid = (value.CStatus == PDH_CSTATUS_VALID_DATA || value.CStatus == PDH_CSTATUS_NEW_DATA)
+            && std::isfinite(value.doubleValue) && value.doubleValue >= 0;
+        result.push_back({items[i].szName, {valid ? value.doubleValue : 0,
+            valid ? SampleState::valid : SampleState::unavailable, MetricSource::performanceCounter}});
+    }
+    return result;
+}
+
+std::vector<NamedCounter> readCounterArray(PDH_HCOUNTER counter, std::unique_ptr<std::byte[]>& scratch,
+    DWORD& scratchBytes, PdhArrayRead read = PdhGetFormattedCounterArrayW)
+{
+    if (!counter) return {};
+    constexpr DWORD flags = PDH_FMT_DOUBLE | PDH_FMT_NOCAP100;
+    if (scratchBytes) {
+        DWORD bytes = scratchBytes, count = 0;
+        auto* items = reinterpret_cast<PDH_FMT_COUNTERVALUE_ITEM_W*>(scratch.get());
+        const auto status = read(counter, flags, &bytes, &count, items);
+        if (status == ERROR_SUCCESS) return counterArrayValues(items, count, scratchBytes);
+        if (status != PDH_MORE_DATA && status != PDH_INVALID_ARGUMENT) return {};
+    }
+    std::unique_ptr<std::byte[]> transient;
+    for (unsigned attempt = 0; attempt < 3; ++attempt) {
+        DWORD bytes = 0, count = 0;
+        // A nonzero undersized PDH call does not guarantee a reliable required size.
+        if (read(counter, flags, &bytes, &count, nullptr) != PDH_MORE_DATA || !bytes || bytes > maximumArrayBytes)
+            return {};
+        const DWORD capacity = bytes;
+        std::byte* storage;
+        if (capacity <= retainedArrayBytes) {
+            if (scratchBytes < capacity) {
+                scratch.reset(); scratchBytes = 0;
+                scratch = std::make_unique<std::byte[]>(capacity); scratchBytes = capacity;
+            }
+            storage = scratch.get();
+        } else {
+            transient.reset(); transient = std::make_unique<std::byte[]>(capacity);
+            storage = transient.get();
+        }
+        auto* items = reinterpret_cast<PDH_FMT_COUNTERVALUE_ITEM_W*>(storage);
+        const auto status = read(counter, flags, &bytes, &count, items);
+        if (status == PDH_MORE_DATA) continue;
+        if (status != ERROR_SUCCESS) return {};
+        return counterArrayValues(items, count, capacity);
+    }
+    return {};
+}
+
+}
 
 PdhCounters::PdhCounters() { retryMissing(); }
 
@@ -60,32 +120,7 @@ std::vector<NamedCounter> PdhCounters::read(std::size_t index) const
 {
     if (!counters.at(index))
         return {};
-    const auto flags = PDH_FMT_DOUBLE | PDH_FMT_NOCAP100;
-    constexpr DWORD maximumBytes = 16 * 1024 * 1024;
-    for (unsigned attempt = 0; attempt < 3; ++attempt) {
-        DWORD bytes = 0, count = 0;
-        if (PdhGetFormattedCounterArrayW(counters[index], flags, &bytes, &count, nullptr) != PDH_MORE_DATA
-            || bytes == 0 || bytes > maximumBytes)
-            return {};
-        std::vector<std::byte> storage(bytes);
-        auto* items = reinterpret_cast<PDH_FMT_COUNTERVALUE_ITEM_W*>(storage.data());
-        const auto status = PdhGetFormattedCounterArrayW(counters[index], flags, &bytes, &count, items);
-        if (status == PDH_MORE_DATA)
-            continue;
-        if (status != ERROR_SUCCESS || count > storage.size() / sizeof(*items))
-            return {};
-        std::vector<NamedCounter> result;
-        result.reserve(count);
-        for (DWORD i = 0; i < count; ++i) {
-            const auto& value = items[i].FmtValue;
-            const bool valid = (value.CStatus == PDH_CSTATUS_VALID_DATA || value.CStatus == PDH_CSTATUS_NEW_DATA)
-                && std::isfinite(value.doubleValue) && value.doubleValue >= 0;
-            result.push_back({items[i].szName, {valid ? value.doubleValue : 0,
-                valid ? SampleState::valid : SampleState::unavailable, MetricSource::performanceCounter}});
-        }
-        return result;
-    }
-    return {};
+    return readCounterArray(counters[index], scratch, scratchBytes);
 }
 
 }

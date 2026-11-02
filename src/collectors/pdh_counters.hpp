@@ -3,6 +3,7 @@
 #include "core/resource.hpp"
 #include <windows.h>
 #include <pdh.h>
+#include <memory>
 
 namespace nks {
 
@@ -22,6 +23,9 @@ private:
     std::array<PDH_HCOUNTER, 12> counters{};
     std::chrono::steady_clock::time_point retryAt{};
     std::int64_t observedAtNs{}, previousObservedAtNs{};
+    // Reads are serialized by the owning resource collector thread.
+    mutable std::unique_ptr<std::byte[]> scratch;
+    mutable DWORD scratchBytes{};
 };
 
 }
