@@ -377,9 +377,13 @@ public sealed partial class MainWindow : Window
     private void Tick()
     {
         if (sortBenchmarkRunning) return;
+        long cpuTick = BeginLiveCpuTick();
         try {
             bool minimized = IsIconic(windowHandle);
+            SetLiveCpuState(cpuTick, minimized);
+            MarkLiveCpuModel(cpuTick, true);
             bool changed = model.Tick(!minimized && view != DesktopView.Services);
+            MarkLiveCpuModel(cpuTick, false);
             if (!minimized) {
                 bool canExport = !exporting && model.ProcessTime > 0;
                 if (exportSnapshot.IsEnabled != canExport) exportSnapshot.IsEnabled = canExport;
@@ -401,6 +405,7 @@ public sealed partial class MainWindow : Window
             if (smokePath is not null) { App.Trace(error.ToString()); throw; }
             footer.Text = error.Message;
         } catch (Exception error) when (smokePath is not null) { App.Trace(error.ToString()); throw; }
+        finally { EndLiveCpuTick(cpuTick); }
     }
 
     private void HoldRows(object sender, PointerRoutedEventArgs args)
@@ -548,7 +553,7 @@ public sealed partial class MainWindow : Window
             if (!smokeSnapshotComparison.IsCompleted) return;
             smokeSnapshotComparison.GetAwaiter().GetResult();
             App.Trace($"aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported};ready={smokeModelsChecked};models={smokeModelsChecked};minimized={smokeMinimizedChecked};services={smokeServicesChecked};columns={smokeColumnsChecked};export=True;comparison=True;processes={model.Processes.Count};resources={model.Resources.Count};charts={coreCharts.Count}");
-            Close();
+            RequestMainClose();
         }
     }
 }

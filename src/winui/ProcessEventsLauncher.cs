@@ -31,13 +31,22 @@ public sealed partial class MainWindow
         Closed += (_, _) => { allowMainEventsClose = true; processEventsWindow?.CloseAfterStop(); };
     }
 
-    private async void OnMainEventsClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    private void OnMainEventsClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (allowMainEventsClose || processEventsWindow is not { } window) return;
+        if (allowMainEventsClose || processEventsWindow is null && liveCpuProfile is null) return;
         args.Cancel = true;
+        RequestMainClose();
+    }
+
+    private void RequestMainClose() => DispatcherQueue.TryEnqueue(async () => await CloseMainAsync());
+
+    private async Task CloseMainAsync()
+    {
         if (waitingForEventsStop) return;
+        var window = processEventsWindow;
+        if (window is null && liveCpuProfile is null) { Close(); return; }
         waitingForEventsStop = true; processEventsButton.IsEnabled = false;
-        bool clean = await window.StopForCloseAsync(fromMainWindow: true);
+        bool clean = window is null || await window.StopForCloseAsync(fromMainWindow: true);
         if (allowMainEventsClose) return;
         if (!clean) {
             var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = "Zastavení a dočtení záznamu nebylo potvrzené",
@@ -47,7 +56,12 @@ public sealed partial class MainWindow
             try { clean = await dialog.ShowAsync() == ContentDialogResult.Primary; }
             catch (InvalidOperationException) { clean = false; }
         }
-        if (clean) { allowMainEventsClose = true; DispatcherQueue.TryEnqueue(() => { window.CloseAfterStop(); Close(); }); }
-        else { waitingForEventsStop = false; window.CancelClose(fromMainWindow: true); processEventsButton.IsEnabled = true; }
+        if (clean) {
+            if (!await FlushLiveCpuProfileAsync()) {
+                if (Environment.ExitCode == 0) Environment.ExitCode = 2;
+                System.Diagnostics.Debug.WriteLine("Tick CPU profile incomplete; persistence HRESULT=" + liveCpuProfile?.PersistenceError);
+            }
+            allowMainEventsClose = true; DispatcherQueue.TryEnqueue(() => { window?.CloseAfterStop(); Close(); });
+        } else { waitingForEventsStop = false; window!.CancelClose(fromMainWindow: true); processEventsButton.IsEnabled = true; }
     }
 }

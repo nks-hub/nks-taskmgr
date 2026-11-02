@@ -122,6 +122,6 @@ public sealed partial class MainWindow
             }
         } catch (Exception error) {
             File.AppendAllText(path + ".error.txt", error.ToString()); Environment.ExitCode = 1;
-        } finally { Close(); }
+        } finally { RequestMainClose(); }
     }
 }

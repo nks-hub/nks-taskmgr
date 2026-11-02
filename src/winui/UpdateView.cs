@@ -21,7 +21,7 @@ public sealed partial class MainWindow
         ToolTipService.SetToolTip(button, "Podepsané aktualizace pro aktuálního uživatele");
         button.Click += (_, _) => {
             if (updateWindow is null) {
-                var window = new UpdateWindow(() => Close()); updateWindow = window;
+                var window = new UpdateWindow(RequestMainClose); updateWindow = window;
                 window.Closed += (_, _) => { if (ReferenceEquals(updateWindow, window)) updateWindow = null; };
             }
             updateWindow.Activate();
