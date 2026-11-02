@@ -125,18 +125,104 @@ internal static class ApplicationGroupTemplateChecks
             "The long-title search fixture did not place its match beyond display truncation.");
         source.Refresh([process, second, third, child], "other-window-needle"); Order(10);
 
-        var rows = Enumerable.Range(0, 20).Select(index => new ProcessRow(new(process.Key.Boot, (uint)(100 + index), GenerationKind.CreationTime, (ulong)(1000 + index)))).ToArray();
+        list.UpdateLayout();
+        var sizingRow = list.ContainerFromIndex(0) as FrameworkElement;
+        Require(sizingRow is { IsLoaded: true, ActualHeight: > 0 } && double.IsFinite(sizingRow.ActualHeight)
+            && list.ActualHeight > 0 && double.IsFinite(list.ActualHeight), "The application viewport sizing row is not realized.");
+        int groupCount = Math.Max(20, checked((int)Math.Ceiling(list.ActualHeight / sizingRow!.ActualHeight) * 2 + 4));
+        log(FormattableString.Invariant($"application-sort sizing;groups={groupCount};viewport={list.ActualHeight};rowHeight={sizingRow.ActualHeight}"));
+        var rows = Enumerable.Range(0, groupCount).Select(index => new ProcessRow(new(process.Key.Boot, (uint)(100 + index), GenerationKind.CreationTime, (ulong)(1000 + index)))).ToArray();
         foreach (var row in rows) SetCpu(row, 1);
         source.SetSort(ApplicationGroupSort.Name, false);
         ApplyGroups(source, rows, rows.Select((row, index) => (row, "Application " + index.ToString("D2"))).ToArray());
-        selected = source.Visible[10]; source.Select(selected.Key); list.SelectedItem = choice.SelectedItem = selected;
-        list.ScrollIntoView(selected, ScrollIntoViewAlignment.Leading); await Rendered(); list.UpdateLayout();
-        var before = list.ContainerFromItem(selected) as FrameworkElement ?? throw new InvalidOperationException("Application scroll anchor is not realized.");
-        double top = before.TransformToVisual(list).TransformPoint(default).Y;
-        source.SetSort(ApplicationGroupSort.Name, true); await Rendered(); list.UpdateLayout();
-        var after = list.ContainerFromItem(selected) as FrameworkElement;
-        Require(after is not null && Math.Abs(after.TransformToVisual(list).TransformPoint(default).Y - top) < 2
-            && ReferenceEquals(list.SelectedItem, selected) && ReferenceEquals(choice.SelectedItem, selected), "Application sorting moved the viewport anchor or selected another group.");
+        selected = source.Visible[rows.Length / 2]; source.Select(selected.Key); list.SelectedItem = choice.SelectedItem = selected;
+        var scroll = Elements<ScrollViewer>(list).FirstOrDefault() ?? throw new InvalidOperationException("The application scroll viewer is not realized.");
+        int viewEvents = 0, finalViewEvents = 0, viewChangingEvents = 0, viewSequence = 0; bool? lastIntermediate = null;
+        string viewPhase = "positioning";
+        void LogView(string kind, bool? intermediate) {
+            if (++viewSequence <= 32)
+                log(FormattableString.Invariant($"application-scroll phase={viewPhase};sequence={viewSequence};event={kind};intermediate={intermediate?.ToString() ?? "<not exposed>"};offset={scroll?.VerticalOffset};scrollable={scroll?.ScrollableHeight};viewport={scroll?.ViewportHeight};extent={scroll?.ExtentHeight}"));
+        }
+        void ViewChanging(object? sender, ScrollViewerViewChangingEventArgs args) { ++viewChangingEvents; LogView("changing", null); }
+        void ViewChanged(object? sender, ScrollViewerViewChangedEventArgs args) {
+            ++viewEvents; if (!args.IsIntermediate) ++finalViewEvents; lastIntermediate = args.IsIntermediate; LogView("changed", args.IsIntermediate);
+        }
+        (ApplicationGroupRow Row, FrameworkElement Container, int Index, double Top)? VisualAnchor() {
+            if (!list.IsLoaded || !double.IsFinite(list.ActualWidth) || !double.IsFinite(list.ActualHeight)
+                || list.ActualWidth <= 0 || list.ActualHeight <= 0 || list.ItemsPanelRoot is not { } panel) return null;
+            (ApplicationGroupRow Row, FrameworkElement Container, int Index, double Top)? first = null;
+            foreach (var child in panel.Children) {
+                if (child is not FrameworkElement { IsLoaded: true, ActualWidth: > 0, ActualHeight: > 0 } item) continue;
+                int index = list.IndexFromContainer(item);
+                if (index < 0 || index >= list.Items.Count || list.ItemFromContainer(item) is not ApplicationGroupRow row
+                    || !ReferenceEquals(row, list.Items[index])) continue;
+                var bounds = item.TransformToVisual(list).TransformBounds(new Windows.Foundation.Rect(0, 0, item.ActualWidth, item.ActualHeight));
+                if (!double.IsFinite(bounds.Left) || !double.IsFinite(bounds.Top) || !double.IsFinite(bounds.Right) || !double.IsFinite(bounds.Bottom)
+                    || bounds.Width <= 0 || bounds.Height <= 0 || bounds.Right <= 0 || bounds.Bottom <= 0
+                    || bounds.Left >= list.ActualWidth || bounds.Top >= list.ActualHeight) continue;
+                bool visible = true;
+                for (DependencyObject? ancestor = item; ancestor is not null; ancestor = VisualTreeHelper.GetParent(ancestor))
+                    if (ancestor is UIElement { Visibility: Visibility.Collapsed }) { visible = false; break; }
+                if (!visible || first is { } previous && (bounds.Top > previous.Top || bounds.Top == previous.Top && index >= previous.Index)) continue;
+                first = (row, item, index, bounds.Top);
+            }
+            return first;
+        }
+        void LogAnchor(string phase) {
+            var panel = list.ItemsPanelRoot; string nativePanel = "<null>";
+            if (panel is not null) {
+                try { nativePanel = new WinRT.IInspectable(((WinRT.IWinRTObject)panel).NativeObject).GetRuntimeClassName(false); }
+                catch (Exception error) { nativePanel = $"error:{error.GetType().Name}:{error.HResult:X8}"; }
+            }
+            string firstVisible = VisualAnchor() is { } visibleAnchor
+                ? $"index={visibleAnchor.Index},key={visibleAnchor.Row.Key},y={visibleAnchor.Top},height={visibleAnchor.Container.ActualHeight}" : "<none>";
+            var container = list.ContainerFromItem(selected) as FrameworkElement;
+            log(FormattableString.Invariant($"application-anchor phase={phase};selected={selected.Key};selectedIndex={source.Visible.IndexOf(selected)};modelSelection={source.Selected?.Key};listSelection={(list.SelectedItem as ApplicationGroupRow)?.Key};choiceSelection={(choice.SelectedItem as ApplicationGroupRow)?.Key};modelRef={ReferenceEquals(source.Selected, selected)};listRef={ReferenceEquals(list.SelectedItem, selected)};choiceRef={ReferenceEquals(choice.SelectedItem, selected)};listType={list.SelectedItem?.GetType().FullName};choiceType={choice.SelectedItem?.GetType().FullName};container={container is not null};containerLoaded={container?.IsLoaded};selectedY={container?.TransformToVisual(list).TransformPoint(default).Y};selectedHeight={container?.ActualHeight};listWidth={list.ActualWidth};listHeight={list.ActualHeight};scrollNull={scroll is null};offset={scroll?.VerticalOffset};scrollable={scroll?.ScrollableHeight};viewport={scroll?.ViewportHeight};extent={scroll?.ExtentHeight};panelType={panel?.GetType().FullName};panelNative={nativePanel};panelCast={panel is ItemsStackPanel};castFirst={(panel as ItemsStackPanel)?.FirstVisibleIndex};visualFirst={firstVisible};viewChangingEvents={viewChangingEvents};viewEvents={viewEvents};finalViewEvents={finalViewEvents};lastIntermediate={lastIntermediate};viewSequence={viewSequence};droppedViewLogs={Math.Max(0, viewSequence - 32)}"));
+        }
+        scroll.ViewChanging += ViewChanging; scroll.ViewChanged += ViewChanged;
+        try {
+            await ScrollSettled(list, scroll, () => list.ScrollIntoView(selected, ScrollIntoViewAlignment.Leading));
+            var before = list.ContainerFromItem(selected) as FrameworkElement ?? throw new InvalidOperationException("Application scroll anchor is not realized.");
+            double top = before.TransformToVisual(list).TransformPoint(default).Y;
+            Require(VisualAnchor() is { } initialAnchor && ReferenceEquals(initialAnchor.Row, selected),
+                "The selected application fixture is not the actual first visible group.");
+            LogAnchor("before"); viewEvents = finalViewEvents = viewChangingEvents = viewSequence = 0; lastIntermediate = null; viewPhase = "sorting";
+            await ScrollSettled(list, scroll, () => source.SetSort(ApplicationGroupSort.Name, true));
+            var after = list.ContainerFromItem(selected) as FrameworkElement;
+            LogAnchor("after");
+            Require(after is not null && Math.Abs(after.TransformToVisual(list).TransformPoint(default).Y - top) < 2
+                && ReferenceEquals(list.SelectedItem, selected) && ReferenceEquals(choice.SelectedItem, selected), "Application sorting moved the viewport anchor or selected another group.");
+            Require(ReferenceEquals(source.Selected, selected) && VisualAnchor() is { } selectedAnchor && ReferenceEquals(selectedAnchor.Row, selected),
+                "Sorting replaced the selected first visible application anchor.");
+
+            viewPhase = "last-reset"; viewEvents = finalViewEvents = viewChangingEvents = viewSequence = 0; lastIntermediate = null;
+            await ScrollSettled(list, scroll, () => source.SetSort(ApplicationGroupSort.Name, false));
+            selected = source.Visible[^1];
+            viewPhase = "last-positioning"; viewEvents = finalViewEvents = viewChangingEvents = viewSequence = 0; lastIntermediate = null;
+            await ScrollSettled(list, scroll, () => {
+                source.Select(selected.Key); list.SelectedItem = choice.SelectedItem = selected;
+                list.ScrollIntoView(selected, ScrollIntoViewAlignment.Leading);
+            });
+            var endAnchor = VisualAnchor() ?? throw new InvalidOperationException("The clamped application viewport has no verified visible group.");
+            Require(scroll.ScrollableHeight > 0 && Math.Abs(scroll.VerticalOffset - scroll.ScrollableHeight) < 1
+                && !ReferenceEquals(endAnchor.Row, selected), "The last-selected application fixture did not reach its distinct clamped viewport anchor.");
+            var endAnchorKey = endAnchor.Row.Key;
+            LogAnchor("last-before"); viewEvents = finalViewEvents = viewChangingEvents = viewSequence = 0; lastIntermediate = null; viewPhase = "last-sorting";
+            await ScrollSettled(list, scroll, () => source.SetSort(ApplicationGroupSort.Name, true));
+            LogAnchor("last-after");
+            var movedAnchor = list.ContainerFromItem(endAnchor.Row) as FrameworkElement
+                ?? throw new InvalidOperationException("Sorting lost the actual clamped viewport anchor.");
+            double contentTop = scroll.VerticalOffset + movedAnchor.TransformToVisual(list).TransformPoint(default).Y;
+            double requiredOffset = contentTop - endAnchor.Top;
+            Require(double.IsFinite(requiredOffset) && requiredOffset >= 0 && requiredOffset <= scroll.ScrollableHeight,
+                "The clamped-anchor fixture cannot preserve its original position within the new scroll range.");
+            var finalAnchor = VisualAnchor();
+            Require(finalAnchor is { } actualAnchor && ReferenceEquals(actualAnchor.Row, endAnchor.Row) && actualAnchor.Row.Key == endAnchorKey
+                && Math.Abs(actualAnchor.Top - endAnchor.Top) < 2, "Sorting moved the true viewport anchor while the last group stayed selected.");
+            Require(ReferenceEquals(source.Selected, selected) && ReferenceEquals(list.SelectedItem, selected) && ReferenceEquals(choice.SelectedItem, selected),
+                "Restoring the clamped viewport anchor changed the last selected group identity.");
+            log("application-sort endAnchor=True;lastSelected=True;clamped=True;differentAnchor=True;selection=True");
+        } finally { scroll.ViewChanging -= ViewChanging; scroll.ViewChanged -= ViewChanged; }
         log("application-sort name=True;cpu=True;memory=True;processCount=True;liveMetrics=True;heldOrder=True;keyTie=True;selection=True;search=True;fullCaption=True;otherWindowCaption=True;scrollAnchor=True");
     }
 
@@ -179,6 +265,31 @@ internal static class ApplicationGroupTemplateChecks
         if (root is T value) yield return value;
         for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); ++i)
             foreach (var child in Elements<T>(VisualTreeHelper.GetChild(root, i))) yield return child;
+    }
+
+    private static async Task ScrollSettled(ListView list, ScrollViewer scroll, Action action)
+    {
+        var ready = new TaskCompletionSource();
+        bool changing = false;
+        int stableFrames = 0, version = 0, lastVersion = -1;
+        double lastOffset = double.NaN, lastViewport = double.NaN, lastExtent = double.NaN;
+        void Changing(object? sender, ScrollViewerViewChangingEventArgs args) { changing = true; ++version; stableFrames = 0; }
+        void Changed(object? sender, ScrollViewerViewChangedEventArgs args) { changing = args.IsIntermediate; ++version; stableFrames = 0; }
+        void Frame(object? sender, object args) {
+            bool stable = !changing && lastVersion == version && scroll.VerticalOffset == lastOffset
+                && scroll.ViewportHeight == lastViewport && scroll.ExtentHeight == lastExtent;
+            stableFrames = stable ? stableFrames + 1 : 0;
+            lastVersion = version; lastOffset = scroll.VerticalOffset; lastViewport = scroll.ViewportHeight; lastExtent = scroll.ExtentHeight;
+            if (stableFrames >= 2) ready.TrySetResult();
+        }
+        scroll.ViewChanging += Changing; scroll.ViewChanged += Changed; CompositionTarget.Rendering += Frame;
+        try {
+            action(); list.UpdateLayout();
+            await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            list.UpdateLayout();
+        } finally {
+            scroll.ViewChanging -= Changing; scroll.ViewChanged -= Changed; CompositionTarget.Rendering -= Frame;
+        }
     }
 
     private static async Task Rendered()

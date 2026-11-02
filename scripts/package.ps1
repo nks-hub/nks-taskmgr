@@ -5,7 +5,8 @@ param(
     [string]$OutputDirectory = '',
     [ValidatePattern('^([0-9a-fA-F]{40})?$')][string]$SigningCertificateThumbprint = '',
     [string]$SignTool = '',
-    [string]$TimestampServer = ''
+    [string]$TimestampServer = '',
+    [string]$AssetsFile = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -60,7 +61,8 @@ foreach ($installation in $installations) {
 if (!$crt) { throw 'Install the MSVC 14.44 x64 redistributable files through Visual Studio Installer.' }
 Copy-Item -Path (Join-Path $crt.FullName '*.dll') -Destination $payload
 
-$assetsPath = Join-Path $projectRoot 'build\dotnet\obj\NksTaskMgr.WinUI\project.assets.json'
+$assetsPath = if ($AssetsFile) { (Resolve-Path -LiteralPath $AssetsFile).Path }
+    else { Join-Path $projectRoot 'build\dotnet\obj\NksTaskMgr.WinUI\project.assets.json' }
 $assets = Get-Content -LiteralPath $assetsPath -Raw | ConvertFrom-Json
 foreach ($library in $assets.libraries.PSObject.Properties | Where-Object { $_.Value.type -eq 'package' }) {
     $notices = @($library.Value.files | Where-Object { $_ -match '(^|/)(license[^/]*|notice[^/]*|thirdpartynotices[^/]*)$' })

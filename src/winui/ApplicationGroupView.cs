@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
@@ -188,6 +189,33 @@ public sealed partial class MainWindow
         applicationChoice.Visibility = apps && !wide ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private static (ApplicationGroupRow Row, int Index, double Top)? FirstVisibleApplicationGroup(ListView list)
+    {
+        if (!list.IsLoaded || !double.IsFinite(list.ActualWidth) || !double.IsFinite(list.ActualHeight)
+            || list.ActualWidth <= 0 || list.ActualHeight <= 0 || list.ItemsPanelRoot is not { } panel) return null;
+        (ApplicationGroupRow Row, int Index, double Top)? first = null;
+        double highest = double.PositiveInfinity;
+        foreach (var child in panel.Children) {
+            if (child is not FrameworkElement { IsLoaded: true, ActualWidth: > 0, ActualHeight: > 0 } container) continue;
+            int index = list.IndexFromContainer(container);
+            if (index < 0 || index >= list.Items.Count || list.ItemFromContainer(container) is not ApplicationGroupRow row
+                || !ReferenceEquals(list.Items[index], row)) continue;
+            var transform = container.TransformToVisual(list);
+            var bounds = transform.TransformBounds(new Windows.Foundation.Rect(0, 0, container.ActualWidth, container.ActualHeight));
+            if (!double.IsFinite(bounds.Left) || !double.IsFinite(bounds.Top) || !double.IsFinite(bounds.Right) || !double.IsFinite(bounds.Bottom)
+                || bounds.Width <= 0 || bounds.Height <= 0 || bounds.Right <= 0 || bounds.Bottom <= 0
+                || bounds.Left >= list.ActualWidth || bounds.Top >= list.ActualHeight) continue;
+            bool visible = true;
+            for (DependencyObject? ancestor = container; ancestor is not null; ancestor = VisualTreeHelper.GetParent(ancestor))
+                if (ancestor is UIElement { Visibility: Visibility.Collapsed }) { visible = false; break; }
+            if (!visible || bounds.Top > highest || bounds.Top == highest && first is { } previous && index >= previous.Index) continue;
+            double top = transform.TransformPoint(default).Y;
+            if (!double.IsFinite(top)) continue;
+            highest = bounds.Top; first = (row, index, top);
+        }
+        return first;
+    }
+
     internal static Action PreserveApplicationGroupView(ApplicationGroupModel source, ListView list, ComboBox choice)
     {
         ApplicationGroupRow? selection = null, anchor = null;
@@ -201,10 +229,18 @@ public sealed partial class MainWindow
             selection = list.SelectedItem as ApplicationGroupRow; anchor = null;
             if (list.Visibility != Visibility.Visible) return;
             scroll ??= Descendant<ScrollViewer>(list); offset = scroll?.VerticalOffset ?? 0;
-            int first = (list.ItemsPanelRoot as ItemsStackPanel)?.FirstVisibleIndex ?? -1;
-            if (first >= 0 && first < list.Items.Count && list.Items[first] is ApplicationGroupRow row
-                && list.ContainerFromItem(row) is FrameworkElement container) {
-                anchor = row; anchorTop = container.TransformToVisual(list).TransformPoint(default).Y;
+            var visibleAnchor = FirstVisibleApplicationGroup(list);
+            int first = visibleAnchor?.Index ?? -1;
+            if (visibleAnchor is { } captured) {
+                anchor = captured.Row; anchorTop = captured.Top;
+            }
+            if (App.ApplicationGroupsCheckPath is not null) {
+                var panel = list.ItemsPanelRoot; string nativePanel = "<null>";
+                if (panel is not null) {
+                    try { nativePanel = new WinRT.IInspectable(((WinRT.IWinRTObject)panel).NativeObject).GetRuntimeClassName(false); }
+                    catch (Exception error) { nativePanel = $"error:{error.GetType().Name}:{error.HResult:X8}"; }
+                }
+                App.Trace(FormattableString.Invariant($"application-view changing;bound={bound};updating={source.Updating};selection={selection?.Key};modelSelection={source.Selected?.Key};listModelRef={ReferenceEquals(list.SelectedItem, source.Selected)};choiceModelRef={ReferenceEquals(choice.SelectedItem, source.Selected)};scrollNull={scroll is null};offset={offset};scrollable={scroll?.ScrollableHeight};viewport={scroll?.ViewportHeight};extent={scroll?.ExtentHeight};panelType={panel?.GetType().FullName};panelNative={nativePanel};panelCast={panel is ItemsStackPanel};firstIndex={first};anchor={anchor?.Key};anchorTop={anchorTop};listWidth={list.ActualWidth};listHeight={list.ActualHeight}"));
             }
         }
         void Changed()
@@ -213,12 +249,22 @@ public sealed partial class MainWindow
             var selected = selection is not null && source.Visible.Contains(selection) ? selection : source.Selected ?? source.Visible.FirstOrDefault();
             list.SelectedItem = selected;
             if (ReferenceEquals(choice.ItemsSource, source.Visible)) choice.SelectedItem = selected;
-            if (scroll is null || list.Visibility != Visibility.Visible) return;
-            if (anchor is not null && source.Visible.Contains(anchor)) {
-                list.ScrollIntoView(anchor, ScrollIntoViewAlignment.Leading); list.UpdateLayout();
-                if (list.ContainerFromItem(anchor) is FrameworkElement container)
-                    scroll.ChangeView(null, Math.Clamp(scroll.VerticalOffset + container.TransformToVisual(list).TransformPoint(default).Y - anchorTop, 0, scroll.ScrollableHeight), null, true);
-            } else scroll.ChangeView(null, Math.Min(offset, scroll.ScrollableHeight), null, true);
+            double? requestedOffset = null, currentAnchorTop = null; bool? changeAccepted = null;
+            if (scroll is not null && list.Visibility == Visibility.Visible) {
+                if (anchor is not null && source.Visible.Contains(anchor)) {
+                    list.ScrollIntoView(anchor, ScrollIntoViewAlignment.Leading); list.UpdateLayout();
+                    if (list.ContainerFromItem(anchor) is FrameworkElement container) {
+                        currentAnchorTop = container.TransformToVisual(list).TransformPoint(default).Y;
+                        requestedOffset = Math.Clamp(scroll.VerticalOffset + currentAnchorTop.Value - anchorTop, 0, scroll.ScrollableHeight);
+                        changeAccepted = scroll.ChangeView(null, requestedOffset.Value, null, true);
+                    }
+                } else {
+                    requestedOffset = Math.Min(offset, scroll.ScrollableHeight);
+                    changeAccepted = scroll.ChangeView(null, requestedOffset.Value, null, true);
+                }
+            }
+            if (App.ApplicationGroupsCheckPath is not null)
+                App.Trace(FormattableString.Invariant($"application-view changed;bound={bound};updating={source.Updating};selection={selected?.Key};modelSelection={source.Selected?.Key};listSelectionRef={ReferenceEquals(list.SelectedItem, selected)};choiceSelectionRef={ReferenceEquals(choice.SelectedItem, selected)};listModelRef={ReferenceEquals(list.SelectedItem, source.Selected)};choiceModelRef={ReferenceEquals(choice.SelectedItem, source.Selected)};scrollNull={scroll is null};visibility={list.Visibility};offset={scroll?.VerticalOffset};scrollable={scroll?.ScrollableHeight};anchor={anchor?.Key};anchorTop={anchorTop};currentAnchorTop={currentAnchorTop};requestedOffset={requestedOffset};changeAccepted={changeAccepted}"));
         }
         source.ViewChanging += Changing; source.ViewChanged += Changed;
         return () => { source.ViewChanging -= Changing; source.ViewChanged -= Changed; };
