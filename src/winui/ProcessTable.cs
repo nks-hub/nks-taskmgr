@@ -163,7 +163,7 @@ public sealed partial class ProcessNameCell : Grid
     private readonly ProcessIconView icon = new() { Width = 18, Height = 18, VerticalAlignment = VerticalAlignment.Center };
     private readonly RotateTransform rotation = new() { CenterX = 6, CenterY = 6 };
     private readonly Button branch = new() { Width = 14, Height = 24, MinWidth = 0, MinHeight = 0, Padding = new Thickness(0),
-        BorderThickness = new Thickness(0), Background = new SolidColorBrush(Windows.UI.Colors.Transparent), IsTabStop = false, VerticalAlignment = VerticalAlignment.Center };
+        BorderThickness = new Thickness(0), Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), IsTabStop = false, VerticalAlignment = VerticalAlignment.Center };
     private ProcessSlot? slot;
     private ProcessRow? row;
     private bool subscribed;
@@ -187,7 +187,7 @@ public sealed partial class ProcessNameCell : Grid
         ColumnDefinitions.Add(new ColumnDefinition());
         branch.Content = new Polyline { Points = new PointCollection { new Point(3, 2), new Point(7, 6), new Point(3, 10) },
             Width = 12, Height = 12, Stroke = Display.Brush(0x95a4ad), StrokeThickness = 1.4, RenderTransform = rotation };
-        branch.Click += (_, args) => { if (row is { HasChildren: true, Ended: false } current) slot?.ToggleBranch?.Invoke(current); args.Handled = true; };
+        branch.Click += (_, _) => { if (row is { HasChildren: true, Ended: false } current) slot?.ToggleBranch?.Invoke(current); };
         branch.DoubleTapped += (_, args) => args.Handled = true;
         Children.Add(branch); Children.Add(icon); Children.Add(name); SetColumn(icon, 1); SetColumn(name, 2);
         Loaded += (_, _) => { Detach(); RefreshRow(); };
