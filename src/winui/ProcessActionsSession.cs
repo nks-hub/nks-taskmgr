@@ -63,8 +63,8 @@ internal sealed partial class ProcessActionsSession : IDisposable
             Cancel();
             Process? process;
             lock (sync) process = child;
-            // Keep the single-request lease until the owned child has actually exited.
-            if (process is not null) await process.WaitForExitAsync().ConfigureAwait(false);
+            // WaitForExitAsync can observe an exit code before the process handle is signaled.
+            if (process is not null) await Task.Run(process.WaitForExit).ConfigureAwait(false);
         }
     }
 
