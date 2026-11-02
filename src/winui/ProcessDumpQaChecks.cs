@@ -27,19 +27,20 @@ internal static partial class ProcessDumpQaChecks
         }
     }
 
-    internal static Task<bool> RunAsync(string privateDirectory, Action<string> log, CancellationToken cancellation)
+    internal static Task<bool> RunAsync(string privateDirectory, Action<string> log, Func<CancellationToken, Task> uiProbe, CancellationToken cancellation)
     {
         ArgumentNullException.ThrowIfNull(log);
-        return Task.Run(() => RunCoreAsync(privateDirectory, log, cancellation));
+        ArgumentNullException.ThrowIfNull(uiProbe);
+        return Task.Run(() => RunCoreAsync(privateDirectory, log, uiProbe, cancellation));
     }
 
-    private static async Task<bool> RunCoreAsync(string privateDirectory, Action<string> log, CancellationToken cancellation)
+    private static async Task<bool> RunCoreAsync(string privateDirectory, Action<string> log, Func<CancellationToken, Task> uiProbe, CancellationToken cancellation)
     {
         var children = new List<OwnedChild>(2);
         using var client = new ProcessDumpClient();
         SafeFileHandle? childJob = null;
         ProcessDumpFile? parentLease = null, runLease = null;
-        bool passed = false, cleanup = true;
+        bool passed = false, cleanup = true, inflightCancelCovered = false;
         int captures = 0;
         string? runDirectory = null;
         try {
@@ -134,8 +135,9 @@ internal static partial class ProcessDumpQaChecks
             CheckOriginal(own);
             await CheckNoOwnedJournalsAsync(runDirectory, cancellation).ConfigureAwait(false);
             log("dump-qa pre-cancel=True;workerLease=False;ownedTemporary=False;ownedJournal=False");
+            await CheckInFlightCancelAsync(own, client, runDirectory, runLease, creator, uiProbe, log, cancellation).ConfigureAwait(false);
+            inflightCancelCovered = true;
             Require(captures == 4, "Not all four actual architecture/mode combinations were validated.");
-            log("NOT_COVERED dump-qa inflight-cancel;small real dumps have no deterministic in-capture gate;noTimerRaceClaim=True");
             log("NOT_COVERED dump-qa debugger-open/unwind;independent structural inspection is not debugger validation.");
             log("NOT_COVERED dump-qa confirmation-dialog/SavePicker/pixel-layout;this harness calls the production client.");
             passed = true;
@@ -175,7 +177,7 @@ internal static partial class ProcessDumpQaChecks
             }
             runLease?.Dispose(); parentLease?.Dispose();
             passed &= cleanup && !cancellation.IsCancellationRequested;
-            log($"{(passed ? "PASS" : "FAIL")} dump-qa finished;passed={passed};captures={captures};cleanup={cleanup};cancelled={cancellation.IsCancellationRequested};inflightCancelCovered=False;debuggerCovered=False;dialogsCovered=False;artifactsPreserved=True");
+            log($"{(passed ? "PASS" : "FAIL")} dump-qa finished;passed={passed};captures={captures};cleanup={cleanup};cancelled={cancellation.IsCancellationRequested};inflightCancelCovered={inflightCancelCovered};debuggerCovered=False;dialogsCovered=False;artifactsPreserved=True");
         }
         return passed;
     }
