@@ -155,6 +155,8 @@ public sealed partial class MainWindow
         {
             json.WriteStartObject(); json.WriteString("kind", "segment"); json.WriteBoolean("diagnosticOnly", true);
             json.WriteBoolean("replacesJobAccounting", false); json.WriteBoolean("cpuUnitsImplyResolution", false);
+            json.WriteBoolean("phaseCpuAttributionReliable", false);
+            json.WriteString("phaseCpuCaveat", "Thread CPU counters can be coarse or deferred. Short-phase deltas do not reliably attribute CPU work.");
             json.WriteBoolean("stateAtTickEntryOnly", true); json.WriteBoolean("continuousStateProof", false);
             json.WriteString("view", sample.View.ToString());
             if (sample.Minimized is { } minimized) json.WriteBoolean("minimized", minimized); else json.WriteNull("minimized");
@@ -163,11 +165,11 @@ public sealed partial class MainWindow
             json.WriteNumber("qpcFrequency", Stopwatch.Frequency);
             json.WriteNumber("seconds", (sample.EndQpc - sample.StartQpc) / (double)Stopwatch.Frequency);
             json.WriteNumber("ticks", sample.Ticks); json.WriteNumber("modelMeasuredTicks", sample.ModelTicks);
-            Cpu(json, "uiThreadCpu100Ns", sample.UiCpu); Cpu(json, "tickCpu100Ns", sample.TickCpu); Cpu(json, "modelCpu100Ns", sample.ModelCpu);
-            Cpu(json, "otherTickCpu100Ns", sample.TickCpu is { } tick && sample.ModelCpu is { } model && tick >= model ? tick - model : null);
-            Cpu(json, "outsideTickCpu100Ns", sample.UiCpu is { } ui && sample.TickCpu is { } ticks && ui >= ticks ? ui - ticks : null);
+            Cpu(json, "uiThreadCpu100Ns", sample.UiCpu); Cpu(json, "tickCounterDelta100Ns", sample.TickCpu); Cpu(json, "modelCounterDelta100Ns", sample.ModelCpu);
+            Cpu(json, "otherTickCounterRemainder100Ns", sample.TickCpu is { } tick && sample.ModelCpu is { } model && tick >= model ? tick - model : null);
+            Cpu(json, "cpuCounterRemainder100Ns", sample.UiCpu is { } ui && sample.TickCpu is { } ticks && ui >= ticks ? ui - ticks : null);
             json.WriteNumber("counterErrors", sample.Errors); json.WriteNumber("reentrantTicks", sample.Reentrant);
-            json.WriteString("outsideTickMeaning", "Other UI work; not proven XAML. Includes profiling overhead.");
+            json.WriteString("cpuCounterRemainderMeaning", "Coarse counter remainder; not proof of work outside Tick or in XAML. Includes profiling overhead.");
             json.WriteEndObject();
         }
     }
