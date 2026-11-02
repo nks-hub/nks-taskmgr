@@ -93,15 +93,30 @@ public static partial class WinUiChecks
             TraceColumnMismatch(table, list, row, item, content, loopIndex, "The process row lost its tree/name cell.");
             throw new InvalidOperationException("The process row lost its tree/name cell.");
         }
-        var source = content as ProcessSlot;
-        if (source is null) {
-            TraceColumnMismatch(table, list, row, item, content, loopIndex, "The realized process row lost its source slot.");
+        // Cached templates can have empty Content; the list owns the item mapping.
+        var source = list.ItemFromContainer(item) as ProcessSlot;
+        int index = list.IndexFromContainer(item);
+        if (source is null || source.Row is not { } current || index != loopIndex || index < 0 || index >= list.Items.Count
+            || !ReferenceEquals(list.Items[index], source)) {
+            TraceColumnMismatch(table, list, row, item, content, loopIndex, "The realized process row lost its canonical source slot.");
             throw CaptureProcessTableBindingFailure(list, item, loopIndex);
         }
-        Check(ReferenceEquals(name.Row, source.Row) && name.Margin == source.Row.Indent, "A recycled process name retained another row or depth.");
-        Check(name.NameLabel.Text == source.Row.Name + (source.Row.Ended ? " · ukončeno" : source.Row.Stale ? " · zastaralé" : ""),
-            "A recycled process label retained another name or status.");
-        Check(name.Branch.Opacity == (source.Row.HasChildren ? 1 : 0), "The tree chevron does not match its actual branch.");
+        if (!ReferenceEquals(name.Slot, source)) {
+            TraceColumnMismatch(table, list, row, item, content, loopIndex, "The process name cell lost its canonical source slot.");
+            throw CaptureProcessTableBindingFailure(list, item, loopIndex);
+        }
+        Check(ReferenceEquals(name.Row, current) && name.Margin == current.Indent, "A recycled process name retained another row or depth.");
+        string expectedName = current.Name + (current.Ended ? " · ukončeno" : current.Stale ? " · zastaralé" : "");
+        Check(name.NameLabel.Text == expectedName, "A recycled process label retained another name or status.");
+        if (visible) {
+            string[] expected = [expectedName, current.PidText, current.CpuText, current.WorkingText,
+                current.PrivateText, current.ReadText, current.WriteText];
+            for (int id = 0; id < expected.Length; ++id) {
+                string? actual = id == 0 ? name.NameLabel.Text : (row.Children[id] as TextBlock)?.Text;
+                Check(actual == expected[id], $"A visible process column {id} differs from its current source row: actual={actual};expected={expected[id]}.");
+            }
+        }
+        Check(name.Branch.Opacity == (current.HasChildren ? 1 : 0), "The tree chevron does not match its actual branch.");
         Check(Grid.GetColumn(name.Branch) < Grid.GetColumn(name.Icon), "The intended tree chevron column is not before the process icon.");
         if (visible) Check(name.Branch.TransformToVisual(row).TransformPoint(new Point(name.Branch.ActualWidth, 0)).X
             < name.Icon.TransformToVisual(row).TransformPoint(new Point(0, 0)).X, "The visible tree chevron is not before the process icon.");
@@ -116,15 +131,15 @@ public static partial class WinUiChecks
             try { return value.GetType().AssemblyQualifiedName ?? value.GetType().FullName ?? "<type name unavailable>"; }
             catch (Exception error) { return "<type error: " + error.GetType().Name + ">"; }
         }
-        var slot = content as ProcessSlot;
         int containerIndex = list.IndexFromContainer(item);
         object? expectedItem = containerIndex >= 0 && containerIndex < list.Items.Count ? list.Items[containerIndex] : null;
         object? canonicalItem = list.ItemFromContainer(item), itemsSource = list.ItemsSource;
+        var slot = canonicalItem as ProcessSlot;
         object? itemContext = item.DataContext, rowContext = row.DataContext;
         var name = row.Children.Count > 0 ? row.Children[0] as ProcessNameCell : null;
         object? nameContext = name?.DataContext;
         var expectedSlot = expectedItem as ProcessSlot;
-        App.Trace($"table-binding loopIndex={loopIndex};containerIndex={containerIndex};contentNull={content is null};contentType={TypeName(content)};itemsSourceType={TypeName(itemsSource)};expectedType={TypeName(expectedItem)};expectedKey={expectedSlot?.Row.Key};canonicalType={TypeName(canonicalItem)};contentExpected={ReferenceEquals(content, expectedItem)};canonicalExpected={ReferenceEquals(canonicalItem, expectedItem)};contentCanonical={ReferenceEquals(content, canonicalItem)};itemContextType={TypeName(itemContext)};rowContextType={TypeName(rowContext)};nameContextType={TypeName(nameContext)};contentItemContext={ReferenceEquals(content, itemContext)};contentRowContext={ReferenceEquals(content, rowContext)};contentNameContext={ReferenceEquals(content, nameContext)};itemContextExpected={ReferenceEquals(itemContext, expectedItem)};rowContextExpected={ReferenceEquals(rowContext, expectedItem)};nameContextExpected={ReferenceEquals(nameContext, expectedItem)};nameSlotNull={name?.Slot is null};nameSlotType={TypeName(name?.Slot)};nameSlotKey={name?.Slot?.Row.Key};nameRowKey={name?.Row?.Key};nameSlotExpected={ReferenceEquals(name?.Slot, expectedItem)};nameRowExpected={ReferenceEquals(name?.Row, expectedSlot?.Row)}");
+        App.Trace($"table-binding loopIndex={loopIndex};containerIndex={containerIndex};contentNull={content is null};contentType={TypeName(content)};itemsSourceType={TypeName(itemsSource)};expectedType={TypeName(expectedItem)};expectedKey={expectedSlot?.Row?.Key};canonicalType={TypeName(canonicalItem)};contentExpected={ReferenceEquals(content, expectedItem)};canonicalExpected={ReferenceEquals(canonicalItem, expectedItem)};contentCanonical={ReferenceEquals(content, canonicalItem)};itemContextType={TypeName(itemContext)};rowContextType={TypeName(rowContext)};nameContextType={TypeName(nameContext)};contentItemContext={ReferenceEquals(content, itemContext)};contentRowContext={ReferenceEquals(content, rowContext)};contentNameContext={ReferenceEquals(content, nameContext)};itemContextExpected={ReferenceEquals(itemContext, expectedItem)};rowContextExpected={ReferenceEquals(rowContext, expectedItem)};nameContextExpected={ReferenceEquals(nameContext, expectedItem)};nameSlotNull={name?.Slot is null};nameSlotType={TypeName(name?.Slot)};nameSlotKey={name?.Slot?.Row?.Key};nameRowKey={name?.Row?.Key};nameSlotExpected={ReferenceEquals(name?.Slot, expectedItem)};nameRowExpected={ReferenceEquals(name?.Row, expectedSlot?.Row)}");
         string viewport;
         try {
             var bounds = item.TransformToVisual(list).TransformBounds(new Rect(0, 0, item.ActualWidth, item.ActualHeight));
@@ -135,7 +150,7 @@ public static partial class WinUiChecks
                 if (ancestor is UIElement { Visibility: Visibility.Collapsed }) effectiveVisible = false;
             viewport = $"itemBounds={bounds};rowBounds={rowBounds};listWidth={list.ActualWidth:F2};listHeight={list.ActualHeight:F2};inViewport={intersects};effectiveVisible={effectiveVisible};calculatedOffscreen={!intersects || !effectiveVisible}";
         } catch (Exception error) { viewport = "boundsError=" + error; }
-        App.Trace($"table-layout reason={reason};key={slot?.Row.Key};rowLoaded={row.IsLoaded};itemLoaded={item.IsLoaded};subscribed={row.ColumnsSubscribed};loads={row.LoadCount};unloads={row.UnloadCount};attaches={row.AttachCount};detaches={row.DetachCount};applies={row.ApplyCount};revision={table.Columns.Revision};appliedRevision={row.LastAppliedRevision};rowColumnsNull={row.Columns is null};rowColumnsShared={ReferenceEquals(row.Columns, table.Columns)};slotColumnsNull={slot?.Columns is null};slotColumnsShared={ReferenceEquals(slot?.Columns, table.Columns)};dataContextSlot={ReferenceEquals(rowContext, slot)};rowWidth={row.ActualWidth:F2};explicitRowWidth={row.Width:F2};layoutWidth={table.Columns.LayoutWidth:F2};headerWidth={table.Header.ActualWidth:F2};tableWidth={table.ActualWidth:F2};horizontalOffset={table.HorizontalScroll.HorizontalOffset:F2};rowChildren={row.Children.Count};headerChildren={table.Header.Children.Count};lastPositions={string.Join(",", row.LastAppliedPositions)};{viewport}");
+        App.Trace($"table-layout reason={reason};key={slot?.Row?.Key};rowLoaded={row.IsLoaded};itemLoaded={item.IsLoaded};subscribed={row.ColumnsSubscribed};loads={row.LoadCount};unloads={row.UnloadCount};attaches={row.AttachCount};detaches={row.DetachCount};applies={row.ApplyCount};revision={table.Columns.Revision};appliedRevision={row.LastAppliedRevision};rowColumnsNull={row.Columns is null};rowColumnsShared={ReferenceEquals(row.Columns, table.Columns)};slotColumnsNull={slot?.Columns is null};slotColumnsShared={ReferenceEquals(slot?.Columns, table.Columns)};dataContextSlot={ReferenceEquals(rowContext, slot)};rowWidth={row.ActualWidth:F2};explicitRowWidth={row.Width:F2};layoutWidth={table.Columns.LayoutWidth:F2};headerWidth={table.Header.ActualWidth:F2};tableWidth={table.ActualWidth:F2};horizontalOffset={table.HorizontalScroll.HorizontalOffset:F2};rowChildren={row.Children.Count};headerChildren={table.Header.Children.Count};lastPositions={string.Join(",", row.LastAppliedPositions)};{viewport}");
         int expectedPosition = 0;
         foreach (var column in table.Columns.Items) {
             var value = (FrameworkElement)row.Children[column.Id]; var heading = (FrameworkElement)table.Header.Children[column.Id];
