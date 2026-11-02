@@ -89,20 +89,37 @@ internal sealed partial class ProcessDetailsView
                 ProcessDetailsCommand.Handles => "0x" + ((ProcessHandleInfo)first.Source).Value.ToString("X", System.Globalization.CultureInfo.InvariantCulture), _ => ""
             };
             if (query.Length == 0) query = first.Text;
-            find.Text = query;
-            await WaitForDetailsAsync(() => !searchTimer.IsRunning && filterOperation is null, "Source field filter");
+            await SetDetailsQueryAsync(query, "Source field filter");
             if (!list.Items.OfType<ProcessDetailsRow>().Any(row => ReferenceEquals(row.Source, first.Source)))
                 throw new InvalidOperationException("Filtering lost the actual source row.");
-            find.Text = "no-match-" + Guid.NewGuid().ToString("N");
-            await WaitForDetailsAsync(() => !searchTimer.IsRunning && filterOperation is null, "Empty filter");
-            if (list.Items.Count != 0 || detail.Text != "Seznam je prázdný. Zkontrolujte hledání a filtr.")
+            await SetDetailsQueryAsync("no-match-" + Guid.NewGuid().ToString("N"), "Empty filter");
+            object? selectedItem = list.SelectedItem;
+            log($"process-details empty mode={selectedMode};query={Flat(find.Text)};items={list.Items.Count};selectedNull={selectedItem is null};selectedType={selectedItem?.GetType().FullName};selectedText={Flat((selectedItem as ProcessDetailsRow)?.Text ?? "")};sourceType={SelectedRow?.GetType().FullName};detailText={Flat(detail.Text)};timerRunning={searchTimer.IsRunning};filterPending={filterOperation is not null}");
+            if (list.Items.Count != 0 || selectedItem is not null || SelectedRow is not null || detail.Text != "Seznam je prázdný. Zkontrolujte hledání a filtr.")
                 throw new InvalidOperationException("An empty result retained a selection or blank inspector.");
-            find.Text = "";
-            await WaitForDetailsAsync(() => !searchTimer.IsRunning && filterOperation is null, "Reset filter");
+            await SetDetailsQueryAsync("", "Reset filter");
             if (list.Items.Count != expected || SelectedRow is null || detail.Text.Length == 0)
                 throw new InvalidOperationException("Resetting the filter did not restore the actual snapshot.");
             log($"process-details filter={selectedMode};sourceRow=True;empty=True;reset=True");
         }
+    }
+
+    private async Task SetDetailsQueryAsync(string query, string stage)
+    {
+        if (find.Text != query) {
+            var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            void Changed(object sender, TextChangedEventArgs args)
+            {
+                if (find.Text == query) changed.TrySetResult();
+            }
+            find.TextChanged += Changed;
+            try {
+                find.Text = query;
+                try { await changed.Task.WaitAsync(TimeSpan.FromSeconds(10)); }
+                catch (TimeoutException error) { throw new TimeoutException(stage + " TextChanged", error); }
+            } finally { find.TextChanged -= Changed; }
+        }
+        await WaitForDetailsAsync(() => !searchTimer.IsRunning && filterOperation is null, stage);
     }
 
     internal async Task CheckRejectedTargetAsync(Action<string> log)
