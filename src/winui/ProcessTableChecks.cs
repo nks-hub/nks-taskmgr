@@ -36,7 +36,17 @@ public static partial class WinUiChecks
         return null;
     }
 
-    private static void AlignedColumns(ProcessTable table, ListView list, ListViewItem item, int loopIndex)
+    private static bool ProcessRowVisible(ListView list, FrameworkElement element)
+    {
+        if (!element.IsLoaded || element.ActualWidth <= 0 || element.ActualHeight <= 0) return false;
+        var bounds = element.TransformToVisual(list).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+        if (bounds.Right <= 0 || bounds.Bottom <= 0 || bounds.Left >= list.ActualWidth || bounds.Top >= list.ActualHeight) return false;
+        for (DependencyObject? ancestor = element; ancestor is not null; ancestor = VisualTreeHelper.GetParent(ancestor))
+            if (ancestor is UIElement { Visibility: Visibility.Collapsed }) return false;
+        return true;
+    }
+
+    private static bool AlignedColumns(ProcessTable table, ListView list, ListViewItem item, int loopIndex)
     {
         object? content = item.Content;
         var row = Find<ProcessRowGrid>(item) ?? throw new InvalidOperationException("Process row template was not realized.");
@@ -45,15 +55,23 @@ public static partial class WinUiChecks
             Require(condition, message);
         }
         Check(ReferenceEquals(row.Columns, table.Columns), "A realized process row lost the shared column model.");
-        Check(Math.Abs(row.ActualWidth - table.Columns.LayoutWidth) < 1, "A realized process row has a different layout width from its header.");
+        bool visible = ProcessRowVisible(list, row);
+        Check(Math.Abs(row.Width - table.Columns.LayoutWidth) < 1, "A realized process row has a different intended width from its header.");
+        if (visible) Check(Math.Abs(row.ActualWidth - table.Columns.LayoutWidth) < 1, "A visible process row has a different layout width from its header.");
         foreach (var column in table.Columns.Items) {
             var value = (FrameworkElement)row.Children[column.Id]; var heading = (FrameworkElement)table.Header.Children[column.Id];
             int position = Grid.GetColumn(value);
             Check(position == Grid.GetColumn(heading), "Column heading and value have different positions: id=" + column.Id);
-            Check(Math.Abs(row.ColumnDefinitions[position].ActualWidth - table.Header.ColumnDefinitions[position].ActualWidth) < .1,
-                "Column heading and value have different widths.");
+            double expectedWidth = table.Columns.WidthOf(column.Id);
+            Check(row.ColumnDefinitions[position].Width.GridUnitType == GridUnitType.Pixel
+                && table.Header.ColumnDefinitions[position].Width.GridUnitType == GridUnitType.Pixel
+                && Math.Abs(row.ColumnDefinitions[position].Width.Value - expectedWidth) < .1
+                && Math.Abs(table.Header.ColumnDefinitions[position].Width.Value - expectedWidth) < .1,
+                "Column heading or value has a different intended width from the shared model.");
+            if (visible) Check(Math.Abs(row.ColumnDefinitions[position].ActualWidth - table.Header.ColumnDefinitions[position].ActualWidth) < .1,
+                "Visible column heading and value have different widths.");
             Check(value.Visibility == (column.Visible ? Visibility.Visible : Visibility.Collapsed), "Column visibility did not reach the row.");
-            if (!column.Visible) continue;
+            if (!column.Visible || !visible) continue;
             double valueRight = value.TransformToVisual(table).TransformPoint(new Point(value.ActualWidth + value.Margin.Right, 0)).X;
             double headerRight = heading.TransformToVisual(table).TransformPoint(new Point(heading.ActualWidth, 0)).X;
             Check(Math.Abs(valueRight - headerRight) < 1,
@@ -78,8 +96,10 @@ public static partial class WinUiChecks
         Check(name.NameLabel.Text == source.Row.Name + (source.Row.Ended ? " · ukončeno" : source.Row.Stale ? " · zastaralé" : ""),
             "A recycled process label retained another name or status.");
         Check(name.Branch.Opacity == (source.Row.HasChildren ? 1 : 0), "The tree chevron does not match its actual branch.");
-        Check(name.Branch.TransformToVisual(row).TransformPoint(new Point(name.Branch.ActualWidth, 0)).X
-            < name.Icon.TransformToVisual(row).TransformPoint(new Point(0, 0)).X, "The tree chevron is not before the process icon.");
+        Check(Grid.GetColumn(name.Branch) < Grid.GetColumn(name.Icon), "The intended tree chevron column is not before the process icon.");
+        if (visible) Check(name.Branch.TransformToVisual(row).TransformPoint(new Point(name.Branch.ActualWidth, 0)).X
+            < name.Icon.TransformToVisual(row).TransformPoint(new Point(0, 0)).X, "The visible tree chevron is not before the process icon.");
+        return visible;
     }
 
     private static void TraceColumnMismatch(ProcessTable table, ListView list, ProcessRowGrid row, ListViewItem item, object? content, int loopIndex, string reason)
@@ -120,13 +140,16 @@ public static partial class WinUiChecks
 
     private static int AlignedRealizedRows(ProcessTable table, ListView list)
     {
-        int checkedRows = 0;
+        int checkedRows = 0, visibleRows = 0;
         for (int i = 0; i < list.Items.Count; i++) {
             if (list.ContainerFromIndex(i) is not ListViewItem { IsLoaded: true } item) continue;
-            AlignedColumns(table, list, item, i); ++checkedRows;
+            if (AlignedColumns(table, list, item, i)) ++visibleRows;
+            ++checkedRows;
         }
         Require(checkedRows > 0, "No actual process rows were realized for alignment checks.");
-        return checkedRows;
+        Require(visibleRows > 0, "No process rows were visible for actual-coordinate alignment checks.");
+        App.Trace($"Process table rows checked: realized={checkedRows};visible={visibleRows};cached={checkedRows - visibleRows}");
+        return visibleRows;
     }
 
     public static Action BeginProcessTableReplay(ProcessTable table, ListView list)
@@ -180,7 +203,8 @@ public static partial class WinUiChecks
                 Require(realized > 0 && realized <= realizationLimit && realized < replay.Count / 10,
                     $"Process table did not virtualize 10,000 replay rows: realized={realized};limit={realizationLimit};viewport={list.ActualHeight};cache={cacheLength}.");
                 var last = list.ContainerFromIndex(replay.Count - 1) as ListViewItem;
-                Require(last is { IsLoaded: true }, "Process table did not scroll to the final replay row.");
+                Require(last is { IsLoaded: true } && Find<ProcessRowGrid>(last) is { } lastRow && ProcessRowVisible(list, lastRow),
+                    "Process table did not visibly scroll to the final replay row.");
                 Require(list.SelectedItems.Contains(replay[^1]) && list.SelectedItems.Contains(replay[^2]), "Replay scrolling lost multiple selection.");
                 Require(table.HorizontalScroll.HorizontalOffset > 0, "The actual horizontal-scrolling alignment scenario did not scroll.");
                 int aligned = AlignedRealizedRows(table, list);
