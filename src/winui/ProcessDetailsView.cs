@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -22,16 +23,23 @@ public sealed partial class MainWindow
         processDetailsButton.Content = UiIcon.Create("processes", 0x95a4ad, 19);
         AutomationProperties.SetName(processDetailsButton, "Podrobnosti vybraného procesu");
         AutomationProperties.SetAutomationId(processDetailsButton, "process-details");
-        ToolTipService.SetToolTip(processDetailsButton, "Vlákna, moduly a podpis souboru");
-        processDetailsButton.Click += (_, _) => {
+        ToolTipService.SetToolTip(processDetailsButton, "Vlákna, moduly, paměť a handly procesu");
+        processDetailsButton.Click += async (_, _) => {
             if (SelectedProcess is not { } row || !CanReadDetails(row)) return;
-            if (processDetailsWindow is { } previous && previous.Key != row.Key) { processDetailsWindow = null; previous.Close(); }
-            if (processDetailsWindow is null) {
-                var window = new ProcessDetailsView(processDetailsClient, row.Key, row.Name, () => model.IsCurrent(row));
-                processDetailsWindow = window;
-                window.Closed += (_, _) => { if (ReferenceEquals(processDetailsWindow, window)) processDetailsWindow = null; };
+            try {
+                if (processDetailsWindow is { } previous && previous.Key != row.Key) { processDetailsWindow = null; previous.Close(); }
+                if (processDetailsWindow is null) {
+                    var window = new ProcessDetailsView(processDetailsClient, row.Key, row.Name, () => model.IsCurrent(row));
+                    processDetailsWindow = window;
+                    window.Closed += (_, _) => { if (ReferenceEquals(processDetailsWindow, window)) processDetailsWindow = null; };
+                }
+                processDetailsWindow.ShowOwned(this);
             }
-            processDetailsWindow.Activate();
+            catch (Exception error) when (error is Win32Exception or COMException or InvalidOperationException) {
+                processDetailsWindow?.Close(); processDetailsWindow = null;
+                await new ContentDialog { Title = "Podrobnosti nelze otevřít", Content = error.Message,
+                    CloseButtonText = "Zavřít", XamlRoot = root.XamlRoot }.ShowAsync();
+            }
         };
         Closed += (_, _) => { processDetailsWindow?.Close(); processDetailsClient.Dispose(); };
     }
@@ -58,6 +66,7 @@ internal sealed partial class ProcessDetailsView : Window
     private readonly TextBox detail = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
         FontFamily = new FontFamily("Consolas"), FontSize = 12, MinHeight = 0, Text = "Vyberte řádek ze seznamu." };
     private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
+    private readonly ProcessDetailsTemplates templates = new();
     private readonly Grid inspector = new() { RowSpacing = 8 };
     private readonly TextBlock signatureNote = Label("Podpis se ověřuje pouze u souboru na disku, místně a z mezipaměti certifikátů.", 11);
     private ProcessDetailsSnapshot? threadSnapshot, moduleSnapshot;
@@ -93,6 +102,7 @@ internal sealed partial class ProcessDetailsView : Window
         listStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 34d));
         listStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(10, 4, 10, 4)));
         list.ItemContainerStyle = listStyle; ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
+        list.ItemTemplate = (DataTemplate)templates["ProcessDetailsRow"];
         body.Children.Add(list);
         inspector.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); inspector.RowDefinitions.Add(new RowDefinition()); inspector.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         inspector.Children.Add(verify); inspector.Children.Add(detail); Grid.SetRow(detail, 1);
@@ -122,7 +132,16 @@ internal sealed partial class ProcessDetailsView : Window
     private static TextBlock Label(string value, double size) => new() { Text = value, FontFamily = UiTypography.Font, FontSize = size, Foreground = Display.Brush(0x95a4ad) };
     private static void Identify(DependencyObject value, string id, string name) { AutomationProperties.SetAutomationId(value, id); AutomationProperties.SetName(value, name); }
     private static string Flat(string value) => value.Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ');
-    private ProcessModuleInfo? SelectedModule => mode == ProcessDetailsCommand.Modules ? list.SelectedItem as ProcessModuleInfo : null;
+    private object? SelectedRow => (list.SelectedItem as ProcessDetailsRow)?.Source;
+    private ProcessModuleInfo? SelectedModule => mode == ProcessDetailsCommand.Modules ? SelectedRow as ProcessModuleInfo : null;
+
+    internal void ShowOwned(Window owner)
+    {
+        ObjectDisposedException.ThrowIf(closed, this);
+        WindowOwnership.Set(this, owner);
+        WindowOwnership.Restore(this);
+        Activate();
+    }
 
     private void Resize()
     {
@@ -212,10 +231,14 @@ internal sealed partial class ProcessDetailsView : Window
 
     private void UpdateDetail()
     {
+        if (SelectedRow is null) {
+            detail.Text = SnapshotFor(mode) is null ? "Podrobnosti zatím nebyly načtené."
+                : list.Items.Count == 0 ? "Seznam je prázdný. Zkontrolujte hledání a filtr." : "Vyberte řádek ze seznamu.";
+            return;
+        }
         if (UpdateObjectDetail()) return;
-        if (list.SelectedItem is null) { detail.Text = "Vyberte řádek ze seznamu."; return; }
         var text = new StringBuilder();
-        if (list.SelectedItem is ProcessThreadInfo thread) {
+        if (SelectedRow is ProcessThreadInfo thread) {
             text.Append("TID ").Append(thread.Id.ToString(Czech)).AppendLine().AppendLine();
             text.Append("Základní priorita: ").Append(thread.BasePriority.ToString(Czech)).AppendLine();
             text.Append("Relativní priorita: ").Append(thread.PriorityState == SampleState.Valid ? thread.RelativePriority.ToString(Czech) : MetricState(thread.PriorityState, thread.PriorityError)).AppendLine();

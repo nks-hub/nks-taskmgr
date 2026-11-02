@@ -115,9 +115,9 @@ public sealed partial class MainWindow
                 processList.ScrollIntoView(slotsByRow[selected[0]], ScrollIntoViewAlignment.Leading);
                 await NextRenderedFrame(); await NextRenderedFrame();
                 var scroll = Descendant<ScrollViewer>(processList)!;
-                var anchor = model.VisibleProcesses[Math.Min(model.VisibleProcesses.Count - 1, (int)(scroll.VerticalOffset / 34))];
+                var anchor = model.VisibleProcesses[Math.Min(model.VisibleProcesses.Count - 1, (int)(scroll.VerticalOffset / ProcessTable.RowHeight))];
                 SortProcesses(1); processList.UpdateLayout(); await NextRenderedFrame(); await NextRenderedFrame();
-                if (model.VisibleProcesses[Math.Min(model.VisibleProcesses.Count - 1, (int)(scroll.VerticalOffset / 34))] != anchor)
+                if (model.VisibleProcesses[Math.Min(model.VisibleProcesses.Count - 1, (int)(scroll.VerticalOffset / ProcessTable.RowHeight))] != anchor)
                     throw new InvalidOperationException("Sorting lost the scrolled process identity.");
             }
         } catch (Exception error) {

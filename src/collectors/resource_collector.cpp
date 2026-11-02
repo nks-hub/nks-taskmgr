@@ -3,11 +3,14 @@
 #include "resource_collector.hpp"
 #include "gpu_telemetry.hpp"
 #include "disk_telemetry.hpp"
+#include "network_interface.hpp"
 #include <setupapi.h>
 #include <winioctl.h>
 #include <ntddstor.h>
 #include <ntdddisk.h>
 #include <iphlpapi.h>
+#include <ras.h>
+#include <raserror.h>
 #include <dxgi1_2.h>
 #include <wrl/client.h>
 #include <algorithm>
@@ -15,6 +18,7 @@
 #include <cwchar>
 #include <iomanip>
 #include <sstream>
+#include <set>
 
 namespace nks {
 namespace {
@@ -192,24 +196,48 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
     const auto observedNs = measurementTime(observed);
     std::unique_ptr<MIB_IF_TABLE2, decltype(&FreeMibTable)> table(raw, FreeMibTable);
     std::map<std::uint64_t, NetworkBefore> next;
+    std::set<std::uint64_t> vpnConnections;
+    DWORD bytes = sizeof(RASCONNW), count{};
+    std::vector<RASCONNW> connections(1); connections[0].dwSize = sizeof(RASCONNW);
+    auto rasResult = RasEnumConnectionsW(connections.data(), &bytes, &count);
+    if (rasResult == ERROR_BUFFER_TOO_SMALL && bytes >= sizeof(RASCONNW) && bytes <= 1024 * sizeof(RASCONNW)) {
+        connections.resize((bytes + sizeof(RASCONNW) - 1) / sizeof(RASCONNW));
+        for (auto& connection : connections) connection.dwSize = sizeof(RASCONNW);
+        rasResult = RasEnumConnectionsW(connections.data(), &bytes, &count);
+    }
+    if (rasResult == ERROR_SUCCESS && count <= connections.size()) {
+        for (DWORD i = 0; i < count; ++i) {
+            const auto& connection = connections[i];
+            RASCONNSTATUSW status{}; status.dwSize = sizeof(status);
+            if (_wcsicmp(connection.szDeviceType, RASDT_Vpn) != 0
+                || RasGetConnectStatusW(connection.hrasconn, &status) != ERROR_SUCCESS || status.rasconnstate != RASCS_Connected) continue;
+            // RASCONN::luid identifies the logon session, not the network interface.
+            NET_LUID luid{};
+            if (ConvertInterfaceAliasToLuid(connection.szEntryName, &luid) == NO_ERROR) vpnConnections.insert(luid.Value);
+        }
+    }
     lastNetworks.clear();
     for (ULONG i = 0; i < raw->NumEntries; ++i) {
         const auto& row = raw->Table[i];
         if (row.InterfaceAndOperStatusFlags.FilterInterface) continue;
-        const bool virtualInterface = !row.InterfaceAndOperStatusFlags.HardwareInterface || row.Type == IF_TYPE_SOFTWARE_LOOPBACK;
+        const bool connected = row.OperStatus == IfOperStatusUp;
+        const auto classification = classifyNetworkInterface({row.Type, row.TunnelType,
+            row.InterfaceAndOperStatusFlags.HardwareInterface != 0, connected, vpnConnections.contains(row.InterfaceLuid.Value), row.Alias, row.Description});
         ResourceRecord network;
         network.id = L"network:" + std::to_wstring(row.InterfaceLuid.Value);
         network.kind = ResourceKind::network;
         network.title = row.Alias;
-        if (virtualInterface) network.title = L"Virtuální · " + network.title;
+        if (classification == NetworkInterfaceClass::vpn) network.title = L"VPN · " + network.title;
+        else if (classification == NetworkInterfaceClass::auxiliary) network.title = L"Virtuální · " + network.title;
         network.description = row.Description;
         network.capacity = static_cast<double>(std::max(row.TransmitLinkSpeed, row.ReceiveLinkSpeed));
-        const bool connected = row.OperStatus == IfOperStatusUp;
         network.status = connected ? L"Připojeno" : L"Odpojeno";
         network.facts = {{L"Rychlost linky ↓", hardwareRate(row.ReceiveLinkSpeed)}, {L"Rychlost linky ↑", hardwareRate(row.TransmitLinkSpeed)},
             {L"MTU", std::to_wstring(row.Mtu) + L" B"}, {L"Připojení", row.Type == IF_TYPE_IEEE80211 ? L"Wi-Fi" : row.Type == IF_TYPE_ETHERNET_CSMACD ? L"Ethernet"
-                : row.Type == IF_TYPE_SOFTWARE_LOOPBACK ? L"Loopback" : row.Type == IF_TYPE_TUNNEL ? L"Tunel" : L"Jiné"},
-            {L"Druh rozhraní", virtualInterface ? L"Virtuální" : L"Fyzické"}, {L"LUID rozhraní", std::to_wstring(row.InterfaceLuid.Value)}};
+                : row.Type == IF_TYPE_SOFTWARE_LOOPBACK ? L"Loopback" : row.Type == IF_TYPE_TUNNEL ? L"Tunel" : row.Type == IF_TYPE_PPP ? L"PPP" : L"Jiné"},
+            {L"Druh rozhraní", networkInterfaceClassName(classification)}, {L"LUID rozhraní", std::to_wstring(row.InterfaceLuid.Value)},
+            {L"Stav rozhraní Windows", std::to_wstring(static_cast<unsigned>(row.OperStatus))},
+            {L"Typ rozhraní Windows", std::to_wstring(row.Type)}, {L"Typ tunelu Windows", std::to_wstring(static_cast<unsigned>(row.TunnelType))}};
         network.primary = {0, connected ? SampleState::first : SampleState::unavailable, MetricSource::networkInterface};
         network.secondary = network.primary;
         const auto before = previousNetworks.find(row.InterfaceLuid.Value);

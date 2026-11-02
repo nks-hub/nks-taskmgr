@@ -15,7 +15,7 @@ internal sealed partial class ProcessDetailsView
     {
         if (mode is not (ProcessDetailsCommand.Memory or ProcessDetailsCommand.Handles)) return false;
         var text = new StringBuilder();
-        if (list.SelectedItem is ProcessMemoryRegion region) {
+        if (SelectedRow is ProcessMemoryRegion region) {
             text.Append("Základní adresa: 0x").Append(region.BaseAddress.ToString("X16")).AppendLine();
             text.Append("Konec oblasti: 0x").Append((region.BaseAddress + region.RegionSize).ToString("X16")).AppendLine();
             text.Append("Velikost: ").Append(region.RegionSize.ToString("N0", Czech)).Append(" B").AppendLine();

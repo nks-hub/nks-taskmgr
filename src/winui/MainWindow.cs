@@ -14,7 +14,7 @@ using WinRT;
 using System.Runtime.InteropServices;
 
 namespace NksTaskMgr.WinUI;
-internal enum DesktopView { Processes, Performance, Services, Hardware }
+internal enum DesktopView { Processes, Performance, Services, Hardware, Applications }
 
 public sealed partial class MainWindow : Window
 {
@@ -29,13 +29,14 @@ public sealed partial class MainWindow : Window
     private readonly Grid root = new() { Background = Display.Brush(0x171d21) };
     private readonly Grid page = new();
     private readonly Grid sidebar = new() { Background = Display.Brush(0x12181c), Width = 88 };
-    private readonly TextBlock heading = Label("Výkon", 28, 0xe9eef0);
-    private readonly TextBlock subtitle = Label("Jeden pohled. Společná časová osa.", 11, 0x95a4ad);
+    private readonly TextBlock heading = Label("Výkon", 22, 0xe9eef0);
+    private readonly Grid shellHeader = new();
     private readonly TextBlock footer = Label("Načítám živá data…", 9, 0x95a4ad);
     private readonly TextBox search = new() { Width = 235, Height = 35, MinHeight = 0, FontSize = 11, PlaceholderText = "Hledat název nebo PID", Visibility = Visibility.Collapsed };
     private readonly Button pause = Button("Pozastavit"), interval = Button("1 s");
     private readonly Button performanceNav = Button("Výkon"), processesNav = Button("Procesy"), servicesNav = Button("Služby");
-    private readonly Button hardwareNav = Button("Sestava");
+    private readonly Button hardwareNav = Button("Sestava"), applicationNav = Button("Aplikace");
+    private readonly List<(ProcessMode Mode, Button Button)> processModeButtons = [];
     private readonly ListView resourceList = new() { SelectionMode = ListViewSelectionMode.Single, IsItemClickEnabled = false, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
     private readonly ListView processList = new() { SelectionMode = ListViewSelectionMode.Extended, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
     private readonly Grid performancePage = new(), processPage = new();
@@ -57,9 +58,9 @@ public sealed partial class MainWindow : Window
     private readonly TextBlock pageFileTitle = Label("", 10, 0x95a4ad);
     private readonly StackPanel facts = new() { Spacing = 13, Padding = new Thickness(22) };
     private readonly StackPanel consumers = new() { Spacing = 9 };
-    private readonly TextBlock processCount = Label("", 10, 0x95a4ad), selectionTitle = Label("Vyberte proces", 14, 0xe9eef0), selectionFacts = Label("", 10, 0x95a4ad);
-    private readonly StackPanel overview = new() { Orientation = Orientation.Horizontal, Spacing = 24 };
-    private readonly Dictionary<ResourceKind, (TextBlock Caption, TextBlock Value)> overviewValues = [];
+    private readonly TextBlock processCount = Label("", 10, 0x95a4ad);
+    private readonly StackPanel overview = new() { Orientation = Orientation.Horizontal, Spacing = 12 };
+    private readonly Dictionary<ResourceKind, (Button Action, TextBlock Caption, TextBlock Value)> overviewValues = [];
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer timer;
     private ResourceRow? selectedResource;
     private DesktopView view = DesktopView.Performance;
@@ -75,6 +76,7 @@ public sealed partial class MainWindow : Window
     private Task<byte[]?[]>? smokeIcons;
     private Task? smokeSharedIcon;
     private Task? smokeIconIsolation;
+    private Task? smokeResourceContext;
     private int smokeIconsAt;
     private int smokeMinimizedAt, smokeReadyAt;
     private int smokeServicesStage, smokeServicesAt;
@@ -90,7 +92,7 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
         AppWindow.Resize(new SizeInt32(1440, 920));
         ExtendsContentIntoTitleBar = true;
-        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
         ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureProcessActions(); ConfigureProcessDump(); ConfigureProcessEvents(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); ConfigureUpdates(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware(); InitializeContextMenus();
@@ -125,7 +127,8 @@ public sealed partial class MainWindow : Window
             if (view == DesktopView.Services) UpdateServices(() => servicesModel!.SetQuery(search.Text));
             else { processQuery = search.Text; model.SetQuery(search.Text); }
         };
-        processesNav.Click += (_, _) => ShowView(false);
+        processesNav.Click += (_, _) => { ShowApplications(false); ShowView(DesktopView.Processes); };
+        applicationNav.Click += (_, _) => { ShowApplications(true); ShowView(DesktopView.Applications); };
         performanceNav.Click += (_, _) => ShowView(true);
         servicesNav.Click += (_, _) => ShowView(DesktopView.Services);
         hardwareNav.Click += (_, _) => ShowView(DesktopView.Hardware);
@@ -146,7 +149,9 @@ public sealed partial class MainWindow : Window
         Closed += (_, _) => { timer.Stop(); IconWorkers.Stop(); servicesModel?.Dispose(); model.Dispose(); };
         AppWindow.Changed += (_, _) => Resize();
         smokePath = App.SmokePath;
+        ConfigureGapDiagnostics();
         ShowView(Environment.GetCommandLineArgs().Contains("--view=Services", StringComparer.OrdinalIgnoreCase) ? DesktopView.Services
+            : Environment.GetCommandLineArgs().Contains("--view=Applications", StringComparer.OrdinalIgnoreCase) ? DesktopView.Applications
             : Environment.GetCommandLineArgs().Contains("--view=Processes", StringComparer.OrdinalIgnoreCase) ? DesktopView.Processes : DesktopView.Performance);
         App.Trace("Window initialized");
     }
@@ -182,10 +187,11 @@ public sealed partial class MainWindow : Window
         var itemStyle = new Style { TargetType = typeof(ListViewItem) };
         itemStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0)));
         itemStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
-        itemStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 34d));
+        itemStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, ProcessTable.RowHeight));
         processList.ItemContainerStyle = itemStyle;
         var resourceStyle = new Style { TargetType = typeof(ListViewItem), BasedOn = itemStyle };
-        resourceStyle.Setters.Add(new Setter(FrameworkElement.HeightProperty, 59d));
+        resourceStyle.Setters.Add(new Setter(FrameworkElement.HeightProperty, 50d));
+        resourceStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 50d));
         resourceList.ItemContainerStyle = resourceStyle;
         AutomationProperties.SetName(resourceList, "Jednotlivé prostředky systému");
         AutomationProperties.SetName(processList, "Živé procesy");
@@ -196,10 +202,10 @@ public sealed partial class MainWindow : Window
 
     private void BuildShell()
     {
-        foreach (var height in new[] { new GridLength(49), new GridLength(101), new GridLength(1, GridUnitType.Star), new GridLength(30) }) root.RowDefinitions.Add(new RowDefinition { Height = height });
+        foreach (var height in new[] { new GridLength(32), new GridLength(40), new GridLength(1, GridUnitType.Star), new GridLength(26) }) root.RowDefinitions.Add(new RowDefinition { Height = height });
         root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(88) }); root.ColumnDefinitions.Add(new ColumnDefinition());
         var title = new Grid { Background = Display.Brush(0x12181c), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 0, 0, 1) };
-        var titleIcon = new Image { Width = 22, Height = 22, Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "app.png"))), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(22, 0, 0, 0) };
+        var titleIcon = new Image { Width = 18, Height = 18, Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "app.png"))), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(22, 0, 0, 0) };
         title.Children.Add(titleIcon);
         void TitleText(string value, double x, double size, uint color, bool bold = false) {
             var label = Label(value, size, color); label.HorizontalAlignment = HorizontalAlignment.Left; label.VerticalAlignment = VerticalAlignment.Center;
@@ -208,103 +214,47 @@ public sealed partial class MainWindow : Window
         }
         TitleText("NKS", 51, 12, 0xe9eef0, true); TitleText("Task Manager", 83.109375, 12, 0x95a4ad); TitleText("Lokální počítač", 218, 10, 0x95a4ad);
         Grid.SetColumnSpan(title, 2); root.Children.Add(title); SetTitleBar(title);
-        var nav = new StackPanel { Spacing = 4, Margin = new Thickness(8, 14, 8, 0) };
-        var mark = Label("n", 32, 0xe9eef0); mark.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
-        mark.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = ".", Foreground = Display.Brush(0xedc08b) });
-        mark.CharacterSpacing = -125; mark.Margin = new Thickness(23, -1, 0, 18); nav.Children.Add(mark);
-        foreach (var button in new[] { processesNav, performanceNav, servicesNav, hardwareNav }) {
-            button.Height = 66; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 10; button.BorderThickness = new Thickness(0);
+        var nav = new StackPanel { Spacing = 4, Margin = new Thickness(8, 12, 8, 0) };
+        foreach (var button in new[] { processesNav, applicationNav, performanceNav, servicesNav, hardwareNav }) {
+            button.Height = 52; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 10; button.BorderThickness = new Thickness(0);
             button.Padding = new Thickness(4, 0, 4, 0);
-            var content = new StackPanel { Spacing = 10, HorizontalAlignment = HorizontalAlignment.Center };
-            string name = button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : button == hardwareNav ? "Sestava" : "Procesy";
+            var content = new StackPanel { Spacing = 6, HorizontalAlignment = HorizontalAlignment.Center };
+            string name = button == applicationNav ? "Aplikace" : button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : button == hardwareNav ? "Sestava" : "Procesy";
             AutomationProperties.SetName(button, name);
-            content.Children.Add(UiIcon.Create(button == performanceNav ? "performance" : button == servicesNav ? "services" : button == hardwareNav ? "hardware" : "processes", 0x95a4ad)); content.Children.Add(Label(name, 9, 0x95a4ad));
+            content.Children.Add(button == applicationNav ? new SymbolIcon(Symbol.AllApps) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
+                : UiIcon.Create(button == performanceNav ? "performance" : button == servicesNav ? "services" : button == hardwareNav ? "hardware" : "processes", 0x95a4ad));
+            content.Children.Add(Label(name, 9, 0x95a4ad));
             button.Content = content;
             nav.Children.Add(button);
         }
-        sidebar.Children.Add(nav); Grid.SetRow(sidebar, 1); Grid.SetRowSpan(sidebar, 3); root.Children.Add(sidebar);
-        var header = new Grid { Padding = new Thickness(30, 24, 30, 0) };
+        sidebar.Children.Add(new ScrollViewer { Content = nav, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
+        Grid.SetRow(sidebar, 1); Grid.SetRowSpan(sidebar, 3); root.Children.Add(sidebar);
+        shellHeader.Padding = new Thickness(30, 0, 30, 0);
         heading.CharacterSpacing = -25;
-        var labels = new StackPanel { Spacing = 6, Margin = new Thickness(1, -2, 0, 0) }; labels.Children.Add(heading); labels.Children.Add(subtitle); header.Children.Add(labels);
-        var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 9, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 11, 0, 0) };
-        tools.Children.Add(search); tools.Children.Add(interval); tools.Children.Add(pause); header.Children.Add(tools);
-        Grid.SetRow(header, 1); Grid.SetColumn(header, 1); root.Children.Add(header);
+        heading.VerticalAlignment = VerticalAlignment.Center; shellHeader.Children.Add(heading);
+        var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        tools.Children.Add(search); tools.Children.Add(interval); tools.Children.Add(pause); shellHeader.Children.Add(tools);
+        Grid.SetRow(shellHeader, 1); Grid.SetColumn(shellHeader, 1); root.Children.Add(shellHeader);
         page.Margin = new Thickness(30, 0, 30, 22); Grid.SetRow(page, 2); Grid.SetColumn(page, 1); root.Children.Add(page);
         var status = new Border { BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(25, 7, 10, 0), Child = footer };
         Grid.SetRow(status, 3); Grid.SetColumn(status, 1); root.Children.Add(status);
     }
 
-    private void BuildPerformance()
-    {
-        performancePage.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(278) });
-        performancePage.ColumnDefinitions.Add(new ColumnDefinition()); performancePage.ColumnSpacing = 20;
-        var inventory = new Grid { Padding = new Thickness(10, 18, 10, 10) };
-        inventory.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) });
-        inventory.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); inventory.RowDefinitions.Add(new RowDefinition());
-        var inventoryHeader = new Grid { Margin = new Thickness(8, 1, 9, 0) };
-        var inventoryLabel = Label("Prostředky", 13, 0xe9eef0); inventoryLabel.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
-        resourceCount.HorizontalAlignment = HorizontalAlignment.Right; resourceCount.VerticalAlignment = VerticalAlignment.Center;
-        inventoryHeader.Children.Add(inventoryLabel); inventoryHeader.Children.Add(resourceCount); inventory.Children.Add(inventoryHeader);
-        var networkFilter = BuildNetworkFilter(); Grid.SetRow(networkFilter, 1); inventory.Children.Add(networkFilter);
-        Grid.SetRow(resourceList, 2); inventory.Children.Add(resourceList); performancePage.Children.Add(Card(inventory));
-        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = performanceBody };
-        performanceBody.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        performanceBody.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        performanceBody.RowSpacing = 24;
-        Grid.SetColumn(scroll, 1); performancePage.Children.Add(scroll);
-        chartGrid.ColumnDefinitions.Add(new ColumnDefinition()); chartGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(242) }); chartGrid.ColumnSpacing = 14;
-        chartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); chartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var content = new StackPanel { Padding = new Thickness(22, 20, 22, 16) };
-        var resourceHeading = new Grid { ColumnSpacing = 15 };
-        resourceHeading.ColumnDefinitions.Add(new ColumnDefinition()); resourceHeading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var headingText = new StackPanel { Spacing = 4 };
-        resourceTitle.CharacterSpacing = -15; headingText.Children.Add(resourceTitle);
-        headingText.Children.Add(resourceDescription); resourceDescription.TextTrimming = TextTrimming.CharacterEllipsis;
-        resourceHeading.Children.Add(headingText);
-        scaleChoice.IsChecked = true;
-        scaleChoice.Click += (_, _) => RefreshPerformance();
-        ToolTipService.SetToolTip(scaleChoice, "Zapnuto: měřítko podle nejvyššího vzorku. Vypnuto: 100 % nebo kapacita zařízení.");
-        chartControls.Children.Add(scaleChoice);
-        foreach (int seconds in new[] { 60, 600 }) {
-            var button = Choice(seconds == 60 ? "60 s" : "10 min"); rangeButtons.Add(button);
-            button.Click += (_, _) => { rangeSeconds = seconds; RefreshPerformance(); }; chartControls.Children.Add(button);
-        }
-        var reading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 180 };
-        resourceValue.CharacterSpacing = -24; reading.Children.Add(resourceValue);
-        resourceUnit.VerticalAlignment = VerticalAlignment.Bottom; resourceUnit.Margin = new Thickness(0, 0, 0, 3); reading.Children.Add(resourceUnit);
-        Grid.SetColumn(reading, 1); resourceHeading.Children.Add(reading); content.Children.Add(resourceHeading);
-        foreach (var mode in new[] { "Celkem", "Logické", "Překrytí" }) {
-            int index = cpuModes.Children.Count; var button = Choice(mode); button.Height = 25; cpuButtons.Add(button);
-            button.Click += (_, _) => { cpuMode = index; RefreshPerformance(); }; cpuModes.Children.Add(button);
-        }
-        plotToolbar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); plotToolbar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        plotToolbar.ColumnDefinitions.Add(new ColumnDefinition()); plotToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        plotToolbar.Children.Add(cpuModes); Grid.SetColumn(chartControls, 1); plotToolbar.Children.Add(chartControls);
-        content.Children.Add(plotToolbar); content.Children.Add(chart); content.Children.Add(processors); content.Children.Add(BuildGpu());
-        retained.Margin = new Thickness(0, 7, 0, 0); content.Children.Add(retained);
-        pageFileTitle.Margin = new Thickness(0, 18, 0, 8);
-        content.Children.Add(pageFileTitle); content.Children.Add(pageFile);
-        content.Children.Add(BuildPerformanceTimeline());
-        var chartCard = Card(content); chartCard.VerticalAlignment = VerticalAlignment.Top; chartGrid.Children.Add(chartCard);
-        var factCard = Card(facts); Grid.SetColumn(factCard, 1); chartGrid.Children.Add(factCard);
-        performanceBody.Children.Add(chartGrid);
-        Grid.SetRow(consumers, 1); performanceBody.Children.Add(consumers);
-        page.Children.Add(performancePage);
-    }
-
     private void BuildProcesses()
     {
-        foreach (var height in new[] { new GridLength(108), new GridLength(51), new GridLength(1, GridUnitType.Star), new GridLength(92) })
+        foreach (var height in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star) })
             processPage.RowDefinitions.Add(new RowDefinition { Height = height });
         processPage.RowSpacing = 0;
-        var system = Card(overview, new Thickness(23, 20, 23, 20)); processPage.Children.Add(system);
-        var toolbar = new Grid();
+        processPage.Children.Add(new ScrollViewer { Content = overview, MinHeight = 32, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled });
+        var toolbar = new Grid { MinHeight = 40 };
         toolbar.ColumnDefinitions.Add(new ColumnDefinition());
         toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var filters = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
-        foreach (var mode in new[] { ProcessMode.All, ProcessMode.Active, ProcessMode.Tree, ProcessMode.Applications }) {
-            var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : mode == ProcessMode.Tree ? "Strom" : "Aplikace"); button.Height = 29;
-            button.Click += (_, _) => SelectProcessMode(mode); filters.Children.Add(button);
+        foreach (var mode in new[] { ProcessMode.All, ProcessMode.Active, ProcessMode.Tree }) {
+            var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : "Strom"); button.Height = 29;
+            button.Click += (_, _) => SelectProcessMode(mode); filters.Children.Add(button); processModeButtons.Add((mode, button));
         }
         filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0);
         toolbar.Children.Add(new ScrollViewer { Content = filters, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -317,24 +267,24 @@ public sealed partial class MainWindow : Window
         Grid.SetColumn(actions, 1);
         Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
         var workspace = BuildApplicationGroups(processTable); Grid.SetRow(workspace, 2); processPage.Children.Add(workspace);
-        var dock = new StackPanel { Padding = new Thickness(21, 18, 21, 18), Spacing = 12 };
-        dock.Children.Add(selectionTitle); dock.Children.Add(selectionFacts); dock.Children.Add(applicationFacts);
-        var selection = Card(new ScrollViewer { Content = dock, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
-        Grid.SetRow(selection, 3); processPage.Children.Add(selection);
         processPage.Visibility = Visibility.Collapsed; page.Children.Add(processPage);
     }
 
     private void ShowView(bool value) => ShowView(value ? DesktopView.Performance : DesktopView.Processes);
     private void ShowView(DesktopView next)
     {
+        if (next == DesktopView.Applications && model.Mode != ProcessMode.Applications) ShowApplications(true);
+        else if (next != DesktopView.Applications && model.Mode == ProcessMode.Applications) ShowApplications(false);
         model.SetHeld(false); view = next;
         bool services = next == DesktopView.Services;
         bool hardware = next == DesktopView.Hardware;
+        bool applications = next == DesktopView.Applications;
         if (services) servicesModel ??= new ServiceModel();
-        heading.Text = hardware ? "Sestava" : services ? "Služby" : performance ? "Výkon" : "Procesy";
-        subtitle.Text = hardware ? "Procesor, paměť, základní deska a napájení." : services ? "Stavy, procesy a závislosti systému." : performance ? "Jeden pohled. Společná časová osa." : "Aplikace, prostředky a jejich souvislosti.";
+        heading.Text = hardware ? "Sestava" : services ? "Služby" : performance ? "Výkon" : applications ? "Aplikace" : "Procesy";
+        heading.Visibility = services || hardware ? Visibility.Visible : Visibility.Collapsed;
         performancePage.Visibility = performance ? Visibility.Visible : Visibility.Collapsed;
-        processPage.Visibility = next == DesktopView.Processes ? Visibility.Visible : Visibility.Collapsed;
+        processPage.Visibility = next is DesktopView.Processes or DesktopView.Applications ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var item in processModeButtons) item.Button.Visibility = applications ? Visibility.Collapsed : Visibility.Visible;
         servicesPage.Visibility = services ? Visibility.Visible : Visibility.Collapsed;
         hardwarePage.Visibility = hardware ? Visibility.Visible : Visibility.Collapsed;
         search.Visibility = performance || hardware ? Visibility.Collapsed : Visibility.Visible;
@@ -345,6 +295,7 @@ public sealed partial class MainWindow : Window
         if (!services) model.SetQuery(processQuery);
         performanceNav.Background = Display.Brush(performance ? 0x3b3024u : 0x12181cu);
         processesNav.Background = Display.Brush(next == DesktopView.Processes ? 0x3b3024u : 0x12181cu);
+        applicationNav.Background = Display.Brush(applications ? 0x3b3024u : 0x12181cu);
         servicesNav.Background = Display.Brush(services ? 0x3b3024u : 0x12181cu);
         hardwareNav.Background = Display.Brush(hardware ? 0x3b3024u : 0x12181cu);
         servicesModel?.SetActivity(services && !IsIconic(windowHandle), model.Paused);
@@ -358,16 +309,11 @@ public sealed partial class MainWindow : Window
         if (IsIconic(windowHandle)) return;
         if (root.ActualWidth <= 0) return;
         double width = root.ActualWidth;
-        Grid.SetRow(chartControls, width <= 900 ? 1 : 0); Grid.SetColumn(chartControls, width <= 900 ? 0 : 1);
-        Grid.SetColumnSpan(chartControls, width <= 900 ? 2 : 1);
         root.ColumnDefinitions[0].Width = new GridLength(width <= 1000 ? 68 : 88); sidebar.Width = width <= 1000 ? 68 : 88;
         double margin = width <= 1000 ? 20 : performance ? 25 : 30;
-        page.Margin = new Thickness(margin, view == DesktopView.Services ? 1 : 0, margin, 22);
-        performancePage.ColumnDefinitions[0].Width = new GridLength(width <= 780 ? 180 : width <= 1000 ? 225 : 278);
-        var factCard = (FrameworkElement)chartGrid.Children[1];
-        Grid.SetColumn(factCard, width <= 1250 ? 0 : 1); Grid.SetRow(factCard, width <= 1250 ? 1 : 0);
-        chartGrid.ColumnDefinitions[1].Width = width <= 1250 ? new GridLength(0) : new GridLength(242);
-        processPage.RowDefinitions[0].Height = root.ActualHeight < 650 ? new GridLength(0) : new GridLength(108);
+        shellHeader.Padding = new Thickness(margin, 0, margin, 0);
+        page.Margin = new Thickness(margin, view == DesktopView.Services ? 1 : 0, margin, 14);
+        ResizePerformanceLayout(width);
         ResizeServices();
         ResizeHardware();
         ResizeApplicationGroups();
@@ -392,7 +338,7 @@ public sealed partial class MainWindow : Window
             TickServices(!minimized && view == DesktopView.Services);
             if (changed && !minimized) {
                 if (selectedResource is null || !model.Resources.Contains(selectedResource)) resourceList.SelectedItem = model.Resources.FirstOrDefault();
-                if (performance) RefreshPerformance(); else if (view == DesktopView.Processes) RefreshProcesses(); else if (view == DesktopView.Hardware) RefreshHardware();
+                if (performance) RefreshPerformance(); else if (view is DesktopView.Processes or DesktopView.Applications) RefreshProcesses(); else if (view == DesktopView.Hardware) RefreshHardware();
             }
             if (++ticks % 10 == 0 && !minimized) {
                 footer.Text = view == DesktopView.Services ? ServicesFooter() : (model.Paused ? "Pozastaveno" : "Živá data") + $" · {model.Processes.Count} procesů · stáří "
@@ -403,10 +349,11 @@ public sealed partial class MainWindow : Window
             RunSmoke();
             if (App.SortBenchmarkPath is not null && ticks >= 20 && model.Processes.Count > 0) RunSortBenchmark();
         } catch (NativeMonitorException error) {
+            RecordGapDiagnosticError(error);
             if (smokePath is not null) { App.Trace(error.ToString()); throw; }
             footer.Text = error.Message;
         } catch (Exception error) when (smokePath is not null) { App.Trace(error.ToString()); throw; }
-        finally { EndLiveCpuTick(cpuTick); }
+        finally { RecordGapDiagnosticTick(); EndLiveCpuTick(cpuTick); }
     }
 
     private void HoldRows(object sender, PointerRoutedEventArgs args)
@@ -423,21 +370,13 @@ public sealed partial class MainWindow : Window
 
     private void RefreshProcesses()
     {
+        foreach (var item in processModeButtons) {
+            item.Button.Background = item.Mode == model.Mode ? choiceSelected : choiceIdle;
+            item.Button.Foreground = item.Mode == model.Mode ? performanceInk : performanceMuted;
+        }
         RefreshApplicationGroups();
         processCount.Text = model.VisibleProcesses.Count + (model.Held ? " položek · pořadí přidrženo" : " položek");
-        foreach (var resource in model.Resources.Where(row => row.Kind is ResourceKind.Cpu or ResourceKind.Memory)) {
-            if (!overviewValues.TryGetValue(resource.Kind, out var value)) {
-                value = (Label(resource.Title, 10, 0x95a4ad), Label(resource.Value, 20, Display.ResourceColor(resource.Kind)));
-                var stack = new StackPanel { Spacing = 8 };
-                stack.Children.Add(value.Caption); stack.Children.Add(value.Value);
-                var button = Button(""); button.Content = stack; button.Height = 68; button.MinWidth = 180;
-                var kind = resource.Kind;
-                AutomationProperties.SetAutomationId(button, kind == ResourceKind.Cpu ? "process-overview-cpu" : "process-overview-memory");
-                button.Click += (_, _) => { resourceList.SelectedItem = model.Resources.FirstOrDefault(row => row.Kind == kind); ShowView(true); };
-                overview.Children.Add(button); overviewValues.Add(kind, value);
-            }
-            value.Caption.Text = resource.Title; value.Value.Text = resource.Value;
-        }
+        RefreshProcessOverview();
         RefreshSelection();
     }
 
@@ -447,9 +386,6 @@ public sealed partial class MainWindow : Window
         UpdateProcessDetailsCommand();
         RefreshProcessActions();
         RefreshProcessDump();
-        if (SelectedProcess is not { } row) { selectionTitle.Text = "Vyberte proces"; selectionFacts.Text = "Ctrl a Shift vyberou více řádků."; return; }
-        selectionTitle.Text = row.Ended ? row.Name + " · ukončeno" : row.Name;
-        selectionFacts.Text = $"PID {row.PidText} · {row.Threads} vláken · {row.Handles} popisovačů · CPU {row.CpuText} · {row.WorkingText}";
     }
 
     private void RunSmoke()
@@ -476,6 +412,13 @@ public sealed partial class MainWindow : Window
             return;
         }
         if (!smokeMinimizedChecked) return;
+        if (ready && smokeResourceContext is null) {
+            ShowView(DesktopView.Performance);
+            smokeResourceContext = CheckResourceContextMenuAsync();
+            return;
+        }
+        if (smokeResourceContext is { IsCompleted: false }) return;
+        smokeResourceContext?.GetAwaiter().GetResult();
         if (ready && !smokeModelsChecked) {
             CheckHeldProcessRefresh();
             CheckHardwareRefresh();
@@ -485,7 +428,7 @@ public sealed partial class MainWindow : Window
             ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);
             var overviewButtons = overview.Children.ToArray();
             RefreshProcesses();
-            if (overviewButtons.Length != 2 || !overviewButtons.SequenceEqual(overview.Children))
+            if (overviewButtons.Length != 4 || !overviewButtons.SequenceEqual(overview.Children))
                 throw new InvalidOperationException("A process refresh recreated its overview controls.");
             smokeIcons = Task.WhenAll(Task.Run(() => ProcessIcons.Read(own.Key)), Task.Run(() => ProcessIcons.Read(own.Key with { Generation = own.Key.Generation + 1 })));
             smokeIconIsolation = Task.Run(() => WinUiChecks.IconWorkerIsolation(own.Key));

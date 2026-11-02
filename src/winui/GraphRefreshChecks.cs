@@ -12,9 +12,9 @@ public static partial class WinUiChecks
         var receive = new Metric { Value = 2_000_000, State = SampleState.Valid };
         var upload = new Metric { Value = 3_000_000, State = SampleState.Valid };
         row.History.Append(time, receive); row.Upload.Append(time, upload); row.RefreshPreview();
-        var preview = row.Preview; var uploadPreview = row.UploadPreview;
+        var preview = row.Preview; var fill = row.PreviewFill; var uploadPreview = row.UploadPreview;
         row.RefreshPreview();
-        Require(ReferenceEquals(preview, row.Preview) && ReferenceEquals(uploadPreview, row.UploadPreview),
+        Require(ReferenceEquals(preview, row.Preview) && ReferenceEquals(fill, row.PreviewFill) && ReferenceEquals(uploadPreview, row.UploadPreview),
             "An unchanged resource history recreated its mini-graph geometries.");
         int notifications = 0;
         row.PropertyChanged += (_, _) => ++notifications;
@@ -25,7 +25,7 @@ public static partial class WinUiChecks
         row.SetStale(true);
         Require(row.Value == "Zastaralá data" && ReferenceEquals(preview, row.Preview), "Mini-graph caching suppressed stale state.");
         row.Upload.Append(time + 250_000_000, upload with { Value = 20_000_000 }); row.RefreshPreview();
-        Require(!ReferenceEquals(uploadPreview, row.UploadPreview) && !ReferenceEquals(preview, row.Preview),
+        Require(!ReferenceEquals(uploadPreview, row.UploadPreview) && !ReferenceEquals(preview, row.Preview) && !ReferenceEquals(fill, row.PreviewFill),
             "An upload-only sample failed to update both mini-graphs at their shared scale.");
         preview = row.Preview;
         var replacement = new HistorySeries(); replacement.Append(time, receive);
@@ -38,12 +38,23 @@ public static partial class WinUiChecks
         memory.Update("Memory", "", "", new Metric { Value = 50, State = SampleState.Valid }, default, default, 200, time,
             recordHistory: false);
         Require(!ReferenceEquals(memoryPreview, memory.Preview), "A capacity change retained a mini-graph at its old scale.");
+        var percent = new ResourceRow("graph-refresh-percent", ResourceKind.Cpu);
+        percent.Update("CPU", "", "", new Metric { Value = 7, State = SampleState.Valid }, default, default, 100, time);
+        Require(percent.Maximum(time, 60) == 100 && memory.Maximum(time, 60) == 200,
+            "Percent or memory previews changed their fixed physical scale.");
         App.Trace("Resource mini-graph cache passed: unchanged geometry, live metadata/stale state, upload, replacement and capacity");
     }
 }
 
 public sealed partial class ChartView
 {
+    internal void CheckDiskTransferSeries(HistorySeries read, HistorySeries write)
+    {
+        if (!ReferenceEquals(series, read) || !ReferenceEquals(secondary, write) || unit != ChartUnit.BytesPerSecond
+            || primaryName != "Čtení" || secondaryName != "Zápis")
+            throw new InvalidOperationException("Disk transfer graph did not use its collected read/write histories and byte-rate labels.");
+    }
+
     internal void CheckRefreshCache()
     {
         static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
@@ -89,6 +100,13 @@ public sealed partial class ChartView
             Set(first, overlay, time + 1_500_000_000, 600, 1_073_741_824, 0x80c5c0);
             Require(startTime.Text == "10 min" && upper.Text.Contains("GiB", StringComparison.Ordinal) && legend.Text.Length > 0,
                 "Axis caching lost a range, unit, scale or secondary-series change.");
+            Configure("Čtení", ChartUnit.BytesPerSecond, secondName: "Zápis");
+            Set(first, overlay, time + 1_550_000_000, 600, 2_097_152, 0xdfaf76, area: false);
+            Require(upper.Text.Contains("MiB/s", StringComparison.Ordinal) && legend.Text == "Čtení · Zápis"
+                && Format(1_048_576).EndsWith(" MiB/s", StringComparison.Ordinal) && plotFrame.BorderThickness.Top == 1,
+                "Disk transfer axes retained bit units, network labels or an unframed plot.");
+            Configure("Refresh bytes", ChartUnit.Bytes);
+            Set(first, overlay, time + 1_500_000_000, 600, 1_073_741_824, 0x80c5c0);
             shared.SetRange(time - 1_000_000_000, time);
             var selection = shared.State;
             Require(intervalBand.Visibility == Visibility.Visible && cursorTime == time, "The shared interval did not reach the rendered chart.");

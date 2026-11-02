@@ -110,11 +110,12 @@ public sealed partial class ChartView
         cursor.Visibility = Visibility.Visible;
         if (!EffectiveTimeline.IsSource(timelineOwner) && FocusState != FocusState.Keyboard) { readout.Visibility = Visibility.Collapsed; return; }
         bool compact = canvas.ActualHeight < 140;
-        reading.Text = compact ? primaryName + ": " + Value(sample) + (pinned ? " · připnuto" : "") : text;
-        reading.MaxLines = compact ? 1 : 0; reading.FontSize = compact ? 10 : 11;
-        reading.TextTrimming = compact ? TextTrimming.CharacterEllipsis : TextTrimming.None;
+        reading.Text = compact ? primaryName + ": " + Value(sample)
+            + (secondary is null ? "" : " · " + secondaryName + ": " + Value(secondary.At(time))) + (pinned ? " · připnuto" : "") : text;
+        reading.MaxLines = compact ? secondary is null ? 1 : 2 : 6; reading.FontSize = 11;
+        reading.TextTrimming = TextTrimming.CharacterEllipsis;
         readout.Padding = compact ? new Thickness(4, 1, 4, 1) : new Thickness(8, 5, 8, 5);
-        readout.MaxHeight = compact ? Math.Max(1, canvas.ActualHeight / 3) : double.PositiveInfinity;
+        readout.MaxHeight = compact ? Math.Max(1, canvas.ActualHeight / (secondary is null ? 3 : 2)) : Math.Max(40, canvas.ActualHeight * .65);
         readout.MaxWidth = Math.Max(1, canvas.ActualWidth - 8);
         readout.Measure(new Size(readout.MaxWidth, double.PositiveInfinity));
         Canvas.SetLeft(readout, Math.Clamp(x + 10, 0, Math.Max(0, canvas.ActualWidth - readout.DesiredSize.Width)));

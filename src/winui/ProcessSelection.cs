@@ -15,6 +15,11 @@ public sealed partial class MainWindow
     private double slotsAssignMs, slotsRestoreMs, slotsFocusMs;
     private ProcessRow? SelectedProcess => (processList.SelectedItem as ProcessSlot)?.Row;
 
+    private void ToggleProcessBranch(ProcessRow row)
+    {
+        if (model.Mode is ProcessMode.Tree or ProcessMode.Applications && row.HasChildren && model.IsCurrent(row)) model.Toggle(row);
+    }
+
     private void SelectProcess(ProcessRow row, bool scroll = true)
     {
         processList.SelectedItems.Clear();
@@ -37,9 +42,9 @@ public sealed partial class MainWindow
             selected = processList.SelectedItems.OfType<ProcessSlot>().Select(slot => slot.Row).ToArray();
             primary = SelectedProcess;
             scroll ??= Descendant<ScrollViewer>(processList);
-            int index = (int)((scroll?.VerticalOffset ?? 0) / 34);
+            int index = (int)((scroll?.VerticalOffset ?? 0) / ProcessTable.RowHeight);
             anchor = index > 0 && index < source.VisibleProcesses.Count ? source.VisibleProcesses[index] : null;
-            remainder = (scroll?.VerticalOffset ?? 0) % 34;
+            remainder = (scroll?.VerticalOffset ?? 0) % ProcessTable.RowHeight;
             var focus = FocusManager.GetFocusedElement(root.XamlRoot) as DependencyObject;
             while (focus is not null && focus is not ListViewItem) focus = VisualTreeHelper.GetParent(focus);
             focused = ((focus as ListViewItem)?.Content as ProcessSlot)?.Row;
@@ -54,7 +59,8 @@ public sealed partial class MainWindow
             slotsByRow.Clear();
             for (int i = 0; i < source.VisibleProcesses.Count; ++i) {
                 var row = source.VisibleProcesses[i];
-                if (i == processSlots.Count) processSlots.Add(new ProcessSlot(row)); else processSlots[i].Assign(row);
+                if (i == processSlots.Count) processSlots.Add(new ProcessSlot(row) { Columns = processTable.Columns, ToggleBranch = ToggleProcessBranch });
+                else processSlots[i].Assign(row);
                 slotsByRow.Add(row, processSlots[i]);
             }
             long assigned = Stopwatch.GetTimestamp();
@@ -62,7 +68,7 @@ public sealed partial class MainWindow
             foreach (var row in selected) if (row != primary && slotsByRow.TryGetValue(row, out var slot)) processList.SelectedItems.Add(slot);
             if (anchor is not null) {
                 int index = source.VisibleProcesses.IndexOf(anchor);
-                if (index >= 0) scroll?.ChangeView(null, index * 34 + remainder, null, true);
+                if (index >= 0) scroll?.ChangeView(null, index * ProcessTable.RowHeight + remainder, null, true);
             }
             long restored = Stopwatch.GetTimestamp();
             if (focused is not null && source.VisibleProcesses.Contains(focused)) {

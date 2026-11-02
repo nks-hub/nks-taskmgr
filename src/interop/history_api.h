@@ -8,7 +8,7 @@ extern "C" {
 #define NKS_HISTORY_NOEXCEPT
 #endif
 
-#define NKS_HISTORY_ABI_VERSION 1u
+#define NKS_HISTORY_ABI_VERSION 2u
 typedef struct NksHistoryFrame NksHistoryFrame;
 
 #pragma pack(push, 8)

@@ -3,7 +3,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace NksTaskMgr.Native;
 
-public enum HistoryChannel : uint { Primary, Upload, Dedicated, Shared, Engine, Processor, PageFile }
+public enum HistoryChannel : uint { Primary, Upload, Dedicated, Shared, Engine, Processor, PageFile, DiskRead, DiskWrite }
 
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
 public struct HistoryDefinitionInfo
@@ -58,7 +58,7 @@ public sealed class NativeHistoryFrame : SafeHandleZeroOrMinusOneIsInvalid
             DangerousAddRef(ref added);
             if (IsInvalid) throw new ObjectDisposedException(nameof(NativeHistoryFrame));
             NativeMonitor.Check(HistoryMethods.GetView(handle, (uint)sizeof(HistoryView), out var view));
-            if (view.AbiVersion != 1 || view.DefinitionCount > 512 || view.PointCount > 4096
+            if (view.AbiVersion != 2 || view.DefinitionCount > 512 || view.PointCount > 4096
                 || (view.DefinitionCount != 0 && view.Definitions == null) || (view.PointCount != 0 && view.Points == null))
                 throw new NativeMonitorException(NativeResult.AbiMismatch);
             visitor(view);

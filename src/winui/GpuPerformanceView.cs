@@ -7,8 +7,10 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly Grid gpuPanel = new() { RowSpacing = 14, Margin = new Thickness(0, 0, 0, 10) };
-    private readonly Grid gpuEngines = new() { RowSpacing = 12, ColumnSpacing = 14 };
+    private readonly Grid gpuPanel = new() { RowSpacing = 10, Margin = new Thickness(0, 0, 0, 8) };
+    private readonly Grid gpuEngines = new() { RowSpacing = 10, ColumnSpacing = 12 };
+    private readonly Grid gpuMemory = new() { RowSpacing = 8, ColumnSpacing = 12 };
+    private readonly StackPanel gpuDedicatedTile = new() { Spacing = 4 }, gpuSharedTile = new() { Spacing = 4 };
     private readonly List<(StackPanel Tile, ComboBox Choice, ChartView Chart, TextBlock Value)> gpuTiles = [];
     private readonly ChartView gpuDedicated = new() { Height = 94 }, gpuShared = new() { Height = 94 };
     private readonly TextBlock gpuDedicatedLabel = Label("", 10, 0x95a4ad), gpuSharedLabel = Label("", 10, 0x95a4ad);
@@ -33,24 +35,28 @@ public sealed partial class MainWindow
             gpuEngines.Children.Add(tile);
         }
         gpuPanel.Children.Add(gpuEngines);
-        var memory = new StackPanel { Spacing = 7 };
-        memory.Children.Add(gpuDedicatedLabel); memory.Children.Add(gpuDedicated);
-        gpuSharedLabel.Margin = new Thickness(0, 5, 0, 0); memory.Children.Add(gpuSharedLabel); memory.Children.Add(gpuShared);
-        Grid.SetRow(memory, 1); gpuPanel.Children.Add(memory);
+        gpuDedicatedTile.Children.Add(gpuDedicatedLabel); gpuDedicatedTile.Children.Add(gpuDedicated);
+        gpuSharedTile.Children.Add(gpuSharedLabel); gpuSharedTile.Children.Add(gpuShared);
+        gpuMemory.Children.Add(gpuDedicatedTile); gpuMemory.Children.Add(gpuSharedTile);
+        Grid.SetRow(gpuMemory, 1); gpuPanel.Children.Add(gpuMemory);
         return gpuPanel;
     }
 
     private void RefreshGpu(ResourceRow resource, long now)
     {
         var gpu = resource.Gpu!;
-        int columns = root.ActualWidth <= 1000 ? 1 : 2;
+        int columns = performanceDetailWidth < 520 ? 1 : 2;
         if (!ReferenceEquals(shownGpu, gpu) || shownGpuColumns != columns || shownGpuVersion != gpu.TopologyVersion) {
             shownGpu = gpu; shownGpuColumns = columns; shownGpuVersion = gpu.TopologyVersion;
             var engines = gpu.OrderedEngines().ToArray();
             var defaults = engines.GroupBy(engine => engine.Name).Select(group => group.First()).Take(4).ToArray();
             rebuildingGpu = true;
             gpuEngines.ColumnDefinitions.Clear(); gpuEngines.RowDefinitions.Clear();
+            gpuMemory.ColumnDefinitions.Clear(); gpuMemory.RowDefinitions.Clear();
             for (int i = 0; i < columns; ++i) gpuEngines.ColumnDefinitions.Add(new ColumnDefinition());
+            for (int i = 0; i < columns; ++i) gpuMemory.ColumnDefinitions.Add(new ColumnDefinition());
+            for (int i = 0; i < (2 + columns - 1) / columns; ++i) gpuMemory.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetColumn(gpuSharedTile, columns == 2 ? 1 : 0); Grid.SetRow(gpuSharedTile, columns == 2 ? 0 : 1);
             for (int i = 0; i < (4 + columns - 1) / columns; ++i) gpuEngines.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             for (int i = 0; i < gpuTiles.Count; ++i) {
                 var tile = gpuTiles[i];
@@ -70,6 +76,7 @@ public sealed partial class MainWindow
         foreach (var tile in gpuTiles) {
             string? id = (tile.Choice.SelectedItem as ComboBoxItem)?.Tag as string;
             var engine = id is not null && gpu.Engines.TryGetValue(id, out var found) ? found : null;
+            tile.Chart.Height = Math.Clamp(performancePlotHeight * .46, 100, 135);
             tile.Value.Text = resource.Stale ? "Zastaralé" : engine is null ? "Nedostupné" : Display.Metric(engine.Current, " %");
             tile.Chart.Configure(resource.Title + " · " + (engine?.Name ?? "Engine"));
             tile.Chart.Set(engine?.History, null, now, rangeSeconds, 100, 0xcc9bb6, autoScale: scaleChoice.IsChecked == true);
@@ -93,6 +100,9 @@ public sealed partial class MainWindow
             if ((consumers.Visibility == Visibility.Visible) != expected || (!expected && consumers.Children.Count != 0))
                 throw new InvalidOperationException("CPU process cards were shown for an unrelated resource.");
             if (resource.Kind == ResourceKind.Disk) {
+                if (diskTransferPanel.Visibility != Visibility.Visible || diskTransfers.ActualWidth <= 0)
+                    throw new InvalidOperationException("Disk transfer graph did not lay out below disk activity.");
+                diskTransfers.CheckDiskTransferSeries(resource.DiskReadHistory, resource.DiskWriteHistory);
                 if (diskDetails is null || DiskSummary.Any(name => !factValues.ContainsKey(name)))
                     throw new InvalidOperationException("Disk summary or expanded SMART details did not render.");
                 var diskCells = facts.Children.ToArray(); diskDetails.IsExpanded = true; root.UpdateLayout();

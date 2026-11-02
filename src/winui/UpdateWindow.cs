@@ -12,22 +12,17 @@ namespace NksTaskMgr.WinUI;
 
 internal sealed partial class UpdateWindow : Window
 {
-    private sealed record PackageChoice(UpdatePackage Package)
-    {
-        public override string ToString() => VersionLabel(Package.Version) + " · " + Display.Number(Package.Bytes / 1048576d, " MiB", 1)
-            + (Package.Flags.HasFlag(UpdatePackageFlags.Current) ? " · současná verze" : Package.Flags.HasFlag(UpdatePackageFlags.Previous) ? " · předchozí verze" : " · připravený balíček");
-    }
-    private sealed record RecoveryChoice(UpdateRecoveryCandidate Candidate)
-    {
-        public override string ToString() => VersionLabel(Candidate.OriginalVersion) + " · "
-            + (Candidate.CanRepair ? "lze připravit obnovu" : "obnova zatím není ověřená");
-    }
     private readonly Grid root = new() { Padding = new Thickness(22), RowSpacing = 14, Background = Display.Brush(0x171d21) };
     private readonly TextBlock status = Text("Načítání…"), result = Text(""), location = Text(""), recoveryDetail = Text("");
+    private readonly TextBlock emptyTitle = Text("Ověřuji dostupnost aktualizací", 17), emptyMessage = Text("Načítám přehled místních instalačních balíčků.");
+    private readonly TextBlock manualUpdate = Text("Novou verzi nainstalujte ručně jejím instalátorem po zavření aplikace.");
+    private readonly Border emptyState = new() { Padding = new Thickness(18), CornerRadius = new CornerRadius(8),
+        Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x303b42), BorderThickness = new Thickness(1) };
     private readonly StackPanel recoveryPanel = new() { Spacing = 8, Visibility = Visibility.Collapsed };
     private readonly ComboBox recoveryChoices = new() { HorizontalAlignment = HorizontalAlignment.Stretch, FontFamily = UiTypography.Font, FontSize = 13 };
-    private readonly ListView packages = new() { MinHeight = 100, MaxHeight = 240, SelectionMode = ListViewSelectionMode.Single, FontFamily = UiTypography.Font, FontSize = 13 };
-    private readonly Button refresh = Command("Načíst balíčky"), add = Command("Přidat instalátor…"), cleanup = Command("Vyčistit cache…"), install = Command("Nainstalovat vybraný…"), rollback = Command("Vrátit předchozí verzi…"), repair = Command("Obnovit nedokončenou instalaci…"), cancel = Command("Zrušit");
+    private readonly ListView packages = new() { MinHeight = 100, MaxHeight = 240, SelectionMode = ListViewSelectionMode.Single,
+        FontFamily = UiTypography.Font, FontSize = 13, Visibility = Visibility.Collapsed };
+    private readonly Button refresh = Command("Načíst balíčky"), add = Command("Přidat instalátor…"), cleanup = Command("Vyčistit cache…"), install = Command("Nainstalovat vybraný…"), rollback = Command("Vrátit předchozí verzi…"), repair = Command("Obnovit nedokončenou instalaci…"), cancel = Command("Zrušit dotaz"), close = Command("Zavřít");
     private readonly UpdateWorkerClient client = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly Action requestShutdown;
@@ -42,9 +37,10 @@ internal sealed partial class UpdateWindow : Window
     {
         this.requestShutdown = requestShutdown;
         Title = "Aktualizace · NKS Task Manager";
-        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.Resize(new SizeInt32(920, 690));
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
+        AppWindow.Resize(UpdateWorkerClient.IsConfigured ? new SizeInt32(920, 690) : new SizeInt32(640, 440));
         Appearance.Attach(this, root);
-        foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto })
+        foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto })
             root.RowDefinitions.Add(new RowDefinition { Height = height });
         var heading = new StackPanel { Spacing = 7 };
         heading.Children.Add(Text("Aktualizace a návrat verze", 23));
@@ -57,6 +53,10 @@ internal sealed partial class UpdateWindow : Window
         tools.Children.Add(refresh); tools.Children.Add(add); tools.Children.Add(cleanup); tools.Children.Add(cancel);
         Grid.SetRow(tools, 2); root.Children.Add(tools);
         Grid.SetRow(packages, 3); root.Children.Add(packages);
+        var emptyContent = new StackPanel { Spacing = 10 };
+        emptyTitle.Foreground = Display.Brush(0xe9eef0); emptyContent.Children.Add(emptyTitle); emptyContent.Children.Add(emptyMessage);
+        manualUpdate.Visibility = Visibility.Collapsed; emptyContent.Children.Add(manualUpdate); emptyState.Child = emptyContent;
+        Grid.SetRow(emptyState, 3); root.Children.Add(emptyState);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         actions.Children.Add(install); actions.Children.Add(rollback); Grid.SetRow(actions, 4); root.Children.Add(actions);
         root.SizeChanged += (_, args) => {
@@ -66,41 +66,71 @@ internal sealed partial class UpdateWindow : Window
         recoveryPanel.Children.Add(recoveryChoices); recoveryPanel.Children.Add(recoveryDetail); recoveryPanel.Children.Add(repair);
         var outcomes = new StackPanel { Spacing = 12 }; outcomes.Children.Add(recoveryPanel); outcomes.Children.Add(result);
         Grid.SetRow(outcomes, 5); root.Children.Add(outcomes);
+        close.HorizontalAlignment = HorizontalAlignment.Right; Grid.SetRow(close, 6); root.Children.Add(close);
         AutomationProperties.SetName(packages, "Ověřené instalační balíčky v místní cache");
         AutomationProperties.SetAutomationId(packages, "update-packages");
         AutomationProperties.SetAutomationId(add, "update-add-installer");
         AutomationProperties.SetAutomationId(install, "update-install-selected");
         AutomationProperties.SetAutomationId(rollback, "update-rollback");
         AutomationProperties.SetAutomationId(cleanup, "update-cleanup");
+        AutomationProperties.SetAutomationId(emptyState, "update-empty-state");
+        AutomationProperties.SetAutomationId(close, "update-close");
         ToolTipService.SetToolTip(cleanup, "Nejdříve zobrazí náhled odstranitelné cache. Balíčky potřebné pro návrat a nejasné záznamy zůstanou zachované.");
         AutomationProperties.SetName(recoveryChoices, "Nejasné výsledky instalace v této složce");
         AutomationProperties.SetAutomationId(repair, "update-repair");
         refresh.Click += async (_, _) => await RunAsync(ReadInventoryAsync);
         add.Click += async (_, _) => await RunAsync(AddInstallerAsync);
         cleanup.Click += async (_, _) => await RunAsync(CleanupAsync);
-        install.Click += async (_, _) => { if (packages.SelectedItem is PackageChoice choice) await RunAsync(token => PrepareAsync(choice.Package.Sha256, token)); };
+        install.Click += async (_, _) => { if (SelectedPackage is { } package) await RunAsync(token => PrepareAsync(package.Sha256, token)); };
         rollback.Click += async (_, _) => await RunAsync(token => PrepareAsync(null, token));
         repair.Click += async (_, _) => {
-            if (recoveryChoices.SelectedItem is RecoveryChoice choice && choice.Candidate.CanRepair)
-                await RunAsync(token => PrepareAsync(null, token, choice.Candidate.CandidateId));
+            if (SelectedRecovery is { CanRepair: true } candidate)
+                await RunAsync(token => PrepareAsync(null, token, candidate.CandidateId));
         };
         recoveryChoices.SelectionChanged += (_, _) => {
-            recoveryDetail.Text = recoveryChoices.SelectedItem is RecoveryChoice choice ? RecoveryReason(choice.Candidate) : "";
+            recoveryDetail.Text = SelectedRecovery is { } candidate ? RecoveryReason(candidate) : "";
             RefreshButtons();
         };
         cancel.Click += (_, _) => operation?.Cancel();
+        close.Click += (_, _) => Close();
         packages.SelectionChanged += (_, _) => RefreshButtons();
         timer.Tick += (_, _) => RefreshButtons();
-        Activated += async (_, _) => { if (!opened) { opened = true; timer.Start(); await RunAsync(ReadInventoryAsync); } };
+        Activated += async (_, _) => {
+            if (opened) return;
+            opened = true;
+            if (!UpdateWorkerClient.IsConfigured) {
+                ShowUnavailable("Toto sestavení používá ruční aktualizace.",
+                    "Aktualizace přímo z aplikace nejsou pro toto sestavení dostupné.", true);
+                status.Text = "Ruční aktualizace"; RefreshButtons(); return;
+            }
+            timer.Start(); await RunAsync(ReadInventoryAsync);
+        };
         Closed += (_, _) => { closed = true; operation?.Cancel(); confirmation?.Hide(); timer.Stop(); client.Dispose(); };
         Content = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, HorizontalContentAlignment = HorizontalAlignment.Stretch };
         RefreshButtons();
     }
 
+    private UpdatePackage? SelectedPackage => (packages.SelectedItem as ListViewItem)?.Tag as UpdatePackage;
+    private UpdateRecoveryCandidate? SelectedRecovery => (recoveryChoices.SelectedItem as ComboBoxItem)?.Tag as UpdateRecoveryCandidate;
+
+    internal void ShowOwned(Window owner)
+    {
+        ObjectDisposedException.ThrowIf(closed, this);
+        WindowOwnership.Set(this, owner); WindowOwnership.Restore(this); Activate();
+    }
+
+    private void ShowUnavailable(string title, string message, bool manual)
+    {
+        inventory = null; packages.ItemsSource = null; recoveryChoices.ItemsSource = null; recoveryPanel.Visibility = Visibility.Collapsed;
+        emptyTitle.Text = title; emptyMessage.Text = message; emptyState.Visibility = Visibility.Visible; packages.Visibility = Visibility.Collapsed;
+        manualUpdate.Visibility = manual ? Visibility.Visible : Visibility.Collapsed;
+        location.Text = "Složka aplikace: " + AppContext.BaseDirectory;
+    }
+
     private async Task RunAsync(Func<CancellationToken, Task> action)
     {
-        if (closed || busy || client.IsBusy || handoffUncertain) return;
+        if (closed || busy || client.IsBusy || handoffUncertain || !UpdateWorkerClient.IsConfigured) return;
         busy = true;
         using var cancellation = new CancellationTokenSource(); operation = cancellation;
         result.Text = ""; RefreshButtons();
@@ -109,8 +139,13 @@ internal sealed partial class UpdateWindow : Window
             or CryptographicException or COMException or InvalidOperationException or NksTaskMgr.Native.NativeMonitorException) {
             if (prepared?.CommitSent == true) handoffUncertain = true;
             if (preparedCleanup?.CommitSent == true) cleanupUncertain = true;
-            inventory = null;
             if (!closed) {
+                ShowUnavailable(error is CryptographicException || error is UpdateException { Status: UpdateStatus.TrustMissing or UpdateStatus.Rejected }
+                    ? "Aktualizace přes aplikaci není dostupná." : "Přehled balíčků se nepodařilo načíst.",
+                    handoffUncertain ? "Výsledek předání není potvrzený. Neopakujte instalaci, dokud neověříte její stav."
+                        : cleanupUncertain ? "Výsledek úklidu není potvrzený. Po skončení pomocníka načtěte přehled znovu."
+                        : error is OperationCanceledException ? "Načítání bylo zrušené. Přehled můžete načíst znovu."
+                        : "Operace nebyla dokončená. Podrobnosti jsou uvedené níže; načtení můžete zopakovat.", !handoffUncertain && !cleanupUncertain);
                 status.Text = handoffUncertain ? "Předání nemá potvrzený výsledek."
                     : cleanupUncertain ? "Úklid nemá potvrzený výsledek."
                     : error is UpdateException nativeError ? StatusText(nativeError.Status)
@@ -153,11 +188,21 @@ internal sealed partial class UpdateWindow : Window
     {
         inventory = value;
         cleanupUncertain = false;
-        packages.ItemsSource = value.Packages.Select(package => new PackageChoice(package)).ToArray();
+        packages.ItemsSource = value.Packages.Select(package => new ListViewItem { Tag = package,
+            Content = VersionLabel(package.Version) + " · " + Display.Number(package.Bytes / 1048576d, " MiB", 1)
+                + (package.Flags.HasFlag(UpdatePackageFlags.Current) ? " · současná verze" : package.Flags.HasFlag(UpdatePackageFlags.Previous) ? " · předchozí verze" : " · připravený balíček") }).ToArray();
+        bool empty = value.Packages.Length == 0;
+        packages.Visibility = empty ? Visibility.Collapsed : Visibility.Visible; emptyState.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+        emptyTitle.Text = value.Status == UpdateStatus.Ok ? "Žádné místní instalační balíčky" : "Přehled balíčků není dostupný";
+        emptyMessage.Text = value.Status == UpdateStatus.Ok
+            ? "Přidejte instalátor od nastaveného vydavatele. Nejdříve se ověří; samotné přidání nic neinstaluje."
+            : StatusText(value.Status);
+        manualUpdate.Visibility = value.Status == UpdateStatus.Ok ? Visibility.Collapsed : Visibility.Visible;
         location.Text = (value.Mode switch { UpdateInstallMode.Installed => "Registrovaná instalace", UpdateInstallMode.Portable => "Přenosná kopie", _ => "Režim složky není ověřený" })
             + (value.InstallDirectory.Length == 0 ? "" : " · " + value.InstallDirectory);
         if (value.CompatibilityDetail.Length > 0) location.Text += "\n" + Bound(value.CompatibilityDetail);
-        recoveryChoices.ItemsSource = value.RecoveryCandidates.Select(candidate => new RecoveryChoice(candidate)).ToArray();
+        recoveryChoices.ItemsSource = value.RecoveryCandidates.Select(candidate => new ComboBoxItem { Tag = candidate,
+            Content = VersionLabel(candidate.OriginalVersion) + " · " + (candidate.CanRepair ? "lze připravit obnovu" : "obnova zatím není ověřená") }).ToArray();
         recoveryPanel.Visibility = value.RecoveryCandidates.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         recoveryDetail.Text = "";
         if (value.RecoveryCandidates.Length > 0) recoveryChoices.SelectedIndex = 0;
@@ -209,11 +254,16 @@ internal sealed partial class UpdateWindow : Window
         bool idle = !closed && !busy && !client.IsBusy && !handoffUncertain;
         bool trusted = idle && inventory?.Status is UpdateStatus.Ok or UpdateStatus.Conflict;
         bool ready = trusted && inventory!.StandardOperationsAllowed;
-        refresh.IsEnabled = idle; add.IsEnabled = trusted; cleanup.IsEnabled = trusted;
-        install.IsEnabled = ready && packages.SelectedItem is PackageChoice choice && !choice.Package.Flags.HasFlag(UpdatePackageFlags.Current);
+        bool hasInventory = inventory?.Status is UpdateStatus.Ok or UpdateStatus.Conflict;
+        refresh.IsEnabled = idle && UpdateWorkerClient.IsConfigured; add.IsEnabled = trusted; cleanup.IsEnabled = trusted;
+        refresh.Visibility = UpdateWorkerClient.IsConfigured ? Visibility.Visible : Visibility.Collapsed;
+        add.Visibility = cleanup.Visibility = hasInventory ? Visibility.Visible : Visibility.Collapsed;
+        install.Visibility = rollback.Visibility = hasInventory && inventory!.Packages.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        cancel.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        install.IsEnabled = ready && SelectedPackage is { } package && !package.Flags.HasFlag(UpdatePackageFlags.Current);
         rollback.IsEnabled = ready && inventory!.Packages.Any(package => package.Flags.HasFlag(UpdatePackageFlags.Previous));
         recoveryChoices.IsEnabled = idle;
-        repair.IsEnabled = trusted && recoveryChoices.SelectedItem is RecoveryChoice recoveryChoice && recoveryChoice.Candidate.CanRepair;
+        repair.IsEnabled = trusted && SelectedRecovery is { CanRepair: true };
         cancel.IsEnabled = busy && prepared?.CommitSent != true && preparedCleanup?.CommitSent != true;
         if (confirmation is { } dialog && prepared is { } session)
             dialog.IsPrimaryButtonEnabled = !closed && operation?.IsCancellationRequested != true && UpdateProtocol.NowMs < session.CommitDeadlineMonotonicMs;

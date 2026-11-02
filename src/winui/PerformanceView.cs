@@ -21,6 +21,9 @@ public sealed partial class MainWindow
     {
         var resource = selectedResource;
         if (resource is null) return;
+        bool resourceChanged = performanceScaleResource != resource.Id;
+        SelectPerformanceScale(resource);
+        if (resourceChanged && root.ActualWidth > 0) ResizePerformanceLayout(root.ActualWidth);
         long now = model.Paused ? Math.Max(model.ProcessTime, model.ResourceTime) : NativeMonitor.MonotonicNowNs;
         uint color = Display.ResourceColor(resource.Kind);
         resourceCount.Text = model.Resources.Count + " zařízení";
@@ -61,15 +64,17 @@ public sealed partial class MainWindow
         if (chart.Visibility == Visibility.Visible) {
             chart.Configure(resource.Kind == ResourceKind.Network ? "Příjem ↓" : resource.Title,
                 memory ? ChartUnit.Bytes : resource.Kind == ResourceKind.Network ? ChartUnit.BitsPerSecond : ChartUnit.Percent, secondName: "Odesílání ↑");
-            double limit = resource.Kind == ResourceKind.Network ? scaleChoice.IsChecked == true ? ChartView.ScaleMaximum(resource.Maximum(now, rangeSeconds), Math.Max(resource.Capacity, 1_000_000)) : Math.Max(resource.Capacity, 1_000_000)
+            double limit = resource.Kind == ResourceKind.Network ? scaleChoice.IsChecked == true ? ChartView.ScaleMaximum(resource.Maximum(now, rangeSeconds), double.MaxValue) : Math.Max(resource.Capacity, 1_000_000)
                 : resource.Kind == ResourceKind.Memory ? Math.Max(1, resource.Capacity) : 100;
             chart.Set(resource.History, resource.Kind == ResourceKind.Network ? resource.Upload : null, now, rangeSeconds, limit, color,
                 autoScale: scaleChoice.IsChecked == true && resource.Kind != ResourceKind.Network);
         }
+        diskTransferPanel.Visibility = resource.Kind == ResourceKind.Disk ? Visibility.Visible : Visibility.Collapsed;
+        if (resource.Kind == ResourceKind.Disk) RefreshDiskTransfers(resource, now);
         if (cpu && cpuMode > 0) RefreshProcessors(now);
         pageFile.Visibility = pageFileTitle.Visibility = memory ? Visibility.Visible : Visibility.Collapsed;
         if (memory) {
-            pageFileTitle.Text = "Stránkovací soubor (swap)   " + (model.Memory.PageFileState == SampleState.Valid
+            pageFileTitle.Text = "Stránkovací soubor (swap)   " + (resource.Stale ? "Zastaralé údaje" : model.Memory.PageFileState == SampleState.Valid
                 ? Display.Number(model.Memory.PageFileUsedBytes / 1073741824d, " / ") + Display.Number(model.Memory.PageFileBytes / 1073741824d, " GiB")
                 : Display.Metric(new Metric { State = model.Memory.PageFileState }, string.Empty));
             pageFile.Configure("Použitý swap", ChartUnit.Bytes);
@@ -81,18 +86,18 @@ public sealed partial class MainWindow
         if (factsKey != nextFacts) {
             diskDetailsExpanded = diskDetailsResource == resource.Id && diskDetails?.IsExpanded == true;
             factsKey = nextFacts; facts.Children.Clear(); factValues.Clear(); hardwareFact = null; diskDetails = null;
-            var factsHeading = Label("SESTAVA", 9, 0x95a4ad); factsHeading.CharacterSpacing = 178; facts.Children.Add(factsHeading);
+            performanceFacts.Children.Clear(); performanceFactCells.Clear(); facts.Children.Add(performanceFacts);
         }
         void Fact(string name, string value) {
             if (factValues.TryGetValue(name, out var existing)) { if (existing.Text != value) existing.Text = value; return; }
-            var block = new Grid { ColumnSpacing = 12 };
-            block.ColumnDefinitions.Add(new ColumnDefinition()); block.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var block = new StackPanel { Spacing = 2 };
             var caption = Label(name, 10, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; block.Children.Add(caption);
-            var text = Label(value, 10, 0xe9eef0); text.TextAlignment = TextAlignment.Right; Grid.SetColumn(text, 1); block.Children.Add(text); facts.Children.Add(block); factValues.Add(name, text);
+            var text = Label(value, 14, 0xe9eef0); text.TextWrapping = TextWrapping.Wrap; block.Children.Add(text);
+            performanceFacts.Children.Add(block); performanceFactCells.Add(block); factValues.Add(name, text);
         }
         void Hardware(string value) {
             if (hardwareFact is not null) { if (hardwareFact.Text != value) hardwareFact.Text = value; return; }
-            hardwareFact = Label(value, 17, 0xe9eef0); hardwareFact.TextWrapping = TextWrapping.Wrap; hardwareFact.Margin = new Thickness(0, 0, 0, 7); facts.Children.Add(hardwareFact);
+            hardwareFact = Label(value, 12, 0x95a4ad); hardwareFact.TextWrapping = TextWrapping.Wrap; facts.Children.Insert(0, hardwareFact);
         }
         if (cpu) {
             Hardware(model.CpuModel);
@@ -113,10 +118,10 @@ public sealed partial class MainWindow
             Hardware(resource.Description);
             Fact("Stav", resource.Status.Length > 0 ? resource.Status : resource.Value);
             if (resource.Kind == ResourceKind.Network) {
-                Fact("Příjem", Display.Metric(resource.Primary, " Mbit/s", 1_000_000));
-                Fact("Odesílání", Display.Metric(resource.Secondary, " Mbit/s", 1_000_000));
+                Fact("Příjem", resource.Stale ? "Zastaralé" : Display.Metric(resource.Primary, " Mbit/s", 1_000_000));
+                Fact("Odesílání", resource.Stale ? "Zastaralé" : Display.Metric(resource.Secondary, " Mbit/s", 1_000_000));
             } else if (resource.Kind == ResourceKind.Disk) {
-                Fact("Čtení", Display.Metric(resource.Secondary, " MiB/s", 1048576)); Fact("Zápis", Display.Metric(resource.Tertiary, " MiB/s", 1048576));
+                Fact("Čtení", resource.Stale ? "Zastaralé" : Display.Metric(resource.Secondary, " MiB/s", 1048576)); Fact("Zápis", resource.Stale ? "Zastaralé" : Display.Metric(resource.Tertiary, " MiB/s", 1048576));
                 RefreshDiskFacts(resource, Fact);
             } else {
                 Fact("Vyhrazená paměť", Display.Metric(resource.Secondary, " MiB", 1048576)); Fact("Sdílená paměť", Display.Metric(resource.Tertiary, " MiB", 1048576));
@@ -132,17 +137,19 @@ public sealed partial class MainWindow
         }
         if (memory && model.Memory.State == SampleState.Valid && model.Memory.InstalledBytes >= model.Memory.PhysicalBytes)
             Fact("Rezervováno hardwarem", Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));
+        ArrangePerformanceFacts();
         RefreshConsumers(cpu, memory, color);
+        CompactPerformanceConsumers();
     }
 
     private void RefreshProcessors(long now)
     {
         var keys = model.Processors.Keys.OrderBy(key => key.Group).ThenBy(key => key.Index).ToArray();
-        double plotWidth = Math.Max(1, ((FrameworkElement)chartGrid.Children[0]).ActualWidth - 44);
+        double plotWidth = Math.Max(1, performanceDetailWidth);
         int preferred = keys.Length <= 4 ? 2 : keys.Length <= 8 ? 4 : 6;
         int columns = Math.Max(1, Math.Min(Math.Min(preferred, keys.Length), (int)(plotWidth / 112)));
         int rows = Math.Max(1, (keys.Length + columns - 1) / columns);
-        double coreHeight = Math.Clamp(260d / rows - 20, 52, 220);
+        double coreHeight = Math.Clamp(performancePlotHeight / rows - 20, 52, 220);
         string layout = cpuMode + ":" + columns + ":" + string.Join(',', keys.Select(key => key.Group + ":" + key.Index));
         if (layout != coreLayout) {
             coreLayout = layout; processors.Children.Clear(); processors.ColumnDefinitions.Clear(); processors.RowDefinitions.Clear(); coreCharts.Clear(); coreLabels.Clear();
@@ -182,6 +189,7 @@ public sealed partial class MainWindow
         }
         double coreMaximum = scaleChoice.IsChecked == true ? ChartView.ScaleMaximum(keys.Select(key => model.Processors[key].Maximum(now - rangeSeconds * 1_000_000_000L, 1)).DefaultIfEmpty(1).Max(), 100) : 100;
         foreach (var key in keys) {
+            coreCharts[key].Height = coreHeight;
             coreLabels[key].Text = $"{key.Group}:{key.Index} · 0–" + Display.Number(coreMaximum, " %", 0);
             coreCharts[key].Set(model.Processors[key], null, now, rangeSeconds, coreMaximum, 0x80c5c0);
         }

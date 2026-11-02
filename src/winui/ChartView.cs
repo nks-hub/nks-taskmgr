@@ -11,6 +11,7 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class ChartView : Grid
 {
     private readonly Canvas canvas = new() { HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
+    private readonly Border plotFrame = new() { BorderBrush = Display.Brush(0x52616a), BorderThickness = new Thickness(1), IsHitTestVisible = false };
     private readonly List<Line> horizontal = [], vertical = [];
     private readonly ShapePath areaPath = new(), linePath = new() { StrokeThickness = 1.6 }, secondaryPath = new() { StrokeThickness = 1.6, Stroke = Display.Brush(0x80c5c0) };
     private HistorySeries? series, secondary;
@@ -53,6 +54,7 @@ public sealed partial class ChartView : Grid
         for (int i = 1; i < 10; ++i) { var line = new Line { Stroke = Display.Brush(0x263138), StrokeThickness = 1 }; vertical.Add(line); canvas.Children.Add(line); }
         canvas.Children.Add(areaPath); canvas.Children.Add(linePath); canvas.Children.Add(secondaryPath); Children.Add(canvas);
         Grid.SetColumn(canvas, 1);
+        Children.Add(plotFrame); Grid.SetColumn(plotFrame, 1);
         BuildAxes(); BuildInteraction();
         Loaded += (_, _) => { Appearance.Changed += AppearanceChanged; AppearanceChanged(); };
         Unloaded += (_, _) => Appearance.Changed -= AppearanceChanged;

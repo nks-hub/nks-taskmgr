@@ -3,6 +3,12 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace NksTaskMgr.WinUI;
 
+public sealed partial class ProcessSlot
+{
+    public ProcessColumns? Columns { get; internal set; }
+    public Action<ProcessRow>? ToggleBranch { get; internal set; }
+}
+
 public sealed class ProcessColumn(int id, string title, double width, double minimum)
 {
     public int Id { get; } = id;
@@ -23,6 +29,7 @@ public sealed class ProcessColumns
     private double viewport;
     public IReadOnlyList<ProcessColumn> Items => columns;
     public double MinimumWidth => columns.Where(column => column.Visible).Sum(column => column.Width) + 32;
+    public double LayoutWidth => Math.Max(viewport, MinimumWidth);
     public event Action? Changed;
 
     public double WidthOf(int id)

@@ -71,6 +71,14 @@ public static partial class WinUiChecks
             && history.At(1_900_000_000)?.Value.Value == 20, "Graph cursor lost invalid samples or selected a different measured value.");
         Require(ChartView.ScaleMaximum(7.3, 100) == 10 && ChartView.ScaleMaximum(57, 100) == 100
             && ChartView.ScaleMaximum(140, 100) == 100, "Automatic graph scale hid a peak or exceeded physical capacity.");
+        var miniature = new HistorySeries();
+        miniature.Append(1_000_000_000, new Metric { Value = 0, State = SampleState.Valid });
+        miniature.Append(2_000_000_000, new Metric { Value = 100, State = SampleState.Valid });
+        var mini = miniature.Build(64, 38, 2_000_000_000, 2, 100).As<PathGeometry>();
+        var miniPoints = mini.Figures[0].Segments[0].As<PolyLineSegment>().Points;
+        Require(mini.Figures.Count == 1 && mini.Figures[0].StartPoint.X == 32 && mini.Figures[0].StartPoint.Y == 38
+            && miniPoints.Count == 1 && miniPoints[0].X == 64 && miniPoints[0].Y == 0,
+            "The 64x38 resource preview changed valid endpoints or its fixed percent scale.");
         App.Trace("Graph polylines passed: ordered points, valid zero, sparse and invalid gaps, closed fills");
     }
 }

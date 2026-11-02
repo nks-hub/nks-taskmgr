@@ -9,8 +9,8 @@ public sealed partial class MainWindow
         try {
             applicationTemplateCheckRunning = true;
             model.SetPaused(true);
-            SelectProcessMode(ProcessMode.Applications);
-            ShowView(DesktopView.Processes);
+            ShowApplications(true);
+            ShowView(DesktopView.Applications);
             await ApplicationGroupTemplateChecks.RunAsync(applicationGroups, applicationChoice, App.Trace);
             applicationTemplateCheckRunning = false;
             model.SetPaused(false);

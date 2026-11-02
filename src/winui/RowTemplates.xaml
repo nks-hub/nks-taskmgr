@@ -26,26 +26,23 @@
         </Grid>
       </DataTemplate>
       <DataTemplate x:Key="ResourceTemplate" x:DataType="local:ResourceRow">
-        <Grid Height="57" Padding="10,0" ColumnSpacing="12">
-          <Grid.ColumnDefinitions><ColumnDefinition Width="50" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-          <Grid Width="50" Height="31" VerticalAlignment="Center">
-            <Path Data="{x:Bind Preview, Mode=OneWay}" Stroke="{x:Bind Color}" StrokeThickness="1.5" />
-            <Path Data="{x:Bind UploadPreview, Mode=OneWay}" Stroke="{ThemeResource NksTransmitBrush}" StrokeThickness="1.3" />
+        <Grid Height="50" Padding="8,0" ColumnSpacing="10" ToolTipService.ToolTip="{x:Bind Description, Mode=OneWay}">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="64" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+          <Grid Width="64" Height="38" VerticalAlignment="Center">
+            <Path Data="{x:Bind PreviewFill, Mode=OneWay}" Fill="{x:Bind Color}" Opacity="0.13" />
+            <Path Data="{x:Bind Preview, Mode=OneWay}" Stroke="{x:Bind Color}" StrokeThickness="1.3" />
+            <Path Data="{x:Bind UploadPreview, Mode=OneWay}" Stroke="{ThemeResource NksTransmitBrush}" StrokeThickness="1.1" />
+            <Border BorderBrush="{ThemeResource NksDividerBrush}" BorderThickness="1" />
           </Grid>
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
             <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Title, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-            <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Description, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
-            <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Value, Mode=OneWay}" FontSize="12" Foreground="{x:Bind Color}" TextTrimming="CharacterEllipsis" />
+            <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Value, Mode=OneWay}" FontSize="11" Foreground="{x:Bind Color}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Grid>
       </DataTemplate>
       <DataTemplate x:Key="ProcessTemplate" x:DataType="local:ProcessSlot">
-        <local:ProcessRowGrid AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}" Height="33" BorderBrush="{ThemeResource NksDividerBrush}" BorderThickness="0,0,0,1" ColumnSpacing="0" Padding="16,0">
-          <Grid VerticalAlignment="Center" Margin="{x:Bind Row.Indent, Mode=OneWay}" ColumnSpacing="8" ToolTipService.ToolTip="{x:Bind Row.Note, Mode=OneWay}">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="18" /><ColumnDefinition /></Grid.ColumnDefinitions>
-            <local:ProcessIconView Row="{x:Bind Row, Mode=OneWay}" Width="18" Height="18" />
-            <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="1" Text="{x:Bind Row.DisplayName, Mode=OneWay}" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,12,0" />
-          </Grid>
+        <local:ProcessRowGrid Columns="{x:Bind Columns}" AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}" BorderBrush="{ThemeResource NksDividerBrush}" BorderThickness="0,0,0,1" ColumnSpacing="0" Padding="16,0">
+          <local:ProcessNameCell Slot="{x:Bind}" />
           <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="1" Text="{x:Bind Row.PidText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
           <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="2" Text="{x:Bind Row.CpuText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
           <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="3" Text="{x:Bind Row.WorkingText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />

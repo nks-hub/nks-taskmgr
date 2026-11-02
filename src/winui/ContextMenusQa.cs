@@ -7,6 +7,7 @@ public static partial class WinUiChecks
 {
     internal static unsafe void ContextMenus()
     {
+        NetworkFilters();
         using var model = new MonitorModel();
         model.SetPaused(true);
         ApplyProcesses(model, Process(62001, 100, 1), Process(62002, 200, 2));
@@ -27,6 +28,21 @@ public static partial class WinUiChecks
             && list.SelectedItems.Count == 2, "A keyboard context request discarded the focused list's current selection.");
         Require(ContextListSelection.Select(list, new ProcessSlot(a)) is null && list.SelectedItems.Count == 2,
             "A foreign row became the context selection.");
+        var resources = new ListView { SelectionMode = ListViewSelectionMode.Single };
+        var cpu = new ResourceRow("context-cpu", ResourceKind.Cpu); var memory = new ResourceRow("context-memory", ResourceKind.Memory);
+        resources.Items.Add(cpu); resources.Items.Add(memory); resources.SelectedItem = cpu;
+        ResourceRow? selectedResource = cpu; int resourceSelectionChanges = 0;
+        resources.SelectionChanged += (_, _) => { selectedResource = resources.SelectedItem as ResourceRow; ++resourceSelectionChanges; };
+        Require(ReferenceEquals(ContextListSelection.Select(resources, memory), memory)
+            && ReferenceEquals(resources.SelectedItem, memory) && ReferenceEquals(selectedResource, memory) && resourceSelectionChanges == 1,
+            "A single-selection resource context did not select the unselected clicked row.");
+        Require(ReferenceEquals(ContextListSelection.Select(resources, memory), memory)
+            && ReferenceEquals(ContextListSelection.FromSource(resources, resources, keyboard: true), memory) && resourceSelectionChanges == 1,
+            "An existing resource selection or keyboard context lost its selected row.");
+        Require(ContextListSelection.FromSource(resources, resources, keyboard: false) is null
+            && ContextListSelection.Select(resources, new ResourceRow("foreign", ResourceKind.Memory)) is null
+            && ReferenceEquals(resources.SelectedItem, memory) && resourceSelectionChanges == 1,
+            "An empty or foreign resource pointer request changed the previous selection.");
         var snapshot = new ProcessContextSnapshot(list);
         Require(snapshot.Matches(model, list), "A current context selection failed its identity guard.");
         second.Assign(a);
@@ -53,5 +69,37 @@ public static partial class WinUiChecks
         service.Update(new ServiceInfo { State = 4, Config = new ServiceConfigInfo { Error = 5 } });
         Require(!serviceSnapshot.Matches(service, serviceList), "A service state change retained an old context action.");
         App.Trace("Context selection guards passed: clicked row, multiselect, empty/keyboard list requests, recycled slots, PID reuse, raw creation time and service identity/state; no action invoked");
+    }
+}
+
+public sealed partial class MainWindow
+{
+    internal async Task CheckResourceContextMenuAsync()
+    {
+        static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
+        Require(view == DesktopView.Performance && resourceList.XamlRoot is not null
+            && resourceList.SelectionMode == ListViewSelectionMode.Single, "Resource context QA requires the live single-selection performance list.");
+        var previous = resourceList.SelectedItem as ResourceRow;
+        var target = model.Resources.FirstOrDefault(row => !ReferenceEquals(row, previous))
+            ?? throw new InvalidOperationException("Resource context QA requires an unselected resource row.");
+        MenuFlyout? menu = null;
+        try {
+            resourceList.ScrollIntoView(target); resourceList.UpdateLayout();
+            var container = resourceList.ContainerFromItem(target) as ListViewItem
+                ?? throw new InvalidOperationException("Resource context QA could not realize the clicked row.");
+            Require(ReferenceEquals(ContextListSelection.FromSource(resourceList, container, keyboard: false), target)
+                && ReferenceEquals(selectedResource, target) && ResourceContextCurrent(target),
+                "A pointer context request did not select its unselected resource before menu construction.");
+            menu = PerformanceContextMenu(target); AddNetworkItems(menu);
+            activeContextMenu?.Hide(); activeContextMenu = menu;
+            menu.ShowAt(container);
+            await Task.Delay(100);
+            Require(menu.IsOpen && ResourceContextCurrent(target), "The clicked resource context menu failed to open or lost its target.");
+            App.Trace("Live resource context passed: unselected single-list row, current resource and open performance/network menu; no action invoked");
+        } finally {
+            menu?.Hide(); if (ReferenceEquals(activeContextMenu, menu)) activeContextMenu = null;
+            resourceList.SelectedItem = NetworkResourceFilter.SelectionAfterFilter(model.Resources, previous);
+            RefreshPerformance();
+        }
     }
 }

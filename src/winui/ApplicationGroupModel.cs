@@ -20,28 +20,23 @@ public sealed partial class ApplicationGroupRow(ProcessKey key) : INotifyPropert
     {
         Members = members; Windows = windows; membership = members.Select(row => row.Key).ToHashSet();
         string title = GlobalObjectSearchText.Flat(windows.FirstOrDefault(window => window.Title.Length > 0)?.Title ?? root.Name, 100);
-        string summary = SummaryText(partial);
-        if (Title == title && Summary == summary) return;
-        Title = title; Summary = summary; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        string tooltip = GlobalObjectSearchText.Flat(windows.FirstOrDefault(window => window.Title.Length > 0)?.Title ?? root.Name, 4096);
+        bool changed = Title != title || TitleTooltip != tooltip || !ReferenceEquals(IconRow, root);
+        Title = title; TitleTooltip = tooltip; IconRow = root;
+        changed |= UpdatePresentation(partial);
+        if (changed) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
     }
     internal void RefreshMetrics(bool partial)
     {
-        string summary = SummaryText(partial);
-        if (Summary == summary) return;
-        Summary = summary; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Summary)));
-    }
-    private string SummaryText(bool partial)
-    {
-        var known = Members.Where(row => !row.Stale && !row.Ended && row.Cpu.State == SampleState.Valid && double.IsFinite(row.Cpu.Value) && row.Cpu.Value >= 0).ToArray();
-        string cpu = known.Length == 0 ? "CPU nedostupné" : "CPU " + Display.Number(known.Sum(row => row.Cpu.Value), " %", 1)
-            + (partial || known.Length != Members.Length ? " · část " + known.Length + "/" + Members.Length : "");
-        return Members.Length + " procesů · " + Windows.Length + " oken · " + cpu;
+        if (UpdatePresentation(partial)) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
     }
     internal bool CaptionMatches(string query) => Title.Contains(query, StringComparison.OrdinalIgnoreCase)
-        || Windows.Any(window => window.AppId.Contains(query, StringComparison.OrdinalIgnoreCase) || window.Package.Contains(query, StringComparison.OrdinalIgnoreCase));
+        || TitleTooltip.Contains(query, StringComparison.OrdinalIgnoreCase)
+        || Windows.Any(window => window.Title.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || window.AppId.Contains(query, StringComparison.OrdinalIgnoreCase) || window.Package.Contains(query, StringComparison.OrdinalIgnoreCase));
 }
 
-internal sealed class ApplicationGroupModel
+internal sealed partial class ApplicationGroupModel
 {
     private readonly Dictionary<ProcessKey, ApplicationGroupRow> groups = [];
     private ProcessApplicationInfo[] inventory = [];
@@ -62,7 +57,11 @@ internal sealed class ApplicationGroupModel
         inventory = snapshot.Applications; partial = snapshot.PartialMetrics; receivedAt = NativeMonitor.MonotonicNowNs; Error = "";
     }
     internal void Failed(string error) => Error = error;
-    internal void RefreshMetrics(bool partial) { foreach (var group in groups.Values) group.RefreshMetrics(partial || Partial); }
+    internal void RefreshMetrics(bool held)
+    {
+        foreach (var group in groups.Values) group.RefreshMetrics(held || Partial);
+        if (!held) ApplyVisible(Ordered(Visible));
+    }
     internal void Select(ProcessKey key) { if (groups.ContainsKey(key)) selected = key; }
     internal ApplicationGroupRow? Containing(ProcessKey key) => groups.Values.FirstOrDefault(group => group.Contains(key));
     internal bool Contains(ProcessRow row) => Selected?.Contains(row.Key) == true;
@@ -100,17 +99,10 @@ internal sealed class ApplicationGroupModel
             var members = groups.Keys.ToDictionary(key => key, _ => new List<ProcessRow>());
             foreach (var row in processes) if (assigned.TryGetValue(row.Key, out var group) && group is not null) members[group.Key].Add(row);
             foreach (var (key, group) in groups) group.Update(byKey[key], windows[key], members[key].ToArray(), Partial);
-            var visible = groups.Values.Where(group => query.Length == 0 || group.CaptionMatches(query)
-                || group.Members.Any(row => row.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || row.PidText.Contains(query, StringComparison.Ordinal)))
-                .OrderBy(group => group.Title, StringComparer.OrdinalIgnoreCase).ThenBy(group => group.Key.Pid).ToArray();
-            var wanted = visible.ToHashSet();
-            for (int i = Visible.Count - 1; i >= 0; --i) if (!wanted.Contains(Visible[i])) Visible.RemoveAt(i);
-            for (int i = 0; i < visible.Length; ++i) {
-                if (i < Visible.Count && ReferenceEquals(Visible[i], visible[i])) continue;
-                int found = Visible.IndexOf(visible[i]);
-                if (found >= 0) Visible.Move(found, i); else Visible.Insert(i, visible[i]);
-            }
-            if (selected is null || !groups.ContainsKey(selected.Value)) selected = Visible.FirstOrDefault()?.Key;
+            var visible = Ordered(groups.Values.Where(group => query.Length == 0 || group.CaptionMatches(query)
+                || group.Members.Any(row => row.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || row.PidText.Contains(query, StringComparison.Ordinal))));
+            if (selected is not { } selectedKey || !visible.Any(group => group.Key == selectedKey)) selected = visible.FirstOrDefault()?.Key;
+            ApplyVisible(visible);
         } finally { Updating = false; }
     }
 }

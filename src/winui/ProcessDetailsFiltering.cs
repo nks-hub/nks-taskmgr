@@ -16,7 +16,7 @@ internal sealed partial class ProcessDetailsView
     private ProcessDetailsCommand? configuredMode;
     private bool buildingFilters, applyingRows;
 
-    private ProcessHandleInfo? SelectedHandle => mode == ProcessDetailsCommand.Handles ? list.SelectedItem as ProcessHandleInfo : null;
+    private ProcessHandleInfo? SelectedHandle => mode == ProcessDetailsCommand.Handles ? SelectedRow as ProcessHandleInfo : null;
     private ProcessDetailsSnapshot? SnapshotFor(ProcessDetailsCommand value) => value switch {
         ProcessDetailsCommand.Threads => threadSnapshot, ProcessDetailsCommand.Modules => moduleSnapshot,
         ProcessDetailsCommand.Memory => memorySnapshot, ProcessDetailsCommand.Handles => handlesSnapshot, _ => null
@@ -93,14 +93,14 @@ internal sealed partial class ProcessDetailsView
             }, current.Token);
             current.Token.ThrowIfCancellationRequested();
             if (closed || mode != selectedMode || !ReferenceEquals(snapshot, SnapshotFor(mode))) return;
-            object? previous = list.SelectedItem;
+            object? previous = SelectedRow;
             applyingRows = true;
             try {
-                list.ItemsSource = rows;
+                list.ItemsSource = rows.Select(row => new ProcessDetailsRow(row)).ToArray();
                 int index = previous is null ? -1 : Array.FindIndex(rows, row => ReferenceEquals(row, previous));
                 list.SelectedIndex = index >= 0 ? index : rows.Length > 0 ? 0 : -1;
             } finally { applyingRows = false; }
-            if (!ReferenceEquals(previous, list.SelectedItem)) { signature = null; signatureTime = null; }
+            if (!ReferenceEquals(previous, SelectedRow)) { signature = null; signatureTime = null; }
             if (!ReferenceEquals(observationHandle, SelectedHandle)) ClearObservation();
             count.Text = rows.Length.ToString(Czech) + " / " + all.Length.ToString(Czech) + " · snímek z " + snapshot.ReceivedAt.LocalDateTime.ToString("HH:mm:ss", Czech);
             UpdateDetail(); UpdateAvailability();
@@ -116,9 +116,11 @@ internal sealed partial class ProcessDetailsView
         if (query.Length == 0) return true;
         if (row.ToString()?.Contains(query, StringComparison.OrdinalIgnoreCase) == true) return true;
         return row switch {
-            ProcessModuleInfo module => module.Path.Contains(query, StringComparison.OrdinalIgnoreCase) || ContainsAddress(query, module.BaseAddress, module.ImageSize),
+            ProcessModuleInfo module => module.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                || module.Path.Contains(query, StringComparison.OrdinalIgnoreCase) || ContainsAddress(query, module.BaseAddress, module.ImageSize),
             ProcessMemoryRegion region => Protection(region.Protection).Contains(query, StringComparison.OrdinalIgnoreCase)
                 || ProcessMemoryRegion.TypeText(region.Type).Contains(query, StringComparison.OrdinalIgnoreCase)
+                || TryNumber(query, out var bytes) && region.RegionSize == bytes
                 || ContainsAddress(query, region.BaseAddress, region.RegionSize),
             ProcessHandleInfo entry => TryNumber(query, out var value) && entry.Value == value,
             _ => false

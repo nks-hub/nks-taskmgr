@@ -14,6 +14,11 @@ internal static class ContextListSelection
     internal static object? Select(ListView list, object? item)
     {
         if (item is null || !list.Items.Contains(item)) return null;
+        if (list.SelectionMode == ListViewSelectionMode.Single) {
+            // WinUI rejects SelectedItems mutations when CanSelectMultiple is false.
+            list.SelectedItem = item;
+            return ReferenceEquals(list.SelectedItem, item) ? item : null;
+        }
         if (!list.SelectedItems.Contains(item)) {
             list.SelectedItems.Clear();
             list.SelectedItem = item;
@@ -116,12 +121,12 @@ public sealed partial class MainWindow
 
     private void ProcessContextRequested(UIElement sender, ContextRequestedEventArgs args)
     {
-        if (args.Handled || view != DesktopView.Processes) return;
+        if (args.Handled || view is not (DesktopView.Processes or DesktopView.Applications)) return;
         args.Handled = true;
         activeContextMenu?.Hide();
         if (ContextRow(processList, args) is not ProcessSlot) return;
         var snapshot = new ProcessContextSnapshot(processList);
-        bool Current() => view == DesktopView.Processes && snapshot.Matches(model, processList);
+        bool Current() => (view is DesktopView.Processes or DesktopView.Applications) && snapshot.Matches(model, processList);
         bool ActionsAvailable() { RefreshProcessActions(); return Current() && processActionsButton.IsEnabled; }
         var menu = new MenuFlyout();
         var single = snapshot.Single;
@@ -181,8 +186,9 @@ public sealed partial class MainWindow
         if (args.Handled || view != DesktopView.Performance) return;
         args.Handled = true;
         activeContextMenu?.Hide();
-        if (ContextRow(resourceList, args) is not ResourceRow row) return;
-        ShowContextMenu(PerformanceContextMenu(row), resourceList, args);
+        var menu = ContextRow(resourceList, args) is ResourceRow row ? PerformanceContextMenu(row) : new MenuFlyout();
+        AddNetworkItems(menu);
+        ShowContextMenu(menu, resourceList, args);
     }
 
     private void ChartContextRequested(UIElement sender, ContextRequestedEventArgs args)
@@ -226,9 +232,10 @@ public sealed partial class MainWindow
             menu.Items.Add(modes);
         }
         if (scaleChoice.Visibility == Visibility.Visible) {
-            var scale = new ToggleMenuFlyoutItem { Text = "Automatické měřítko", IsChecked = scaleChoice.IsChecked == true, IsEnabled = scaleChoice.IsEnabled };
+            bool automatic = scaleChoice.IsChecked == true;
+            var scale = new ToggleMenuFlyoutItem { Text = "Automatické měřítko", IsChecked = automatic, IsEnabled = scaleChoice.IsEnabled };
             AutomationProperties.SetAutomationId(scale, "context-performance-scale");
-            scale.Click += (_, _) => { if (Current() && scaleChoice.IsEnabled) { scaleChoice.IsChecked = scale.IsChecked; RefreshPerformance(); } };
+            scale.Click += (_, _) => { if (Current() && scaleChoice.IsEnabled) SetPerformanceAutomaticScale(!automatic); };
             menu.Items.Add(scale);
         }
         var timeline = performanceTimeline.State;

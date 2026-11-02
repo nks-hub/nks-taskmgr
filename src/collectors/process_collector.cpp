@@ -33,10 +33,11 @@ bool unsupportedProcessQuery(LONG status)
     return status == STATUS_INVALID_INFO_CLASS || status == STATUS_NOT_IMPLEMENTED || status == STATUS_NOT_SUPPORTED;
 }
 
-void requireProcessQuery(LONG status)
+void requireProcessQuery(LONG status, const char* stage, ULONG remaining)
 {
     if (!NT_SUCCESS(status))
-        throw std::runtime_error("NtQuerySystemInformation process query failed: " + std::to_string(static_cast<unsigned long>(status)));
+        throw std::runtime_error("NtQuerySystemInformation process query failed: " + std::to_string(static_cast<unsigned long>(status))
+            + "; stage=" + stage + "; remaining=" + std::to_string(remaining));
 }
 
 std::wstring processorName()
@@ -81,10 +82,11 @@ std::vector<ProcessRecord> ProcessCollector::collectProcesses(std::chrono::stead
     std::chrono::system_clock::time_point& wallTime)
 {
     NksProcessQueryBudget budget{NKS_PROCESS_QUERY_ATTEMPTS, capacity + basicCapacity};
+    std::vector<BasicProcessIdentity> before;
     for (;;) {
-        std::vector<BasicProcessIdentity> before;
-        if (!sequenceChecked || sequenceEnabled) {
-            if (budget.remaining_attempts < 3) requireProcessQuery(STATUS_RETRY);
+        if ((!sequenceChecked || sequenceEnabled) && budget.remaining_attempts < (before.empty() ? 3u : 2u))
+            requireProcessQuery(STATUS_RETRY, "identity retry budget", budget.remaining_attempts);
+        if ((!sequenceChecked || sequenceEnabled) && before.empty()) {
             ULONG used = 0;
             const auto status = NksQueryProcessBufferBudgeted(queryProcesses, SystemBasicProcessInformation,
                 &basicBuffer, &basicCapacity, &used, &budget);
@@ -94,21 +96,25 @@ std::vector<ProcessRecord> ProcessCollector::collectProcesses(std::chrono::stead
                 budget.allocated_bytes -= basicCapacity; basicCapacity = 0;
             }
             else {
-                requireProcessQuery(status);
+                requireProcessQuery(status, "identity before", budget.remaining_attempts);
                 before = parseBasicProcesses({static_cast<const std::byte*>(basicBuffer), used});
                 sequenceChecked = sequenceEnabled = true;
             }
         }
         ULONG used = 0;
-        requireProcessQuery(NksQueryProcessBufferBudgeted(queryProcesses, SystemProcessInformation, &buffer, &capacity, &used, &budget));
+        const auto processStatus = NksQueryProcessBufferBudgeted(queryProcesses, SystemProcessInformation, &buffer, &capacity, &used, &budget);
+        requireProcessQuery(processStatus, "process counters", budget.remaining_attempts);
         measuredAt = std::chrono::steady_clock::now();
         wallTime = std::chrono::system_clock::now();
         auto processes = parseProcesses({static_cast<const std::byte*>(buffer), used}, boot.id);
         if (!sequenceEnabled) return processes;
-        requireProcessQuery(NksQueryProcessBufferBudgeted(queryProcesses, SystemBasicProcessInformation,
-            &basicBuffer, &basicCapacity, &used, &budget));
-        const auto after = parseBasicProcesses({static_cast<const std::byte*>(basicBuffer), used});
+        const auto afterStatus = NksQueryProcessBufferBudgeted(queryProcesses, SystemBasicProcessInformation,
+            &basicBuffer, &basicCapacity, &used, &budget);
+        requireProcessQuery(afterStatus, "identity after", budget.remaining_attempts);
+        auto after = parseBasicProcesses({static_cast<const std::byte*>(basicBuffer), used});
         if (applySequenceIdentities(processes, before, after)) return processes;
+        // The completed after-query is also the before-query for the next attempt.
+        before = std::move(after);
     }
 }
 

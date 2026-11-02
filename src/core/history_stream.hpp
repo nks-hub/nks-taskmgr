@@ -9,7 +9,7 @@
 
 namespace nks {
 
-enum class HistoryChannel : std::uint32_t { primary, upload, dedicated, shared, engine, processor, pageFile };
+enum class HistoryChannel : std::uint32_t { primary, upload, dedicated, shared, engine, processor, pageFile, diskRead, diskWrite };
 
 struct HistoryDefinition {
     std::uint32_t id{};

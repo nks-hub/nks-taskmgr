@@ -16,8 +16,11 @@ public partial class App : Application
         .FirstOrDefault(arg => arg.StartsWith("--check-dump=", StringComparison.Ordinal))?[13..];
     internal static string? ApplicationGroupsCheckPath { get; } = Environment.GetCommandLineArgs()
         .FirstOrDefault(arg => arg.StartsWith("--check-applications=", StringComparison.Ordinal))?[21..];
+    internal static string? ProcessDetailsCheckPath { get; } = Environment.GetCommandLineArgs()
+        .FirstOrDefault(arg => arg.StartsWith("--check-details=", StringComparison.Ordinal))?[16..];
+    internal static bool ProcessDetailsUnhandledError { get; private set; }
     internal static bool ApplicationGroupsUnhandledError { get; private set; }
-    internal static void Trace(string stage) { if ((SmokePath ?? EventsCheckPath ?? ActionsCheckPath ?? DumpCheckPath ?? ApplicationGroupsCheckPath) is { } path) File.AppendAllText(path, stage + Environment.NewLine); }
+    internal static void Trace(string stage) { if ((SmokePath ?? EventsCheckPath ?? ActionsCheckPath ?? DumpCheckPath ?? ApplicationGroupsCheckPath ?? ProcessDetailsCheckPath) is { } path) File.AppendAllText(path, stage + Environment.NewLine); }
     private Window? window;
 
     public App()
@@ -26,6 +29,11 @@ public partial class App : Application
             Trace(args.Exception.ToString());
             if (ApplicationGroupsCheckPath is not null) {
                 ApplicationGroupsUnhandledError = true;
+                Environment.ExitCode = 1;
+                args.Handled = true;
+            }
+            if (ProcessDetailsCheckPath is not null) {
+                ProcessDetailsUnhandledError = true;
                 Environment.ExitCode = 1;
                 args.Handled = true;
             }
@@ -50,10 +58,13 @@ public partial class App : Application
         }
         if (ApplicationGroupsCheckPath is { } applicationPath)
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(applicationPath))!);
+        if (ProcessDetailsCheckPath is { } detailsPath)
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(detailsPath))!);
         Trace("Constructing window");
         var main = new MainWindow();
         window = main;
         main.Activate();
         if (ApplicationGroupsCheckPath is not null) main.BeginApplicationGroupChecks();
+        if (ProcessDetailsCheckPath is { } processDetailsPath) main.BeginProcessDetailsChecks(processDetailsPath, () => ProcessDetailsUnhandledError);
     }
 }

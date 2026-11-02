@@ -4,9 +4,22 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:NksTaskMgr.WinUI">
   <DataTemplate x:Key="ApplicationGroup" x:DataType="local:ApplicationGroupRow">
-    <StackPanel Padding="8" Spacing="6">
-      <TextBlock Text="{x:Bind Title, Mode=OneWay}" FontSize="12" FontFamily="{ThemeResource ContentControlThemeFontFamily}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
-      <TextBlock Text="{x:Bind Summary, Mode=OneWay}" FontSize="12" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Foreground="{ThemeResource NksSecondaryTextBrush}" TextWrapping="Wrap" />
-    </StackPanel>
+    <Grid Padding="8" ColumnSpacing="8" RowSpacing="4">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="22" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+      <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+      <Viewbox Grid.RowSpan="2" Width="22" Height="22" VerticalAlignment="Top" Margin="0,2,0,0">
+        <local:ProcessIconView Row="{x:Bind IconRow, Mode=OneWay}" Width="18" Height="18" />
+      </Viewbox>
+      <TextBlock Grid.Column="1" Text="{x:Bind Title, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind TitleTooltip, Mode=OneWay}"
+                 FontSize="12" FontWeight="SemiBold" FontFamily="{ThemeResource ContentControlThemeFontFamily}"
+                 TextWrapping="Wrap" MinHeight="32" MaxLines="2" TextTrimming="CharacterEllipsis" />
+      <Grid Grid.Row="1" Grid.Column="1" ColumnSpacing="4">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+        <TextBlock Text="{x:Bind CountText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind CountText, Mode=OneWay}"
+                   FontSize="10" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
+        <TextBlock Grid.Column="1" Text="{x:Bind CpuText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind CpuTooltip, Mode=OneWay}"
+                   Width="80" FontSize="10" FontFamily="Consolas" TextAlignment="Right" Foreground="{ThemeResource NksSecondaryTextBrush}" />
+      </Grid>
+    </Grid>
   </DataTemplate>
 </ResourceDictionary>

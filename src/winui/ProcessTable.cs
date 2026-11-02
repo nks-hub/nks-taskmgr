@@ -3,12 +3,16 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Shapes;
+using System.ComponentModel;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Foundation;
 
 namespace NksTaskMgr.WinUI;
 
 public sealed partial class ProcessTable : Grid
 {
+    internal const double RowHeight = 28;
     private readonly Grid content = new(), header = new() { Background = Display.Brush(0x1d252a), Padding = new Thickness(16, 0, 16, 0) };
     private readonly ScrollViewer scroll;
     private readonly Dictionary<int, Button> headings = [];
@@ -17,15 +21,16 @@ public sealed partial class ProcessTable : Grid
     private bool descending;
     public ProcessColumns Columns { get; } = new();
     internal Grid Header => header;
+    internal ScrollViewer HorizontalScroll => scroll;
 
     public ProcessTable(ListView rows, Action<int> sort)
     {
-        content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(39) });
+        content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) });
         content.RowDefinitions.Add(new RowDefinition());
         foreach (var column in Columns.Items) {
             var cell = new Grid();
             var button = new Button {
-                Content = column.Title, FontSize = 12, FontFamily = UiTypography.Font, Height = 38, MinHeight = 0, Padding = new Thickness(0, 0, 12, 0),
+                Content = column.Title, FontSize = 12, FontFamily = UiTypography.Font, Height = 31, MinHeight = 0, Padding = new Thickness(0, 0, 12, 0),
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = column.Id == 0 ? HorizontalAlignment.Left : HorizontalAlignment.Right,
                 Background = Display.Brush(0x1d252a), BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(0), CanDrag = true, AllowDrop = true
             };
@@ -51,6 +56,7 @@ public sealed partial class ProcessTable : Grid
         }
         content.Children.Add(header); Grid.SetRow(rows, 1); content.Children.Add(rows);
         ScrollViewer.SetHorizontalScrollBarVisibility(rows, ScrollBarVisibility.Disabled);
+        ScrollViewer.SetHorizontalScrollMode(rows, ScrollMode.Disabled);
         scroll = new ScrollViewer { Content = content, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled };
         scroll.SizeChanged += (_, args) => Columns.SetViewport(args.NewSize.Width);
         Columns.Changed += Apply;
@@ -101,7 +107,7 @@ public sealed partial class ProcessTable : Grid
 
     private void Apply()
     {
-        content.Width = Math.Max(scroll.ActualWidth, Columns.MinimumWidth);
+        content.Width = Columns.LayoutWidth;
         Columns.Apply(header);
         string? hiddenSort = Columns.Items.FirstOrDefault(column => column.Id == sortColumn && !column.Visible)?.Title;
         AutomationProperties.SetHelpText(this, hiddenSort is null ? "" : "Řazeno podle skrytého sloupce " + hiddenSort + (descending ? " sestupně" : " vzestupně"));
@@ -110,18 +116,125 @@ public sealed partial class ProcessTable : Grid
 
 public sealed partial class ProcessRowGrid : Grid
 {
-    private ProcessTable? table;
+    private ProcessColumns? columns;
+    private bool subscribed;
+    public ProcessColumns? Columns {
+        get => columns;
+        set {
+            if (ReferenceEquals(columns, value)) return;
+            Detach(); columns = value;
+            if (IsLoaded) Attach();
+            Apply();
+        }
+    }
+
     public ProcessRowGrid()
     {
-        Loaded += (_, _) => {
-            DependencyObject? parent = VisualTreeHelper.GetParent(this);
-            while (parent is not null && parent is not ProcessTable) parent = VisualTreeHelper.GetParent(parent);
-            table = parent as ProcessTable;
-            if (table is not null) { table.Columns.Changed += Apply; Apply(); }
-        };
-        Unloaded += (_, _) => { if (table is not null) table.Columns.Changed -= Apply; table = null; };
+        Height = ProcessTable.RowHeight;
+        Loaded += (_, _) => { Attach(); Apply(); };
+        Unloaded += (_, _) => Detach();
     }
-    private void Apply() => table?.Columns.Apply(this);
+    private void Attach()
+    {
+        if (subscribed || columns is null) return;
+        columns.Changed += Apply; subscribed = true;
+    }
+    private void Detach()
+    {
+        if (subscribed && columns is not null) columns.Changed -= Apply;
+        subscribed = false;
+    }
+    private void Apply()
+    {
+        if (columns is null || Children.Count == 0) return;
+        Width = columns.LayoutWidth;
+        if (Children.Count != columns.Items.Count) {
+            if (IsLoaded) throw new InvalidOperationException("Procesní řádek nemá všechny buňky sdílených sloupců.");
+            return;
+        }
+        columns.Apply(this);
+    }
+}
+
+public sealed partial class ProcessNameCell : Grid
+{
+    private readonly TextBlock name = new() { FontFamily = UiTypography.Font, FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis,
+        VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+    private readonly ProcessIconView icon = new() { Width = 18, Height = 18, VerticalAlignment = VerticalAlignment.Center };
+    private readonly RotateTransform rotation = new() { CenterX = 6, CenterY = 6 };
+    private readonly Button branch = new() { Width = 14, Height = 24, MinWidth = 0, MinHeight = 0, Padding = new Thickness(0),
+        BorderThickness = new Thickness(0), Background = new SolidColorBrush(Windows.UI.Colors.Transparent), IsTabStop = false, VerticalAlignment = VerticalAlignment.Center };
+    private ProcessSlot? slot;
+    private ProcessRow? row;
+    private bool subscribed;
+    public ProcessSlot? Slot {
+        get => slot;
+        set {
+            if (ReferenceEquals(slot, value)) return;
+            Detach(); slot = value; RefreshRow();
+        }
+    }
+    internal ProcessRow? Row => row;
+    internal Button Branch => branch;
+    internal ProcessIconView Icon => icon;
+    internal TextBlock NameLabel => name;
+
+    public ProcessNameCell()
+    {
+        ColumnSpacing = 6; VerticalAlignment = VerticalAlignment.Center;
+        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
+        ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
+        ColumnDefinitions.Add(new ColumnDefinition());
+        branch.Content = new Polyline { Points = new PointCollection { new Point(3, 2), new Point(7, 6), new Point(3, 10) },
+            Width = 12, Height = 12, Stroke = Display.Brush(0x95a4ad), StrokeThickness = 1.4, RenderTransform = rotation };
+        branch.Click += (_, args) => { if (row is { HasChildren: true, Ended: false } current) slot?.ToggleBranch?.Invoke(current); args.Handled = true; };
+        branch.DoubleTapped += (_, args) => args.Handled = true;
+        Children.Add(branch); Children.Add(icon); Children.Add(name); SetColumn(icon, 1); SetColumn(name, 2);
+        Loaded += (_, _) => { Detach(); RefreshRow(); };
+        Unloaded += (_, _) => Detach();
+        SizeChanged += (_, args) => Clip = new RectangleGeometry { Rect = new Rect(0, 0, args.NewSize.Width, args.NewSize.Height) };
+    }
+
+    private void Attach()
+    {
+        if (subscribed || slot is null) return;
+        slot.PropertyChanged += SlotChanged;
+        if (row is not null) row.PropertyChanged += Changed;
+        subscribed = true;
+    }
+    private void Detach()
+    {
+        if (subscribed) {
+            if (slot is not null) slot.PropertyChanged -= SlotChanged;
+            if (row is not null) row.PropertyChanged -= Changed;
+        }
+        subscribed = false;
+    }
+    private void SlotChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (!string.IsNullOrEmpty(args.PropertyName) && args.PropertyName != nameof(ProcessSlot.Row)) return;
+        Detach(); RefreshRow();
+    }
+    private void RefreshRow()
+    {
+        row = slot?.Row; icon.Row = row;
+        if (IsLoaded) Attach();
+        Update();
+    }
+    private void Changed(object? sender, PropertyChangedEventArgs args)
+    {
+        if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName is nameof(ProcessRow.DisplayName) or nameof(ProcessRow.Indent) or nameof(ProcessRow.Note)) Update();
+    }
+    private void Update()
+    {
+        Margin = row?.Indent ?? new Thickness(0);
+        name.Text = row is null ? "" : row.Name + (row.Ended ? " · ukončeno" : row.Stale ? " · zastaralé" : "");
+        branch.Opacity = row?.HasChildren == true ? 1 : 0;
+        branch.IsHitTestVisible = branch.IsEnabled = row is { HasChildren: true, Ended: false };
+        rotation.Angle = row?.Collapsed == true ? 0 : 90;
+        AutomationProperties.SetName(branch, (row?.Collapsed == true ? "Rozbalit " : "Sbalit ") + row?.Name);
+        ToolTipService.SetToolTip(this, row?.Note);
+    }
 }
 
 internal sealed partial class ColumnResizeArea : Grid

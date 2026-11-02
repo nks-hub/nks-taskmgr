@@ -50,7 +50,7 @@ internal sealed partial class UpdateWindow
         status.Text = "Odstraňuji potvrzené položky…";
         var outcome = await session.CommitAsync(token);
         if (closed) return;
-        inventory = null;
+        ShowUnavailable("Přehled balíčků se po úklidu změnil.", "Před další operací načtěte aktuální přehled.", false);
         cleanupUncertain = !outcome.Completed && outcome.MayHaveDeleted;
         status.Text = !outcome.Completed
             ? outcome.MayHaveDeleted ? "Úklid nemá potvrzený výsledek." : "Úklid nebyl dokončený."

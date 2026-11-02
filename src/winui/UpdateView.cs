@@ -18,13 +18,19 @@ public sealed partial class MainWindow
         button.Margin = new Thickness(8, 0, 8, 52);
         AutomationProperties.SetName(button, "Aktualizace a návrat předchozí verze");
         AutomationProperties.SetAutomationId(button, "updates-open");
-        ToolTipService.SetToolTip(button, "Podepsané aktualizace pro aktuálního uživatele");
-        button.Click += (_, _) => {
-            if (updateWindow is null) {
-                var window = new UpdateWindow(RequestMainClose); updateWindow = window;
-                window.Closed += (_, _) => { if (ReferenceEquals(updateWindow, window)) updateWindow = null; };
+        ToolTipService.SetToolTip(button, "Verze aplikace a možnosti aktualizace");
+        button.Click += async (_, _) => {
+            try {
+                if (updateWindow is null) {
+                    var window = new UpdateWindow(RequestMainClose); updateWindow = window;
+                    window.Closed += (_, _) => { if (ReferenceEquals(updateWindow, window)) updateWindow = null; };
+                }
+                updateWindow.ShowOwned(this);
+            } catch (Exception error) when (error is System.ComponentModel.Win32Exception or System.Runtime.InteropServices.COMException or InvalidOperationException) {
+                updateWindow?.Close(); updateWindow = null;
+                await new ContentDialog { Title = "Aktualizace nelze otevřít", Content = error.Message,
+                    CloseButtonText = "Zavřít", XamlRoot = root.XamlRoot }.ShowAsync();
             }
-            updateWindow.Activate();
         };
         sidebar.Children.Add(button);
         Closed += (_, _) => updateWindow?.Close();

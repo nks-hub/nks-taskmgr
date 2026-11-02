@@ -12,7 +12,11 @@ public sealed partial class MainWindow
     private readonly ListView applicationGroups = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
     private readonly ApplicationGroupTemplates applicationTemplates = new();
     private readonly ComboBox applicationChoice = new() { DisplayMemberPath = nameof(ApplicationGroupRow.Title), HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 32 };
+    private readonly Grid applicationToolbar = new() { ColumnSpacing = 6 };
+    private readonly ComboBox applicationSort = new() { MinHeight = 30, Width = 145, FontSize = 11 };
+    private readonly Button applicationSortDirection = Button("↑");
     private readonly TextBlock applicationStatus = Label("", 11, 0x95a4ad), applicationFacts = Label("", 11, 0x95a4ad);
+    private readonly Expander applicationInfo = new() { Header = "Informace o skupině", HorizontalAlignment = HorizontalAlignment.Stretch, Visibility = Visibility.Collapsed };
     private readonly CancellationTokenSource applicationLifetime = new();
     private CancellationTokenSource? applicationRequest;
     private bool updatingApplicationChoice, applicationsClosed;
@@ -25,9 +29,11 @@ public sealed partial class MainWindow
     {
         applicationWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0) }); applicationWorkspace.ColumnDefinitions.Add(new ColumnDefinition());
         applicationWorkspace.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); applicationWorkspace.RowDefinitions.Add(new RowDefinition());
+        applicationWorkspace.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         var sidebar = new Grid { RowSpacing = 6 };
         sidebar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); sidebar.RowDefinitions.Add(new RowDefinition());
         applicationStatus.TextWrapping = applicationFacts.TextWrapping = TextWrapping.Wrap;
+        applicationStatus.MaxLines = 2; applicationStatus.TextTrimming = TextTrimming.CharacterEllipsis;
         var note = new ScrollViewer { Content = applicationStatus, MaxHeight = 80, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         sidebar.Children.Add(note); sidebar.Children.Add(applicationGroups); Grid.SetRow(applicationGroups, 1);
         applicationGroups.ItemsSource = applicationChoice.ItemsSource = model.Applications.Visible;
@@ -36,8 +42,30 @@ public sealed partial class MainWindow
         style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0))); style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
         applicationGroups.ItemContainerStyle = style;
         applicationWorkspace.Children.Add(sidebar); Grid.SetRow(sidebar, 1); applicationFacts.Visibility = Visibility.Collapsed;
-        applicationWorkspace.Children.Add(applicationChoice); Grid.SetColumnSpan(applicationChoice, 2);
+        applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition()); applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        applicationToolbar.Children.Add(applicationChoice); applicationToolbar.Children.Add(applicationSort); Grid.SetColumn(applicationSort, 1);
+        applicationSortDirection.Width = 32; applicationSortDirection.MinHeight = 30; applicationSortDirection.Padding = new Thickness(0);
+        applicationToolbar.Children.Add(applicationSortDirection); Grid.SetColumn(applicationSortDirection, 2);
+        applicationWorkspace.Children.Add(applicationToolbar); Grid.SetColumnSpan(applicationToolbar, 2);
+        foreach (string option in new[] { "Název", "CPU", "Paměť", "Počet procesů" }) applicationSort.Items.Add(option);
+        applicationSort.SelectedIndex = (int)model.Applications.Sort;
+        void Sort(ApplicationGroupSort value, bool descending) {
+            model.Applications.SetSort(value, descending); applicationSortDirection.Content = descending ? "↓" : "↑";
+            AutomationProperties.SetName(applicationSortDirection, descending ? "Řazení sestupně; změnit směr" : "Řazení vzestupně; změnit směr");
+            ToolTipService.SetToolTip(applicationSortDirection, descending ? "Sestupně" : "Vzestupně"); RefreshApplicationGroups();
+        }
+        applicationSort.SelectionChanged += (_, _) => { if (applicationSort.SelectedIndex >= 0) {
+            var value = (ApplicationGroupSort)applicationSort.SelectedIndex; Sort(value, value != ApplicationGroupSort.Name);
+        } };
+        applicationSortDirection.Click += (_, _) => Sort(model.Applications.Sort, !model.Applications.SortDescending);
+        AutomationProperties.SetName(applicationSort, "Řadit skupiny aplikací podle"); AutomationProperties.SetAutomationId(applicationSort, "application-sort");
+        AutomationProperties.SetName(applicationSortDirection, "Řazení vzestupně; změnit směr"); AutomationProperties.SetAutomationId(applicationSortDirection, "application-sort-direction");
+        ToolTipService.SetToolTip(applicationSort, "Řazení skupin aplikací; paměť je součet pracovních sad dostupných procesů.");
         applicationWorkspace.Children.Add(table); Grid.SetColumn(table, 1); Grid.SetRow(table, 1);
+        applicationInfo.Content = new ScrollViewer { Content = applicationFacts, MaxHeight = 110, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(12, 6, 12, 8) };
+        applicationWorkspace.Children.Add(applicationInfo); Grid.SetRow(applicationInfo, 2); Grid.SetColumnSpan(applicationInfo, 2);
         void Select(object? value) {
             if (updatingApplicationChoice || model.Applications.Updating || model.Mode != ProcessMode.Applications || value is not ApplicationGroupRow group) return;
             if (!model.Processes.Any(row => row.Key == group.Key && model.IsCurrent(row))) return;
@@ -47,7 +75,8 @@ public sealed partial class MainWindow
         applicationChoice.SelectionChanged += (_, _) => Select(applicationChoice.SelectedItem);
         AutomationProperties.SetName(applicationGroups, "Skupiny aplikací podle ověřených oken"); AutomationProperties.SetAutomationId(applicationGroups, "application-groups");
         AutomationProperties.SetName(applicationChoice, "Vybrat skupinu aplikace"); AutomationProperties.SetAutomationId(applicationChoice, "application-choice");
-        Closed += (_, _) => { applicationsClosed = true; applicationRequest?.Cancel(); applicationLifetime.Cancel(); if (applicationRequest is null) applicationLifetime.Dispose(); };
+        var releaseView = PreserveApplicationGroupView(model.Applications, applicationGroups, applicationChoice);
+        Closed += (_, _) => { releaseView(); applicationsClosed = true; applicationRequest?.Cancel(); applicationLifetime.Cancel(); if (applicationRequest is null) applicationLifetime.Dispose(); };
         ResizeApplicationGroups();
         return applicationWorkspace;
     }
@@ -57,9 +86,9 @@ public sealed partial class MainWindow
         if (mode == ProcessMode.Applications && model.Mode != mode) {
             applicationReturnMode = model.Mode; pendingApplicationSelection = applicationReturnSelection = SelectedProcess?.Key;
             var scroll = Descendant<ScrollViewer>(processList);
-            double offset = scroll?.VerticalOffset ?? 0; int index = (int)(offset / 34);
+            double offset = scroll?.VerticalOffset ?? 0; int index = (int)(offset / ProcessTable.RowHeight);
             applicationReturnAnchor = index < model.VisibleProcesses.Count ? model.VisibleProcesses[index].Key : null;
-            applicationReturnOffset = offset % 34;
+            applicationReturnOffset = offset % ProcessTable.RowHeight;
         }
         bool leaving = model.Mode == ProcessMode.Applications && mode != model.Mode;
         var selected = SelectedProcess?.Key ?? applicationReturnSelection;
@@ -69,31 +98,42 @@ public sealed partial class MainWindow
             if (selected is { } key && model.VisibleProcesses.FirstOrDefault(row => row.Key == key) is { } row) SelectProcess(row, false);
             if (mode == applicationReturnMode && applicationReturnAnchor is { } anchor) {
                 int index = model.VisibleProcesses.ToList().FindIndex(row => row.Key == anchor);
-                if (index >= 0) { processList.UpdateLayout(); Descendant<ScrollViewer>(processList)?.ChangeView(null, index * 34 + applicationReturnOffset, null, true); }
+                if (index >= 0) { processList.UpdateLayout(); Descendant<ScrollViewer>(processList)?.ChangeView(null, index * ProcessTable.RowHeight + applicationReturnOffset, null, true); }
             }
             pendingApplicationSelection = null;
         }
+    }
+
+    private void ShowApplications(bool visible)
+    {
+        if (visible) SelectProcessMode(ProcessMode.Applications);
+        else if (model.Mode == ProcessMode.Applications) SelectProcessMode(applicationReturnMode);
     }
 
     private void RefreshApplicationGroups()
     {
         bool apps = model.Mode == ProcessMode.Applications;
         applicationFacts.Visibility = apps ? Visibility.Visible : Visibility.Collapsed;
+        applicationInfo.Visibility = apps ? Visibility.Visible : Visibility.Collapsed;
         if (!apps) { ResizeApplicationGroups(); return; }
         updatingApplicationChoice = true;
         try { applicationGroups.SelectedItem = applicationChoice.SelectedItem = model.Applications.Selected; }
         finally { updatingApplicationChoice = false; }
-        applicationStatus.Text = model.Applications.Error.Length > 0 ? model.Applications.Error
-            : !model.Applications.HasInventory ? "Načítám ověřené vlastníky oken…" : model.Applications.Visible.Count + " skupin aplikací"
-                + (model.Applications.Partial ? " · neúplný nebo zastaralý inventář" : " · podle viditelných oken");
+        applicationStatus.Text = !model.Applications.HasInventory ? model.Applications.Error.Length > 0 ? "Přehled není dostupný" : "Načítám aplikace…"
+            : model.Applications.Visible.Count + " skupin · " + (model.Applications.Stale ? "zastaralý přehled"
+                : model.Applications.Partial ? "částečný přehled" : "podle oken");
+        string inventoryDetail = model.Applications.Error.Length > 0 ? model.Applications.Error
+            : model.Applications.Partial ? "Některá okna, vazby procesů nebo údaje nemusí být dostupné. * u CPU označuje částečný součet."
+                : "Skupiny vycházejí z ověřených vlastníků viditelných oken a jejich potomků.";
+        ToolTipService.SetToolTip(applicationStatus, inventoryDetail); ToolTipService.SetToolTip(applicationChoice, inventoryDetail);
         if (model.Held) { model.Applications.RefreshMetrics(true); applicationStatus.Text += " · pořadí a skupiny přidrženy"; }
-        applicationFacts.Text = applicationStatus.Text + "\n" + ApplicationFacts();
+        applicationFacts.Text = ApplicationFacts();
         ResizeApplicationGroups();
     }
 
     private void RefreshApplicationInventory()
     {
-        if (view == DesktopView.Processes && model.Mode == ProcessMode.Applications && !model.Paused && applicationRequest is null
+        if (view == DesktopView.Applications && model.Mode == ProcessMode.Applications && !model.Paused && applicationRequest is null
             && NativeMonitor.MonotonicNowNs >= nextApplicationRead && model.BootIdentity is { State: SampleState.Valid } boot && !boot.Identifier.IsEmpty) {
             var kind = model.Processes.Any(row => row.Key.Kind == GenerationKind.SequenceNumber) ? GenerationKind.SequenceNumber : GenerationKind.CreationTime;
             var cancellation = CancellationTokenSource.CreateLinkedTokenSource(applicationLifetime.Token); applicationRequest = cancellation;
@@ -135,7 +175,6 @@ public sealed partial class MainWindow
         var hosts = group.Windows.Where(window => window.Host.HasValue).Select(window => window.Host!.Value.Pid).Distinct().ToArray();
         if (hosts.Length > 0) text.Append("\nHostitel pozorovaný v inventáři: PID ").AppendJoin(", ", hosts).Append("; sdílený host se nezapočítává více aplikacím.");
         text.Append("\nCPU je součet dostupných validních hodnot.");
-        if (model.Applications.Partial) text.Append(" Inventář je částečný nebo zastaralý.");
         return text.ToString();
     }
 
@@ -145,7 +184,43 @@ public sealed partial class MainWindow
         bool apps = model.Mode == ProcessMode.Applications, wide = root.ActualWidth >= 1200;
         applicationWorkspace.ColumnDefinitions[0].Width = new GridLength(apps && wide ? 250 : 0);
         var sidebar = applicationWorkspace.Children[0]; sidebar.Visibility = apps && wide ? Visibility.Visible : Visibility.Collapsed;
+        applicationToolbar.Visibility = apps ? Visibility.Visible : Visibility.Collapsed;
         applicationChoice.Visibility = apps && !wide ? Visibility.Visible : Visibility.Collapsed;
-        if (processPage.RowDefinitions.Count > 3) processPage.RowDefinitions[3].Height = new GridLength(apps ? root.ActualHeight < 650 ? 120 : 160 : 92);
+    }
+
+    internal static Action PreserveApplicationGroupView(ApplicationGroupModel source, ListView list, ComboBox choice)
+    {
+        ApplicationGroupRow? selection = null, anchor = null;
+        ScrollViewer? scroll = null;
+        double offset = 0, anchorTop = 0;
+        bool bound = false;
+        void Changing()
+        {
+            bound = ReferenceEquals(list.ItemsSource, source.Visible);
+            if (!bound) return;
+            selection = list.SelectedItem as ApplicationGroupRow; anchor = null;
+            if (list.Visibility != Visibility.Visible) return;
+            scroll ??= Descendant<ScrollViewer>(list); offset = scroll?.VerticalOffset ?? 0;
+            int first = (list.ItemsPanelRoot as ItemsStackPanel)?.FirstVisibleIndex ?? -1;
+            if (first >= 0 && first < list.Items.Count && list.Items[first] is ApplicationGroupRow row
+                && list.ContainerFromItem(row) is FrameworkElement container) {
+                anchor = row; anchorTop = container.TransformToVisual(list).TransformPoint(default).Y;
+            }
+        }
+        void Changed()
+        {
+            if (!bound) return;
+            var selected = selection is not null && source.Visible.Contains(selection) ? selection : source.Selected ?? source.Visible.FirstOrDefault();
+            list.SelectedItem = selected;
+            if (ReferenceEquals(choice.ItemsSource, source.Visible)) choice.SelectedItem = selected;
+            if (scroll is null || list.Visibility != Visibility.Visible) return;
+            if (anchor is not null && source.Visible.Contains(anchor)) {
+                list.ScrollIntoView(anchor, ScrollIntoViewAlignment.Leading); list.UpdateLayout();
+                if (list.ContainerFromItem(anchor) is FrameworkElement container)
+                    scroll.ChangeView(null, Math.Clamp(scroll.VerticalOffset + container.TransformToVisual(list).TransformPoint(default).Y - anchorTop, 0, scroll.ScrollableHeight), null, true);
+            } else scroll.ChangeView(null, Math.Min(offset, scroll.ScrollableHeight), null, true);
+        }
+        source.ViewChanging += Changing; source.ViewChanged += Changed;
+        return () => { source.ViewChanging -= Changing; source.ViewChanged -= Changed; };
     }
 }

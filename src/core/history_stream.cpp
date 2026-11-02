@@ -74,6 +74,10 @@ void HistoryStream::append(const ResourceSnapshot& snapshot)
         append(HistoryChannel::primary, resource.id, L"", L"", 0, 0, time, resource.primary);
         if (resource.kind == ResourceKind::network)
             append(HistoryChannel::upload, resource.id, L"", L"", 0, 0, time, resource.secondary);
+        if (resource.kind == ResourceKind::disk) {
+            append(HistoryChannel::diskRead, resource.id, L"", L"", 0, 0, time, resource.secondary);
+            append(HistoryChannel::diskWrite, resource.id, L"", L"", 0, 0, time, resource.tertiary);
+        }
         if (resource.kind != ResourceKind::gpu) continue;
         append(HistoryChannel::dedicated, resource.id, L"", L"", 0, 0, time, resource.secondary);
         append(HistoryChannel::shared, resource.id, L"", L"", 0, 0, time, resource.tertiary);

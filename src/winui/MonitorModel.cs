@@ -18,7 +18,7 @@ public sealed partial class MonitorModel : IDisposable
     private bool descending;
     public ProcessRows VisibleProcesses { get; } = [];
     public ObservableCollection<ResourceRow> Resources { get; } = [];
-    public bool ShowVirtualNetworkAdapters { get; private set; }
+    internal NetworkFilterOptions NetworkFilters { get; private set; }
     public IReadOnlyCollection<ProcessRow> Processes => processes.Values;
     internal IEnumerable<ResourceRow> AllResources => resources.Values;
     public Dictionary<(uint Group, uint Index), HistorySeries> Processors { get; } = [];
@@ -46,10 +46,10 @@ public sealed partial class MonitorModel : IDisposable
     internal void SelectApplication(ProcessKey key) { held = false; Applications.Select(key); Rebuild(true); }
 
     public void SetPaused(bool value) { monitor.SetPaused(value); Paused = value; }
-    public void SetShowVirtualNetworkAdapters(bool value)
+    internal void SetNetworkFilters(NetworkFilterOptions value)
     {
-        if (ShowVirtualNetworkAdapters == value) return;
-        ShowVirtualNetworkAdapters = value;
+        if (NetworkFilters == value) return;
+        NetworkFilters = value;
         if (visualUpdates) SyncResources();
     }
     public void SetInterval(uint value) { monitor.SetInterval(value); Interval = value; }
@@ -203,7 +203,7 @@ public sealed partial class MonitorModel : IDisposable
 
     private void SyncResources()
     {
-        var rows = resources.Values.Where(row => ShowVirtualNetworkAdapters || !row.IsVirtualNetwork)
+        var rows = resources.Values.Where(row => NetworkResourceFilter.Includes(row, NetworkFilters))
             .OrderBy(row => row.Kind == ResourceKind.Cpu ? 0 : row.Kind == ResourceKind.Memory ? 1 : 2).ToArray();
         var wanted = rows.ToHashSet();
         for (int i = Resources.Count - 1; i >= 0; --i) if (!wanted.Contains(Resources[i])) Resources.RemoveAt(i);

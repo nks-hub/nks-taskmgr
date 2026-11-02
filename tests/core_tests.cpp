@@ -206,6 +206,40 @@ int main() {
         {"processor groups are summed without partial results", [] { failSecondGroup = false; const std::array<nks::ProcessorGroup, 2> groups{{{0, 2}, {1, 3}}}; const auto result = nks::queryProcessorTimes(groups, fakeGroup); require(result.state == nks::SampleState::valid && result.kernel100ns == 150 && result.user100ns == 100 && result.idle100ns == 50, "Processor group counters were not combined"); }},
         {"failed processor group invalidates the complete sample", [] { failSecondGroup = true; const std::array<nks::ProcessorGroup, 2> groups{{{0, 2}, {1, 3}}}; const auto result = nks::queryProcessorTimes(groups, fakeGroup); require(result.state != nks::SampleState::valid && result.kernel100ns == 0, "Partial processor groups were reported as a whole machine"); }},
         {"system kernel time includes idle", [] { nks::ProcessSampler s; auto a = sample(); a.processorState = nks::SampleState::valid; a.systemKernel100ns = 100; a.systemUser100ns = 100; a.systemIdle100ns = 40; s.apply(a); auto b = a; b.measuredAt += std::chrono::seconds(1); b.systemKernel100ns += 100; b.systemUser100ns += 100; b.systemIdle100ns += 40; s.apply(b); require(b.systemCpuPercent.valid() && std::abs(b.systemCpuPercent.value - 80) < .001, "Idle was subtracted from the wrong system total"); }},
+        {"stationary logical core does not break valid total CPU", [] {
+            nks::ProcessSampler sampler;
+            auto before = sample(); before.processorState = nks::SampleState::valid;
+            before.systemKernel100ns = 100; before.systemUser100ns = 100; before.systemIdle100ns = 40;
+            before.processors = {{0, 0, 100, 100, 40}, {0, 1, 50, 50, 10}};
+            sampler.apply(before);
+            auto after = before; after.measuredAt += std::chrono::seconds(1);
+            after.systemKernel100ns += 100; after.systemUser100ns += 100; after.systemIdle100ns += 40;
+            after.processors[0].kernel100ns += 100; after.processors[0].user100ns += 100; after.processors[0].idle100ns += 40;
+            sampler.apply(after);
+            require(after.processors[1].cpuPercent.state == nks::SampleState::gap, "Stationary core invented a valid ratio");
+            require(after.systemCpuPercent.valid() && std::abs(after.systemCpuPercent.value - 80) < .001,
+                "A core without counter progress invalidated measured total CPU");
+        }},
+        {"logical counter reset still breaks aggregate CPU", [] {
+            nks::ProcessSampler sampler;
+            auto before = sample(); before.processorState = nks::SampleState::valid;
+            before.systemKernel100ns = 100; before.systemUser100ns = 100; before.systemIdle100ns = 40;
+            before.processors = {{0, 0, 100, 100, 40}}; sampler.apply(before);
+            auto after = before; after.measuredAt += std::chrono::seconds(1);
+            after.systemKernel100ns += 100; after.systemUser100ns += 100; after.systemIdle100ns += 40;
+            after.processors[0].kernel100ns = 0; sampler.apply(after);
+            require(after.systemCpuPercent.state == nks::SampleState::gap, "Logical counter rollback became a valid total");
+        }},
+        {"logical idle beyond elapsed still breaks aggregate CPU", [] {
+            nks::ProcessSampler sampler;
+            auto before = sample(); before.processorState = nks::SampleState::valid;
+            before.systemKernel100ns = 100; before.systemUser100ns = 100; before.systemIdle100ns = 40;
+            before.processors = {{0, 0, 100, 100, 40}}; sampler.apply(before);
+            auto after = before; after.measuredAt += std::chrono::seconds(1);
+            after.systemKernel100ns += 100; after.systemUser100ns += 100; after.systemIdle100ns += 40;
+            after.processors[0].idle100ns += 1; sampler.apply(after);
+            require(after.systemCpuPercent.state == nks::SampleState::gap, "Invalid logical idle became a valid total");
+        }},
         {"unavailable system counters stay unavailable", [] { nks::ProcessSampler s; auto a = sample(); a.processorState = nks::SampleState::valid; s.apply(a); auto b = sample(2); s.apply(b); require(b.systemCpuPercent.state == nks::SampleState::unavailable, "Missing system counters became a valid zero"); }},
     };
     unsigned failures = 0;

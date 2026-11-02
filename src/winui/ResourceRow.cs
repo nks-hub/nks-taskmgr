@@ -13,8 +13,10 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     }
     public string Id { get; }
     public ResourceKind Kind { get; }
-    // Older collectors expose only physical interfaces and have no classification fact.
-    public bool IsVirtualNetwork => Kind == ResourceKind.Network && HardwareFacts.TryGetValue("Druh rozhraní", out var type) && type == "Virtuální";
+    public bool IsVirtualNetwork => Kind == ResourceKind.Network && HardwareFacts.TryGetValue("Druh rozhraní", out var type)
+        && type is "Virtuální" or "Pomocné / virtuální";
+    public bool IsNetworkConnected => Kind == ResourceKind.Network && (HardwareFacts.TryGetValue("Stav rozhraní Windows", out var state)
+        ? state == "1" : Status == "Připojeno");
     public GpuModel? Gpu { get; }
     public string Title { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
@@ -30,6 +32,7 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     public HistorySeries Upload { get; private set; } = new();
     internal void AttachHistory(HistorySeries series, bool upload) { if (upload) Upload = series; else History = series; }
     public Geometry? Preview { get; private set; }
+    public Geometry? PreviewFill { get; private set; }
     public Geometry? UploadPreview { get; private set; }
     private readonly record struct PreviewState(HistorySeries History, HistorySeries? Upload, long Last, long UploadLast, double Maximum);
     private PreviewState? previewState;
@@ -52,6 +55,7 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
         if (recordHistory) {
             History.Append(time, primary);
             if (Kind == ResourceKind.Network) Upload.Append(time, secondary);
+            RecordDiskHistory(time, secondary, tertiary);
         }
         if (notify) RefreshPreview();
     }
@@ -63,8 +67,9 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
         var state = new PreviewState(History, Kind == ResourceKind.Network ? Upload : null, time,
             Kind == ResourceKind.Network ? Upload.LastTime : 0, maximum);
         if (previewState != state) {
-            Preview = History.Build(50, 31, time, 60, maximum);
-            if (Kind == ResourceKind.Network) UploadPreview = Upload.Build(50, 31, time, 60, maximum);
+            Preview = History.Build(64, 38, time, 60, maximum);
+            PreviewFill = History.Build(64, 38, time, 60, maximum, true);
+            if (Kind == ResourceKind.Network) UploadPreview = Upload.Build(64, 38, time, 60, maximum);
             previewState = state;
         }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
