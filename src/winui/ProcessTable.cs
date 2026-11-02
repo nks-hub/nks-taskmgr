@@ -117,7 +117,15 @@ public sealed partial class ProcessTable : Grid
 public sealed partial class ProcessRowGrid : Grid
 {
     private ProcessColumns? columns;
-    private bool subscribed;
+    private bool subscribed, unloadCheckQueued;
+    internal bool ColumnsSubscribed => subscribed;
+    internal int LoadCount { get; private set; }
+    internal int UnloadCount { get; private set; }
+    internal int AttachCount { get; private set; }
+    internal int DetachCount { get; private set; }
+    internal int ApplyCount { get; private set; }
+    internal int LastAppliedRevision { get; private set; } = -1;
+    internal int[] LastAppliedPositions { get; private set; } = [];
     public ProcessColumns? Columns {
         get => columns;
         set {
@@ -131,17 +139,27 @@ public sealed partial class ProcessRowGrid : Grid
     public ProcessRowGrid()
     {
         Height = ProcessTable.RowHeight;
-        Loaded += (_, _) => { Attach(); Apply(); };
-        Unloaded += (_, _) => Detach();
+        Loaded += (_, _) => { ++LoadCount; Attach(); Apply(); };
+        Unloaded += (_, _) => { ++UnloadCount; CheckAfterUnload(); };
+    }
+    // Recycling can deliver Unloaded while the template is already loaded again.
+    private void CheckAfterUnload()
+    {
+        if (unloadCheckQueued) return;
+        unloadCheckQueued = true;
+        if (!DispatcherQueue.TryEnqueue(() => {
+            unloadCheckQueued = false;
+            if (IsLoaded) { Attach(); Apply(); } else Detach();
+        })) { unloadCheckQueued = false; Detach(); }
     }
     private void Attach()
     {
         if (subscribed || columns is null) return;
-        columns.Changed += Apply; subscribed = true;
+        columns.Changed += Apply; subscribed = true; ++AttachCount;
     }
     private void Detach()
     {
-        if (subscribed && columns is not null) columns.Changed -= Apply;
+        if (subscribed && columns is not null) { columns.Changed -= Apply; ++DetachCount; }
         subscribed = false;
     }
     private void Apply()
@@ -153,6 +171,9 @@ public sealed partial class ProcessRowGrid : Grid
             return;
         }
         columns.Apply(this);
+        ++ApplyCount; LastAppliedRevision = columns.Revision;
+        if (LastAppliedPositions.Length != columns.Items.Count) LastAppliedPositions = new int[columns.Items.Count];
+        foreach (var column in columns.Items) LastAppliedPositions[column.Id] = GetColumn((FrameworkElement)Children[column.Id]);
     }
 }
 
@@ -166,7 +187,7 @@ public sealed partial class ProcessNameCell : Grid
         BorderThickness = new Thickness(0), Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), IsTabStop = false, VerticalAlignment = VerticalAlignment.Center };
     private ProcessSlot? slot;
     private ProcessRow? row;
-    private bool subscribed;
+    private bool subscribed, unloadCheckQueued;
     public ProcessSlot? Slot {
         get => slot;
         set {
@@ -191,8 +212,18 @@ public sealed partial class ProcessNameCell : Grid
         branch.DoubleTapped += (_, args) => args.Handled = true;
         Children.Add(branch); Children.Add(icon); Children.Add(name); SetColumn(icon, 1); SetColumn(name, 2);
         Loaded += (_, _) => { Detach(); RefreshRow(); };
-        Unloaded += (_, _) => Detach();
+        Unloaded += (_, _) => CheckAfterUnload();
         SizeChanged += (_, args) => Clip = new RectangleGeometry { Rect = new Rect(0, 0, args.NewSize.Width, args.NewSize.Height) };
+    }
+
+    private void CheckAfterUnload()
+    {
+        if (unloadCheckQueued) return;
+        unloadCheckQueued = true;
+        if (!DispatcherQueue.TryEnqueue(() => {
+            unloadCheckQueued = false;
+            if (IsLoaded) { Detach(); RefreshRow(); } else Detach();
+        })) { unloadCheckQueued = false; Detach(); }
     }
 
     private void Attach()

@@ -77,6 +77,7 @@ public sealed partial class MainWindow : Window
     private Task? smokeSharedIcon;
     private Task? smokeIconIsolation;
     private Task? smokeResourceContext;
+    private Task? smokeTableLifecycle;
     private int smokeIconsAt;
     private int smokeMinimizedAt, smokeReadyAt;
     private int smokeServicesStage, smokeServicesAt;
@@ -436,6 +437,12 @@ public sealed partial class MainWindow : Window
         }
         int elapsed = ticks - smokeReadyAt;
         if (smokeModelsChecked && elapsed == 10) {
+            if (smokeTableLifecycle is null) {
+                smokeTableLifecycle = WinUiChecks.ProcessTableLifecycleAsync(this, processTable, processList);
+                ++smokeReadyAt; return;
+            }
+            if (!smokeTableLifecycle.IsCompleted) { ++smokeReadyAt; return; }
+            smokeTableLifecycle.GetAwaiter().GetResult();
             if (!smokeIcons!.IsCompleted && ticks - smokeIconsAt < 100) { ++smokeReadyAt; return; }
             if (!smokeIcons!.IsCompletedSuccessfully || smokeIcons.Result[0] is not { Length: > 54 } || smokeIcons.Result[1] is not null)
                 throw new InvalidOperationException("Process icons did not validate the process generation. " + IconWorkers.LastFailure, smokeIconIsolation?.Exception);

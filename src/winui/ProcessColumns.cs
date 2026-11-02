@@ -30,7 +30,10 @@ public sealed class ProcessColumns
     public IReadOnlyList<ProcessColumn> Items => columns;
     public double MinimumWidth => columns.Where(column => column.Visible).Sum(column => column.Width) + 32;
     public double LayoutWidth => Math.Max(viewport, MinimumWidth);
+    internal int Revision { get; private set; }
     public event Action? Changed;
+
+    private void NotifyChanged() { ++Revision; Changed?.Invoke(); }
 
     public double WidthOf(int id)
     {
@@ -41,7 +44,7 @@ public sealed class ProcessColumns
     public void SetViewport(double value)
     {
         if (Math.Abs(viewport - value) < .1) return;
-        viewport = value; Changed?.Invoke();
+        viewport = value; NotifyChanged();
     }
 
     public void Resize(int id, double width)
@@ -49,14 +52,14 @@ public sealed class ProcessColumns
         var column = columns.Single(column => column.Id == id);
         if (id == 0) fillName = false;
         column.Width = Math.Clamp(width, column.Minimum, id == 0 ? 1000 : 500);
-        Changed?.Invoke();
+        NotifyChanged();
     }
 
     public void SetVisible(int id, bool visible)
     {
         var column = columns.Single(column => column.Id == id);
         if (id == 0 || column.Visible == visible) return;
-        column.Visible = visible; Changed?.Invoke();
+        column.Visible = visible; NotifyChanged();
     }
 
     public bool CanMove(int id, int direction)
@@ -78,7 +81,7 @@ public sealed class ProcessColumns
     {
         int from = columns.FindIndex(column => column.Id == id), to = columns.FindIndex(column => column.Id == targetId);
         if (from == to) return;
-        var column = columns[from]; columns.RemoveAt(from); columns.Insert(to, column); Changed?.Invoke();
+        var column = columns[from]; columns.RemoveAt(from); columns.Insert(to, column); NotifyChanged();
     }
 
     public void Reset()
@@ -86,7 +89,7 @@ public sealed class ProcessColumns
         double[] widths = [260, 70, 86, 120, 126, 108, 108];
         columns.Sort((a, b) => a.Id.CompareTo(b.Id));
         foreach (var column in columns) { column.Width = widths[column.Id]; column.Visible = true; }
-        fillName = true; Changed?.Invoke();
+        fillName = true; NotifyChanged();
     }
 
     internal void Apply(Grid grid)

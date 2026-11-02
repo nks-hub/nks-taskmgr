@@ -19,6 +19,7 @@ public sealed partial class MainWindow
                 await Task.Delay(100);
             }
             var selected = own;
+            Log(FormattableString.Invariant($"process-details identity;pid={selected.Key.Pid};kind={(uint)selected.Key.Kind};generation={selected.Key.Generation};created100ns={selected.Created100ns};bootLow={selected.Key.Boot.Low:X16};bootHigh={selected.Key.Boot.High:X16}"));
             ShowView(DesktopView.Processes); SelectProcessMode(ProcessMode.All);
             search.Text = selected.PidText;
             deadline = Environment.TickCount64 + 10000;
