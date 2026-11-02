@@ -70,10 +70,10 @@ internal sealed class ProcessDumpQaWindow : Window
             try {
                 token.ThrowIfCancellationRequested();
                 if (!status.IsLoaded || status.XamlRoot is null) throw new IOException("Dump QA controls are not loaded.");
-                status.Text = "Ověřen probíhající Full dump. Ruším pracovníka a ověřuji úklid…";
+                status.Text = "Ověřuji odezvu okna při kontrole dumpů…";
                 status.UpdateLayout();
                 if (status.ActualWidth <= 0 || status.ActualHeight <= 0) throw new IOException("Dump QA control layout is unavailable.");
-                Log("dump-ui inflight-dispatch;controlLoaded=True;layoutConfirmed=True");
+                Log("dump-ui dispatch;controlLoaded=True;layoutConfirmed=True");
                 completed.TrySetResult();
             } catch (Exception error) { completed.TrySetException(error); }
         })) throw new IOException("Dump QA dispatcher rejected the in-flight responsiveness check.");

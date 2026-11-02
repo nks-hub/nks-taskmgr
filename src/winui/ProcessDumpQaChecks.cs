@@ -40,7 +40,7 @@ internal static partial class ProcessDumpQaChecks
         using var client = new ProcessDumpClient();
         SafeFileHandle? childJob = null;
         ProcessDumpFile? parentLease = null, runLease = null;
-        bool passed = false, cleanup = true, inflightCancelCovered = false;
+        bool passed = false, cleanup = true, inflightCancelCovered = false, ownGuiCovered = false, ownGuiUiDispatchCovered = false;
         int captures = 0;
         string? runDirectory = null;
         try {
@@ -137,7 +137,10 @@ internal static partial class ProcessDumpQaChecks
             log("dump-qa pre-cancel=True;workerLease=False;ownedTemporary=False;ownedJournal=False");
             await CheckInFlightCancelAsync(own, client, runDirectory, runLease, creator, uiProbe, log, cancellation).ConfigureAwait(false);
             inflightCancelCovered = true;
+            await CheckOwnGuiMiniAsync(client, runDirectory, creator, uiProbe, log, cancellation).ConfigureAwait(false);
+            ownGuiCovered = ownGuiUiDispatchCovered = true;
             Require(captures == 4, "Not all four actual architecture/mode combinations were validated.");
+            Require(ownGuiCovered && ownGuiUiDispatchCovered, "The actual own-GUI Mini capture and dispatcher verification were not completed.");
             log("NOT_COVERED dump-qa debugger-open/unwind;independent structural inspection is not debugger validation.");
             log("NOT_COVERED dump-qa confirmation-dialog/SavePicker/pixel-layout;this harness calls the production client.");
             passed = true;
@@ -177,7 +180,7 @@ internal static partial class ProcessDumpQaChecks
             }
             runLease?.Dispose(); parentLease?.Dispose();
             passed &= cleanup && !cancellation.IsCancellationRequested;
-            log($"{(passed ? "PASS" : "FAIL")} dump-qa finished;passed={passed};captures={captures};cleanup={cleanup};cancelled={cancellation.IsCancellationRequested};inflightCancelCovered={inflightCancelCovered};debuggerCovered=False;dialogsCovered=False;artifactsPreserved=True");
+            log($"{(passed ? "PASS" : "FAIL")} dump-qa finished;passed={passed};captures={captures};cleanup={cleanup};cancelled={cancellation.IsCancellationRequested};inflightCancelCovered={inflightCancelCovered};ownGuiCovered={ownGuiCovered};ownGuiUiDispatchCovered={ownGuiUiDispatchCovered};debuggerCovered=False;dialogsCovered=False;artifactsPreserved=True");
         }
         return passed;
     }

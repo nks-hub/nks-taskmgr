@@ -8,7 +8,7 @@ using NksTaskMgr.Native;
 namespace NksTaskMgr.WinUI;
 
 internal sealed record ProcessDumpQaInfo(int Threads, int Modules, int MemoryRanges, bool ProcessIdPresent,
-    string Sha256, ulong Bytes, string Streams);
+    bool ProcessCreationTimePresent, string Sha256, ulong Bytes, string Streams);
 
 internal static partial class ProcessDumpQaReader
 {
@@ -18,8 +18,10 @@ internal static partial class ProcessDumpQaReader
     private static readonly Encoding Utf16 = new UnicodeEncoding(false, false, true);
 
     internal static ProcessDumpQaInfo Inspect(string path, ProcessDumpTarget target, ProcessDumpMode mode,
-        ProcessArchitecture architecture, ProcessDumpResult result, CancellationToken cancellation)
+        ProcessArchitecture architecture, ProcessDumpResult result, CancellationToken cancellation, string expectedImageName = "cmd.exe")
     {
+        Check(!string.IsNullOrWhiteSpace(expectedImageName) && Path.GetFileName(expectedImageName) == expectedImageName
+            && !expectedImageName.Contains('\0'), "The expected dump image must be a nonempty basename.");
         using var file = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         ProcessDumpFile.CheckSingleFile(file);
         ulong length = checked((ulong)RandomAccess.GetLength(file));
@@ -92,9 +94,9 @@ internal static partial class ProcessDumpQaReader
             int at = i * 108;
             Check(U64(moduleRows, at) != 0 && U32(moduleRows, at + 8) != 0, "Invalid module image range.");
             string name = String(file, length, U32(moduleRows, at + 20));
-            ownImage |= string.Equals(Path.GetFileName(name), "cmd.exe", StringComparison.OrdinalIgnoreCase);
+            ownImage |= string.Equals(Path.GetFileName(name), expectedImageName, StringComparison.OrdinalIgnoreCase);
         }
-        Check(ownImage, "The actual cmd fixture image is absent from ModuleList.");
+        Check(ownImage, "The actual expected process image is absent from ModuleList.");
 
         var misc = Required(15, 12);
         byte[] miscellaneous = Read(file, length, misc.Rva, 12);
@@ -123,7 +125,7 @@ internal static partial class ProcessDumpQaReader
                 && U32(detail, 8) <= 4096 && (ulong)U32(detail, 0) + (ulong)U32(detail, 4) * U32(detail, 8) <= threadInfo.Size,
                 "Invalid full dump thread-information list.");
         }
-        return new((int)threadCount, (int)moduleCount, memory.Count, processIdPresent, hash, length,
+        return new((int)threadCount, (int)moduleCount, memory.Count, processIdPresent, (miscFlags & 2) != 0, hash, length,
             string.Join(',', streams.Keys.Order()));
     }
 
