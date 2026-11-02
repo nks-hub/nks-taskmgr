@@ -188,14 +188,21 @@ NksResult __cdecl nks_monitor_read(NksMonitor* monitor, NksFrame** result) noexc
     if (!monitor) return NKS_INVALID_ARGUMENT;
     return invoke([&] {
         std::lock_guard lock(monitor->readMutex);
+        std::wstring pendingProcessError, pendingResourceError;
+        auto processSnapshot = monitor->monitor.takeProcesses(pendingProcessError);
+        auto resourceSnapshot = monitor->monitor.takeResources(pendingResourceError);
+        uint32_t flags = 0;
+        if (processSnapshot) flags |= NKS_PROCESS_DATA;
+        if (resourceSnapshot) flags |= NKS_RESOURCE_DATA;
+        if (pendingProcessError != monitor->processError) flags |= NKS_PROCESS_ERROR_CHANGED;
+        if (pendingResourceError != monitor->resourceError) flags |= NKS_RESOURCE_ERROR_CHANGED;
+        if (!flags) return NKS_NO_DATA;
         auto frame = std::make_unique<NksFrame>();
-        frame->processSnapshot = monitor->monitor.takeProcesses(frame->processError);
-        frame->resourceSnapshot = monitor->monitor.takeResources(frame->resourceError);
-        if (frame->processSnapshot) frame->view.flags |= NKS_PROCESS_DATA;
-        if (frame->resourceSnapshot) frame->view.flags |= NKS_RESOURCE_DATA;
-        if (frame->processError != monitor->processError) frame->view.flags |= NKS_PROCESS_ERROR_CHANGED;
-        if (frame->resourceError != monitor->resourceError) frame->view.flags |= NKS_RESOURCE_ERROR_CHANGED;
-        if (!frame->view.flags) return NKS_NO_DATA;
+        frame->processSnapshot = std::move(processSnapshot);
+        frame->resourceSnapshot = std::move(resourceSnapshot);
+        frame->processError = std::move(pendingProcessError);
+        frame->resourceError = std::move(pendingResourceError);
+        frame->view.flags = flags;
         frame->build();
         if (frame->processSnapshot) {
             const auto changes = nks::processChanges(monitor->previousProcesses.get(), *frame->processSnapshot);
