@@ -104,7 +104,7 @@ internal sealed partial class ServiceActionsSession : IDisposable
     internal async Task RetireAsync()
     {
         Cancel(); Process? process; lock (sync) process = child;
-        if (process is not null) await process.WaitForExitAsync().ConfigureAwait(false);
+        if (process is not null) await Task.Run(process.WaitForExit).ConfigureAwait(false);
         Dispose();
     }
     public void Dispose()
