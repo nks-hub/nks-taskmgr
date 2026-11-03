@@ -212,7 +212,7 @@ dotnet publish tests/traffic_abi/TrafficAbiProbe.csproj -c Release -r win-x64 -o
 ./build/traffic-abi-probe/TrafficAbiProbe.exe
 ```
 
-Controlled disk observations exercise the production event store, C API serializer, and C# decoder. The probe checks malformed attribution, retained frames, and revocation after source loss. Its fixture DLL stays in the probe output. Live disk capture remains a separate runtime check.
+Controlled disk observations exercise the production event store, C API serializer, and C# decoder. The probe checks malformed attribution, retained frames, and revocation after source loss. The probe loads its own fixture DLL from the probe output. Live disk capture remains a separate runtime check.
 
 Process identity uses the full 128-bit Windows boot identifier with the PID and generation. `nks_frame_get_boot_data` returns both identifier halves and their availability state. The ABI v1 `boot_time` field remains wall-clock metadata and is not an identity key. Denied or unsupported boot queries report their state without stopping process collection.
 
