@@ -38,6 +38,11 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     public Geometry? UploadPreview { get; private set; }
     private readonly record struct PreviewState(HistorySeries History, HistorySeries? Upload, long Last, long UploadLast, double Maximum);
     private PreviewState? previewState;
+    private readonly record struct PublishedState(string Title, string Description, string Status,
+        (double, SampleState, MetricSource) Primary, (double, SampleState, MetricSource) Secondary,
+        (double, SampleState, MetricSource) Tertiary, double Capacity, bool Stale, bool VirtualNetwork, bool NetworkConnected);
+    private PublishedState? publishedState;
+    private static (double, SampleState, MetricSource) MetricState(Metric value) => (value.Value, value.State, value.Source);
     public string Value => Stale ? "Zastaralá data" : Kind == ResourceKind.Network && Primary.State == SampleState.Valid
         ? "↓ " + Display.Metric(Primary, "", 1_000_000) + "  ↑ " + Display.Metric(Secondary, " Mbit/s", 1_000_000)
         : Kind == ResourceKind.Network && Status == "Odpojeno" ? Status
@@ -47,7 +52,13 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     public bool SetStale(bool value, bool notify = true)
     {
         if (Stale == value) return false;
-        Stale = value; if (notify) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value))); return true;
+        Stale = value;
+        if (notify) {
+            // This event leaves other unpublished fields pending for RefreshPreview.
+            if (publishedState is { } previous) publishedState = previous with { Stale = value };
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value)));
+        }
+        return true;
     }
 
     public void Update(string title, string description, string status, Metric primary, Metric secondary, Metric tertiary, double capacity, long time, bool notify = true, bool recordHistory = true)
@@ -80,12 +91,17 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
         double maximum = Maximum(time, 60);
         var state = new PreviewState(History, Kind == ResourceKind.Network ? Upload : null, time,
             Kind == ResourceKind.Network ? Upload.LastTime : 0, maximum);
-        if (previewState != state) {
+        bool previewChanged = previewState != state;
+        if (previewChanged) {
             Preview = History.Build(PreviewWidth, PreviewHeight, time, 60, maximum);
             PreviewFill = History.Build(PreviewWidth, PreviewHeight, time, 60, maximum, true);
             if (Kind == ResourceKind.Network) UploadPreview = Upload.Build(PreviewWidth, PreviewHeight, time, 60, maximum);
             previewState = state;
         }
+        var published = new PublishedState(Title, Description, Status, MetricState(Primary), MetricState(Secondary),
+            MetricState(Tertiary), Capacity, Stale, IsVirtualNetwork, IsNetworkConnected);
+        if (!previewChanged && publishedState == published) return;
+        publishedState = published;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
     }
 
