@@ -112,6 +112,10 @@ class CollectorClient::Connection {
 public:
     Connection(collector::Kind kind, std::stop_token stop) {
         stopCheck(stop);
+        cancellation.reset(CreateEventW(nullptr, TRUE, FALSE, nullptr));
+        if (!cancellation.get()) winError("Create collector cancellation event");
+        completion.reset(CreateEventW(nullptr, TRUE, FALSE, nullptr));
+        if (!completion.get()) winError("Create collector transfer event");
         PipeSecurity security; auto attributes = security.attributes(); const auto name = pipeName();
         pipe.reset(CreateNamedPipeW(name.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,
             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS, 1, 65536, 65536, 0, &attributes));
@@ -162,22 +166,21 @@ public:
 
     std::vector<std::byte> request(const collector::Header& request, std::span<const std::byte> body, std::stop_token stop) {
         const auto deadline = GetTickCount64() + 5000;
-        Handle stopped(CreateEventW(nullptr, TRUE, FALSE, nullptr));
-        if (!stopped.get()) winError("Create collector cancellation event");
-        std::stop_callback callback(stop, [&] { SetEvent(stopped.get()); });
+        if (!ResetEvent(cancellation.get())) winError("Reset collector cancellation event");
+        std::stop_callback callback(stop, [&] { SetEvent(cancellation.get()); });
         auto header = collector::encodeHeader(request);
-        transfer(header, true, deadline, stopped.get());
+        transfer(header, true, deadline, cancellation.get());
         if (!body.empty()) {
             std::vector<std::byte> copy(body.begin(), body.end());
-            transfer(copy, true, deadline, stopped.get());
+            transfer(copy, true, deadline, cancellation.get());
         }
         header.resize(collector::headerBytes);
-        transfer(header, false, deadline, stopped.get());
+        transfer(header, false, deadline, cancellation.get());
         const auto response = collector::decodeHeader(header);
         if (response.kind != request.kind || response.requestId != request.requestId)
             throw std::runtime_error("Collector response identity mismatch");
         std::vector<std::byte> payload(response.payloadBytes);
-        transfer(payload, false, deadline, stopped.get());
+        transfer(payload, false, deadline, cancellation.get());
         stopCheck(stop);
         if (response.status) {
             collector::Reader reader(payload); const auto message = reader.text(); reader.finished();
@@ -199,21 +202,19 @@ private:
         DWORD ignored{}; GetOverlappedResult(pipe.get(), &operation, &ignored, TRUE);
     }
     void transfer(std::span<std::byte> bytes, bool write, ULONGLONG deadline, HANDLE stopped) {
-        Handle completed(CreateEventW(nullptr, TRUE, FALSE, nullptr));
-        if (!completed.get()) winError("Create collector transfer event");
         std::size_t at{};
         while (at < bytes.size()) {
             if (WaitForSingleObject(stopped, 0) == WAIT_OBJECT_0) throw std::runtime_error("Collector request cancelled");
             const auto now = GetTickCount64();
             if (now >= deadline) throw std::runtime_error("Collector operation timed out");
-            OVERLAPPED operation{}; operation.hEvent = completed.get(); ResetEvent(completed.get());
+            OVERLAPPED operation{}; operation.hEvent = completion.get(); ResetEvent(completion.get());
             const auto size = static_cast<DWORD>((std::min)(bytes.size() - at, std::size_t{65536}));
             DWORD transferred{};
             const bool ready = write ? WriteFile(pipe.get(), bytes.data() + at, size, &transferred, &operation) != FALSE
                 : ReadFile(pipe.get(), bytes.data() + at, size, &transferred, &operation) != FALSE;
             if (!ready) {
                 if (GetLastError() != ERROR_IO_PENDING) winError("Collector pipe transfer");
-                const HANDLE events[]{completed.get(), stopped, process.get()};
+                const HANDLE events[]{completion.get(), stopped, process.get()};
                 const auto waited = WaitForMultipleObjects(3, events, FALSE, static_cast<DWORD>(deadline - now));
                 if (waited != WAIT_OBJECT_0) {
                     const auto code = GetLastError();
@@ -230,7 +231,7 @@ private:
         }
     }
     // Closing the job terminates only this worker, even if its provider is blocked.
-    Handle pipe, process, job;
+    Handle cancellation, completion, pipe, process, job;
     bool retiredState{};
 };
 
