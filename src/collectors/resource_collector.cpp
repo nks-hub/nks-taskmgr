@@ -216,31 +216,41 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
             if (ConvertInterfaceAliasToLuid(connection.szEntryName, &luid) == NO_ERROR) vpnConnections.insert(luid.Value);
         }
     }
-    lastNetworks.clear();
+    nextNetworks.clear();
+    nextNetworks.reserve(raw->NumEntries);
     for (ULONG i = 0; i < raw->NumEntries; ++i) {
         const auto& row = raw->Table[i];
         if (row.InterfaceAndOperStatusFlags.FilterInterface) continue;
         const bool connected = row.OperStatus == IfOperStatusUp;
-        const auto classification = classifyNetworkInterface({row.Type, row.TunnelType,
-            row.InterfaceAndOperStatusFlags.HardwareInterface != 0, connected, vpnConnections.contains(row.InterfaceLuid.Value), row.Alias, row.Description});
+        const bool rasVpn = vpnConnections.contains(row.InterfaceLuid.Value);
+        const NetworkPresentationKey presentation{row.InterfaceLuid.Value, row.ReceiveLinkSpeed, row.TransmitLinkSpeed,
+            row.Mtu, row.Type, static_cast<std::uint32_t>(row.TunnelType), static_cast<std::uint32_t>(row.OperStatus),
+            row.InterfaceAndOperStatusFlags.HardwareInterface != 0, rasVpn};
+        const auto before = previousNetworks.find(row.InterfaceLuid.Value);
         ResourceRecord network;
-        network.id = L"network:" + std::to_wstring(row.InterfaceLuid.Value);
-        network.kind = ResourceKind::network;
-        network.title = row.Alias;
-        if (classification == NetworkInterfaceClass::vpn) network.title = L"VPN · " + network.title;
-        else if (classification == NetworkInterfaceClass::auxiliary) network.title = L"Virtuální · " + network.title;
-        network.description = row.Description;
-        network.capacity = static_cast<double>(std::max(row.TransmitLinkSpeed, row.ReceiveLinkSpeed));
-        network.status = connected ? L"Připojeno" : L"Odpojeno";
-        network.facts = {{L"Rychlost linky ↓", hardwareRate(row.ReceiveLinkSpeed)}, {L"Rychlost linky ↑", hardwareRate(row.TransmitLinkSpeed)},
-            {L"MTU", std::to_wstring(row.Mtu) + L" B"}, {L"Připojení", row.Type == IF_TYPE_IEEE80211 ? L"Wi-Fi" : row.Type == IF_TYPE_ETHERNET_CSMACD ? L"Ethernet"
-                : row.Type == IF_TYPE_SOFTWARE_LOOPBACK ? L"Loopback" : row.Type == IF_TYPE_TUNNEL ? L"Tunel" : row.Type == IF_TYPE_PPP ? L"PPP" : L"Jiné"},
-            {L"Druh rozhraní", networkInterfaceClassName(classification)}, {L"LUID rozhraní", std::to_wstring(row.InterfaceLuid.Value)},
-            {L"Stav rozhraní Windows", std::to_wstring(static_cast<unsigned>(row.OperStatus))},
-            {L"Typ rozhraní Windows", std::to_wstring(row.Type)}, {L"Typ tunelu Windows", std::to_wstring(static_cast<unsigned>(row.TunnelType))}};
+        const bool reused = before != previousNetworks.end() && reuseNetworkPresentation(network,
+            lastNetworks.at(before->second.recordIndex), before->second.presentation, presentation,
+            before->second.titlePrefixCharacters, row.Alias, row.Description);
+        if (!reused) {
+            const auto classification = classifyNetworkInterface({row.Type, row.TunnelType,
+                row.InterfaceAndOperStatusFlags.HardwareInterface != 0, connected, rasVpn, row.Alias, row.Description});
+            network.id = L"network:" + std::to_wstring(row.InterfaceLuid.Value);
+            network.kind = ResourceKind::network;
+            network.title = row.Alias;
+            if (classification == NetworkInterfaceClass::vpn) network.title = L"VPN · " + network.title;
+            else if (classification == NetworkInterfaceClass::auxiliary) network.title = L"Virtuální · " + network.title;
+            network.description = row.Description;
+            network.capacity = static_cast<double>(std::max(row.TransmitLinkSpeed, row.ReceiveLinkSpeed));
+            network.status = connected ? L"Připojeno" : L"Odpojeno";
+            network.facts = {{L"Rychlost linky ↓", hardwareRate(row.ReceiveLinkSpeed)}, {L"Rychlost linky ↑", hardwareRate(row.TransmitLinkSpeed)},
+                {L"MTU", std::to_wstring(row.Mtu) + L" B"}, {L"Připojení", row.Type == IF_TYPE_IEEE80211 ? L"Wi-Fi" : row.Type == IF_TYPE_ETHERNET_CSMACD ? L"Ethernet"
+                    : row.Type == IF_TYPE_SOFTWARE_LOOPBACK ? L"Loopback" : row.Type == IF_TYPE_TUNNEL ? L"Tunel" : row.Type == IF_TYPE_PPP ? L"PPP" : L"Jiné"},
+                {L"Druh rozhraní", networkInterfaceClassName(classification)}, {L"LUID rozhraní", std::to_wstring(row.InterfaceLuid.Value)},
+                {L"Stav rozhraní Windows", std::to_wstring(static_cast<unsigned>(row.OperStatus))},
+                {L"Typ rozhraní Windows", std::to_wstring(row.Type)}, {L"Typ tunelu Windows", std::to_wstring(static_cast<unsigned>(row.TunnelType))}};
+        }
         network.primary = {0, connected ? SampleState::first : SampleState::unavailable, MetricSource::networkInterface};
         network.secondary = network.primary;
-        const auto before = previousNetworks.find(row.InterfaceLuid.Value);
         const auto beforeNs = before == previousNetworks.end() ? 0 : measurementTime(before->second.measuredAt);
         network.measurements.primary = network.measurements.secondary = measurementMetadata(MeasurementUnit::bitsPerSecond,
             MeasurementNormalization::none, MeasurementBasis::elapsedDelta, observedNs, beforeNs);
@@ -254,10 +264,13 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
             setMeasurementInterval(network.measurements.primary, intervalNs, network.primary.valid());
             setMeasurementInterval(network.measurements.secondary, intervalNs, network.secondary.valid());
         }
-        next.emplace(row.InterfaceLuid.Value, NetworkBefore{row.InOctets, row.OutOctets, connected, observed});
-        lastNetworks.push_back(network);
-        snapshot.devices.push_back(std::move(network));
+        next.emplace(row.InterfaceLuid.Value, NetworkBefore{row.InOctets, row.OutOctets, connected, observed,
+            nextNetworks.size(), network.title.size() - std::wcslen(row.Alias), presentation});
+        snapshot.devices.push_back(network);
+        nextNetworks.push_back(std::move(network));
     }
+    lastNetworks.swap(nextNetworks);
+    nextNetworks.clear();
     previousNetworks = std::move(next);
 }
 
@@ -298,8 +311,8 @@ ResourceSnapshot ResourceCollector::collect(bool cpuSensors)
             item.measurements.primary.normalization = MeasurementNormalization::busiestGpuEngine;
             item.measurements.secondary = counters.measurement(4);
             item.measurements.tertiary = counters.measurement(5);
-            item.primary = busiestGpuEngine(engines, gpuLuids.at(item.id));
             item.engines = gpuEngines(engines, gpuLuids.at(item.id));
+            item.primary = busiestGpuEngine(item.engines);
             item.secondary = gpuMemoryUsage(dedicated, item.id);
             item.tertiary = gpuMemoryUsage(shared, item.id);
             if (telemetryDue) {
