@@ -2,15 +2,20 @@
 
 #include "process.hpp"
 #include <optional>
+#include <unordered_map>
 
 namespace nks {
 
 class ProcessSampler {
 public:
     void apply(ProcessSnapshot& snapshot);
-    void reset() noexcept { previous.reset(); }
+    void reset() noexcept { previous.reset(); processIndex.clear(); }
 
 private:
+    struct IdentityHash {
+        std::size_t operator()(const ProcessIdentity& identity) const noexcept;
+    };
+    using ProcessIndex = std::unordered_map<ProcessIdentity, std::size_t, IdentityHash>;
     struct ProcessBaseline {
         ProcessIdentity identity;
         std::uint64_t kernel100ns{}, user100ns{}, readIoBytes{}, writeIoBytes{};
@@ -30,6 +35,7 @@ private:
     };
     void remember(const ProcessSnapshot& snapshot);
     std::optional<Baseline> previous;
+    ProcessIndex processIndex;
 };
 
 }

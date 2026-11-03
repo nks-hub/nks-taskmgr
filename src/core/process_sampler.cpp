@@ -2,22 +2,10 @@
 
 #include <algorithm>
 #include <cmath>
-#include <unordered_map>
 #include <utility>
 
 namespace nks {
 namespace {
-
-struct IdentityHash {
-    std::size_t operator()(const ProcessIdentity& identity) const noexcept
-    {
-        auto hash = std::hash<std::uint64_t>{}(identity.boot.low);
-        hash ^= std::hash<std::uint64_t>{}(identity.boot.high) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-        hash ^= std::hash<std::uint64_t>{}(identity.generation) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-        hash ^= std::hash<std::uint32_t>{}(identity.pid) + static_cast<std::size_t>(identity.generationKind);
-        return hash;
-    }
-};
 
 Metric<double> rate(std::uint64_t current, std::uint64_t before, double seconds)
 {
@@ -28,12 +16,30 @@ Metric<double> rate(std::uint64_t current, std::uint64_t before, double seconds)
 
 }
 
+std::size_t ProcessSampler::IdentityHash::operator()(const ProcessIdentity& identity) const noexcept
+{
+    auto hash = std::hash<std::uint64_t>{}(identity.boot.low);
+    hash ^= std::hash<std::uint64_t>{}(identity.boot.high) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+    hash ^= std::hash<std::uint64_t>{}(identity.generation) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+    hash ^= std::hash<std::uint32_t>{}(identity.pid) + static_cast<std::size_t>(identity.generationKind);
+    return hash;
+}
+
 void ProcessSampler::remember(const ProcessSnapshot& snapshot)
 {
     Baseline first;
     auto& value = previous ? *previous : first;
     value.processes.reserve(snapshot.processes.size());
     value.processors.reserve(snapshot.processors.size());
+    const bool sameIdentities = value.processes.size() == snapshot.processes.size()
+        && std::equal(value.processes.begin(), value.processes.end(), snapshot.processes.begin(),
+            [](const auto& before, const auto& now) { return before.identity == now.identity; });
+    std::optional<ProcessIndex> replacement;
+    if (!sameIdentities) {
+        // Prepare the index before changing counters so allocation failure preserves the old baseline.
+        replacement.emplace(); replacement->reserve(snapshot.processes.size());
+        for (std::size_t i = 0; i < snapshot.processes.size(); ++i) replacement->emplace(snapshot.processes[i].identity, i);
+    }
     value.processes.resize(snapshot.processes.size());
     value.processors.resize(snapshot.processors.size());
     value.measuredAt = snapshot.measuredAt;
@@ -54,6 +60,7 @@ void ProcessSampler::remember(const ProcessSnapshot& snapshot)
         const auto& processor = snapshot.processors[i];
         value.processors[i] = {processor.group, processor.index, processor.kernel100ns, processor.user100ns, processor.idle100ns};
     }
+    if (replacement) processIndex.swap(*replacement);
     if (!previous) previous = std::move(first);
 }
 
@@ -102,18 +109,13 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
     setMeasurementInterval(metadata.processCpu, intervalNs, true);
     setMeasurementInterval(metadata.processIo, intervalNs, true);
 
-    std::unordered_map<ProcessIdentity, const ProcessBaseline*, IdentityHash> old;
-    old.reserve(previous->processes.size());
-    for (const auto& record : previous->processes)
-        old.emplace(record.identity, &record);
-
     for (auto& process : snapshot.processes) {
         if (process.identity.generationKind == GenerationKind::missing)
             continue;
-        const auto match = old.find(process.identity);
-        if (match == old.end())
+        const auto match = processIndex.find(process.identity);
+        if (match == processIndex.end())
             continue;
-        const auto& before = *match->second;
+        const auto& before = previous->processes[match->second];
         const auto& now = process.counters;
         if (now.kernel100ns < before.kernel100ns || now.user100ns < before.user100ns) {
             process.cpuPercent.state = SampleState::gap;
