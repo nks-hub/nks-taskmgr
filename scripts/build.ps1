@@ -6,6 +6,9 @@ param(
     [switch]$Fresh,
     [switch]$WinUI,
     [string]$DotNet = 'dotnet',
+    [string]$SentryDsn = '',
+    [ValidatePattern('^[a-zA-Z0-9._-]{1,64}$')][string]$SentryEnvironment = 'production',
+    [ValidatePattern('^[a-zA-Z0-9._+@-]{0,200}$')][string]$SentryRelease = '',
     [ValidatePattern('^([0-9a-fA-F]{64})?$')][string]$BrokerPublisherSpkiSha256 = '',
     [ValidatePattern('^([0-9a-fA-F]{64})?$')][string]$UpdatePublisherSpkiSha256 = '',
     [ValidatePattern('^([0-9a-fA-F]{40})?$')][string]$SigningCertificateThumbprint = '',
@@ -14,6 +17,15 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($SentryDsn) {
+    if (!$WinUI) { throw 'Use -WinUI when configuring Sentry.' }
+    $sentryUri = $null
+    if (![Uri]::TryCreate($SentryDsn, [UriKind]::Absolute, [ref]$sentryUri) -or
+        $sentryUri.Scheme -notin @('http', 'https') -or $sentryUri.UserInfo -notmatch '^[a-zA-Z0-9]+$' -or
+        $sentryUri.AbsolutePath -notmatch '^(/[a-zA-Z0-9._~-]+)*/[0-9]+$' -or $sentryUri.Query -or $sentryUri.Fragment) {
+        throw 'SentryDsn must be an HTTP(S) DSN with a public key and numeric project ID, without a secret key, query, or fragment.'
+    }
+}
 $projectRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'sign.ps1') -SigningCertificateThumbprint $SigningCertificateThumbprint -SignTool $SignTool -TimestampServer $TimestampServer
 $signer = $null
@@ -87,7 +99,8 @@ try {
             DumpWorkerPath='nks-dump-worker.exe'; ElevationBrokerPath='nks-elevation-broker.exe'; UpdateWorkerPath='nks-update-worker.exe'
         }
         $publishArguments = @('publish', 'src\winui\NksTaskMgr.WinUI.csproj', '-c', $Configuration, '-r', 'win-x64', '-o', $winuiOutput,
-            "-p:DumpWorkerX86Path=$dumpWorkerX86", "-p:BrokerPublisherSpkiSha256=$BrokerPublisherSpkiSha256", "-p:UpdatePublisherSpkiSha256=$UpdatePublisherSpkiSha256")
+            "-p:DumpWorkerX86Path=$dumpWorkerX86", "-p:BrokerPublisherSpkiSha256=$BrokerPublisherSpkiSha256", "-p:UpdatePublisherSpkiSha256=$UpdatePublisherSpkiSha256",
+            "-p:SentryDsn=$SentryDsn", "-p:SentryEnvironment=$SentryEnvironment", "-p:SentryRelease=$SentryRelease")
         foreach ($property in $publishProperties.GetEnumerator()) { $publishArguments += "-p:$($property.Key)=$(Join-Path $nativeDirectory $property.Value)" }
         & $DotNet @publishArguments
         if ($LASTEXITCODE) { throw "WinUI Native AOT publication failed: $LASTEXITCODE" }

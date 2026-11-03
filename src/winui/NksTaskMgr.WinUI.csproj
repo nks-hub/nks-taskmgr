@@ -17,6 +17,11 @@
     <PublishAot>true</PublishAot>
     <IlcTreatWarningsAsErrors>true</IlcTreatWarningsAsErrors>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <SentryEnvironment Condition="'$(SentryEnvironment)' == ''">production</SentryEnvironment>
+    <SentryNative>false</SentryNative>
+    <SentryImplicitUsings>false</SentryImplicitUsings>
+    <UseSentryCLI>false</UseSentryCLI>
+    <DefineConstants Condition="'$(SentryDsn)' != ''">$(DefineConstants);NKS_SENTRY</DefineConstants>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
     <NativeMonitorPath Condition="'$(NativeMonitorPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-monitor.dll</NativeMonitorPath>
@@ -30,6 +35,12 @@
     <ElevationBrokerPath Condition="'$(ElevationBrokerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-elevation-broker.exe</ElevationBrokerPath>
     <UpdateWorkerPath Condition="'$(UpdateWorkerPath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-update-worker.exe</UpdateWorkerPath>
   </PropertyGroup>
+  <ItemGroup Condition="'$(SentryDsn)' != ''">
+    <PackageReference Include="Sentry" Version="6.12.1" />
+    <AssemblyMetadata Include="Nks.SentryDsn" Value="$(SentryDsn)" />
+    <AssemblyMetadata Include="Nks.SentryEnvironment" Value="$(SentryEnvironment)" />
+    <AssemblyMetadata Include="Nks.SentryRelease" Value="$(SentryRelease)" />
+  </ItemGroup>
   <ItemGroup>
     <AssemblyMetadata Include="Nks.BrokerPublisherSpkiSha256" Value="$(BrokerPublisherSpkiSha256)" />
     <AssemblyMetadata Include="Nks.UpdatePublisherSpkiSha256" Value="$(UpdatePublisherSpkiSha256)" />

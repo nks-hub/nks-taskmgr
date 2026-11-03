@@ -25,6 +25,7 @@ public partial class App : Application
 
     public App()
     {
+        SentryDiagnostics.Initialize();
         UnhandledException += (_, args) => {
             Trace(args.Exception.ToString());
             if (ApplicationGroupsCheckPath is not null) {
@@ -37,11 +38,33 @@ public partial class App : Application
                 Environment.ExitCode = 1;
                 args.Handled = true;
             }
+            SentryDiagnostics.Capture(args.Exception, "Microsoft.UI.Xaml.UnhandledException", args.Handled);
         };
+#if NKS_SENTRY
+        try { InitializeComponent(); }
+        catch (Exception error) {
+            SentryDiagnostics.Capture(error, "Application.Startup", false);
+            throw;
+        }
+#else
         InitializeComponent();
+#endif
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+#if NKS_SENTRY
+        try { LaunchApplication(); }
+        catch (Exception error) {
+            SentryDiagnostics.Capture(error, "Application.Launch", false);
+            throw;
+        }
+#else
+        LaunchApplication();
+#endif
+    }
+
+    private void LaunchApplication()
     {
         if (EventsCheckPath is { } path) {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
