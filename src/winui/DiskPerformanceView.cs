@@ -6,7 +6,7 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly StackPanel diskTransferPanel = new() { Spacing = 4, Margin = new Thickness(0, 10, 0, 0) };
+    private readonly StackPanel diskTransferPanel = new() { Spacing = 4, Margin = new Thickness(0, 8, 0, 0) };
     private readonly ChartView diskTransfers = new() { Height = 150 };
     private readonly ToggleButton diskTransferScale = Choice("Auto přenos");
     private readonly Dictionary<string, (bool Automatic, double Maximum)> diskTransferScales = [];
@@ -20,9 +20,10 @@ public sealed partial class MainWindow
 
     private FrameworkElement BuildDiskTransfers()
     {
-        var heading = new Grid();
+        var heading = new Grid { ColumnSpacing = 10 };
+        heading.ColumnDefinitions.Add(new ColumnDefinition()); heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var title = Label("Čtení a zápis", 11, 0x95a4ad); title.VerticalAlignment = VerticalAlignment.Center; heading.Children.Add(title);
-        diskTransferScale.Height = 23; diskTransferScale.FontSize = 11; diskTransferScale.HorizontalAlignment = HorizontalAlignment.Right;
+        CompactPerformanceChoice(diskTransferScale); diskTransferScale.Height = 23; diskTransferScale.FontSize = 11;
         diskTransferScale.IsChecked = true;
         ToolTipService.SetToolTip(diskTransferScale, "Automatické měřítko podle čtení i zápisu. Vypnutí podrží aktuální rozsah osy.");
         diskTransferScale.Click += (_, _) => {
@@ -30,7 +31,7 @@ public sealed partial class MainWindow
                 diskTransferScales[resource.Id] = (diskTransferScale.IsChecked == true, diskTransferMaximum);
             RefreshPerformance();
         };
-        heading.Children.Add(diskTransferScale); diskTransferPanel.Children.Add(heading);
+        Grid.SetColumn(diskTransferScale, 1); heading.Children.Add(diskTransferScale); diskTransferPanel.Children.Add(heading);
         diskTransfers.Timeline = performanceTimeline; diskTransferPanel.Children.Add(diskTransfers);
         return diskTransferPanel;
     }
@@ -64,7 +65,9 @@ public sealed partial class MainWindow
                 var value = Label(detail.Value, 12, 0xe9eef0); value.TextWrapping = TextWrapping.Wrap;
                 field.Children.Add(value); diskDetailValues.Add(detail.Key, value); content.Children.Add(field);
             }
-            diskDetails = new Expander { Header = Label("Další údaje a SMART", 11, 0xe9eef0), Content = content, HorizontalAlignment = HorizontalAlignment.Stretch, IsExpanded = diskDetailsExpanded };
+            diskDetails = new Expander { Header = Label("Další údaje a SMART", 11, 0xe9eef0), Content = content,
+                Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = flatPerformanceBackground,
+                HorizontalAlignment = HorizontalAlignment.Stretch, IsExpanded = diskDetailsExpanded };
             diskDetailsResource = resource.Id;
             facts.Children.Add(diskDetails);
         }

@@ -5,9 +5,8 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly Grid consumerCards = new() { ColumnSpacing = 14 };
-    private readonly TextBlock consumerHeading = Label("SOUVISLOSTI", 9, 0x95a4ad);
-    private readonly TextBlock consumerCaption = Label("", 15, 0xe9eef0);
+    private readonly Grid consumerCards = new() { ColumnSpacing = 10, RowSpacing = 3 };
+    private readonly TextBlock consumerCaption = Label("", 11, 0x95a4ad);
     private readonly List<PerformanceConsumerCard> consumerItems = [];
     private (bool Stacked, int Count)? consumerLayout;
 
@@ -15,24 +14,25 @@ public sealed partial class MainWindow
     {
         internal readonly Button Button = MainWindow.Button("");
         internal readonly TextBlock Title = Label("", 11, 0xe9eef0), Pid = Label("", 9, 0x95a4ad), Value = Label("", 12, 0xe9eef0);
-        private readonly Border icon = new() { Background = Display.Brush(0x28343b), Width = 30, Height = 30, CornerRadius = new CornerRadius(7) };
+        private readonly Border icon = new() { Width = 20, Height = 20, VerticalAlignment = VerticalAlignment.Center };
         private uint? color;
         private ProcessRow? boundRow;
         internal ProcessKey? Key { get; private set; }
 
         internal PerformanceConsumerCard(int index, Action<PerformanceConsumerCard> clicked)
         {
-            var content = new Grid { ColumnSpacing = 10 };
+            var content = new Grid { ColumnSpacing = 7 };
             foreach (var width in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
                 content.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
             var order = Label((index + 1).ToString("00"), 9, 0x95a4ad);
             order.VerticalAlignment = VerticalAlignment.Center; content.Children.Add(order);
             Grid.SetColumn(icon, 1); content.Children.Add(icon);
-            var name = new StackPanel { Spacing = 5, VerticalAlignment = VerticalAlignment.Center };
+            var name = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
             Title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold; name.Children.Add(Title); name.Children.Add(Pid);
             Grid.SetColumn(name, 2); content.Children.Add(name);
             Value.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(Value, 3); content.Children.Add(Value);
-            Button.Content = content; Button.Height = 74; Button.Padding = new Thickness(17, 12, 17, 12);
+            Button.Content = content; Button.Height = 38; Button.Padding = new Thickness(4, 2, 4, 2);
+            Button.BorderThickness = new Thickness(0); Button.CornerRadius = new CornerRadius(0); Button.Background = Display.Brush(0x171d21);
             Button.HorizontalAlignment = HorizontalAlignment.Stretch; Button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
             Button.Click += (_, _) => clicked(this);
         }
@@ -63,11 +63,11 @@ public sealed partial class MainWindow
             }
         }
         if (consumers.Children.Count == 0) {
-            consumers.Children.Add(consumerHeading); consumers.Children.Add(consumerCaption); consumers.Children.Add(consumerCards);
+            consumers.Children.Add(consumerCaption); consumers.Children.Add(consumerCards);
         }
         SetConsumerText(consumerCaption, memory ? "Pracovní sada včetně sdílených stránek" : "Procesy podle CPU");
         var rows = model.TopConsumers(memory).ToArray();
-        bool stacked = root.ActualWidth <= 1000;
+        bool stacked = performanceDetailWidth < 720;
         if (consumerLayout != (stacked, rows.Length)) {
             consumerCards.ColumnDefinitions.Clear(); consumerCards.RowDefinitions.Clear();
             for (int i = 0; i < rows.Length; ++i) {
@@ -77,7 +77,6 @@ public sealed partial class MainWindow
             for (int i = 0; i < consumerItems.Count; ++i) {
                 var button = consumerItems[i].Button;
                 Grid.SetRow(button, stacked ? i : 0); Grid.SetColumn(button, stacked ? 0 : i);
-                button.Margin = new Thickness(0, 0, 0, stacked ? 8 : 0);
             }
             consumerLayout = (stacked, rows.Length);
         }

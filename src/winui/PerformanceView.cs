@@ -32,7 +32,6 @@ public sealed partial class MainWindow
             : resource.Kind == ResourceKind.Memory && model.Memory.State == SampleState.Valid
                 ? Display.Number(model.Memory.PhysicalBytes / 1073741824d, " GiB celkem") : resource.Description;
         var measurement = model.MeasurementFor(resource, false);
-        resourceDescription.Text += " · " + MeasurementText.Summary(measurement);
         if (resource.IsVirtualNetwork) resourceDescription.Text += " · virtuální síťové rozhraní";
         string context = MeasurementText.Describe(measurement, resource.Primary, resource.Stale);
         if (resource.Kind == ResourceKind.Cpu && cpuMode > 0)
@@ -40,8 +39,8 @@ public sealed partial class MainWindow
         ToolTipService.SetToolTip(resourceDescription, context);
         AutomationProperties.SetHelpText(resourceDescription, context);
         bool valid = !resource.Stale && resource.Primary.State == SampleState.Valid;
-        resourceValue.FontSize = valid ? 24 : 13;
-        resourceValue.Foreground = performanceInk;
+        resourceValue.FontSize = valid ? 18 : 12;
+        resourceValue.Foreground = Display.Brush(color);
         resourceValue.Text = valid ? Display.Number(resource.Primary.Value / (resource.Kind == ResourceKind.Memory ? 1073741824d : resource.Kind == ResourceKind.Network ? 1_000_000d : 1), "") : resource.Value;
         resourceUnit.Text = valid ? resource.Kind == ResourceKind.Memory ? "GiB" : resource.Kind == ResourceKind.Network ? "Mbit/s ↓" : "%" : "";
         void SelectChoice(ToggleButton button, bool selected) {
@@ -90,9 +89,9 @@ public sealed partial class MainWindow
         }
         void Fact(string name, string value) {
             if (factValues.TryGetValue(name, out var existing)) { if (existing.Text != value) existing.Text = value; return; }
-            var block = new StackPanel { Spacing = 2 };
+            var block = new StackPanel { Spacing = 1 };
             var caption = Label(name, 10, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; block.Children.Add(caption);
-            var text = Label(value, 14, 0xe9eef0); text.TextWrapping = TextWrapping.Wrap; block.Children.Add(text);
+            var text = Label(value, 13, 0xe9eef0); text.TextWrapping = TextWrapping.Wrap; block.Children.Add(text);
             performanceFacts.Children.Add(block); performanceFactCells.Add(block); factValues.Add(name, text);
         }
         void Hardware(string value) {
@@ -139,7 +138,6 @@ public sealed partial class MainWindow
             Fact("Rezervováno hardwarem", Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));
         ArrangePerformanceFacts();
         RefreshConsumers(cpu, memory, color);
-        CompactPerformanceConsumers();
     }
 
     private void RefreshProcessors(long now)

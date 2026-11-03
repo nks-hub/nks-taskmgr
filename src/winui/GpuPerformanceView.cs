@@ -7,8 +7,8 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly Grid gpuPanel = new() { RowSpacing = 10, Margin = new Thickness(0, 0, 0, 8) };
-    private readonly Grid gpuEngines = new() { RowSpacing = 10, ColumnSpacing = 12 };
+    private readonly Grid gpuPanel = new() { RowSpacing = 8, Margin = new Thickness(0, 0, 0, 4) };
+    private readonly Grid gpuEngines = new() { RowSpacing = 8, ColumnSpacing = 12 };
     private readonly Grid gpuMemory = new() { RowSpacing = 8, ColumnSpacing = 12 };
     private readonly StackPanel gpuDedicatedTile = new() { Spacing = 4 }, gpuSharedTile = new() { Spacing = 4 };
     private readonly List<(StackPanel Tile, ComboBox Choice, ChartView Chart, TextBlock Value)> gpuTiles = [];
@@ -23,10 +23,11 @@ public sealed partial class MainWindow
         gpuPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         gpuPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         for (int i = 0; i < 4; ++i) {
-            var tile = new StackPanel { Spacing = 5 };
-            var line = new Grid();
-            line.ColumnDefinitions.Add(new ColumnDefinition()); line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-            var choice = new ComboBox { FontSize = 11, FontFamily = UiTypography.Font, MinHeight = 27, Padding = new Thickness(6, 1, 22, 1), HorizontalAlignment = HorizontalAlignment.Stretch };
+            var tile = new StackPanel { Spacing = 4 };
+            var line = new Grid { ColumnSpacing = 8 };
+            line.ColumnDefinitions.Add(new ColumnDefinition()); line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var choice = new ComboBox { FontSize = 11, FontFamily = UiTypography.Font, MinWidth = 0, MinHeight = 25, Height = 25,
+                Padding = new Thickness(6, 1, 22, 1), HorizontalAlignment = HorizontalAlignment.Stretch };
             AutomationProperties.SetName(choice, "GPU engine " + (i + 1));
             var value = Label("", 10, 0xcc9bb6); value.HorizontalAlignment = HorizontalAlignment.Right; value.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(value, 1); line.Children.Add(choice); line.Children.Add(value); tile.Children.Add(line);
@@ -45,7 +46,7 @@ public sealed partial class MainWindow
     private void RefreshGpu(ResourceRow resource, long now)
     {
         var gpu = resource.Gpu!;
-        int columns = performanceDetailWidth < 520 ? 1 : 2;
+        int columns = performanceDetailWidth < 640 ? 1 : 2;
         if (!ReferenceEquals(shownGpu, gpu) || shownGpuColumns != columns || shownGpuVersion != gpu.TopologyVersion) {
             shownGpu = gpu; shownGpuColumns = columns; shownGpuVersion = gpu.TopologyVersion;
             var engines = gpu.OrderedEngines().ToArray();
@@ -95,7 +96,7 @@ public sealed partial class MainWindow
     {
         var previous = resourceList.SelectedItem;
         foreach (var resource in model.Resources) {
-            resourceList.SelectedItem = resource; RefreshPerformance(); root.UpdateLayout();
+            resourceList.SelectedItem = resource; RefreshPerformance(); root.UpdateLayout(); CheckPerformanceViewport();
             bool expected = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory;
             if ((consumers.Visibility == Visibility.Visible) != expected || (!expected && consumers.Children.Count != 0))
                 throw new InvalidOperationException("CPU process cards were shown for an unrelated resource.");
