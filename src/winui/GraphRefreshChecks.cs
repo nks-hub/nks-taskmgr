@@ -13,24 +13,33 @@ public static partial class WinUiChecks
         var upload = new Metric { Value = 3_000_000, State = SampleState.Valid };
         row.History.Append(time, receive); row.Upload.Append(time, upload); row.RefreshPreview();
         var preview = row.Preview; var fill = row.PreviewFill; var uploadPreview = row.UploadPreview;
-        row.RefreshPreview();
-        Require(ReferenceEquals(preview, row.Preview) && ReferenceEquals(fill, row.PreviewFill) && ReferenceEquals(uploadPreview, row.UploadPreview),
-            "An unchanged resource history recreated its mini-graph geometries.");
         int notifications = 0;
         row.PropertyChanged += (_, _) => ++notifications;
+        row.RefreshPreview();
+        Require(notifications == 0 && ReferenceEquals(preview, row.Preview) && ReferenceEquals(fill, row.PreviewFill) && ReferenceEquals(uploadPreview, row.UploadPreview),
+            "An unchanged resource history recreated its mini-graph geometries.");
         row.Update("Changed title", "Changed description", "", receive with { Value = 4_000_000 }, upload, default, 10_000_000, time,
             recordHistory: false);
-        Require(notifications != 0 && row.Title == "Changed title" && row.Primary.Value == 4_000_000
+        Require(notifications == 1 && row.Title == "Changed title" && row.Primary.Value == 4_000_000
             && ReferenceEquals(preview, row.Preview), "Mini-graph caching suppressed current resource metadata or values.");
         row.SetStale(true);
         Require(row.Value == "Zastaralá data" && ReferenceEquals(preview, row.Preview), "Mini-graph caching suppressed stale state.");
+        int before = notifications; row.RefreshPreview();
+        Require(notifications == before, "An already published stale state caused another unchanged refresh notification.");
         row.Upload.Append(time + 250_000_000, upload with { Value = 20_000_000 }); row.RefreshPreview();
-        Require(!ReferenceEquals(uploadPreview, row.UploadPreview) && !ReferenceEquals(preview, row.Preview) && !ReferenceEquals(fill, row.PreviewFill),
+        Require(notifications == before + 1 && !ReferenceEquals(uploadPreview, row.UploadPreview) && !ReferenceEquals(preview, row.Preview) && !ReferenceEquals(fill, row.PreviewFill),
             "An upload-only sample failed to update both mini-graphs at their shared scale.");
         preview = row.Preview;
         var replacement = new HistorySeries(); replacement.Append(time, receive);
-        row.AttachHistory(replacement, false); row.RefreshPreview();
-        Require(!ReferenceEquals(preview, row.Preview), "A replacement history with the same timestamp retained an obsolete mini-graph.");
+        before = notifications; row.AttachHistory(replacement, false); row.RefreshPreview();
+        Require(notifications == before + 1 && !ReferenceEquals(preview, row.Preview), "A replacement history with the same timestamp retained an obsolete mini-graph.");
+        var replacementUpload = new HistorySeries(); replacementUpload.Append(time, upload);
+        replacementUpload.Append(time + 250_000_000, upload with { Value = 20_000_000 });
+        uploadPreview = row.UploadPreview; before = notifications;
+        row.AttachHistory(replacementUpload, true); row.RefreshPreview();
+        Require(notifications == before + 1 && !ReferenceEquals(uploadPreview, row.UploadPreview), "Replacing upload history at the same timestamp lost its geometry notification.");
+        before = notifications; row.RefreshPreview();
+        Require(notifications == before, "Unchanged rebound histories repeated their refresh notification.");
 
         var memory = new ResourceRow("graph-refresh-memory", ResourceKind.Memory);
         memory.Update("Memory", "", "", new Metric { Value = 50, State = SampleState.Valid }, default, default, 100, time);
@@ -43,6 +52,7 @@ public static partial class WinUiChecks
         Require(percent.Maximum(time, 60) == 100 && memory.Maximum(time, 60) == 200,
             "Percent or memory previews changed their fixed physical scale.");
         HiddenResourceView();
+        ResourceNotifications();
         App.Trace("Resource mini-graph cache passed: unchanged geometry, live metadata/stale state, upload, replacement and capacity");
     }
 
@@ -99,6 +109,8 @@ public static partial class WinUiChecks
             "Showing the resource view without another tick failed to publish fresh previews and current values.");
         model.SetResourceViewVisible(true);
         Require(notifications == rows.Length, "An unchanged visible resource view repeated its activation refresh.");
+        foreach (var row in rows) row.RefreshPreview();
+        Require(notifications == rows.Length, "An unchanged refresh after hidden-view activation notified already current resource rows.");
         App.Trace("Hidden resource view passed: live values and complete history, retained geometry, fresh activation without another tick");
     }
 }
