@@ -74,6 +74,15 @@ pwsh -NoProfile -File scripts/build.ps1 -Configuration Release -WinUI -Test
 
 Use `-DotNet` with an SDK executable path when the required SDK is installed separately. This check validates Native AOT, live data, process identities, filtering, tree traversal, collection while minimized, CPU chart layout, and read-only Services. Visual checks require an active display; captures made while the display is off can contain a black client area. Runtime acceptance of administrative actions and the remaining requirements is tracked in TODO. The main application uses C#/WinUI Native AOT with the C++ core.
 
+Sentry reporting is optional and configured at build time:
+
+```powershell
+pwsh -NoProfile -File scripts/build.ps1 -Configuration Release -WinUI `
+    -SentryDsn $env:NKS_SENTRY_DSN -SentryEnvironment production
+```
+
+Omitting `-SentryDsn` excludes the Sentry SDK and its initialization. `-SentryRelease` overrides the default application version and source revision. Keep deployment values outside the repository. Enabled builds report managed GUI and startup exceptions through Sentry 6.12.1; native C++ crashes and memory dumps are not integrated. Tracing, profiling, logs, and breadcrumbs are disabled. The SDK includes its own .NET and OS context; the application does not attach the monitored process inventory, command lines, or dumps.
+
 The C++/WinUI comparison candidate uses the same native monitor and collector. Build it with Visual Studio C++ tools:
 
 ```powershell
