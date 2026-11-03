@@ -122,34 +122,38 @@ bool applySequenceIdentities(std::vector<ProcessRecord>& processes,
     std::span<const BasicProcessIdentity> before, std::span<const BasicProcessIdentity> after)
 {
     if (processes.empty() || before.empty() || after.empty()) return false;
-    const auto ordered = [](auto entries) {
-        return std::adjacent_find(entries.begin(), entries.end(), [](const auto& a, const auto& b) { return a.pid >= b.pid; }) == entries.end();
+    const auto valid = [](auto entries) {
+        return std::adjacent_find(entries.begin(), entries.end(), [](const auto& a, const auto& b) { return a.pid >= b.pid; }) == entries.end()
+            && std::none_of(entries.begin(), entries.end(), [](const auto& entry) { return entry.pid != 0 && entry.sequenceNumber == 0; });
     };
-    if (!ordered(before) || !ordered(after)) return false;
+    if (!valid(before) || !valid(after)) return false;
     const auto find = [](auto entries, std::uint32_t pid) {
         return std::lower_bound(entries.begin(), entries.end(), pid, [](const auto& entry, auto value) { return entry.pid < value; });
     };
-    std::vector<std::uint64_t> sequences;
-    std::vector<std::uint8_t> seen(before.size());
-    sequences.reserve(processes.size());
+    std::vector<std::uint32_t> pids;
+    pids.reserve(processes.size());
     const auto boot = processes.front().identity.boot;
     if (boot.empty()) return false;
     for (const auto& process : processes) {
         const auto& identity = process.identity;
-        if (identity.boot != boot || (identity.generationKind != GenerationKind::creationTime && identity.generationKind != GenerationKind::missing)) return false;
-        const auto first = find(before, identity.pid);
-        if (first == before.end() || first->pid != identity.pid) return false;
-        const auto index = static_cast<std::size_t>(first - before.begin());
-        const auto second = index < after.size() && after[index].pid == identity.pid ? after.begin() + index : find(after, identity.pid);
-        if (second == after.end() || second->pid != identity.pid || first->sequenceNumber != second->sequenceNumber) return false;
-        if (!first->sequenceNumber && identity.pid != 0) return false;
-        if (seen[index]) return false;
-        seen[index] = 1;
-        sequences.push_back(first->sequenceNumber);
+        const auto kind = process.created100ns ? GenerationKind::creationTime : GenerationKind::missing;
+        if (identity.boot != boot || identity.generationKind != kind || identity.generation != process.created100ns) return false;
+        pids.push_back(identity.pid);
     }
-    for (std::size_t i = 0; i < processes.size(); ++i) {
-        processes[i].identity.generationKind = sequences[i] ? GenerationKind::sequenceNumber : GenerationKind::missing;
-        processes[i].identity.generation = sequences[i];
+    std::sort(pids.begin(), pids.end());
+    if (std::adjacent_find(pids.begin(), pids.end()) != pids.end()) return false;
+    for (auto& process : processes) {
+        auto& identity = process.identity;
+        std::uint64_t sequence = 0;
+        const auto first = find(before, identity.pid);
+        if (first != before.end() && first->pid == identity.pid) {
+            const auto index = static_cast<std::size_t>(first - before.begin());
+            const auto second = index < after.size() && after[index].pid == identity.pid ? after.begin() + index : find(after, identity.pid);
+            if (second != after.end() && second->pid == identity.pid && first->sequenceNumber == second->sequenceNumber)
+                sequence = first->sequenceNumber;
+        }
+        identity.generationKind = sequence ? GenerationKind::sequenceNumber : GenerationKind::missing;
+        identity.generation = sequence;
     }
     return true;
 }

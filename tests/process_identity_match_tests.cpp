@@ -1,4 +1,6 @@
 #include "collectors/process_parser.hpp"
+#include "core/history_stream.hpp"
+#include "core/process_sampler.hpp"
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
@@ -37,7 +39,7 @@ void matched(std::vector<nks::ProcessRecord> processes, std::span<const nks::Bas
 {
     const auto original = processes;
     require(expected.size() == processes.size(), "Expected sequence count differs");
-    require(nks::applySequenceIdentities(processes, before, after), "Stable process identities were rejected");
+    require(nks::applySequenceIdentities(processes, before, after), "Valid process snapshot was rejected");
     require(processes.size() == original.size(), "Successful match changed the process count");
     for (std::size_t i = 0; i < processes.size(); ++i) {
         const auto& result = processes[i];
@@ -66,7 +68,21 @@ void indexChanges()
     matched({process(50), process(10)}, before, shorter, shorterExpected);
 
     const std::vector<nks::BasicProcessIdentity> replacement{{0, 0, 0}, {5, 0, 55}, {30, 10, 202}, {40, 20, 404}, {50, 20, 0xfedcba9876543210ull}};
-    rejected({process(50), process(20)}, before, replacement, "Another PID at the same after index was accepted");
+    const std::vector<std::uint64_t> replacementExpected{0xfedcba9876543210ull, 0};
+    matched({process(50), process(20)}, before, replacement, replacementExpected);
+}
+
+void mixedChurn()
+{
+    const std::vector<nks::BasicProcessIdentity> before{{10, 0, 100}, {20, 10, 200}, {40, 10, 400}, {50, 10, 500}};
+    const std::vector<nks::BasicProcessIdentity> after{{10, 0, 100}, {20, 10, 201}, {30, 10, 300}, {40, 10, 400}};
+    const std::vector<nks::ProcessRecord> rows{process(40), process(20), process(30, 0), process(50), process(60), process(10)};
+    const std::vector<std::uint64_t> expected{400, 0, 0, 0, 0, 100};
+    matched(rows, before, after, expected);
+
+    const std::vector<std::uint64_t> missing{0};
+    matched({process(20)}, before, after, missing);
+    matched({process(60, 0)}, before, after, missing);
 }
 
 void lateFailures()
@@ -84,11 +100,16 @@ void lateFailures()
 
     auto changed = identities;
     changed.front().sequenceNumber++;
-    rejected(rows, identities, changed, "A late sequence mismatch was accepted");
+    std::vector<std::uint64_t> expected;
+    for (const auto& row : rows) expected.push_back(row.identity.pid == 1 ? 0 : 0x100000000ull + row.identity.pid);
+    matched(rows, identities, changed, expected);
     changed = identities;
     changed.erase(changed.begin());
-    rejected(rows, identities, changed, "A late missing after PID was accepted");
-    rejected({process(512), process(999)}, identities, identities, "A missing before PID was accepted");
+    matched(rows, identities, changed, expected);
+    const std::vector<std::uint64_t> missingExpected{0x100000200ull, 0};
+    matched({process(512), process(999)}, identities, identities, missingExpected);
+    rejected({process(512), process(999), process(999)}, identities, identities, "A duplicate PID outside before identities was accepted");
+    rejected({process(512), process(999), process(999, 0)}, identities, identities, "A duplicate unknown PID with another creation time was accepted");
 
     rows.back().identity.boot.high ^= 1;
     rejected(rows, identities, identities, "A late boot mismatch was accepted");
@@ -117,6 +138,15 @@ void invalidInputs()
     auto invalidKind = rows;
     invalidKind.back().identity.generationKind = static_cast<nks::GenerationKind>(255);
     rejected(invalidKind, ordered, ordered, "Unknown generation kind was accepted");
+    auto invalidGeneration = rows;
+    invalidGeneration.back().identity.generation++;
+    rejected(invalidGeneration, ordered, ordered, "An identity inconsistent with raw creation time was accepted");
+    auto invalidMissing = rows;
+    invalidMissing.back().identity.generationKind = nks::GenerationKind::missing;
+    rejected(invalidMissing, ordered, ordered, "A missing kind with a nonzero raw generation was accepted");
+    auto invalidCreation = rows;
+    invalidCreation.back().created100ns = 0;
+    rejected(invalidCreation, ordered, ordered, "A creation identity without its raw creation time was accepted");
 }
 
 void zeroSequences()
@@ -137,12 +167,63 @@ void zeroSequences()
     matched({process(10, 0)}, valid, valid, expected);
 }
 
+void churnPreservesSystemSamples()
+{
+    nks::ProcessSampler sampler;
+    nks::HistoryStream history;
+    for (unsigned tick = 1; tick <= 4; ++tick) {
+        nks::ProcessSnapshot snapshot;
+        snapshot.boot = {boot, nks::SampleState::valid};
+        snapshot.measuredAt = std::chrono::steady_clock::time_point{std::chrono::seconds(tick)};
+        snapshot.logicalProcessors = 2;
+        snapshot.processorState = nks::SampleState::valid;
+        snapshot.systemKernel100ns = tick * 10'000'000ull;
+        snapshot.systemUser100ns = tick * 4'000'000ull;
+        snapshot.systemIdle100ns = tick * 2'000'000ull;
+        snapshot.memory.physicalBytes = 1024;
+        snapshot.memory.availableBytes = 512;
+        snapshot.memory.state = snapshot.memory.pageFileState = nks::SampleState::valid;
+        snapshot.processes = {process(10), process(20, tick < 3 ? tick : 3)};
+        for (auto& row : snapshot.processes) {
+            row.counters.kernel100ns = tick * 1'000'000ull;
+            row.counters.readIoBytes = tick * 1024;
+            row.counters.writeIoBytes = tick * 512;
+        }
+        const std::vector<nks::BasicProcessIdentity> before{{10, 0, 100}, {20, 10, tick < 3 ? 200 + tick : 203}};
+        const std::vector<nks::BasicProcessIdentity> after{{10, 0, 100}, {20, 10, tick < 3 ? 201 + tick : 203}};
+        require(nks::applySequenceIdentities(snapshot.processes, before, after), "Churn prevented a system snapshot");
+        sampler.apply(snapshot);
+        if (tick > 1) {
+            require(snapshot.systemCpuPercent.valid(), "Churn invalidated aggregate CPU");
+            require(snapshot.processes[0].cpuPercent.valid(), "Churn discarded a stable process baseline");
+            require(snapshot.processes[0].cpuPercent.value == 5 && snapshot.processes[0].readIoBytesPerSecond.value == 1024
+                && snapshot.processes[0].writeIoBytesPerSecond.value == 512, "Churn changed stable process deltas");
+        }
+        const auto& changing = snapshot.processes[1];
+        const auto expected = tick == 4 ? nks::SampleState::valid : nks::SampleState::first;
+        require(changing.cpuPercent.state == expected && changing.readIoBytesPerSecond.state == expected
+            && changing.writeIoBytesPerSecond.state == expected, "An unverified lifetime inherited process deltas");
+        require(changing.identity.generationKind == (tick < 3 ? nks::GenerationKind::missing : nks::GenerationKind::sequenceNumber),
+            "A changing lifetime was misidentified");
+        history.append(snapshot);
+        const auto batch = history.take();
+        require(batch && batch->points.size() == 3 && batch->captureErrors == 0 && batch->lostPoints == 0,
+            "Churn lost system history");
+        for (const auto& point : batch->points) {
+            require(point.timeNs == tick * 1'000'000'000ll, "Churn changed a system history timestamp");
+            require(point.metric.state == (tick == 1 && point.series == batch->definitions.front().id ? nks::SampleState::first : nks::SampleState::valid),
+                "Churn inserted an invalid system history point");
+        }
+    }
+    ++cases;
+}
+
 }
 
 int main()
 {
     try {
-        indexChanges(); lateFailures(); invalidInputs(); zeroSequences();
+        indexChanges(); mixedChurn(); lateFailures(); invalidInputs(); zeroSequences(); churnPreservesSystemSamples();
         std::cout << "Process identity matching passed: " << cases << " cases\n";
         return 0;
     } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
