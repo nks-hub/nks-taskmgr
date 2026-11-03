@@ -29,6 +29,8 @@ inline NetworkInterfaceClass classifyNetworkInterface(const NetworkInterfaceTrai
 {
     if (value.type == IF_TYPE_SOFTWARE_LOOPBACK) return NetworkInterfaceClass::auxiliary;
     if (value.rasVpn) return NetworkInterfaceClass::vpn;
+    // Npcap reports Ethernet hardware flags; its driver description identifies the capture loopback.
+    if (value.description == L"Npcap Loopback Adapter") return NetworkInterfaceClass::auxiliary;
     if (value.tunnel == TUNNEL_TYPE_6TO4 || value.tunnel == TUNNEL_TYPE_ISATAP
         || value.tunnel == TUNNEL_TYPE_TEREDO || value.tunnel == TUNNEL_TYPE_IPHTTPS) return NetworkInterfaceClass::auxiliary;
     for (const auto hint : {L"Wintun", L"TAP-Windows", L"WireGuard", L"OpenVPN", L"Tailscale", L"ZeroTier", L"SoftEther VPN", L"Cloudflare WARP",
