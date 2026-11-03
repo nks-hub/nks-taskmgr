@@ -76,6 +76,7 @@ public sealed partial class MainWindow : Window
     private bool smokeModelsChecked;
     private bool smokeMinimizedChecked;
     private Action? verifyMinimized;
+    private Action? verifyHiddenProcesses;
     private Action? verifyProcessTable;
     private bool smokeColumnsChecked;
     private Task<byte[]?[]>? smokeIcons;
@@ -86,7 +87,7 @@ public sealed partial class MainWindow : Window
     private Task? smokeBranchValues;
     private bool processBranchCheckRunning;
     private int smokeIconsAt;
-    private int smokeMinimizedAt, smokeReadyAt;
+    private int smokeMinimizedAt, smokeReadyAt, smokeHiddenAt;
     private int smokeServicesStage, smokeServicesAt;
     private long smokeServiceTime;
     private bool smokeServicesChecked;
@@ -313,6 +314,7 @@ public sealed partial class MainWindow : Window
         model.SetResourceViewVisible(performance);
         performancePage.Visibility = performance ? Visibility.Visible : Visibility.Collapsed;
         processPage.Visibility = next is DesktopView.Processes or DesktopView.Applications ? Visibility.Visible : Visibility.Collapsed;
+        model.SetProcessViewVisible(processPage.Visibility == Visibility.Visible);
         foreach (var item in processModeButtons) item.Button.Visibility = applications ? Visibility.Collapsed : Visibility.Visible;
         servicesPage.Visibility = services ? Visibility.Visible : Visibility.Collapsed;
         hardwarePage.Visibility = hardware ? Visibility.Visible : Visibility.Collapsed;
@@ -435,6 +437,15 @@ public sealed partial class MainWindow : Window
         if ((smokeMinimizedAt == 0 && ticks > 150) || (smokeMinimizedAt > 0 && ticks - smokeMinimizedAt > 200))
             throw new TimeoutException($"WinUI runtime check timed out: ready={ready};minimized={smokeMinimizedChecked};models={smokeModelsChecked}.");
         if (smokeMinimizedAt == 0 && ready && ticks >= 20) {
+            if (verifyHiddenProcesses is null) {
+                ShowView(DesktopView.Performance);
+                verifyHiddenProcesses = WinUiChecks.BeginMinimizedCollection(model, resourceViewHidden: false);
+                smokeHiddenAt = ticks;
+                return;
+            }
+            if (ticks - smokeHiddenAt < 20) return;
+            verifyHiddenProcesses();
+            App.Trace("Hidden process collection passed: fresh data and CPU history, no process UI notifications");
             verifyMinimized = WinUiChecks.BeginMinimizedCollection(model);
             smokeMinimizedAt = ticks;
             App.Trace("Minimizing window");

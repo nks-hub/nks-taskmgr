@@ -94,6 +94,7 @@ public sealed partial class MainWindow
             Check(current.Cpu.Equals(cpu) && current.ReadIo.Equals(read) && current.WriteIo.Equals(write)
                 && current.WorkingBytes == working && current.PrivateBytes == privateBytes,
                 "Switching table totals changed the parent's own metrics.");
+            await CheckHiddenProcessUiAsync();
             App.Trace("Process branch UI passed: production choice, own/branch bindings, geometry, collapse/search, flat view and retained preference");
         } finally {
             if (parent is not null && parent.Collapsed != originalCollapse) model.Toggle(parent);

@@ -67,7 +67,7 @@ public static partial class WinUiChecks
         Require(ReferenceEquals(retried, ProcessIconView.DecodeShared(damaged)), "A successful retry was not shared.");
     }
 
-    public static Action BeginMinimizedCollection(MonitorModel model)
+    public static Action BeginMinimizedCollection(MonitorModel model, bool resourceViewHidden = true)
     {
         var own = model.Processes.Single(row => row.Key.Pid == Environment.ProcessId);
         var cpu = model.Resources.Single(row => row.Kind == ResourceKind.Cpu);
@@ -75,11 +75,13 @@ public static partial class WinUiChecks
         int history = cpu.History.Count, notifications = 0;
         System.ComponentModel.PropertyChangedEventHandler changed = (_, _) => ++notifications;
         System.Collections.Specialized.NotifyCollectionChangedEventHandler reordered = (_, _) => ++notifications;
-        own.PropertyChanged += changed; cpu.PropertyChanged += changed; model.VisibleProcesses.CollectionChanged += reordered; model.Resources.CollectionChanged += reordered;
+        own.PropertyChanged += changed; model.VisibleProcesses.CollectionChanged += reordered;
+        if (resourceViewHidden) { cpu.PropertyChanged += changed; model.Resources.CollectionChanged += reordered; }
         return () => {
-            own.PropertyChanged -= changed; cpu.PropertyChanged -= changed; model.VisibleProcesses.CollectionChanged -= reordered; model.Resources.CollectionChanged -= reordered;
-            Require(model.ProcessTime > before && cpu.History.Count > history, "Minimized collection or history stopped.");
-            Require(notifications == 0, "Minimized model still updated the UI.");
+            own.PropertyChanged -= changed; model.VisibleProcesses.CollectionChanged -= reordered;
+            if (resourceViewHidden) { cpu.PropertyChanged -= changed; model.Resources.CollectionChanged -= reordered; }
+            Require(model.ProcessTime > before && cpu.History.Count > history, "Hidden-view collection or history stopped.");
+            Require(notifications == 0, resourceViewHidden ? "Minimized model still updated the UI." : "Hidden processes still updated their UI.");
         };
     }
 
@@ -119,6 +121,7 @@ public static partial class WinUiChecks
         Require(Display.Metric(new Metric { State = SampleState.Valid, Value = 0 }, " %") == "0,0 %", "Measured zero was lost.");
         Require(model.TopConsumers(false).All(row => row.Key.Pid != 0 && row.Cpu.State == SampleState.Valid), "Idle time was shown as CPU consumption.");
         ProcessRefresh();
+        ProcessViewVisibility();
         HistoryRankingSelection();
         ProcessBranchValues();
         ProcessLifetimes();
