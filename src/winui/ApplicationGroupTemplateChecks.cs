@@ -234,6 +234,9 @@ internal static class ApplicationGroupTemplateChecks
         log($"application-template {stage};items={list.Items.Count};container={container is not null};modelTitle={group.Title};modelSummary={group.Summary};text={Describe(text)}");
         Require(container is not null && HasText(text, group.Title) && HasText(text, group.CountText) && HasText(text, group.CpuText),
             "The actual application template lost visible title, counts or CPU text during " + stage + ".");
+        Require(container is { ActualHeight: >= 47.5 and <= 48.5 } && text.Any(block => block.Text == group.Title
+            && block.TextWrapping == TextWrapping.NoWrap && block.MaxLines == 1),
+            "The application row exceeded its compact two-line layout during " + stage + ".");
         var icons = container is null ? [] : Elements<ProcessIconView>(container).ToArray();
         Require(icons.Any(icon => ReferenceEquals(icon.Row, group.IconRow) && icon.Row?.Key == group.Key && icon.ActualWidth > 0 && icon.ActualHeight > 0),
             "The actual application template lost its exact process icon binding during " + stage + ".");

@@ -9,18 +9,18 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly Grid applicationWorkspace = new() { ColumnSpacing = 10, RowSpacing = 6 };
+    private readonly Grid applicationWorkspace = new() { ColumnSpacing = 8 };
     private readonly ListView applicationGroups = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
     private readonly ApplicationGroupTemplates applicationTemplates = new();
-    private readonly ComboBox applicationChoice = new() { DisplayMemberPath = nameof(ApplicationGroupRow.Title), HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 32 };
-    private readonly Grid applicationToolbar = new() { ColumnSpacing = 6 };
-    private readonly ComboBox applicationSort = new() { MinHeight = 30, Width = 145, FontSize = 11 };
-    private readonly Button applicationSortDirection = Button("↑");
-    private readonly TextBlock applicationStatus = Label("", 11, 0x95a4ad), applicationFacts = Label("", 11, 0x95a4ad);
-    private readonly Expander applicationInfo = new() { Header = "Informace o skupině", HorizontalAlignment = HorizontalAlignment.Stretch, Visibility = Visibility.Collapsed };
+    private readonly ComboBox applicationChoice = new() { DisplayMemberPath = nameof(ApplicationGroupRow.Title), Width = 180, MaxWidth = 180, MinWidth = 0, MinHeight = 28, Height = 28, FontSize = 12, FontFamily = UiTypography.Font };
+    private readonly Grid applicationToolbar = new() { ColumnSpacing = 4 };
+    private readonly DropDownButton applicationSort = new() { MinHeight = 28, Height = 28, FontSize = 11, FontFamily = UiTypography.Font, Padding = new Thickness(6, 0, 6, 0) };
+    private readonly Button applicationInfo = Button("Info");
+    private readonly TextBlock applicationStatus = new() { FontSize = 11, FontFamily = UiTypography.Font, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock applicationFacts = new() { FontSize = 12, FontFamily = UiTypography.Font, TextWrapping = TextWrapping.Wrap, MaxWidth = 420 };
     private readonly CancellationTokenSource applicationLifetime = new();
     private CancellationTokenSource? applicationRequest;
-    private bool updatingApplicationChoice, applicationsClosed;
+    private bool updatingApplicationChoice, applicationsClosed, applicationInfoOpen;
     private long nextApplicationRead;
     private ProcessKey? pendingApplicationSelection;
     private ProcessNavigationState? processNavigation, applicationNavigation;
@@ -35,44 +35,33 @@ public sealed partial class MainWindow
     private FrameworkElement BuildApplicationGroups(FrameworkElement table)
     {
         applicationWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0) }); applicationWorkspace.ColumnDefinitions.Add(new ColumnDefinition());
-        applicationWorkspace.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); applicationWorkspace.RowDefinitions.Add(new RowDefinition());
-        applicationWorkspace.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var sidebar = new Grid { RowSpacing = 6 };
-        sidebar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); sidebar.RowDefinitions.Add(new RowDefinition());
-        applicationStatus.TextWrapping = applicationFacts.TextWrapping = TextWrapping.Wrap;
-        applicationStatus.MaxLines = 2; applicationStatus.TextTrimming = TextTrimming.CharacterEllipsis;
-        var note = new ScrollViewer { Content = applicationStatus, MaxHeight = 80, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        sidebar.Children.Add(note); sidebar.Children.Add(applicationGroups); Grid.SetRow(applicationGroups, 1);
+        var sidebar = new Grid();
+        sidebar.Children.Add(applicationGroups);
         applicationGroups.ItemsSource = applicationChoice.ItemsSource = model.Applications.Visible;
         applicationGroups.ItemTemplate = (DataTemplate)applicationTemplates["ApplicationGroup"];
         var style = new Style { TargetType = typeof(ListViewItem) };
         style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0))); style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
+        style.Setters.Add(new Setter(FrameworkElement.HeightProperty, 48d)); style.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 48d));
         applicationGroups.ItemContainerStyle = style;
-        applicationWorkspace.Children.Add(sidebar); Grid.SetRow(sidebar, 1); applicationFacts.Visibility = Visibility.Collapsed;
-        applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition()); applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        applicationWorkspace.Children.Add(sidebar);
+        applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         applicationToolbar.Children.Add(applicationChoice); applicationToolbar.Children.Add(applicationSort); Grid.SetColumn(applicationSort, 1);
-        applicationSortDirection.Width = 32; applicationSortDirection.MinHeight = 30; applicationSortDirection.Padding = new Thickness(0);
-        applicationToolbar.Children.Add(applicationSortDirection); Grid.SetColumn(applicationSortDirection, 2);
-        applicationWorkspace.Children.Add(applicationToolbar); Grid.SetColumnSpan(applicationToolbar, 2);
-        foreach (string option in new[] { "Název", "CPU", "Paměť", "Počet procesů" }) applicationSort.Items.Add(option);
-        applicationSort.SelectedIndex = (int)model.Applications.Sort;
-        void Sort(ApplicationGroupSort value, bool descending) {
-            model.Applications.SetSort(value, descending); applicationSortDirection.Content = descending ? "↓" : "↑";
-            AutomationProperties.SetName(applicationSortDirection, descending ? "Řazení sestupně; změnit směr" : "Řazení vzestupně; změnit směr");
-            ToolTipService.SetToolTip(applicationSortDirection, descending ? "Sestupně" : "Vzestupně"); RefreshApplicationGroups();
-        }
-        applicationSort.SelectionChanged += (_, _) => { if (applicationSort.SelectedIndex >= 0) {
-            var value = (ApplicationGroupSort)applicationSort.SelectedIndex; Sort(value, value != ApplicationGroupSort.Name);
-        } };
-        applicationSortDirection.Click += (_, _) => Sort(model.Applications.Sort, !model.Applications.SortDescending);
+        applicationInfo.Height = applicationInfo.MinHeight = 28; applicationInfo.FontSize = 11; applicationInfo.Padding = new Thickness(6, 0, 6, 0);
+        applicationToolbar.Children.Add(applicationInfo); Grid.SetColumn(applicationInfo, 2);
+        applicationSort.Flyout = ApplicationSortMenu();
         AutomationProperties.SetName(applicationSort, "Řadit skupiny aplikací podle"); AutomationProperties.SetAutomationId(applicationSort, "application-sort");
-        AutomationProperties.SetName(applicationSortDirection, "Řazení vzestupně; změnit směr"); AutomationProperties.SetAutomationId(applicationSortDirection, "application-sort-direction");
         ToolTipService.SetToolTip(applicationSort, "Řazení skupin aplikací; paměť je součet pracovních sad dostupných procesů.");
-        applicationWorkspace.Children.Add(table); Grid.SetColumn(table, 1); Grid.SetRow(table, 1);
-        applicationInfo.Content = new ScrollViewer { Content = applicationFacts, MaxHeight = 110, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(12, 6, 12, 8) };
-        applicationWorkspace.Children.Add(applicationInfo); Grid.SetRow(applicationInfo, 2); Grid.SetColumnSpan(applicationInfo, 2);
+        applicationWorkspace.Children.Add(table); Grid.SetColumn(table, 1);
+        var information = new StackPanel { Spacing = 8, MaxWidth = 420 };
+        information.Children.Add(applicationStatus); information.Children.Add(applicationFacts);
+        var info = new Flyout { Content = new ScrollViewer { Content = information, MaxHeight = 320,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
+        info.Opening += (_, _) => { applicationInfoOpen = true; applicationFacts.Text = ApplicationFacts(); };
+        info.Closed += (_, _) => applicationInfoOpen = false;
+        applicationInfo.Flyout = info;
+        AutomationProperties.SetName(applicationInfo, "Informace o skupině aplikace"); AutomationProperties.SetAutomationId(applicationInfo, "application-info");
+        ToolTipService.SetToolTip(applicationInfo, "Informace o vybrané skupině a dostupnosti přehledu.");
         void Select(object? value) {
             if (updatingApplicationChoice || model.Applications.Updating || model.Mode != ProcessMode.Applications || value is not ApplicationGroupRow group) return;
             if (!model.Processes.Any(row => row.Key == group.Key && model.IsCurrent(row))) return;
@@ -86,6 +75,31 @@ public sealed partial class MainWindow
         Closed += (_, _) => { CancelNavigationRestore(); releaseView(); applicationsClosed = true; applicationRequest?.Cancel(); applicationLifetime.Cancel(); if (applicationRequest is null) applicationLifetime.Dispose(); };
         ResizeApplicationGroups();
         return applicationWorkspace;
+    }
+
+    private static string ApplicationSortTitle(ApplicationGroupSort sort) => sort switch {
+        ApplicationGroupSort.Cpu => "CPU", ApplicationGroupSort.Memory => "Paměť", ApplicationGroupSort.Processes => "Procesy", _ => "Název"
+    };
+
+    private MenuFlyout ApplicationSortMenu()
+    {
+        var menu = new MenuFlyout();
+        menu.Opening += (_, _) => {
+            menu.Items.Clear();
+            void SetSort(ApplicationGroupSort sort, bool descending) { model.Applications.SetSort(sort, descending); RefreshApplicationGroups(); }
+            foreach (var sort in Enum.GetValues<ApplicationGroupSort>()) {
+                var item = new ToggleMenuFlyoutItem { Text = ApplicationSortTitle(sort), IsChecked = model.Applications.Sort == sort };
+                item.Click += (_, _) => SetSort(sort, model.Applications.Sort == sort ? model.Applications.SortDescending : sort != ApplicationGroupSort.Name);
+                menu.Items.Add(item);
+            }
+            menu.Items.Add(new MenuFlyoutSeparator());
+            foreach (bool descending in new[] { false, true }) {
+                var item = new ToggleMenuFlyoutItem { Text = descending ? "Sestupně" : "Vzestupně", IsChecked = model.Applications.SortDescending == descending };
+                item.Click += (_, _) => SetSort(model.Applications.Sort, descending);
+                menu.Items.Add(item);
+            }
+        };
+        return menu;
     }
 
     private void SelectProcessMode(ProcessMode mode)
@@ -250,8 +264,6 @@ public sealed partial class MainWindow
     private void RefreshApplicationGroups()
     {
         bool apps = model.Mode == ProcessMode.Applications;
-        applicationFacts.Visibility = apps ? Visibility.Visible : Visibility.Collapsed;
-        applicationInfo.Visibility = apps ? Visibility.Visible : Visibility.Collapsed;
         if (!apps) { ResizeApplicationGroups(); return; }
         updatingApplicationChoice = true;
         try { applicationGroups.SelectedItem = applicationChoice.SelectedItem = model.Applications.Selected; }
@@ -259,12 +271,16 @@ public sealed partial class MainWindow
         applicationStatus.Text = !model.Applications.HasInventory ? model.Applications.Error.Length > 0 ? "Přehled není dostupný" : "Načítám aplikace…"
             : model.Applications.Visible.Count + " skupin · " + (model.Applications.Stale ? "zastaralý přehled"
                 : model.Applications.Partial ? "částečný přehled" : "podle oken");
-        string inventoryDetail = model.Applications.Error.Length > 0 ? model.Applications.Error
-            : model.Applications.Partial ? "Některá okna, vazby procesů nebo údaje nemusí být dostupné. * u CPU označuje částečný součet."
-                : "Skupiny vycházejí z ověřených vlastníků viditelných oken a jejich potomků.";
+        string inventoryDetail = ApplicationInventoryDetail();
         ToolTipService.SetToolTip(applicationStatus, inventoryDetail); ToolTipService.SetToolTip(applicationChoice, inventoryDetail);
         if (model.Held) { model.Applications.RefreshMetrics(true); applicationStatus.Text += " · pořadí a skupiny přidrženy"; }
-        applicationFacts.Text = ApplicationFacts();
+        string sortCaption = ApplicationSortTitle(model.Applications.Sort) + (model.Applications.SortDescending ? " ↓" : " ↑");
+        if (applicationSort.Content as string != sortCaption) applicationSort.Content = sortCaption;
+        string infoCaption = !model.Applications.HasInventory ? model.Applications.Error.Length > 0 ? "Info !" : "Info…"
+            : model.Applications.Partial || model.Held ? "Info *" : "Info";
+        if (applicationInfo.Content as string != infoCaption) applicationInfo.Content = infoCaption;
+        ToolTipService.SetToolTip(applicationInfo, applicationStatus.Text + "\n" + inventoryDetail);
+        if (applicationInfoOpen) applicationFacts.Text = ApplicationFacts();
         ResizeApplicationGroups();
     }
 
@@ -301,17 +317,21 @@ public sealed partial class MainWindow
         }
     }
 
+    private string ApplicationInventoryDetail() => model.Applications.Error.Length > 0 ? model.Applications.Error
+        : model.Applications.Partial ? "Některá okna, vazby procesů nebo údaje nemusí být dostupné. * u CPU označuje částečný součet."
+            : "Skupiny vycházejí z ověřených vlastníků viditelných oken a jejich potomků.";
+
     private string ApplicationFacts()
     {
-        if (model.Applications.Selected is not { } group) return "Vyberte skupinu aplikace. Skupiny vycházejí z ověřených vlastníků oken a vazeb potomků podle času vzniku.";
+        if (model.Applications.Selected is not { } group) return ApplicationInventoryDetail();
         var first = group.Windows[0];
-        var text = new StringBuilder(group.Title).Append(" · ").Append(group.Summary)
+        var text = new StringBuilder(group.TitleTooltip).Append(" · ").Append(group.Summary)
             .Append("\nKořen PID ").Append(group.Key.Pid).Append(" · ").Append(group.Key.Kind).Append(" · generace ").Append(group.Key.Generation);
         if (first.AppIdState == SampleState.Valid) text.Append("\nAUMID: ").Append(first.AppId);
         if (first.PackageState == SampleState.Valid) text.Append(" · balíček: ").Append(first.Package);
         var hosts = group.Windows.Where(window => window.Host.HasValue).Select(window => window.Host!.Value.Pid).Distinct().ToArray();
         if (hosts.Length > 0) text.Append("\nHostitel pozorovaný v inventáři: PID ").AppendJoin(", ", hosts).Append("; sdílený host se nezapočítává více aplikacím.");
-        text.Append("\nCPU je součet dostupných validních hodnot.");
+        text.Append("\nCPU je součet dostupných validních hodnot.\n\n").Append(ApplicationInventoryDetail());
         return text.ToString();
     }
 
