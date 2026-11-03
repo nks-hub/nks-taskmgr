@@ -55,7 +55,7 @@ public sealed partial class MainWindow
         applicationWorkspace.Children.Add(table); Grid.SetColumn(table, 1);
         var information = new StackPanel { Spacing = 8, MaxWidth = 420 };
         information.Children.Add(applicationStatus); information.Children.Add(applicationFacts);
-        var info = new Flyout { Content = new ScrollViewer { Content = information, MaxHeight = 320,
+        var info = new Flyout { Content = new ScrollViewer { Content = information, MaxHeight = 320, Padding = new Thickness(0, 0, 20, 0),
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
         info.Opening += (_, _) => { applicationInfoOpen = true; applicationFacts.Text = ApplicationFacts(); };
         info.Closed += (_, _) => applicationInfoOpen = false;

@@ -8,7 +8,7 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private void CheckPerformanceViewport()
+    private void CheckPerformanceViewport(bool requireScrollbar = false)
     {
         if (performanceDetailScroll.ActualWidth <= 0 || performanceBody.ActualWidth <= 0)
             throw new InvalidOperationException("Performance viewport has no measured width.");
@@ -57,7 +57,23 @@ public sealed partial class MainWindow
             }
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(node); ++i) pending.Push(VisualTreeHelper.GetChild(node, i));
         }
+        if (requireScrollbar && (performanceDetailScroll.ScrollableHeight <= 0 || scrollbarWidth <= 0))
+            throw new InvalidOperationException("The scrollbar overlap check did not exercise a scrollable viewport.");
         App.Trace($"Performance viewport passed: content={performanceBody.ActualWidth:F2};gutter={PerformanceScrollGutter};scrollbar={scrollbarWidth:F2};elements={measured};plots={measuredPlots};units=DIP");
+    }
+
+    private void CheckScrollablePerformanceViewport()
+    {
+        double maximum = performanceDetailScroll.MaxHeight, offset = performanceDetailScroll.VerticalOffset;
+        try {
+            performanceDetailScroll.MaxHeight = 250;
+            root.UpdateLayout();
+            CheckPerformanceViewport(requireScrollbar: true);
+        } finally {
+            performanceDetailScroll.MaxHeight = maximum;
+            root.UpdateLayout();
+            performanceDetailScroll.ChangeView(null, offset, null, true);
+        }
     }
 
     private Rect PerformanceBounds(FrameworkElement element) => element.TransformToVisual(performanceDetailScroll)

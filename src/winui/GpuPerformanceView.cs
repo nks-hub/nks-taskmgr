@@ -107,6 +107,7 @@ public sealed partial class MainWindow
                 if (diskDetails is null || DiskSummary.Any(name => !factValues.ContainsKey(name)))
                     throw new InvalidOperationException("Disk summary or expanded SMART details did not render.");
                 var diskCells = facts.Children.ToArray(); diskDetails.IsExpanded = true; root.UpdateLayout();
+                CheckScrollablePerformanceViewport();
                 foreach (var detail in diskDetailValues)
                     if (detail.Value.Text != resource.HardwareFacts[detail.Key]) throw new InvalidOperationException("Disk detail lost a native value.");
                 RefreshPerformance();
