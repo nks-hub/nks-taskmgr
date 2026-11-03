@@ -61,7 +61,11 @@ public sealed partial class ProcessRow : INotifyPropertyChanged
     }
 
     private static bool SameMetric(Metric left, Metric right) => left.Value.Equals(right.Value) && left.State == right.State && left.Source == right.Source;
-    private void Notify(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+    private void Notify(string property)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+        NotifyOwnTableValue(property);
+    }
     public void NotifyUpdated() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
 
     public void SetStatus(bool ended, bool stale, bool notify = true)

@@ -95,6 +95,8 @@ public sealed partial class MonitorModel : IDisposable
         if (stale != Stale) {
             Stale = stale;
             foreach (var row in processes.Values) row.SetStatus(false, stale, visualUpdates);
+            branchTotalsDirty = true;
+            if (RefreshProcessBranchValues() && BranchSort) Rebuild();
             changed = true;
         }
         CaptureProcessHistory();
@@ -130,6 +132,7 @@ public sealed partial class MonitorModel : IDisposable
         if ((view.Flags & FrameFlags.ProcessErrorChanged) != 0) ProcessError = view.ProcessError.Copy();
         if ((view.Flags & FrameFlags.ResourceErrorChanged) != 0) ResourceError = view.ResourceError.Copy();
         if ((view.Flags & FrameFlags.ProcessData) != 0) {
+            branchTotalsDirty = true;
             ProcessTime = view.Processes.MeasuredAtNs; ProcessWallTimeUnixNs = view.Processes.WallTimeUnixNs; Memory = view.Processes.Memory;
             CollectionMs = view.Processes.CollectionNs / 1_000_000d;
             LogicalProcessors = view.Processes.LogicalProcessors;
@@ -157,7 +160,8 @@ public sealed partial class MonitorModel : IDisposable
                 if (recordHistory) series.Append(ProcessTime, processor.CpuPercent);
             }
             foreach (var key in Processors.Keys.Where(key => !processorKeys.Contains(key)).ToArray()) Processors.Remove(key);
-            if (orderChanged && !held && visualUpdates) Rebuild();
+            bool branchChanged = RefreshProcessBranchValues();
+            if ((orderChanged || BranchSort && branchChanged) && !held && visualUpdates) Rebuild();
         }
         if ((view.Flags & FrameFlags.ResourceData) != 0) {
             ResourceTime = view.Resources.MeasuredAtNs;
@@ -232,10 +236,9 @@ public sealed partial class MonitorModel : IDisposable
                 || row.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || row.PidText.Contains(query, StringComparison.Ordinal)));
         Comparison<ProcessRow> comparison = sortColumn switch {
             1 => (a, b) => a.Key.Pid.CompareTo(b.Key.Pid),
-            2 => (a, b) => a.Cpu.Value.CompareTo(b.Cpu.Value),
-            3 => (a, b) => a.WorkingBytes.CompareTo(b.WorkingBytes),
-            4 => (a, b) => a.PrivateBytes.CompareTo(b.PrivateBytes),
-            5 => (a, b) => a.ReadIo.Value.CompareTo(b.ReadIo.Value),
+            >= 2 and <= 6 when BranchValuesEnabled => (a, b) => BranchSortValue(a.BranchTotal).CompareTo(BranchSortValue(b.BranchTotal)),
+            2 => (a, b) => a.Cpu.Value.CompareTo(b.Cpu.Value), 3 => (a, b) => a.WorkingBytes.CompareTo(b.WorkingBytes),
+            4 => (a, b) => a.PrivateBytes.CompareTo(b.PrivateBytes), 5 => (a, b) => a.ReadIo.Value.CompareTo(b.ReadIo.Value),
             6 => (a, b) => a.WriteIo.Value.CompareTo(b.WriteIo.Value),
             _ => (a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name)
         };
@@ -249,6 +252,7 @@ public sealed partial class MonitorModel : IDisposable
 
     private void Rebuild(bool explicitChange = false)
     {
+        RefreshProcessBranchValues();
         if (held || (!explicitChange && !visualUpdates)) return;
         if (Mode == ProcessMode.Applications) Applications.Refresh(processes.Values, query);
         var rows = Ordered();
@@ -264,6 +268,7 @@ public sealed partial class MonitorModel : IDisposable
     {
         processes.Clear();
         foreach (var row in rows) processes.Add(row.Key, row);
+        branchTotalsDirty = true;
         Rebuild(true);
     }
 }
