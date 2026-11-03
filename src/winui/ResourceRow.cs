@@ -61,6 +61,18 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
         if (notify) RefreshPreview();
     }
 
+    internal void Update(in ResourceInfo source, long time, bool notify, bool recordHistory)
+    {
+        Update(RetainText(source.Title, Title), RetainText(source.Description, Description), RetainText(source.Status, Status),
+            source.Primary, source.Secondary, source.Tertiary, source.Capacity, time, notify, recordHistory);
+    }
+
+    private static unsafe string RetainText(String16 source, string current)
+    {
+        var value = source.Length == 0 ? ReadOnlySpan<char>.Empty : new ReadOnlySpan<char>(source.Data, checked((int)source.Length));
+        return value.SequenceEqual(current) ? current : value.ToString();
+    }
+
     public void RefreshPreview()
     {
         long time = History.LastTime;

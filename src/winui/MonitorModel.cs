@@ -10,9 +10,16 @@ public sealed partial class MonitorModel : IDisposable
     internal const long StaleAfterNs = 3_000_000_000;
     private readonly NativeMonitor monitor = NativeMonitor.Open();
     private readonly Dictionary<ProcessKey, ProcessRow> processes = [];
-    private readonly Dictionary<string, ResourceRow> resources = [];
+    private readonly Dictionary<string, ResourceRow> resources = new(StringComparer.Ordinal);
     private readonly HashSet<ProcessKey> collapsed = [];
+    private readonly HashSet<ProcessKey> currentProcessKeys = [];
+    private readonly List<ProcessKey> removedProcessKeys = [];
+    private readonly HashSet<(uint, uint)> currentProcessorKeys = [];
+    private readonly List<(uint, uint)> removedProcessorKeys = [];
+    private readonly HashSet<string> currentResourceIds = new(StringComparer.Ordinal);
+    private readonly List<string> removedResourceIds = [];
     private bool held, visualUpdates = true, resourceViewVisible = true;
+    private bool resourceMembershipDirty = true;
     private string query = string.Empty;
     private int sortColumn;
     private bool descending;
@@ -51,7 +58,11 @@ public sealed partial class MonitorModel : IDisposable
     {
         if (NetworkFilters == value) return;
         NetworkFilters = value;
-        if (visualUpdates) SyncResources();
+        resourceMembershipDirty = true;
+        if (visualUpdates) {
+            SyncResources();
+            if (resourceViewVisible) foreach (var resource in Resources) resource.RefreshPreview();
+        }
     }
     internal void SetResourceViewVisible(bool value)
     {
@@ -59,7 +70,7 @@ public sealed partial class MonitorModel : IDisposable
         resourceViewVisible = value;
         if (!value) return;
         SyncResources();
-        foreach (var resource in resources.Values) resource.RefreshPreview();
+        foreach (var resource in Resources) resource.RefreshPreview();
     }
     public void SetInterval(uint value) { monitor.SetInterval(value); Interval = value; }
     public void SetQuery(string value) { held = false; query = value; Rebuild(true); }
@@ -114,7 +125,7 @@ public sealed partial class MonitorModel : IDisposable
         }
         if (changed && visualUpdates) {
             SyncResources();
-            if (resourceViewVisible) foreach (var resource in resources.Values) resource.RefreshPreview();
+            if (resourceViewVisible) foreach (var resource in Resources) resource.RefreshPreview();
         }
         if (changed && visualUpdates && Mode == ProcessMode.Applications) Applications.RefreshMetrics(held);
         return changed;
@@ -141,13 +152,15 @@ public sealed partial class MonitorModel : IDisposable
             LogicalProcessors = view.Processes.LogicalProcessors;
             CpuModel = view.Processes.CpuModel.Copy();
             if (!ApplyProcessChanges(view, creation, changes, out bool orderChanged)) {
-                var seen = new HashSet<ProcessKey>();
+                currentProcessKeys.Clear();
                 for (uint i = 0; i < view.Processes.ProcessCount; ++i) {
                     var source = view.Processes.Processes[i];
                     var key = new ProcessKey(BootIdentity.Identifier, source.Pid, source.GenerationKind, source.Generation);
-                    seen.Add(key); UpdateProcess(source, key, i, creation);
+                    currentProcessKeys.Add(key); UpdateProcess(source, key, i, creation);
                 }
-                foreach (var key in processes.Keys.Where(key => !seen.Contains(key)).ToArray()) {
+                removedProcessKeys.Clear();
+                foreach (var key in processes.Keys) if (!currentProcessKeys.Contains(key)) removedProcessKeys.Add(key);
+                foreach (var key in removedProcessKeys) {
                     processes[key].SetStatus(true, false, visualUpdates); processes.Remove(key);
                 }
             }
@@ -156,27 +169,36 @@ public sealed partial class MonitorModel : IDisposable
             var memory = new Metric { Value = Memory.PhysicalBytes - Math.Min(Memory.PhysicalBytes, Memory.AvailableBytes), State = Memory.State, Source = MetricSource.PerformanceInfo };
             Resource("memory", ResourceKind.Memory).Update("Paměť", "Fyzická paměť", string.Empty, memory, default, default, Memory.PhysicalBytes, ProcessTime, visualUpdates && resourceViewVisible && recordHistory, recordHistory);
             if (recordHistory) PageFile.Append(ProcessTime, new Metric { Value = Memory.PageFileUsedBytes, State = Memory.PageFileState, Source = MetricSource.PerformanceInfo });
-            var processorKeys = new HashSet<(uint, uint)>();
+            currentProcessorKeys.Clear();
             for (uint i = 0; i < view.Processes.ProcessorCount; ++i) {
-                var processor = view.Processes.Processors[i]; var key = (processor.Group, processor.Index); processorKeys.Add(key);
+                var processor = view.Processes.Processors[i]; var key = (processor.Group, processor.Index); currentProcessorKeys.Add(key);
                 if (!Processors.TryGetValue(key, out var series)) Processors.Add(key, series = new HistorySeries());
                 if (recordHistory) series.Append(ProcessTime, processor.CpuPercent);
             }
-            foreach (var key in Processors.Keys.Where(key => !processorKeys.Contains(key)).ToArray()) Processors.Remove(key);
+            removedProcessorKeys.Clear();
+            foreach (var key in Processors.Keys) if (!currentProcessorKeys.Contains(key)) removedProcessorKeys.Add(key);
+            foreach (var key in removedProcessorKeys) Processors.Remove(key);
             bool branchChanged = RefreshProcessBranchValues();
             if ((orderChanged || BranchSort && branchChanged) && !held && visualUpdates) Rebuild();
         }
         if ((view.Flags & FrameFlags.ResourceData) != 0) {
             ResourceTime = view.Resources.MeasuredAtNs;
-            var seen = new HashSet<string> { "cpu", "memory" };
+            currentResourceIds.Clear(); currentResourceIds.Add("cpu"); currentResourceIds.Add("memory");
             for (uint i = 0; i < view.Resources.ResourceCount; ++i) {
-                var source = view.Resources.Resources[i]; var id = source.Id.Copy(); seen.Add(id);
-                Resource(id, source.Kind).Update(source.Title.Copy(), source.Description.Copy(), source.Status.Copy(),
-                    source.Primary, source.Secondary, source.Tertiary, source.Capacity, ResourceTime, visualUpdates && resourceViewVisible && recordHistory, recordHistory);
+                var source = view.Resources.Resources[i];
+                var id = source.Id.Length == 0 ? ReadOnlySpan<char>.Empty : new ReadOnlySpan<char>(source.Id.Data, checked((int)source.Id.Length));
+                if (!resources.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(id, out var row)) row = Resource(id.ToString(), source.Kind);
+                currentResourceIds.Add(row.Id);
+                bool included = NetworkResourceFilter.Includes(row, NetworkFilters);
+                row.Update(source, ResourceTime, visualUpdates && resourceViewVisible && recordHistory, recordHistory);
+                resourceMembershipDirty |= included != NetworkResourceFilter.Includes(row, NetworkFilters);
             }
-            foreach (var id in resources.Keys.Where(id => !seen.Contains(id)).ToArray()) {
+            removedResourceIds.Clear();
+            foreach (var id in resources.Keys) if (!currentResourceIds.Contains(id)) removedResourceIds.Add(id);
+            foreach (var id in removedResourceIds) {
                 if (visualUpdates) Resources.Remove(resources[id]);
                 resources.Remove(id);
+                resourceMembershipDirty = true;
             }
         }
     }
@@ -185,6 +207,7 @@ public sealed partial class MonitorModel : IDisposable
     {
         if (!resources.TryGetValue(id, out var row)) {
             resources.Add(id, row = new ResourceRow(id, kind));
+            resourceMembershipDirty = true;
             if (visualUpdates) {
                 if (kind == ResourceKind.Cpu) Resources.Insert(0, row);
                 else if (kind == ResourceKind.Memory) Resources.Insert(Math.Min(1, Resources.Count), row);
@@ -205,14 +228,18 @@ public sealed partial class MonitorModel : IDisposable
     private unsafe void ApplyHardware(HardwareData data, FrameFlags scope)
     {
         hardwareFacts.Apply(data, scope);
-        foreach (var row in resources.Values)
+        foreach (var row in resources.Values) {
+            bool included = NetworkResourceFilter.Includes(row, NetworkFilters);
             row.HardwareFacts = Hardware.TryGetValue(row.Id, out var values) ? values : EmptyHardwareFacts;
+            resourceMembershipDirty |= included != NetworkResourceFilter.Includes(row, NetworkFilters);
+        }
     }
 
     private static readonly IReadOnlyDictionary<string, string> EmptyHardwareFacts = new Dictionary<string, string>();
 
     private void SyncResources()
     {
+        if (!resourceMembershipDirty) return;
         var rows = resources.Values.Where(row => NetworkResourceFilter.Includes(row, NetworkFilters))
             .OrderBy(row => row.Kind == ResourceKind.Cpu ? 0 : row.Kind == ResourceKind.Memory ? 1 : 2).ToArray();
         var wanted = rows.ToHashSet();
@@ -222,6 +249,7 @@ public sealed partial class MonitorModel : IDisposable
             int found = Resources.IndexOf(rows[i]);
             if (found >= 0) Resources.Move(found, i); else Resources.Insert(i, rows[i]);
         }
+        resourceMembershipDirty = false;
     }
 
     private List<ProcessRow> Ordered()

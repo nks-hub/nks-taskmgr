@@ -86,6 +86,7 @@ public static partial class WinUiChecks
     public static void ModelInvariants(MonitorModel model)
     {
         HardwareFactCaching();
+        ResourceRefreshCaching();
         Require(!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported, "WinUI probe is not Native AOT.");
         var own = model.Processes.Single(row => row.Key.Pid == Environment.ProcessId);
         Require((own.Key.Kind is GenerationKind.CreationTime or GenerationKind.SequenceNumber) && own.Key.Generation != 0,

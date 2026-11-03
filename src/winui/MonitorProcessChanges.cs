@@ -6,6 +6,8 @@ public sealed partial class MonitorModel
 {
     private ulong processRevision;
     private bool changesApiMissing;
+    private readonly HashSet<ProcessKey> changeKeys = [];
+    private readonly HashSet<uint> changeIndices = [];
 
     private void ApplyFrame(NativeFrame frame, FrameView view)
     {
@@ -28,13 +30,13 @@ public sealed partial class MonitorModel
         orderChanged = true;
         if (optional is not { } changes || (changes.Flags & 1) != 0 || changes.BaseRevision != processRevision
             || changes.ProcessCount != view.Processes.ProcessCount) return false;
-        var keys = new HashSet<ProcessKey>(); var indices = new HashSet<uint>();
+        changeKeys.Clear(); changeIndices.Clear();
         for (uint i = 0; i < changes.ChangeCount; ++i) {
             var change = changes.Changes[i];
             var key = new ProcessKey(BootIdentity.Identifier, change.Pid, change.GenerationKind, change.Generation);
-            if (!keys.Add(key) || (change.Kind == ProcessChangeKind.Added ? processes.ContainsKey(key) : !processes.ContainsKey(key))) return false;
+            if (!changeKeys.Add(key) || (change.Kind == ProcessChangeKind.Added ? processes.ContainsKey(key) : !processes.ContainsKey(key))) return false;
             if (change.Kind != ProcessChangeKind.Removed) {
-                if (!indices.Add(change.CurrentIndex) || change.CurrentIndex >= view.Processes.ProcessCount) return false;
+                if (!changeIndices.Add(change.CurrentIndex) || change.CurrentIndex >= view.Processes.ProcessCount) return false;
                 var row = view.Processes.Processes[change.CurrentIndex];
                 if (row.Pid != key.Pid || row.GenerationKind != key.Kind || row.Generation != key.Generation) return false;
             }
