@@ -1,6 +1,5 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Windows.Foundation;
 
@@ -47,18 +46,15 @@ public sealed partial class MainWindow
         double scrollbarWidth = 0;
         while (pending.Count > 0) {
             var node = pending.Pop();
-            if (node is ScrollBar { Orientation: Orientation.Vertical, Visibility: Visibility.Visible, ActualWidth: > 0 } bar) {
-                DependencyObject? parent = VisualTreeHelper.GetParent(bar);
-                while (parent is not null && parent is not ScrollViewer) parent = VisualTreeHelper.GetParent(parent);
-                if (ReferenceEquals(parent, performanceDetailScroll)) {
-                    var bounds = PerformanceBounds(bar); scrollbarWidth = Math.Max(scrollbarWidth, bounds.Width);
-                    if (body.Right > bounds.Left + 1) throw new InvalidOperationException("Performance body overlaps its actual vertical scrollbar bounds.");
-                }
+            if (node is FrameworkElement { Name: "VerticalScrollBar", Visibility: Visibility.Visible, ActualWidth: > 0, ActualHeight: > 0 } bar
+                && NativePerformanceClass(bar) == "Microsoft.UI.Xaml.Controls.Primitives.ScrollBar" && OwnsPerformanceScrollbar(bar)) {
+                var bounds = PerformanceBounds(bar); scrollbarWidth = Math.Max(scrollbarWidth, bounds.Width);
+                if (body.Right > bounds.Left + 1) throw new InvalidOperationException("Performance body overlaps its actual vertical scrollbar bounds.");
             }
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(node); ++i) pending.Push(VisualTreeHelper.GetChild(node, i));
         }
         if (requireScrollbar && (performanceDetailScroll.ScrollableHeight <= 0 || scrollbarWidth <= 0))
-            throw new InvalidOperationException("The scrollbar overlap check did not exercise a scrollable viewport.");
+            throw new InvalidOperationException(FormattableString.Invariant($"The scrollbar overlap check did not exercise a scrollable viewport: actual={performanceDetailScroll.ActualHeight:F2};viewport={performanceDetailScroll.ViewportHeight:F2};extent={performanceDetailScroll.ExtentHeight:F2};scrollable={performanceDetailScroll.ScrollableHeight:F2};scrollbar={scrollbarWidth:F2} DIP."));
         App.Trace($"Performance viewport passed: content={performanceBody.ActualWidth:F2};gutter={PerformanceScrollGutter};scrollbar={scrollbarWidth:F2};elements={measured};plots={measuredPlots};units=DIP");
     }
 
@@ -78,6 +74,20 @@ public sealed partial class MainWindow
 
     private Rect PerformanceBounds(FrameworkElement element) => element.TransformToVisual(performanceDetailScroll)
         .TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+
+    private static string NativePerformanceClass(DependencyObject element)
+        => new WinRT.IInspectable(((WinRT.IWinRTObject)element).NativeObject).GetRuntimeClassName(false);
+
+    private bool OwnsPerformanceScrollbar(FrameworkElement bar)
+    {
+        // Native AOT can project template ScrollBar and ScrollViewer nodes as Control.
+        for (var parent = VisualTreeHelper.GetParent(bar); parent is not null; parent = VisualTreeHelper.GetParent(parent)) {
+            if (parent is UIElement { Visibility: Visibility.Collapsed }) return false;
+            if (ReferenceEquals(parent, performanceDetailScroll)) return true;
+            if (NativePerformanceClass(parent) == "Microsoft.UI.Xaml.Controls.ScrollViewer") return false;
+        }
+        return false;
+    }
 
     private bool VisibleWithinPerformance(FrameworkElement element)
     {
