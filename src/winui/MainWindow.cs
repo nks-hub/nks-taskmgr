@@ -462,7 +462,7 @@ public sealed partial class MainWindow : Window
         if (!smokeMinimizedChecked) return;
         if (ready && smokeResourceContext is null) {
             ShowView(DesktopView.Performance);
-            smokeResourceContext = CheckResourceContextMenuAsync();
+            smokeResourceContext = CheckResourceContextAndPreviewAsync();
             return;
         }
         if (smokeResourceContext is { IsCompleted: false }) return;
