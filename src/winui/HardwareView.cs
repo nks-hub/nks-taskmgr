@@ -6,8 +6,8 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly ScrollViewer hardwarePage = new() { Visibility = Visibility.Collapsed, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-    private readonly Grid hardwareCards = new() { ColumnSpacing = 16, RowSpacing = 16 };
+    private readonly ScrollViewer hardwarePage = new() { Visibility = Visibility.Collapsed, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(0, 0, 20, 0) };
+    private readonly Grid hardwareCards = new() { ColumnSpacing = 16, RowSpacing = 12 };
     private readonly Dictionary<string, HardwareFactRows> hardwareSections = [];
     private readonly CapabilityPanel capabilities = new();
     private Border capabilityCard = null!;
@@ -17,16 +17,16 @@ public sealed partial class MainWindow
         hardwareCards.ColumnDefinitions.Add(new ColumnDefinition()); hardwareCards.ColumnDefinitions.Add(new ColumnDefinition());
         for (int i = 0; i < 5; ++i) hardwareCards.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         foreach (var key in new[] { "cpu", "memory", "board", "ups" }) {
-            var body = new StackPanel { Padding = new Thickness(22), Spacing = 13 };
-            var title = Label(key switch { "cpu" => "Procesor", "memory" => "Paměť", "board" => "Základní deska a BIOS", _ => "Záložní zdroj UPS" }, 18, 0xe9eef0);
+            var body = new StackPanel { Padding = new Thickness(12), Spacing = 10 };
+            var title = Label(key switch { "cpu" => "Procesor", "memory" => "Paměť", "board" => "Základní deska a BIOS", _ => "Záložní zdroj UPS" }, 15, 0xe9eef0);
             title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold; body.Children.Add(title);
             if (key == "cpu") AddCpuSensorChoice(body);
             var values = new HardwareFactRows(); body.Children.Add(values.Panel); hardwareSections.Add(key, values);
             if (key == "cpu") AddCpuSensorDetails(body);
             hardwareCards.Children.Add(Card(body));
         }
-        var capabilityBody = new StackPanel { Padding = new Thickness(22), Spacing = 13 };
-        capabilityBody.Children.Add(Label("Možnosti a oprávnění", 18, 0xe9eef0)); capabilityBody.Children.Add(capabilities);
+        var capabilityBody = new StackPanel { Padding = new Thickness(12), Spacing = 10 };
+        capabilityBody.Children.Add(Label("Možnosti a oprávnění", 15, 0xe9eef0)); capabilityBody.Children.Add(capabilities);
         capabilityCard = Card(capabilityBody); hardwareCards.Children.Add(capabilityCard);
         hardwarePage.Content = hardwareCards; page.Children.Add(hardwarePage);
     }
@@ -64,7 +64,7 @@ public sealed partial class MainWindow
         private readonly record struct Key(string Name, int Occurrence);
         private sealed record Row(Grid Line, TextBlock Value);
         private readonly Dictionary<Key, Row> rows = [];
-        internal StackPanel Panel { get; } = new() { Spacing = 12 };
+        internal StackPanel Panel { get; } = new() { Spacing = 8 };
 
         internal void Update(IEnumerable<KeyValuePair<string, string>> facts)
         {
@@ -79,7 +79,7 @@ public sealed partial class MainWindow
                     var line = new Grid { ColumnSpacing = 20 };
                     line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) }); line.ColumnDefinitions.Add(new ColumnDefinition());
                     var caption = Label(name, 12, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; line.Children.Add(caption);
-                    var reading = Label(value, 13, 0xe9eef0); reading.TextWrapping = TextWrapping.Wrap;
+                    var reading = Label(value, 12, 0xe9eef0); reading.TextWrapping = TextWrapping.Wrap;
                     Grid.SetColumn(reading, 1); line.Children.Add(reading);
                     rows.Add(key, row = new Row(line, reading));
                 } else if (row.Value.Text != value) row.Value.Text = value;

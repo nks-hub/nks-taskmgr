@@ -28,16 +28,16 @@ public sealed partial class MainWindow : Window
     private readonly MonitorModel model = new();
     private readonly Grid root = new() { Background = Display.Brush(0x171d21) };
     private readonly Grid page = new();
-    private readonly Grid sidebar = new() { Background = Display.Brush(0x12181c), Width = 88 };
-    private readonly TextBlock heading = Label("Výkon", 22, 0xe9eef0);
+    private readonly Grid sidebar = new() { Background = Display.Brush(0x12181c), Width = 68 };
+    private readonly TextBlock heading = Label("Výkon", 16, 0xe9eef0);
     private readonly Grid shellHeader = new();
     private readonly TextBlock footer = Label("Načítám živá data…", 9, 0x95a4ad);
-    private readonly TextBox search = new() { Width = 235, Height = 35, MinHeight = 0, FontSize = 11, PlaceholderText = "Hledat název nebo PID", Visibility = Visibility.Collapsed };
+    private readonly TextBox search = new() { Width = 220, Height = 30, MinHeight = 0, FontSize = 12, PlaceholderText = "Hledat název nebo PID", Visibility = Visibility.Collapsed };
     private readonly Button pause = Button("Pozastavit"), interval = Button("1 s");
     private readonly Button performanceNav = Button("Výkon"), processesNav = Button("Procesy"), servicesNav = Button("Služby");
     private readonly Button hardwareNav = Button("Sestava"), applicationNav = Button("Aplikace");
     private readonly List<(ProcessMode Mode, Button Button)> processModeButtons = [];
-    private readonly ComboBox processValueMode = new() { Width = 168, Height = 29, MinHeight = 0, FontSize = 11,
+    private readonly ComboBox processValueMode = new() { Width = 168, Height = 28, MinHeight = 0, FontSize = 11,
         Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
     private readonly ListView resourceList = new() { SelectionMode = ListViewSelectionMode.Single, IsItemClickEnabled = false, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
     private readonly ListView processList = new() { SelectionMode = ListViewSelectionMode.Extended, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
@@ -61,7 +61,9 @@ public sealed partial class MainWindow : Window
     private readonly StackPanel facts = new() { Spacing = 13, Padding = new Thickness(22) };
     private readonly StackPanel consumers = new() { Spacing = 9 };
     private readonly TextBlock processCount = Label("", 10, 0x95a4ad);
-    private readonly StackPanel overview = new() { Orientation = Orientation.Horizontal, Spacing = 12 };
+    private readonly StackPanel overview = new() { Orientation = Orientation.Horizontal, Spacing = 8 };
+    private readonly ScrollViewer overviewScroll = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
+        VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 12, 0) };
     private readonly Dictionary<ResourceKind, (Button Action, TextBlock Caption, TextBlock Value)> overviewValues = [];
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer timer;
     private ResourceRow? selectedResource;
@@ -94,7 +96,7 @@ public sealed partial class MainWindow : Window
         App.Trace("Window objects created");
         windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
         if (App.SmokePath is not null) App.Trace("Presenter=" + AppWindow.Presenter.GetType().FullName + ";overlapped=" + (AppWindow.Presenter is OverlappedPresenter));
-        Title = "NKS Task Manager · WinUI";
+        Title = "NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
         AppWindow.Resize(new SizeInt32(1440, 920));
         ExtendsContentIntoTitleBar = true;
@@ -172,16 +174,16 @@ public sealed partial class MainWindow : Window
         TextTrimming = TextTrimming.CharacterEllipsis
     };
     private static Button Button(string text) => new() {
-        Content = text, MinHeight = 0, Height = 35, FontSize = 12, FontFamily = UiTypography.Font, Padding = new Thickness(12, 0, 12, 0),
-        Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6)
+        Content = text, MinHeight = 0, Height = 30, FontSize = 12, FontFamily = UiTypography.Font, Padding = new Thickness(10, 0, 10, 0),
+        Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(4)
     };
     private static Border Card(UIElement child, Thickness padding = default) => new() {
-        Child = child, Padding = padding, Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x2c363d),
-        BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10)
+        Child = child, Padding = padding, Background = Display.Brush(0x171d21), BorderBrush = Display.Brush(0x2c363d),
+        BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(0)
     };
     private static ToggleButton Choice(string text) => new() {
         Content = text, MinHeight = 0, Height = 27, FontSize = 11, FontFamily = UiTypography.Font, Padding = new Thickness(12, 0, 12, 0),
-        Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6)
+        Background = Display.Brush(0x1d252a), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(4)
     };
 
     private void ConfigureResources()
@@ -212,23 +214,20 @@ public sealed partial class MainWindow : Window
 
     private void BuildShell()
     {
-        foreach (var height in new[] { new GridLength(32), new GridLength(40), new GridLength(1, GridUnitType.Star), new GridLength(26) }) root.RowDefinitions.Add(new RowDefinition { Height = height });
-        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(88) }); root.ColumnDefinitions.Add(new ColumnDefinition());
+        foreach (var height in new[] { new GridLength(32), new GridLength(36), new GridLength(1, GridUnitType.Star), new GridLength(22) }) root.RowDefinitions.Add(new RowDefinition { Height = height });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(68) }); root.ColumnDefinitions.Add(new ColumnDefinition());
         var title = new Grid { Background = Display.Brush(0x12181c), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 0, 0, 1) };
-        var titleIcon = new Image { Width = 18, Height = 18, Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "app.png"))), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(22, 0, 0, 0) };
+        var titleIcon = new Image { Width = 16, Height = 16, Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(Path.Combine(AppContext.BaseDirectory, "app.png"))), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(16, 0, 0, 0) };
         title.Children.Add(titleIcon);
-        void TitleText(string value, double x, double size, uint color, bool bold = false) {
-            var label = Label(value, size, color); label.HorizontalAlignment = HorizontalAlignment.Left; label.VerticalAlignment = VerticalAlignment.Center;
-            label.Margin = new Thickness(x, 0, 0, 0); label.FontWeight = bold ? Microsoft.UI.Text.FontWeights.Bold : Microsoft.UI.Text.FontWeights.Normal;
-            if (size == 12) label.CharacterSpacing = 16; title.Children.Add(label);
-        }
-        TitleText("NKS", 51, 12, 0xe9eef0, true); TitleText("Task Manager", 83.109375, 12, 0x95a4ad); TitleText("Lokální počítač", 218, 10, 0x95a4ad);
+        var titleText = Label("NKS Task Manager", 12, 0xe9eef0);
+        titleText.HorizontalAlignment = HorizontalAlignment.Left; titleText.VerticalAlignment = VerticalAlignment.Center;
+        titleText.Margin = new Thickness(42, 0, 0, 0); title.Children.Add(titleText);
         Grid.SetColumnSpan(title, 2); root.Children.Add(title); SetTitleBar(title);
-        var nav = new StackPanel { Spacing = 4, Margin = new Thickness(8, 12, 8, 0) };
+        var nav = new StackPanel { Spacing = 4, Margin = new Thickness(6, 8, 6, 0) };
         foreach (var button in new[] { processesNav, applicationNav, performanceNav, servicesNav, hardwareNav }) {
-            button.Height = 52; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 10; button.BorderThickness = new Thickness(0);
+            button.Height = 44; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 11; button.BorderThickness = new Thickness(0);
             button.Padding = new Thickness(4, 0, 4, 0);
-            var content = new StackPanel { Spacing = 6, HorizontalAlignment = HorizontalAlignment.Center };
+            var content = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Center };
             string name = button == applicationNav ? "Aplikace" : button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : button == hardwareNav ? "Sestava" : "Procesy";
             AutomationProperties.SetName(button, name);
             content.Children.Add(button == applicationNav ? new SymbolIcon(Symbol.AllApps) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
@@ -240,30 +239,30 @@ public sealed partial class MainWindow : Window
         sidebar.Children.Add(new ScrollViewer { Content = nav, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
         Grid.SetRow(sidebar, 1); Grid.SetRowSpan(sidebar, 3); root.Children.Add(sidebar);
-        shellHeader.Padding = new Thickness(30, 0, 30, 0);
-        heading.CharacterSpacing = -25;
-        heading.VerticalAlignment = VerticalAlignment.Center; shellHeader.Children.Add(heading);
-        var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        tools.Children.Add(search); tools.Children.Add(interval); tools.Children.Add(pause); shellHeader.Children.Add(tools);
+        shellHeader.Padding = new Thickness(16, 0, 16, 0);
+        shellHeader.ColumnDefinitions.Add(new ColumnDefinition()); shellHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var context = new Grid(); context.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); context.ColumnDefinitions.Add(new ColumnDefinition());
+        heading.VerticalAlignment = VerticalAlignment.Center; context.Children.Add(heading);
+        overviewScroll.Content = overview; Grid.SetColumn(overviewScroll, 1); context.Children.Add(overviewScroll); shellHeader.Children.Add(context);
+        var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        tools.Children.Add(search); tools.Children.Add(interval); tools.Children.Add(pause); Grid.SetColumn(tools, 1); shellHeader.Children.Add(tools);
         Grid.SetRow(shellHeader, 1); Grid.SetColumn(shellHeader, 1); root.Children.Add(shellHeader);
-        page.Margin = new Thickness(30, 0, 30, 22); Grid.SetRow(page, 2); Grid.SetColumn(page, 1); root.Children.Add(page);
-        var status = new Border { BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(25, 7, 10, 0), Child = footer };
+        page.Margin = new Thickness(16, 0, 16, 8); Grid.SetRow(page, 2); Grid.SetColumn(page, 1); root.Children.Add(page);
+        var status = new Border { BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(16, 3, 10, 0), Child = footer };
         Grid.SetRow(status, 3); Grid.SetColumn(status, 1); root.Children.Add(status);
     }
 
     private void BuildProcesses()
     {
-        foreach (var height in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star) })
+        foreach (var height in new[] { GridLength.Auto, new GridLength(1, GridUnitType.Star) })
             processPage.RowDefinitions.Add(new RowDefinition { Height = height });
         processPage.RowSpacing = 0;
-        processPage.Children.Add(new ScrollViewer { Content = overview, MinHeight = 32, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled });
-        var toolbar = new Grid { MinHeight = 40 };
+        var toolbar = new Grid { MinHeight = 34 };
         toolbar.ColumnDefinitions.Add(new ColumnDefinition());
         toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var filters = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         foreach (var mode in new[] { ProcessMode.All, ProcessMode.Active, ProcessMode.Tree }) {
-            var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : "Strom"); button.Height = 29;
+            var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : "Strom"); button.Height = 28;
             button.Click += (_, _) => SelectProcessMode(mode); filters.Children.Add(button); processModeButtons.Add((mode, button));
         }
         processValueMode.Items.Add("Vlastní hodnoty"); processValueMode.Items.Add("Proces s potomky");
@@ -278,17 +277,21 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetAutomationId(processValueMode, "process-tree-value-mode");
         ToolTipService.SetToolTip(processValueMode, "Vlastní hodnoty patří jednomu PID. Proces s potomky sčítá CPU, paměť a I/O ověřených členů celé větve i při hledání nebo sbalení. Chybějící údaje jsou označené. Součet pracovních sad může sdílené stránky RAM započítat opakovaně.");
         filters.Children.Add(processValueMode);
-        filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0);
-        toolbar.Children.Add(new ScrollViewer { Content = filters, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
+        filters.Children.Add(processCount); processCount.Margin = new Thickness(8, 0, 0, 0); processCount.VerticalAlignment = VerticalAlignment.Center;
+        toolbar.Children.Add(new ScrollViewer { Content = filters, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
         processTable = new ProcessTable(processList, SortProcesses);
-        var columns = Button("Sloupce"); columns.Height = 29; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
+        var columns = Button("Sloupce"); columns.Height = 28; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
         columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů");
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        actions.Children.Add(columns); actions.Children.Add(exportSnapshot); actions.Children.Add(compareSnapshots); actions.Children.Add(processDetailsButton); actions.Children.Add(globalObjectSearchButton); actions.Children.Add(processEventsButton); actions.Children.Add(processDumpButton); actions.Children.Add(processActionsButton); toolbar.Children.Add(actions);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        foreach (var action in new[] { columns, exportSnapshot, compareSnapshots, processDetailsButton, globalObjectSearchButton, processEventsButton, processDumpButton, processActionsButton }) {
+            action.Height = 28; action.MinHeight = 0; actions.Children.Add(action);
+        }
+        toolbar.Children.Add(actions);
         Grid.SetColumn(actions, 1);
-        Grid.SetRow(toolbar, 1); processPage.Children.Add(toolbar);
-        var workspace = BuildApplicationGroups(processTable); Grid.SetRow(workspace, 2); processPage.Children.Add(workspace);
+        processPage.Children.Add(toolbar);
+        var workspace = BuildApplicationGroups(processTable); filters.Children.Insert(0, applicationToolbar);
+        Grid.SetRow(workspace, 1); processPage.Children.Add(workspace);
         processPage.Visibility = Visibility.Collapsed; page.Children.Add(processPage);
     }
 
@@ -315,16 +318,17 @@ public sealed partial class MainWindow : Window
         servicesPage.Visibility = services ? Visibility.Visible : Visibility.Collapsed;
         hardwarePage.Visibility = hardware ? Visibility.Visible : Visibility.Collapsed;
         search.Visibility = performance || hardware ? Visibility.Collapsed : Visibility.Visible;
+        overviewScroll.Visibility = next == DesktopView.Processes ? Visibility.Visible : Visibility.Collapsed;
         interval.Visibility = services || hardware ? Visibility.Collapsed : Visibility.Visible;
         search.PlaceholderText = services ? "Hledat službu, účet nebo PID" : "Hledat název nebo PID";
         AutomationProperties.SetName(search, search.PlaceholderText);
         SetNavigationSearchText(services ? servicesModel!.Query : processQuery);
         if (!services) model.SetQuery(processQuery);
-        performanceNav.Background = Display.Brush(performance ? 0x3b3024u : 0x12181cu);
-        processesNav.Background = Display.Brush(next == DesktopView.Processes ? 0x3b3024u : 0x12181cu);
-        applicationNav.Background = Display.Brush(applications ? 0x3b3024u : 0x12181cu);
-        servicesNav.Background = Display.Brush(services ? 0x3b3024u : 0x12181cu);
-        hardwareNav.Background = Display.Brush(hardware ? 0x3b3024u : 0x12181cu);
+        performanceNav.Background = Display.Brush(performance ? 0x28343bu : 0x12181cu);
+        processesNav.Background = Display.Brush(next == DesktopView.Processes ? 0x28343bu : 0x12181cu);
+        applicationNav.Background = Display.Brush(applications ? 0x28343bu : 0x12181cu);
+        servicesNav.Background = Display.Brush(services ? 0x28343bu : 0x12181cu);
+        hardwareNav.Background = Display.Brush(hardware ? 0x28343bu : 0x12181cu);
         servicesModel?.SetActivity(services && !IsIconic(windowHandle), model.Paused);
         if (services && serviceList.ItemsSource is null) serviceList.ItemsSource = servicesModel!.Visible;
         Resize();
@@ -338,11 +342,10 @@ public sealed partial class MainWindow : Window
         if (IsIconic(windowHandle)) return;
         if (root.ActualWidth <= 0) return;
         double width = root.ActualWidth;
-        root.ColumnDefinitions[0].Width = new GridLength(width <= 1000 ? 68 : 88); sidebar.Width = width <= 1000 ? 68 : 88;
-        ResizeSidebarActions(width <= 1000);
-        double margin = width <= 1000 ? 20 : performance ? 25 : 30;
-        shellHeader.Padding = new Thickness(margin, 0, margin, 0);
-        page.Margin = new Thickness(margin, view == DesktopView.Services ? 1 : 0, margin, 14);
+        root.ColumnDefinitions[0].Width = new GridLength(68); sidebar.Width = 68;
+        ResizeSidebarActions(true);
+        shellHeader.Padding = new Thickness(16, 0, 16, 0);
+        page.Margin = new Thickness(16, 0, 16, 8);
         ResizePerformanceLayout(width);
         ResizeServices();
         ResizeHardware();

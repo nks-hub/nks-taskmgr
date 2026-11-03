@@ -10,6 +10,7 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
+    private const double ServiceRowHeight = 44;
     private ServiceModel? servicesModel;
     private readonly Grid servicesPage = new(), serviceWorkspace = new();
     private readonly ListView serviceList = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
@@ -20,31 +21,13 @@ public sealed partial class MainWindow
     private readonly ServiceHostTemplates serviceHostTemplates = new();
     private readonly ScrollViewer serviceDetailScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private bool updatingServices;
-    private readonly RowDefinition serviceToolbarHeight = new() { Height = new GridLength(70) };
+    private readonly RowDefinition serviceToolbarHeight = new() { Height = new GridLength(34) };
 
     private void BuildServices()
     {
         ConfigureServiceActions();
-        servicesPage.RowDefinitions.Add(new RowDefinition { Height = new GridLength(104) }); servicesPage.RowDefinitions.Add(new RowDefinition());
-        var summary = new Grid { Padding = new Thickness(22, 18, 22, 18), ColumnSpacing = 10 };
-        summary.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.4, GridUnitType.Star) });
-        var caption = new StackPanel { Spacing = 8, Margin = new Thickness(0, 4, 0, 0) };
-        var eyebrow = Label("SPRÁVA SYSTÉMU", 9, 0x95a4ad); eyebrow.CharacterSpacing = 178; eyebrow.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold; caption.Children.Add(eyebrow);
-        var summaryTitle = Label("Služba, její proces i závislosti.", 16, 0xe9eef0); summaryTitle.FontWeight = Microsoft.UI.Text.FontWeights.Normal;
-        caption.Children.Add(summaryTitle); summary.Children.Add(caption);
+        servicesPage.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); servicesPage.RowDefinitions.Add(new RowDefinition());
         var filters = new[] { ServiceFilter.All, ServiceFilter.Running, ServiceFilter.Stopped, ServiceFilter.Other };
-        var names = new[] { "Celkem", "Běží", "Zastavené", "Ostatní" };
-        for (int i = 0; i < filters.Length; ++i) {
-            var filter = filters[i]; summary.ColumnDefinitions.Add(new ColumnDefinition());
-            var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 9, VerticalAlignment = VerticalAlignment.Center };
-            var count = Label("—", 28, 0xe9eef0); serviceCounters.Add(count); stack.Children.Add(count);
-            var label = Label(names[i], 11, 0x95a4ad); label.VerticalAlignment = VerticalAlignment.Center; stack.Children.Add(label);
-            var button = Button(""); button.Content = stack; button.Height = double.NaN; button.Background = Display.Brush(0x1d252a);
-            button.BorderThickness = new Thickness(1, 0, 0, 0); button.CornerRadius = new CornerRadius(0);
-            button.Click += (_, _) => UpdateServices(() => servicesModel!.SetFilter(filter));
-            AutomationProperties.SetName(button, names[i] + " služby"); Grid.SetColumn(button, i + 1); summary.Children.Add(button);
-        }
-        var summaryCard = Card(summary); summaryCard.Margin = new Thickness(0, 0, 0, 20); servicesPage.Children.Add(summaryCard);
         serviceWorkspace.ColumnDefinitions.Add(new ColumnDefinition()); serviceWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(330) });
         serviceWorkspace.RowDefinitions.Add(new RowDefinition()); serviceWorkspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0) });
         var inventory = new Grid(); inventory.RowDefinitions.Add(serviceToolbarHeight); inventory.RowDefinitions.Add(new RowDefinition());
@@ -52,7 +35,12 @@ public sealed partial class MainWindow
         toolbar.ColumnDefinitions.Add(new ColumnDefinition()); toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         foreach (var filter in filters) {
-            var button = Button(filter == ServiceFilter.All ? "Všechny" : filter == ServiceFilter.Running ? "Běžící" : filter == ServiceFilter.Stopped ? "Zastavené" : "Ostatní");
+            string caption = filter == ServiceFilter.All ? "Všechny" : filter == ServiceFilter.Running ? "Běžící" : filter == ServiceFilter.Stopped ? "Zastavené" : "Ostatní";
+            var button = Button("");
+            var label = Label(caption, 11, 0x95a4ad); var count = Label("—", 11, 0xe9eef0);
+            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+            content.Children.Add(label); content.Children.Add(count); button.Content = content; serviceCounters.Add(count);
+            AutomationProperties.SetName(button, caption);
             button.Height = 27; button.Padding = new Thickness(8, 0, 8, 0); button.FontSize = 11;
             button.Click += (_, _) => UpdateServices(() => servicesModel!.SetFilter(filter)); serviceFilters.Add(button); controls.Children.Add(button);
         }
@@ -69,7 +57,7 @@ public sealed partial class MainWindow
         var serviceCommands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 9, VerticalAlignment = VerticalAlignment.Center };
         serviceCommands.Children.Add(serviceCount); serviceCommands.Children.Add(serviceActionsButton);
         Grid.SetColumn(serviceCommands, 1); toolbar.Children.Add(serviceCommands); inventory.Children.Add(toolbar);
-        var table = new Grid { MinWidth = 706 }; table.RowDefinitions.Add(new RowDefinition { Height = new GridLength(39) }); table.RowDefinitions.Add(new RowDefinition());
+        var table = new Grid { MinWidth = 706 }; table.RowDefinitions.Add(new RowDefinition { Height = new GridLength(30) }); table.RowDefinitions.Add(new RowDefinition());
         var columns = new Grid { Padding = new Thickness(18, 0, 18, 0), Background = Display.Brush(0x1d252a) };
         foreach (var width in new[] { new GridLength(1, GridUnitType.Star), new GridLength(105), new GridLength(140), new GridLength(65), new GridLength(150) }) columns.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
         columns.ColumnDefinitions[0].MinWidth = 210;
@@ -82,7 +70,8 @@ public sealed partial class MainWindow
         }
         table.Children.Add(columns);
         var style = new Style { TargetType = typeof(ListViewItem) };
-        style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0))); style.Setters.Add(new Setter(FrameworkElement.HeightProperty, 57d));
+        style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0))); style.Setters.Add(new Setter(FrameworkElement.HeightProperty, ServiceRowHeight));
+        style.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, ServiceRowHeight));
         style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch)); serviceList.ItemContainerStyle = style;
         serviceList.ItemTemplate = serviceHostTemplates["ServiceHostTemplate"].As<DataTemplate>();
         serviceList.ContainerContentChanging += (_, args) => {
@@ -145,13 +134,13 @@ public sealed partial class MainWindow
         var source = servicesModel!;
         var scroll = Descendant<ScrollViewer>(serviceList);
         double offset = scroll?.VerticalOffset ?? 0;
-        int index = (int)(offset / 57);
+        int index = (int)(offset / ServiceRowHeight);
         var anchor = index < source.Visible.Count ? source.Visible[index] : null;
-        double remainder = offset % 57;
+        double remainder = offset % ServiceRowHeight;
         return () => {
             if (scroll is null || anchor is null) return;
             int current = source.Visible.IndexOf(anchor);
-            double target = current >= 0 ? current * 57 + remainder : offset;
+            double target = current >= 0 ? current * ServiceRowHeight + remainder : offset;
             if (Math.Abs(target - scroll.VerticalOffset) < 0.5) return;
             serviceList.UpdateLayout(); scroll.ChangeView(null, target, null, true);
         };
@@ -159,8 +148,6 @@ public sealed partial class MainWindow
     private void ResizeServices()
     {
         bool stacked = root.ActualWidth <= 1100;
-        servicesPage.RowDefinitions[0].Height = new GridLength(root.ActualHeight < 650 || stacked ? 0 : 104);
-        serviceToolbarHeight.Height = new GridLength(root.ActualHeight < 650 || stacked ? 44 : 70);
         serviceWorkspace.ColumnDefinitions[1].Width = new GridLength(stacked ? 0 : 330);
         serviceWorkspace.RowDefinitions[1].Height = stacked ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
         Grid.SetColumn(serviceDetailScroll, stacked ? 0 : 1); Grid.SetRow(serviceDetailScroll, stacked ? 1 : 0);

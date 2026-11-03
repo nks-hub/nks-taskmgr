@@ -25,12 +25,12 @@ public sealed partial class ProcessTable : Grid
 
     public ProcessTable(ListView rows, Action<int> sort)
     {
-        content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(32) });
+        content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(30) });
         content.RowDefinitions.Add(new RowDefinition());
         foreach (var column in Columns.Items) {
             var cell = new Grid();
             var button = new Button {
-                Content = column.Title, FontSize = 12, FontFamily = UiTypography.Font, Height = 31, MinHeight = 0, Padding = new Thickness(0, 0, 12, 0),
+                Content = column.Title, FontSize = 11, FontFamily = UiTypography.Font, Height = 29, MinHeight = 0, Padding = new Thickness(0, 0, 12, 0),
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = column.Id == 0 ? HorizontalAlignment.Left : HorizontalAlignment.Right,
                 Background = Display.Brush(0x1d252a), BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(0), CanDrag = true, AllowDrop = true
             };
@@ -196,7 +196,7 @@ public sealed partial class ProcessRowGrid : Grid
 
 public sealed partial class ProcessNameCell : Grid
 {
-    private readonly TextBlock name = new() { FontFamily = UiTypography.Font, FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis,
+    private readonly TextBlock name = new() { FontFamily = UiTypography.Font, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
         VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
     private readonly ProcessIconView icon = new() { Width = 18, Height = 18, VerticalAlignment = VerticalAlignment.Center };
     private readonly RotateTransform rotation = new() { CenterX = 6, CenterY = 6 };

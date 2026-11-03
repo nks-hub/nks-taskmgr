@@ -9,7 +9,7 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly TextBlock serviceTitle = DetailLabel("Vyberte službu", 22), serviceName = DetailLabel("", 10), serviceDescription = DetailLabel("", 11);
+    private readonly TextBlock serviceTitle = DetailLabel("Vyberte službu", 16), serviceName = DetailLabel("", 10), serviceDescription = DetailLabel("", 11);
     private readonly TextBlock serviceState = DetailLabel("", 11), serviceStartup = DetailLabel("", 11), serviceAccount = DetailLabel("", 11);
     private readonly TextBlock serviceGroup = DetailLabel("", 11), serviceCommand = DetailLabel("", 11), serviceDetailNote = DetailLabel("", 10);
     private readonly TextBlock serviceReportedHost = DetailLabel("", 11), serviceHostIdentityNote = DetailLabel("", 10);
@@ -34,8 +34,8 @@ public sealed partial class MainWindow
     private void BuildServiceDetail()
     {
         serviceDetailScroll.Background = Display.Brush(0x171d21); serviceDetailScroll.BorderBrush = Display.Brush(0x2c363d);
-        var content = new StackPanel { Spacing = 16, Padding = new Thickness(23, 21, 23, 21) };
-        var emblem = new Border { Width = 43, Height = 43, CornerRadius = new CornerRadius(11), BorderThickness = new Thickness(1), BorderBrush = Display.Brush(0x2c363d), Background = Display.Brush(0x1d252a), HorizontalAlignment = HorizontalAlignment.Left, Child = UiIcon.Create("services", 0xedc08b) };
+        var content = new StackPanel { Spacing = 12, Padding = new Thickness(16, 12, 20, 12) };
+        var emblem = new Border { Width = 28, Height = 28, CornerRadius = new CornerRadius(4), Background = Display.Brush(0x1d252a), HorizontalAlignment = HorizontalAlignment.Left, Child = UiIcon.Create("services", 0xedc08b, 18) };
         content.Children.Add(emblem); content.Children.Add(serviceTitle); content.Children.Add(serviceName); content.Children.Add(serviceDescription);
         serviceName.FontFamily = new FontFamily("Consolas");
         serviceHost.HorizontalAlignment = HorizontalAlignment.Left;
