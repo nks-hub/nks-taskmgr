@@ -6,6 +6,7 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class ResourceRow : INotifyPropertyChanged
 {
+    private const double PreviewWidth = 62, PreviewHeight = 36;
     public IReadOnlyDictionary<string, string> HardwareFacts { get; internal set; } = new Dictionary<string, string>();
     public ResourceRow(string id, ResourceKind kind)
     {
@@ -67,9 +68,9 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
         var state = new PreviewState(History, Kind == ResourceKind.Network ? Upload : null, time,
             Kind == ResourceKind.Network ? Upload.LastTime : 0, maximum);
         if (previewState != state) {
-            Preview = History.Build(64, 38, time, 60, maximum);
-            PreviewFill = History.Build(64, 38, time, 60, maximum, true);
-            if (Kind == ResourceKind.Network) UploadPreview = Upload.Build(64, 38, time, 60, maximum);
+            Preview = History.Build(PreviewWidth, PreviewHeight, time, 60, maximum);
+            PreviewFill = History.Build(PreviewWidth, PreviewHeight, time, 60, maximum, true);
+            if (Kind == ResourceKind.Network) UploadPreview = Upload.Build(PreviewWidth, PreviewHeight, time, 60, maximum);
             previewState = state;
         }
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));

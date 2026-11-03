@@ -29,9 +29,12 @@
         <Grid Height="50" Padding="8,0" ColumnSpacing="10" ToolTipService.ToolTip="{x:Bind Description, Mode=OneWay}">
           <Grid.ColumnDefinitions><ColumnDefinition Width="64" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
           <Grid Width="64" Height="38" VerticalAlignment="Center">
-            <Path Data="{x:Bind PreviewFill, Mode=OneWay}" Fill="{x:Bind Color}" Opacity="0.13" />
-            <Path Data="{x:Bind Preview, Mode=OneWay}" Stroke="{x:Bind Color}" StrokeThickness="1.3" />
-            <Path Data="{x:Bind UploadPreview, Mode=OneWay}" Stroke="{ThemeResource NksTransmitBrush}" StrokeThickness="1.1" />
+            <Grid Margin="1">
+              <Grid.Clip><RectangleGeometry Rect="0,0,62,36" /></Grid.Clip>
+              <Path Data="{x:Bind PreviewFill, Mode=OneWay}" Fill="{x:Bind Color}" Opacity="0.13" />
+              <Path Data="{x:Bind Preview, Mode=OneWay}" Stroke="{x:Bind Color}" StrokeThickness="1.3" />
+              <Path Data="{x:Bind UploadPreview, Mode=OneWay}" Stroke="{ThemeResource NksTransmitBrush}" StrokeThickness="1.1" />
+            </Grid>
             <Border BorderBrush="{ThemeResource NksDividerBrush}" BorderThickness="1" />
           </Grid>
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
