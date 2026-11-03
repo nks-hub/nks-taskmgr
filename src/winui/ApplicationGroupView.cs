@@ -22,9 +22,14 @@ public sealed partial class MainWindow
     private CancellationTokenSource? applicationRequest;
     private bool updatingApplicationChoice, applicationsClosed;
     private long nextApplicationRead;
-    private ProcessKey? pendingApplicationSelection, applicationReturnSelection, applicationReturnAnchor;
-    private ProcessMode applicationReturnMode;
-    private double applicationReturnOffset;
+    private ProcessKey? pendingApplicationSelection;
+    private ProcessNavigationState? processNavigation, applicationNavigation;
+    private EventHandler<object>? navigationRestoreFrame;
+
+    private sealed record ProcessNavigationState(ProcessMode Mode, string Query, int SortColumn, bool Descending,
+        ProcessKey[] Collapsed, ProcessKey[] Selection, ProcessKey? Primary, ProcessKey? Application,
+        ProcessKey? Anchor, double AnchorTop, double VerticalOffset, double HorizontalOffset,
+        ProcessKey? GroupAnchor = null, double GroupTop = 0, double GroupOffset = 0);
 
     private FrameworkElement BuildApplicationGroups(FrameworkElement table)
     {
@@ -77,38 +82,131 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(applicationGroups, "Skupiny aplikací podle ověřených oken"); AutomationProperties.SetAutomationId(applicationGroups, "application-groups");
         AutomationProperties.SetName(applicationChoice, "Vybrat skupinu aplikace"); AutomationProperties.SetAutomationId(applicationChoice, "application-choice");
         var releaseView = PreserveApplicationGroupView(model.Applications, applicationGroups, applicationChoice);
-        Closed += (_, _) => { releaseView(); applicationsClosed = true; applicationRequest?.Cancel(); applicationLifetime.Cancel(); if (applicationRequest is null) applicationLifetime.Dispose(); };
+        Closed += (_, _) => { CancelNavigationRestore(); releaseView(); applicationsClosed = true; applicationRequest?.Cancel(); applicationLifetime.Cancel(); if (applicationRequest is null) applicationLifetime.Dispose(); };
         ResizeApplicationGroups();
         return applicationWorkspace;
     }
 
     private void SelectProcessMode(ProcessMode mode)
     {
-        if (mode == ProcessMode.Applications && model.Mode != mode) {
-            applicationReturnMode = model.Mode; pendingApplicationSelection = applicationReturnSelection = SelectedProcess?.Key;
-            var scroll = Descendant<ScrollViewer>(processList);
-            double offset = scroll?.VerticalOffset ?? 0; int index = (int)(offset / ProcessTable.RowHeight);
-            applicationReturnAnchor = index < model.VisibleProcesses.Count ? model.VisibleProcesses[index].Key : null;
-            applicationReturnOffset = offset % ProcessTable.RowHeight;
-        }
+        CancelNavigationRestore();
+        bool entering = mode == ProcessMode.Applications && model.Mode != mode;
         bool leaving = model.Mode == ProcessMode.Applications && mode != model.Mode;
-        var selected = SelectedProcess?.Key ?? applicationReturnSelection;
-        if (leaving) applicationRequest?.Cancel();
-        model.SetMode(mode); RefreshProcesses();
-        if (leaving) {
-            if (selected is { } key && model.VisibleProcesses.FirstOrDefault(row => row.Key == key) is { } row) SelectProcess(row, false);
-            if (mode == applicationReturnMode && applicationReturnAnchor is { } anchor) {
-                int index = model.VisibleProcesses.ToList().FindIndex(row => row.Key == anchor);
-                if (index >= 0) { processList.UpdateLayout(); Descendant<ScrollViewer>(processList)?.ChangeView(null, index * ProcessTable.RowHeight + applicationReturnOffset, null, true); }
-            }
-            pendingApplicationSelection = null;
+        if (!entering && !leaving) { model.SetMode(mode); RefreshProcesses(); return; }
+        if (entering) {
+            processNavigation = CaptureProcessNavigation();
+            pendingApplicationSelection = applicationNavigation is null ? processNavigation.Primary : null;
+        } else {
+            applicationNavigation = CaptureProcessNavigation();
+            applicationRequest?.Cancel(); pendingApplicationSelection = null;
         }
+        var state = entering ? applicationNavigation : processNavigation;
+        state ??= new(mode, "", 0, false, [], [], null, null, null, 0, 0, 0);
+        state = state with { Mode = mode };
+        processQuery = state.Query; search.Text = state.Query;
+        model.RestoreProcessNavigation(mode, state.Query, state.SortColumn, state.Descending, state.Application, state.Collapsed);
+        RefreshProcesses(); RestoreProcessNavigation(state);
     }
 
     private void ShowApplications(bool visible)
     {
         if (visible) SelectProcessMode(ProcessMode.Applications);
-        else if (model.Mode == ProcessMode.Applications) SelectProcessMode(applicationReturnMode);
+        else if (model.Mode == ProcessMode.Applications) SelectProcessMode(processNavigation?.Mode ?? ProcessMode.All);
+    }
+
+    private static bool HasNavigationIdentity(ProcessRow row) => !row.Key.Boot.IsEmpty
+        && row.Key.Kind != GenerationKind.Missing && row.Key.Generation != 0;
+
+    private ProcessNavigationState CaptureProcessNavigation()
+    {
+        var scroll = Descendant<ScrollViewer>(processList);
+        var selected = processList.SelectedItems.OfType<ProcessSlot>().Select(slot => slot.Row)
+            .Where(row => model.IsCurrent(row) && HasNavigationIdentity(row)).Select(row => row.Key).ToArray();
+        var primary = SelectedProcess is { } row && model.IsCurrent(row) && HasNavigationIdentity(row) ? row.Key : (ProcessKey?)null;
+        var anchor = FirstVisibleProcess();
+        var group = model.Mode == ProcessMode.Applications ? FirstVisibleApplicationGroup(applicationGroups) : null;
+        string query = view is DesktopView.Processes or DesktopView.Applications ? search.Text : processQuery;
+        return new(model.Mode, query, model.SortColumn, model.SortDescending, model.NavigationCollapsed, selected, primary,
+            model.Mode == ProcessMode.Applications ? model.Applications.Selected?.Key : null,
+            anchor?.Row.Key, anchor?.Top ?? 0, scroll?.VerticalOffset ?? 0, processTable.HorizontalScroll.HorizontalOffset,
+            group?.Row.Key, group?.Top ?? 0, Descendant<ScrollViewer>(applicationGroups)?.VerticalOffset ?? 0);
+    }
+
+    private (ProcessRow Row, double Top)? FirstVisibleProcess()
+    {
+        if (processPage.Visibility != Visibility.Visible || processList.ItemsPanelRoot is not { } panel) return null;
+        (ProcessRow Row, double Top)? first = null;
+        foreach (var child in panel.Children) {
+            if (child is not FrameworkElement { IsLoaded: true, ActualWidth: > 0, ActualHeight: > 0 } container
+                || processList.ItemFromContainer(container) is not ProcessSlot slot) continue;
+            int index = processList.IndexFromContainer(container);
+            if (index < 0 || index >= processList.Items.Count || !ReferenceEquals(processList.Items[index], slot)
+                || !model.IsCurrent(slot.Row) || !HasNavigationIdentity(slot.Row)) continue;
+            var bounds = container.TransformToVisual(processList).TransformBounds(new Windows.Foundation.Rect(0, 0, container.ActualWidth, container.ActualHeight));
+            if (!double.IsFinite(bounds.Top) || !double.IsFinite(bounds.Bottom) || bounds.Bottom <= 0
+                || bounds.Top >= processList.ActualHeight || bounds.Right <= 0 || bounds.Left >= processList.ActualWidth) continue;
+            if (first is null || bounds.Top < first.Value.Top) first = (slot.Row, bounds.Top);
+        }
+        return first;
+    }
+
+    private void CancelNavigationRestore()
+    {
+        if (navigationRestoreFrame is null) return;
+        CompositionTarget.Rendering -= navigationRestoreFrame; navigationRestoreFrame = null;
+    }
+
+    private void RestoreProcessNavigation(ProcessNavigationState state)
+    {
+        processList.SelectedItems.Clear();
+        var current = model.VisibleProcesses.Where(row => model.IsCurrent(row) && HasNavigationIdentity(row)).ToDictionary(row => row.Key);
+        if (state.Primary is { } primary && current.TryGetValue(primary, out var selected)) SelectProcess(selected, false);
+        foreach (var key in state.Selection) if (key != state.Primary && current.TryGetValue(key, out var row)
+            && slotsByRow.TryGetValue(row, out var slot)) processList.SelectedItems.Add(slot);
+        int frames = 0, settled = 0;
+        void Frame(object? sender, object args)
+        {
+            if (applicationsClosed || model.Mode != state.Mode || ++frames > 8) { CancelNavigationRestore(); return; }
+            if (processPage.Visibility != Visibility.Visible || Descendant<ScrollViewer>(processList) is not { } scroll) return;
+            var horizontal = processTable.HorizontalScroll;
+            double horizontalOffset = Math.Min(state.HorizontalOffset, horizontal.ScrollableWidth);
+            bool aligned = false;
+            if (state.Anchor is { } key && current.TryGetValue(key, out var row) && model.IsCurrent(row) && slotsByRow.TryGetValue(row, out var slot)) {
+                if (frames == 1) { processList.ScrollIntoView(slot, ScrollIntoViewAlignment.Leading); processList.UpdateLayout(); }
+                if (processList.ContainerFromItem(slot) is FrameworkElement { IsLoaded: true, ActualHeight: > 0 } container
+                    && ReferenceEquals(processList.ItemFromContainer(container), slot)) {
+                    double top = container.TransformToVisual(processList).TransformPoint(default).Y;
+                    double offset = Math.Clamp(scroll.VerticalOffset + top - state.AnchorTop, 0, scroll.ScrollableHeight);
+                    aligned = Math.Abs(top - state.AnchorTop) < .5;
+                    if (!aligned) scroll.ChangeView(null, offset, null, true);
+                }
+            } else {
+                double offset = Math.Min(state.VerticalOffset, scroll.ScrollableHeight);
+                aligned = Math.Abs(scroll.VerticalOffset - offset) < .5;
+                if (!aligned) scroll.ChangeView(null, offset, null, true);
+            }
+            if (Math.Abs(horizontal.HorizontalOffset - horizontalOffset) >= .5) { horizontal.ChangeView(horizontalOffset, null, null, true); aligned = false; }
+            aligned &= RestoreNavigationGroupOffset(state, frames == 1);
+            settled = aligned ? settled + 1 : 0;
+            if (settled == 2) CancelNavigationRestore();
+        }
+        navigationRestoreFrame = Frame; CompositionTarget.Rendering += Frame;
+    }
+
+    private bool RestoreNavigationGroupOffset(ProcessNavigationState state, bool first)
+    {
+        if (state.Mode != ProcessMode.Applications || applicationWorkspace.ColumnDefinitions[0].Width.Value == 0
+            || Descendant<ScrollViewer>(applicationGroups) is not { } scroll) return true;
+        double offset = Math.Min(state.GroupOffset, scroll.ScrollableHeight);
+        if (state.GroupAnchor is { } key && model.Applications.Visible.FirstOrDefault(row => row.Key == key) is { } row) {
+            if (first) { applicationGroups.ScrollIntoView(row, ScrollIntoViewAlignment.Leading); applicationGroups.UpdateLayout(); }
+            if (applicationGroups.ContainerFromItem(row) is not FrameworkElement { IsLoaded: true, ActualHeight: > 0 } container
+                || !ReferenceEquals(applicationGroups.ItemFromContainer(container), row)) return false;
+            double top = container.TransformToVisual(applicationGroups).TransformPoint(default).Y;
+            offset = Math.Clamp(scroll.VerticalOffset + top - state.GroupTop, 0, scroll.ScrollableHeight);
+            if (Math.Abs(top - state.GroupTop) < .5) return true;
+        } else if (Math.Abs(scroll.VerticalOffset - offset) < .5) return true;
+        scroll.ChangeView(null, offset, null, true); return false;
     }
 
     private void RefreshApplicationGroups()

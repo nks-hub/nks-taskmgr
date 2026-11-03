@@ -9,6 +9,7 @@ public sealed partial class MainWindow
         try {
             applicationTemplateCheckRunning = true;
             model.SetPaused(true);
+            await CheckApplicationNavigationAsync();
             ShowApplications(true);
             ShowView(DesktopView.Applications);
             await ApplicationGroupTemplateChecks.RunAsync(applicationGroups, applicationChoice, App.Trace);
