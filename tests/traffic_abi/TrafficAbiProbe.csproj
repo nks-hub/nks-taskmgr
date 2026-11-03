@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <PublishAot>true</PublishAot>
+    <IlcTreatWarningsAsErrors>true</IlcTreatWarningsAsErrors>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <TrafficFixturePath Condition="'$(TrafficFixturePath)' == ''">$(MSBuildThisFileDirectory)..\..\build\msvc\Release\nks-traffic-test-api.dll</TrafficFixturePath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\interop\dotnet\NksTaskMgr.Native.csproj" />
+    <None Include="$(TrafficFixturePath)" Link="nks-monitor.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+  <Target Name="RequireTrafficFixture" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(TrafficFixturePath)')" Text="Build nks-traffic-test-api before publishing the traffic ABI probe." />
+  </Target>
+</Project>

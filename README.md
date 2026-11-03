@@ -204,6 +204,16 @@ dotnet publish tests/native_aot/NativeAotProbe.csproj -c Release -r win-x64 -o b
 
 This check reads process, device, and service snapshots, validates ABI layouts and process identity, and retains frames after stopping collectors and collecting managed memory. Services use a separate ABI in the same DLL; their worker stays inactive until requested. It is a console check; the WinUI UI comparison remains open.
 
+Build the separate traffic ABI fixture and publish its AOT probe:
+
+```powershell
+cmake --build --preset release --target nks-traffic-test-api
+dotnet publish tests/traffic_abi/TrafficAbiProbe.csproj -c Release -r win-x64 -o build/traffic-abi-probe
+./build/traffic-abi-probe/TrafficAbiProbe.exe
+```
+
+Controlled disk observations exercise the production event store, C API serializer, and C# decoder. The probe checks malformed attribution, retained frames, and revocation after source loss. Its fixture DLL stays in the probe output. Live disk capture remains a separate runtime check.
+
 Process identity uses the full 128-bit Windows boot identifier with the PID and generation. `nks_frame_get_boot_data` returns both identifier halves and their availability state. The ABI v1 `boot_time` field remains wall-clock metadata and is not an identity key. Denied or unsupported boot queries report their state without stopping process collection.
 
 Run the collection benchmark:
