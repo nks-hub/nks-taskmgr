@@ -65,6 +65,8 @@ public sealed partial class MainWindow
             var button = Choice(seconds == 60 ? "60 s" : "10 min"); CompactPerformanceChoice(button); rangeButtons.Add(button);
             button.Click += (_, _) => { rangeSeconds = seconds; RefreshPerformance(); }; chartControls.Children.Add(button);
         }
+        resourceEyebrow.FontSize = 10; resourceEyebrow.VerticalAlignment = VerticalAlignment.Center;
+        performanceReading.Children.Add(resourceEyebrow);
         resourceValue.FontSize = 18; resourceValue.CharacterSpacing = -15; performanceReading.Children.Add(resourceValue);
         resourceUnit.FontSize = 11; resourceUnit.VerticalAlignment = VerticalAlignment.Bottom; resourceUnit.Margin = new Thickness(0, 0, 0, 2); performanceReading.Children.Add(resourceUnit);
         Grid.SetColumn(performanceReading, 1); performanceHeading.Children.Add(performanceReading); content.Children.Add(performanceHeading);

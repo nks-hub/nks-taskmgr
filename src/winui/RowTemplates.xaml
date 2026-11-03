@@ -26,7 +26,7 @@
         </Grid>
       </DataTemplate>
       <DataTemplate x:Key="ResourceTemplate" x:DataType="local:ResourceRow">
-        <Grid Height="50" Padding="8,0" ColumnSpacing="10" ToolTipService.ToolTip="{x:Bind Description, Mode=OneWay}">
+        <Grid Height="{x:Bind PreviewRowHeight}" Padding="8,0" ColumnSpacing="10" ToolTipService.ToolTip="{x:Bind Description, Mode=OneWay}">
           <Grid.ColumnDefinitions><ColumnDefinition Width="64" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
           <Grid Width="64" Height="38" VerticalAlignment="Center">
             <Grid Margin="1">
@@ -39,6 +39,7 @@
           </Grid>
           <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
             <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Title, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Description, Mode=OneWay}" FontSize="10" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
             <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Value, Mode=OneWay}" FontSize="11" Foreground="{x:Bind Color}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Grid>

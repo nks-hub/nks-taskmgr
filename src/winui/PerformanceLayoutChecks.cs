@@ -20,7 +20,7 @@ public sealed partial class MainWindow
 
         var elements = new List<FrameworkElement> {
             chartGrid, facts, performanceFacts, consumers, chart, processors, coreOverlay, pageFile, pageFileTitle,
-            plotToolbar, chartControls, cpuModes, resourceTitle, resourceDescription, resourceValue, resourceUnit,
+            plotToolbar, chartControls, cpuModes, resourceTitle, resourceDescription, resourceEyebrow, resourceValue, resourceUnit,
             timelineSelection, historicalProcessesButton, diskTransferPanel, diskTransfers, gpuPanel, gpuEngines,
             gpuMemory, gpuDedicated, gpuShared
         };

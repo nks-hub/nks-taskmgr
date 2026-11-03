@@ -51,8 +51,8 @@ public sealed partial class MainWindow
         for (int i = 0; i < cpuButtons.Count; ++i) SelectChoice(cpuButtons[i], cpuMode == i);
         SelectChoice(scaleChoice, scaleChoice.IsChecked == true);
         resourceEyebrow.Text = resource.Kind switch {
-            ResourceKind.Cpu => "VYUŽITÍ PROCESORU", ResourceKind.Memory => "FYZICKÁ PAMĚŤ", ResourceKind.Disk => "AKTIVITA DISKU",
-            ResourceKind.Gpu => "GRAFICKÝ ADAPTÉR", _ => "SÍŤOVÝ ADAPTÉR"
+            ResourceKind.Cpu => "Využití", ResourceKind.Memory => "Použito", ResourceKind.Disk => "Aktivní čas",
+            ResourceKind.Gpu => "Využití", _ => "Příjem"
         };
         bool cpu = resource.Kind == ResourceKind.Cpu, memory = resource.Kind == ResourceKind.Memory, gpu = resource.Kind == ResourceKind.Gpu;
         cpuModes.Visibility = cpu ? Visibility.Visible : Visibility.Collapsed;
@@ -103,7 +103,8 @@ public sealed partial class MainWindow
             Fact("Logické procesory", model.LogicalProcessors.ToString()); Fact("Procesy", model.Processes.Count.ToString());
             Fact("Doba sběru", Display.Number(model.CollectionMs, " ms")); Fact("Vlákna", model.Processes.Sum(row => (long)row.Threads).ToString());
         } else if (memory && model.Memory.State == SampleState.Valid) {
-            Hardware(Display.Number((model.Memory.InstalledBytes > 0 ? model.Memory.InstalledBytes : model.Memory.PhysicalBytes) / 1073741824d, " GiB"));
+            Hardware((model.Memory.InstalledBytes > 0 ? "Instalováno " : "Fyzická paměť ")
+                + Display.Number((model.Memory.InstalledBytes > 0 ? model.Memory.InstalledBytes : model.Memory.PhysicalBytes) / 1073741824d, " GiB"));
             Fact("Dostupná paměť", Display.Number(model.Memory.AvailableBytes / 1073741824d, " GiB"));
             Fact("Potvrzeno / limit", Display.Number(model.Memory.CommittedBytes / 1073741824d, " / ") + Display.Number(model.Memory.CommitLimitBytes / 1073741824d, " GiB"));
             Fact("Stránkovaný fond", Display.Number(model.Memory.PagedPoolBytes / 1073741824d, " GiB"));

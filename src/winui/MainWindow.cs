@@ -202,7 +202,6 @@ public sealed partial class MainWindow : Window
         itemStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, ProcessTable.RowHeight));
         processList.ItemContainerStyle = itemStyle;
         var resourceStyle = new Style { TargetType = typeof(ListViewItem), BasedOn = itemStyle };
-        resourceStyle.Setters.Add(new Setter(FrameworkElement.HeightProperty, 50d));
         resourceStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 50d));
         resourceList.ItemContainerStyle = resourceStyle;
         AutomationProperties.SetName(resourceList, "Jednotlivé prostředky systému");
