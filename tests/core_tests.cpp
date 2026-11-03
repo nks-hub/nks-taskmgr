@@ -203,6 +203,83 @@ int main() {
         {"suspend interval creates a gap", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(100); s.apply(b); require(b.processes[0].cpuPercent.state == nks::SampleState::gap, "Suspend interval is not marked"); }},
         {"topology change requires a new baseline", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(2); b.logicalProcessors = 8; s.apply(b); require(b.processes[0].cpuPercent.state == nks::SampleState::gap, "Topology change reused a baseline"); }},
         {"process I/O uses the actual interval", [] { nks::ProcessSampler s; auto a = sample(); s.apply(a); auto b = sample(3); b.processes[0].counters.readIoBytes = 8192; s.apply(b); require(b.processes[0].readIoBytesPerSecond.valid() && b.processes[0].readIoBytesPerSecond.value == 4096, "Wrong I/O rate"); }},
+        {"sampler baseline outlives caller storage and retains independent observation times", [] {
+            nks::ProcessSampler sampler;
+            nks::ProcessSnapshot after;
+            {
+                auto before = sample(); before.processes[0].name.assign(4096, L'x');
+                before.cpuModel = L"example CPU"; before.memoryFacts = {{L"speed", L"6000"}};
+                before.processes[0].counters = {1000000, 2000000, 100, 200};
+                before.processorState = nks::SampleState::valid;
+                before.systemKernel100ns = 1000; before.systemUser100ns = 500; before.systemIdle100ns = 300;
+                before.processors = {{0, 0, 1000, 500, 300}};
+                before.measurements.systemCpu.observedAtNs = 1010000000;
+                before.measurements.logicalCpu.observedAtNs = 1020000000;
+                before.measurements.systemMemory.observedAtNs = 1030000000;
+                after = before; sampler.apply(before);
+                before.processes[0].counters = {900000000, 900000000, 900000000, 900000000};
+                before.processors[0].kernel100ns = 900000000;
+                before.measurements = {};
+            }
+            after.measuredAt += std::chrono::milliseconds(250);
+            after.processes[0].counters.kernel100ns += 500000; after.processes[0].counters.user100ns += 750000;
+            after.processes[0].counters.readIoBytes += 1024; after.processes[0].counters.writeIoBytes += 2048;
+            after.systemKernel100ns += 100; after.systemUser100ns += 100; after.systemIdle100ns += 40;
+            after.processors[0].kernel100ns += 100; after.processors[0].user100ns += 100; after.processors[0].idle100ns += 40;
+            after.measurements.systemCpu.observedAtNs = 1280000000;
+            after.measurements.logicalCpu.observedAtNs = 1310000000;
+            after.measurements.systemMemory.observedAtNs = 1370000000;
+            sampler.apply(after);
+            const auto& process = after.processes[0];
+            require(process.cpuPercent.valid() && process.cpuPercent.value == 12.5
+                && process.readIoBytesPerSecond.valid() && process.readIoBytesPerSecond.value == 4096
+                && process.writeIoBytesPerSecond.valid() && process.writeIoBytesPerSecond.value == 8192,
+                "Process deltas retained caller storage or lost counters");
+            require(after.systemCpuPercent.valid() && after.systemCpuPercent.value == 80
+                && after.processors[0].cpuPercent.valid() && after.processors[0].cpuPercent.value == 80,
+                "System or logical CPU baseline retained caller storage");
+            const auto& metadata = after.measurements;
+            require(metadata.processCpu.intervalNs == 250000000 && metadata.processIo.intervalNs == 250000000
+                && metadata.processCpu.cadenceNs == 250000000 && metadata.processMemory.cadenceNs == 250000000
+                && metadata.processCpu.normalizationDivisor == 4 && metadata.systemCpu.cadenceNs == 270000000
+                && metadata.logicalCpu.cadenceNs == 290000000 && metadata.systemMemory.cadenceNs == 340000000,
+                "Independent observation times or actual process interval changed");
+            require(after.processes[0].name.size() == 4096 && after.memoryFacts[0].value == L"6000",
+                "Sampler consumed the current snapshot text");
+        }},
+        {"sampler reset discards counters and all observation baselines", [] {
+            nks::ProcessSampler sampler;
+            auto before = sample(); before.measurements.systemCpu.observedAtNs = 1000000000;
+            before.measurements.logicalCpu.observedAtNs = 1000000000;
+            before.measurements.systemMemory.observedAtNs = 1000000000;
+            sampler.apply(before); sampler.reset();
+            auto after = sample(2); after.processes[0].counters.user100ns = 10000000;
+            after.measurements.systemCpu.observedAtNs = 2000000000;
+            after.measurements.logicalCpu.observedAtNs = 2000000000;
+            after.measurements.systemMemory.observedAtNs = 2000000000;
+            sampler.apply(after);
+            require(after.processes[0].cpuPercent.state == nks::SampleState::first
+                && after.processes[0].readIoBytesPerSecond.state == nks::SampleState::first
+                && after.systemCpuPercent.state == nks::SampleState::first
+                && after.measurements.processCpu.cadenceNs == 0 && after.measurements.systemCpu.cadenceNs == 0
+                && after.measurements.logicalCpu.cadenceNs == 0 && after.measurements.systemMemory.cadenceNs == 0,
+                "Reset retained an old counter or observation baseline");
+            auto next = sample(3); next.processes[0].counters.user100ns = 20000000; sampler.apply(next);
+            require(next.processes[0].cpuPercent.valid() && next.processes[0].cpuPercent.value == 25,
+                "Reset did not retain the replacement baseline");
+        }},
+        {"topology gap replaces process and observation baselines", [] {
+            nks::ProcessSampler sampler;
+            auto before = sample(); before.measurements.systemCpu.observedAtNs = 1000000000; sampler.apply(before);
+            auto changed = sample(2); changed.logicalProcessors = 8; changed.processes[0].counters.user100ns = 10000000;
+            changed.measurements.systemCpu.observedAtNs = 2100000000; sampler.apply(changed);
+            auto after = sample(3); after.logicalProcessors = 8; after.processes[0].counters.user100ns = 20000000;
+            after.measurements.systemCpu.observedAtNs = 3300000000; sampler.apply(after);
+            require(changed.processes[0].cpuPercent.state == nks::SampleState::gap
+                && after.processes[0].cpuPercent.valid() && after.processes[0].cpuPercent.value == 12.5
+                && after.measurements.processCpu.normalizationDivisor == 8 && after.measurements.systemCpu.cadenceNs == 1200000000,
+                "Topology gap retained the previous valid sample as baseline");
+        }},
         {"processor groups are summed without partial results", [] { failSecondGroup = false; const std::array<nks::ProcessorGroup, 2> groups{{{0, 2}, {1, 3}}}; const auto result = nks::queryProcessorTimes(groups, fakeGroup); require(result.state == nks::SampleState::valid && result.kernel100ns == 150 && result.user100ns == 100 && result.idle100ns == 50, "Processor group counters were not combined"); }},
         {"failed processor group invalidates the complete sample", [] { failSecondGroup = true; const std::array<nks::ProcessorGroup, 2> groups{{{0, 2}, {1, 3}}}; const auto result = nks::queryProcessorTimes(groups, fakeGroup); require(result.state != nks::SampleState::valid && result.kernel100ns == 0, "Partial processor groups were reported as a whole machine"); }},
         {"system kernel time includes idle", [] { nks::ProcessSampler s; auto a = sample(); a.processorState = nks::SampleState::valid; a.systemKernel100ns = 100; a.systemUser100ns = 100; a.systemIdle100ns = 40; s.apply(a); auto b = a; b.measuredAt += std::chrono::seconds(1); b.systemKernel100ns += 100; b.systemUser100ns += 100; b.systemIdle100ns += 40; s.apply(b); require(b.systemCpuPercent.valid() && std::abs(b.systemCpuPercent.value - 80) < .001, "Idle was subtracted from the wrong system total"); }},

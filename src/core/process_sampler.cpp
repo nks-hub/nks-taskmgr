@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
+#include <utility>
 
 namespace nks {
 namespace {
@@ -27,6 +28,35 @@ Metric<double> rate(std::uint64_t current, std::uint64_t before, double seconds)
 
 }
 
+void ProcessSampler::remember(const ProcessSnapshot& snapshot)
+{
+    Baseline first;
+    auto& value = previous ? *previous : first;
+    value.processes.reserve(snapshot.processes.size());
+    value.processors.reserve(snapshot.processors.size());
+    value.processes.resize(snapshot.processes.size());
+    value.processors.resize(snapshot.processors.size());
+    value.measuredAt = snapshot.measuredAt;
+    value.logicalProcessors = snapshot.logicalProcessors;
+    value.systemKernel100ns = snapshot.systemKernel100ns;
+    value.systemUser100ns = snapshot.systemUser100ns;
+    value.systemIdle100ns = snapshot.systemIdle100ns;
+    value.processorState = snapshot.processorState;
+    value.systemCpuObservedAtNs = snapshot.measurements.systemCpu.observedAtNs;
+    value.logicalCpuObservedAtNs = snapshot.measurements.logicalCpu.observedAtNs;
+    value.systemMemoryObservedAtNs = snapshot.measurements.systemMemory.observedAtNs;
+    for (std::size_t i = 0; i < snapshot.processes.size(); ++i) {
+        const auto& process = snapshot.processes[i];
+        const auto& counters = process.counters;
+        value.processes[i] = {process.identity, counters.kernel100ns, counters.user100ns, counters.readIoBytes, counters.writeIoBytes};
+    }
+    for (std::size_t i = 0; i < snapshot.processors.size(); ++i) {
+        const auto& processor = snapshot.processors[i];
+        value.processors[i] = {processor.group, processor.index, processor.kernel100ns, processor.user100ns, processor.idle100ns};
+    }
+    if (!previous) previous = std::move(first);
+}
+
 void ProcessSampler::apply(ProcessSnapshot& snapshot)
 {
     const auto observed = measurementTime(snapshot.measuredAt);
@@ -39,11 +69,11 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
     metadata.processMemory = measurementMetadata(MeasurementUnit::bytes, MeasurementNormalization::none,
         MeasurementBasis::gauge, observed, beforeObserved);
     metadata.systemCpu = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::wholeMachine,
-        MeasurementBasis::counterRatio, metadata.systemCpu.observedAtNs, previous ? previous->measurements.systemCpu.observedAtNs : 0);
+        MeasurementBasis::counterRatio, metadata.systemCpu.observedAtNs, previous ? previous->systemCpuObservedAtNs : 0);
     metadata.logicalCpu = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::logicalProcessor,
-        MeasurementBasis::counterRatio, metadata.logicalCpu.observedAtNs, previous ? previous->measurements.logicalCpu.observedAtNs : 0);
+        MeasurementBasis::counterRatio, metadata.logicalCpu.observedAtNs, previous ? previous->logicalCpuObservedAtNs : 0);
     metadata.systemMemory = measurementMetadata(MeasurementUnit::bytes, MeasurementNormalization::none,
-        MeasurementBasis::gauge, metadata.systemMemory.observedAtNs, previous ? previous->measurements.systemMemory.observedAtNs : 0);
+        MeasurementBasis::gauge, metadata.systemMemory.observedAtNs, previous ? previous->systemMemoryObservedAtNs : 0);
     snapshot.systemCpuPercent = {0, SampleState::first, MetricSource::processorTime};
     for (auto& processor : snapshot.processors) processor.cpuPercent = {0, SampleState::first, MetricSource::processorTime};
     for (auto& process : snapshot.processes) {
@@ -52,7 +82,7 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
         process.writeIoBytesPerSecond = {};
     }
     if (!previous) {
-        previous = snapshot;
+        remember(snapshot);
         return;
     }
     const auto intervalNs = std::chrono::duration_cast<std::chrono::nanoseconds>(snapshot.measuredAt - previous->measuredAt).count();
@@ -66,13 +96,13 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
         }
         snapshot.systemCpuPercent.state = SampleState::gap;
         for (auto& processor : snapshot.processors) processor.cpuPercent.state = SampleState::gap;
-        previous = snapshot;
+        remember(snapshot);
         return;
     }
     setMeasurementInterval(metadata.processCpu, intervalNs, true);
     setMeasurementInterval(metadata.processIo, intervalNs, true);
 
-    std::unordered_map<ProcessIdentity, const ProcessRecord*, IdentityHash> old;
+    std::unordered_map<ProcessIdentity, const ProcessBaseline*, IdentityHash> old;
     old.reserve(previous->processes.size());
     for (const auto& record : previous->processes)
         old.emplace(record.identity, &record);
@@ -83,7 +113,7 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
         const auto match = old.find(process.identity);
         if (match == old.end())
             continue;
-        const auto& before = match->second->counters;
+        const auto& before = *match->second;
         const auto& now = process.counters;
         if (now.kernel100ns < before.kernel100ns || now.user100ns < before.user100ns) {
             process.cpuPercent.state = SampleState::gap;
@@ -133,7 +163,7 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
     }
     if (snapshot.systemCpuPercent.valid() && invalidLogicalDelta)
         snapshot.systemCpuPercent.state = SampleState::gap;
-    previous = snapshot;
+    remember(snapshot);
 }
 
 }

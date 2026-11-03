@@ -23,7 +23,8 @@ public sealed partial class MonitorModel : IDisposable
     internal IEnumerable<ResourceRow> AllResources => resources.Values;
     public Dictionary<(uint Group, uint Index), HistorySeries> Processors { get; } = [];
     public HistorySeries PageFile { get; private set; } = new();
-    public Dictionary<string, Dictionary<string, string>> Hardware { get; } = [];
+    private readonly HardwareFactCache hardwareFacts = new();
+    public Dictionary<string, Dictionary<string, string>> Hardware => hardwareFacts.Values;
     public MemoryInfo Memory { get; private set; }
     public BootIdentityInfo BootIdentity { get; private set; } = new() { State = SampleState.Unavailable };
     public string CpuModel { get; private set; } = string.Empty;
@@ -79,14 +80,16 @@ public sealed partial class MonitorModel : IDisposable
         bool changed = resumed;
         using var frame = monitor.Read();
         if (frame is not null) {
+            FrameFlags hardwareScope = 0;
             ReadMeasurements(frame);
             frame.Read(view => {
+                hardwareScope = view.Flags;
                 if ((view.Flags & FrameFlags.ProcessData) != 0)
                     BootIdentity = frame.ReadBootIdentity() ?? new BootIdentityInfo { State = SampleState.Unavailable };
                 ApplyFrame(frame, view);
                 if ((view.Flags & FrameFlags.ResourceData) != 0) frame.ReadGpu(data => ApplyGpu(data, false));
             });
-            frame.ReadHardware(ApplyHardware);
+            frame.ReadHardware(data => ApplyHardware(data, hardwareScope));
             changed = true;
         }
         changed |= ReadCollectedHistory();
@@ -199,19 +202,14 @@ public sealed partial class MonitorModel : IDisposable
         }
     }
 
-    private unsafe void ApplyHardware(HardwareData data)
+    private unsafe void ApplyHardware(HardwareData data, FrameFlags scope)
     {
-        var grouped = new Dictionary<string, Dictionary<string, string>>();
-        for (uint i = 0; i < data.FactCount; ++i) {
-            var fact = data.Facts[i]; string id = fact.ResourceId.Copy();
-            if (!grouped.TryGetValue(id, out var values)) grouped.Add(id, values = []);
-            values[fact.Name.Copy()] = fact.Value.Copy();
-        }
-        foreach (var (id, values) in grouped) {
-            Hardware[id] = values;
-            if (resources.TryGetValue(id, out var row)) row.HardwareFacts = values;
-        }
+        hardwareFacts.Apply(data, scope);
+        foreach (var row in resources.Values)
+            row.HardwareFacts = Hardware.TryGetValue(row.Id, out var values) ? values : EmptyHardwareFacts;
     }
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyHardwareFacts = new Dictionary<string, string>();
 
     private void SyncResources()
     {
