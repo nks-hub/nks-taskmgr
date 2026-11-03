@@ -7,10 +7,11 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class MainWindow
 {
     private UpdateWindow? updateWindow;
+    private readonly Button updatesButton = Button("Aktualizace");
 
     private void ConfigureUpdates()
     {
-        var button = Button("Aktualizace");
+        var button = updatesButton;
         button.FontSize = 11; button.Height = 29;
         button.Padding = new Thickness(4, 0, 4, 0);
         button.HorizontalAlignment = HorizontalAlignment.Stretch;

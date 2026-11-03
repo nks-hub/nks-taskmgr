@@ -339,6 +339,7 @@ public sealed partial class MainWindow : Window
         if (root.ActualWidth <= 0) return;
         double width = root.ActualWidth;
         root.ColumnDefinitions[0].Width = new GridLength(width <= 1000 ? 68 : 88); sidebar.Width = width <= 1000 ? 68 : 88;
+        ResizeSidebarActions(width <= 1000);
         double margin = width <= 1000 ? 20 : performance ? 25 : 30;
         shellHeader.Padding = new Thickness(margin, 0, margin, 0);
         page.Margin = new Thickness(margin, view == DesktopView.Services ? 1 : 0, margin, 14);
