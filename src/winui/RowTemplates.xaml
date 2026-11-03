@@ -41,14 +41,14 @@
         </Grid>
       </DataTemplate>
       <DataTemplate x:Key="ProcessTemplate" x:DataType="local:ProcessSlot">
-        <local:ProcessRowGrid Columns="{x:Bind Columns}" AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}" BorderBrush="{ThemeResource NksDividerBrush}" BorderThickness="0,0,0,1" ColumnSpacing="0" Padding="16,0">
+        <local:ProcessRowGrid Columns="{x:Bind Columns}" AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}" AutomationProperties.HelpText="{x:Bind Row.TableMetricsDescription, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind Row.TableMetricsDescription, Mode=OneWay}" BorderBrush="{ThemeResource NksDividerBrush}" BorderThickness="0,0,0,1" ColumnSpacing="0" Padding="16,0">
           <local:ProcessNameCell Slot="{x:Bind}" />
           <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="1" Text="{x:Bind Row.PidText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
-          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="2" Text="{x:Bind Row.CpuText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
-          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="3" Text="{x:Bind Row.WorkingText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
-          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="4" Text="{x:Bind Row.PrivateText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
-          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="5" Text="{x:Bind Row.ReadText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
-          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="6" Text="{x:Bind Row.WriteText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
+          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="2" Text="{x:Bind Row.TableCpuText, Mode=OneWay}" FontSize="13" TextTrimming="CharacterEllipsis" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
+          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="3" Text="{x:Bind Row.TableWorkingText, Mode=OneWay}" FontSize="13" TextTrimming="CharacterEllipsis" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
+          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="4" Text="{x:Bind Row.TablePrivateText, Mode=OneWay}" FontSize="13" TextTrimming="CharacterEllipsis" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
+          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="5" Text="{x:Bind Row.TableReadText, Mode=OneWay}" FontSize="13" TextTrimming="CharacterEllipsis" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
+          <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Grid.Column="6" Text="{x:Bind Row.TableWriteText, Mode=OneWay}" FontSize="13" TextTrimming="CharacterEllipsis" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
         </local:ProcessRowGrid>
       </DataTemplate>
 </ResourceDictionary>

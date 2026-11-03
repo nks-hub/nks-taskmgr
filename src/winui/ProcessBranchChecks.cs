@@ -8,6 +8,8 @@ public static partial class WinUiChecks
     {
         BranchFilteringAndUpdates();
         BranchVerifiedIdentities();
+        BranchCompletenessLooksDownward();
+        BranchLayoutKeepsKnownLifetimes();
         BranchIncompleteMetrics();
         BranchCyclesAndDepth();
         App.Trace("Process branch values passed: full-tree sums, filtering, held updates, own values, verified identities, partial data and bounded cycles/depth");
@@ -105,7 +107,7 @@ public static partial class WinUiChecks
             "Creation metadata for another PID lifetime joined an unverified descendant to the sum.");
         creation[1].Generation = 7; creation[1].Created100ns = 50;
         ApplyProcessFixture(model, [parent, child], creation);
-        Require(root.BranchTotal.Members == 1 && root.BranchTotal.Incomplete, "A younger reused parent PID included an older child.");
+        Require(root.BranchTotal.Members == 1 && !root.BranchTotal.Incomplete, "A younger reused parent PID included an older child or became an uncertain branch.");
         var a = BranchRow(BranchProcess(10, 100, 2), 100);
         var b = BranchRow(BranchProcess(20, 200, 3, 10), 200);
         var c = BranchRow(BranchProcess(10, 100, 50), 100, new BootIdentifier(3, 4));
@@ -156,6 +158,50 @@ public static partial class WinUiChecks
         second.ReadIoBytesPerSecond.Value = double.PositiveInfinity;
         totals = ProcessBranchTotals.Calculate([BranchRow(second, 200)]);
         Require(totals[0].Cpu.Known == 0 && totals[0].Read.Known == 0, "Negative or non-finite samples entered a known branch total.");
+    }
+
+    private static void BranchCompletenessLooksDownward()
+    {
+        var leaf = BranchRow(BranchProcess(20, 200, 3, 10), 200);
+        var totals = ProcessBranchTotals.Calculate([leaf]);
+        leaf.SetBranchValues(totals[0], true, false);
+        Require(totals[0].Members == 1 && !totals[0].Incomplete && totals[0].Cpu.Known == 1
+            && leaf.TableCpuText == leaf.CpuText && leaf.TableWorkingText == leaf.WorkingText,
+            "An absent ancestor marked a fully measured leaf's own branch as partial.");
+        var child = BranchRow(BranchProcess(30, 300, 4, 20), 300);
+        totals = ProcessBranchTotals.Calculate([leaf, child]); leaf.SetBranchValues(totals[0], true, false);
+        Require(totals[0].Members == 2 && !totals[0].Incomplete && totals[0].Cpu.Value == 7
+            && !leaf.TableCpuText.StartsWith("≥ ", StringComparison.Ordinal),
+            "An absent ancestor contaminated a verified complete subtree below the orphaned row.");
+        var younger = BranchRow(BranchProcess(10, 400, 2), 400);
+        totals = ProcessBranchTotals.Calculate([younger, leaf]); leaf.SetBranchValues(totals[1], true, false);
+        Require(totals.All(total => total.Members == 1 && !total.Incomplete) && totals[1].Cpu.Value == 3
+            && leaf.TableCpuText == leaf.CpuText,
+            "A provably unrelated younger reused parent PID made an exact branch partial.");
+        var unknown = BranchRow(BranchProcess(30, 300, 4, 20), 0);
+        totals = ProcessBranchTotals.Calculate([leaf, unknown]); leaf.SetBranchValues(totals[0], true, false);
+        Require(totals[0].Members == 1 && totals[0].Incomplete && leaf.TableCpuText.StartsWith("≥ ", StringComparison.Ordinal)
+            && totals[1].Cpu.Known == 0, "A genuinely unverified possible descendant lost its partial-membership warning.");
+    }
+
+    private static void BranchLayoutKeepsKnownLifetimes()
+    {
+        var parent = BranchRow(BranchProcess(10, 100, 2), 100);
+        var child = BranchRow(BranchProcess(20, 200, 3, 10), 200);
+        parent.SetStatus(true, false, false);
+        var visible = ProcessTree.Order([child, parent], new HashSet<ProcessKey>());
+        var totals = ProcessBranchTotals.Calculate([parent, child]);
+        Require(visible.Count == 2 && ReferenceEquals(visible[0], parent) && parent.HasChildren && child.Depth == 1
+            && totals[0].Members == 1 && totals[0].Cpu.Known == 0,
+            "Strict current-branch membership removed an ended parent's known layout relation.");
+        parent.SetStatus(false, false, false);
+        var missing = BranchProcess(20, 0, 3, 10); missing.GenerationKind = GenerationKind.Missing;
+        child = BranchRow(missing, 200);
+        visible = ProcessTree.Order([child, parent], new HashSet<ProcessKey>());
+        totals = ProcessBranchTotals.Calculate([parent, child]);
+        Require(visible.Count == 2 && ReferenceEquals(visible[0], parent) && parent.HasChildren && child.Depth == 1
+            && totals[0].Members == 1 && totals[0].Incomplete && totals[1].Cpu.Known == 0,
+            "An unavailable lifetime key erased raw-verified layout chronology or entered a fresh branch total.");
     }
 
     private static void BranchCyclesAndDepth()

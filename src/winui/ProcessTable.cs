@@ -18,7 +18,7 @@ public sealed partial class ProcessTable : Grid
     private readonly Dictionary<int, Button> headings = [];
     private int? draggedColumn;
     private int sortColumn;
-    private bool descending;
+    private bool descending, branchValues;
     public ProcessColumns Columns { get; } = new();
     internal Grid Header => header;
     internal ScrollViewer HorizontalScroll => scroll;
@@ -36,7 +36,6 @@ public sealed partial class ProcessTable : Grid
             };
             AutomationProperties.SetAutomationId(button, "process-column-" + column.Id);
             button.Click += (_, _) => sort(column.Id);
-            ToolTipService.SetToolTip(button, "Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další volby.");
             button.ContextFlyout = ColumnMenu(column);
             button.DragStarting += (_, args) => { draggedColumn = column.Id; args.Data.SetText(column.Title); args.Data.RequestedOperation = DataPackageOperation.Move; };
             button.DropCompleted += (_, _) => draggedColumn = null;
@@ -98,10 +97,28 @@ public sealed partial class ProcessTable : Grid
     public void SetSort(int id, bool reverse)
     {
         sortColumn = id; descending = reverse;
+        UpdateHeadings();
+    }
+
+    internal void SetBranchValues(bool value)
+    {
+        if (branchValues == value) return;
+        branchValues = value; UpdateHeadings();
+    }
+
+    private void UpdateHeadings()
+    {
         foreach (var column in Columns.Items) {
             var button = headings[column.Id];
-            button.Content = column.Title + (column.Id == id ? reverse ? " ↓" : " ↑" : "");
-            AutomationProperties.SetName(button, column.Title + (column.Id == id ? reverse ? ", sestupně" : ", vzestupně" : ", seřadit"));
+            bool metric = column.Id >= 2;
+            string scope = metric ? branchValues ? ", proces s potomky" : ", vlastní hodnoty" : "";
+            button.Content = column.Title + (column.Id == sortColumn ? descending ? " ↓" : " ↑" : "");
+            AutomationProperties.SetName(button, column.Title + scope
+                + (column.Id == sortColumn ? descending ? ", sestupně" : ", vzestupně" : ", seřadit"));
+            string help = "Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další volby.";
+            if (metric) help += branchValues ? " Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené." : " Vlastní hodnota procesu bez potomků.";
+            if (branchValues && column.Id == 3) help += " Sdílené stránky RAM se mohou započítat opakovaně.";
+            ToolTipService.SetToolTip(button, help);
         }
     }
 

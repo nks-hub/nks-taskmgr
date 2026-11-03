@@ -11,7 +11,7 @@ public static class ProcessTree
     internal static bool HasVerifiedIdentity(ProcessRow row) => !row.Ended && !row.Key.Boot.IsEmpty && row.Created100ns != 0
         && row.Key.Generation != 0 && row.Key.Kind is GenerationKind.CreationTime or GenerationKind.SequenceNumber;
 
-    internal static int[] ParentIndices(IReadOnlyList<ProcessRow> rows, out bool[] incomplete)
+    internal static int[] ParentIndices(IReadOnlyList<ProcessRow> rows, out bool[] incomplete, bool currentOnly = true)
     {
         incomplete = new bool[rows.Count];
         var parents = new int[rows.Count]; Array.Fill(parents, -1);
@@ -28,13 +28,15 @@ public static class ProcessTree
         for (int i = 0; i < rows.Count; ++i) {
             var row = rows[i];
             if (row.ParentPid == 0) continue;
-            if (!byPid.TryGetValue((row.Key.Boot, row.ParentPid), out int parent) || parent < 0) {
-                incomplete[i] = true; continue;
-            }
-            if (HasVerifiedIdentity(row) && HasVerifiedIdentity(rows[parent]) && IsVerifiedParent(row, rows[parent])) {
+            if (!byPid.TryGetValue((row.Key.Boot, row.ParentPid), out int parent) || parent < 0) continue;
+            if (parent == i) { incomplete[i] = true; continue; }
+            // A missing or provably younger ancestor does not make this row's descendants uncertain.
+            if (row.Created100ns != 0 && rows[parent].Created100ns > row.Created100ns) continue;
+            if ((!currentOnly || HasVerifiedIdentity(row) && HasVerifiedIdentity(rows[parent])) && IsVerifiedParent(row, rows[parent])) {
                 parents[i] = parent; ++children[parent];
-            } else { incomplete[i] = true; incomplete[parent] = true; }
+            } else incomplete[parent] = true;
         }
+        if (!currentOnly) return parents;
         var leaves = new Queue<int>();
         for (int i = 0; i < children.Length; ++i) if (children[i] == 0) leaves.Enqueue(i);
         while (leaves.TryDequeue(out int child)) {
@@ -50,7 +52,8 @@ public static class ProcessTree
 
     public static List<ProcessRow> Order(IReadOnlyList<ProcessRow> rows, IReadOnlySet<ProcessKey> collapsed)
     {
-        var parents = ParentIndices(rows, out _);
+        // The retained layout can still show ended lifetimes with known raw parent chronology.
+        var parents = ParentIndices(rows, out _, currentOnly: false);
         var children = new Dictionary<ProcessKey, List<ProcessRow>>(); var roots = new List<ProcessRow>();
         for (int i = 0; i < rows.Count; ++i) {
             var row = rows[i];

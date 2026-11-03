@@ -109,8 +109,8 @@ public static partial class WinUiChecks
         string expectedName = current.Name + (current.Ended ? " · ukončeno" : current.Stale ? " · zastaralé" : "");
         Check(name.NameLabel.Text == expectedName, "A recycled process label retained another name or status.");
         if (visible) {
-            string[] expected = [expectedName, current.PidText, current.CpuText, current.WorkingText,
-                current.PrivateText, current.ReadText, current.WriteText];
+            string[] expected = [expectedName, current.PidText, current.TableCpuText, current.TableWorkingText,
+                current.TablePrivateText, current.TableReadText, current.TableWriteText];
             for (int id = 0; id < expected.Length; ++id) {
                 string? actual = id == 0 ? name.NameLabel.Text : (row.Children[id] as TextBlock)?.Text;
                 Check(actual == expected[id], $"A visible process column {id} differs from its current source row: actual={actual};expected={expected[id]}.");

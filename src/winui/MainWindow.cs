@@ -37,6 +37,8 @@ public sealed partial class MainWindow : Window
     private readonly Button performanceNav = Button("Výkon"), processesNav = Button("Procesy"), servicesNav = Button("Služby");
     private readonly Button hardwareNav = Button("Sestava"), applicationNav = Button("Aplikace");
     private readonly List<(ProcessMode Mode, Button Button)> processModeButtons = [];
+    private readonly ComboBox processValueMode = new() { Width = 168, Height = 29, MinHeight = 0, FontSize = 11,
+        Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
     private readonly ListView resourceList = new() { SelectionMode = ListViewSelectionMode.Single, IsItemClickEnabled = false, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
     private readonly ListView processList = new() { SelectionMode = ListViewSelectionMode.Extended, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
     private readonly Grid performancePage = new(), processPage = new();
@@ -78,6 +80,8 @@ public sealed partial class MainWindow : Window
     private Task? smokeIconIsolation;
     private Task? smokeResourceContext;
     private Task? smokeTableLifecycle;
+    private Task? smokeBranchValues;
+    private bool processBranchCheckRunning;
     private int smokeIconsAt;
     private int smokeMinimizedAt, smokeReadyAt;
     private int smokeServicesStage, smokeServicesAt;
@@ -257,6 +261,18 @@ public sealed partial class MainWindow : Window
             var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : "Strom"); button.Height = 29;
             button.Click += (_, _) => SelectProcessMode(mode); filters.Children.Add(button); processModeButtons.Add((mode, button));
         }
+        processValueMode.Items.Add("Vlastní hodnoty"); processValueMode.Items.Add("Proces s potomky");
+        processValueMode.SelectedIndex = 0;
+        processValueMode.SelectionChanged += (_, _) => {
+            if (processValueMode.SelectedIndex < 0) return;
+            var value = processValueMode.SelectedIndex == 1 ? ProcessTableValueMode.ProcessWithDescendants : ProcessTableValueMode.Own;
+            if (model.TableValueMode == value) return;
+            model.SetTableValueMode(value); RefreshProcesses();
+        };
+        AutomationProperties.SetName(processValueMode, "Význam hodnot ve stromu procesů");
+        AutomationProperties.SetAutomationId(processValueMode, "process-tree-value-mode");
+        ToolTipService.SetToolTip(processValueMode, "Vlastní hodnoty patří jednomu PID. Proces s potomky sčítá CPU, paměť a I/O ověřených členů celé větve i při hledání nebo sbalení. Chybějící údaje jsou označené. Součet pracovních sad může sdílené stránky RAM započítat opakovaně.");
+        filters.Children.Add(processValueMode);
         filters.Children.Add(processCount); processCount.Margin = new Thickness(20, 8, 0, 0);
         toolbar.Children.Add(new ScrollViewer { Content = filters, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
@@ -324,7 +340,7 @@ public sealed partial class MainWindow : Window
 
     private void Tick()
     {
-        if (sortBenchmarkRunning || applicationTemplateCheckRunning) return;
+        if (sortBenchmarkRunning || applicationTemplateCheckRunning || processBranchCheckRunning) return;
         long cpuTick = BeginLiveCpuTick();
         try {
             bool minimized = IsIconic(windowHandle);
@@ -372,6 +388,11 @@ public sealed partial class MainWindow : Window
 
     private void RefreshProcesses()
     {
+        bool treeValues = model.Mode == ProcessMode.Tree;
+        processValueMode.Visibility = treeValues ? Visibility.Visible : Visibility.Collapsed;
+        int selectedValue = model.TableValueMode == ProcessTableValueMode.ProcessWithDescendants ? 1 : 0;
+        if (processValueMode.SelectedIndex != selectedValue) processValueMode.SelectedIndex = selectedValue;
+        processTable.SetBranchValues(treeValues && selectedValue == 1);
         foreach (var item in processModeButtons) {
             item.Button.Background = item.Mode == model.Mode ? choiceSelected : choiceIdle;
             item.Button.Foreground = item.Mode == model.Mode ? performanceInk : performanceMuted;
@@ -422,6 +443,9 @@ public sealed partial class MainWindow : Window
         if (smokeResourceContext is { IsCompleted: false }) return;
         smokeResourceContext?.GetAwaiter().GetResult();
         if (ready && !smokeModelsChecked) {
+            if (smokeBranchValues is null) { smokeBranchValues = CheckProcessBranchUiAsync(); return; }
+            if (!smokeBranchValues.IsCompleted) return;
+            smokeBranchValues.GetAwaiter().GetResult();
             CheckHeldProcessRefresh();
             CheckHardwareRefresh();
             WinUiChecks.ContextMenus();
