@@ -42,7 +42,64 @@ public static partial class WinUiChecks
         percent.Update("CPU", "", "", new Metric { Value = 7, State = SampleState.Valid }, default, default, 100, time);
         Require(percent.Maximum(time, 60) == 100 && memory.Maximum(time, 60) == 200,
             "Percent or memory previews changed their fixed physical scale.");
+        HiddenResourceView();
         App.Trace("Resource mini-graph cache passed: unchanged geometry, live metadata/stale state, upload, replacement and capacity");
+    }
+
+    private static unsafe void HiddenResourceView()
+    {
+        using var model = new MonitorModel();
+        const long time = 100_000_000_000;
+        void Apply(int sample) {
+            fixed (char* id = "graph-refresh-network", title = "Network", status = "Připojeno") {
+                var resource = new ResourceInfo {
+                    Kind = ResourceKind.Network, Id = new String16 { Data = id, Length = 21 },
+                    Title = new String16 { Data = title, Length = 7 }, Status = new String16 { Data = status, Length = 9 },
+                    Primary = new Metric { Value = (sample + 1) * 2_000_000, State = SampleState.Valid },
+                    Secondary = new Metric { Value = (sample + 1) * 3_000_000, State = SampleState.Valid }, Capacity = 100_000_000
+                };
+                long measured = time + sample * 1_000_000_000L;
+                model.Apply(new FrameView {
+                    Flags = FrameFlags.ProcessData | FrameFlags.ResourceData,
+                    Processes = new ProcessData { MeasuredAtNs = measured, LogicalProcessors = 1,
+                        CpuPercent = new Metric { Value = 10 + sample * 10, State = SampleState.Valid },
+                        Memory = new MemoryInfo { PhysicalBytes = 100, AvailableBytes = (ulong)(50 - sample * 10), State = SampleState.Valid } },
+                    Resources = new ResourceData { MeasuredAtNs = measured, ResourceCount = 1, Resources = &resource }
+                });
+            }
+        }
+        Apply(0);
+        var rows = model.Resources.ToArray();
+        Require(rows.Length == 3 && rows.All(row => row.Preview is not null && row.PreviewFill is not null),
+            "Resource previews were disabled for existing model consumers by default.");
+        var previews = rows.Select(row => (row.Preview, row.PreviewFill, row.UploadPreview)).ToArray();
+        var network = rows.Single(row => row.Kind == ResourceKind.Network);
+        var cpu = rows.Single(row => row.Kind == ResourceKind.Cpu);
+        var memory = rows.Single(row => row.Kind == ResourceKind.Memory);
+        int notifications = 0;
+        foreach (var row in rows) row.PropertyChanged += (_, _) => ++notifications;
+        model.SetResourceViewVisible(false);
+        for (int i = 1; i <= 3; ++i) Apply(i);
+        Require(notifications == 0 && rows.SequenceEqual(model.Resources)
+            && rows.Select((row, i) => ReferenceEquals(previews[i].Preview, row.Preview)
+                && ReferenceEquals(previews[i].PreviewFill, row.PreviewFill)
+                && ReferenceEquals(previews[i].UploadPreview, row.UploadPreview)).All(value => value),
+            "A hidden resource view rebuilt or notified its previews, or lost its current resource rows.");
+        Require(cpu.Primary.Value == 40 && memory.Primary.Value == 80 && network.Primary.Value == 8_000_000
+            && network.Secondary.Value == 12_000_000 && rows.All(row => row.History.Count == 4)
+            && network.Upload.Count == 4 && cpu.History.At(time + 1_000_000_000)?.Value.Value == 20
+            && network.Upload.At(time + 2_000_000_000)?.Value.Value == 9_000_000,
+            "A hidden resource view dropped current metrics or intermediate history samples.");
+        string currentValue = network.Value;
+        model.SetResourceViewVisible(true);
+        Require(notifications == rows.Length && network.Value == currentValue
+            && rows.Select((row, i) => !ReferenceEquals(previews[i].Preview, row.Preview)
+                && !ReferenceEquals(previews[i].PreviewFill, row.PreviewFill)).All(value => value)
+            && !ReferenceEquals(previews[Array.IndexOf(rows, network)].UploadPreview, network.UploadPreview),
+            "Showing the resource view without another tick failed to publish fresh previews and current values.");
+        model.SetResourceViewVisible(true);
+        Require(notifications == rows.Length, "An unchanged visible resource view repeated its activation refresh.");
+        App.Trace("Hidden resource view passed: live values and complete history, retained geometry, fresh activation without another tick");
     }
 }
 

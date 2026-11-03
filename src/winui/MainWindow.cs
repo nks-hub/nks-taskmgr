@@ -283,6 +283,7 @@ public sealed partial class MainWindow : Window
         if (services) servicesModel ??= new ServiceModel();
         heading.Text = hardware ? "Sestava" : services ? "Služby" : performance ? "Výkon" : applications ? "Aplikace" : "Procesy";
         heading.Visibility = services || hardware ? Visibility.Visible : Visibility.Collapsed;
+        model.SetResourceViewVisible(performance);
         performancePage.Visibility = performance ? Visibility.Visible : Visibility.Collapsed;
         processPage.Visibility = next is DesktopView.Processes or DesktopView.Applications ? Visibility.Visible : Visibility.Collapsed;
         foreach (var item in processModeButtons) item.Button.Visibility = applications ? Visibility.Collapsed : Visibility.Visible;
