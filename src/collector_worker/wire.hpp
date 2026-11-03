@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <span>
 #include <stdexcept>
@@ -29,8 +30,13 @@ public:
     template<class T> void number(T value) {
         static_assert(std::is_unsigned_v<T>);
         require(sizeof(T));
-        for (std::size_t i = 0; i < sizeof(T); ++i) {
-            bytes.push_back(static_cast<std::byte>(value & 0xff)); value >>= 8;
+        if constexpr (std::endian::native == std::endian::little
+            && static_cast<std::size_t>(std::numeric_limits<T>::digits) == sizeof(T) * 8) {
+            append(&value, sizeof(T));
+        } else {
+            for (std::size_t i = 0; i < sizeof(T); ++i) {
+                bytes.push_back(static_cast<std::byte>(value & 0xff)); value >>= 8;
+            }
         }
     }
     void signedNumber(std::int64_t value) { number(std::bit_cast<std::uint64_t>(value)); }
@@ -42,7 +48,10 @@ public:
         if (value.size() > 32767) throw std::length_error("Collector string exceeds limit");
         require(4 + value.size() * 2);
         number(static_cast<std::uint32_t>(value.size()));
-        for (auto ch : value) number(static_cast<std::uint16_t>(ch));
+        if constexpr (std::endian::native == std::endian::little && sizeof(wchar_t) == 2)
+            append(value.data(), value.size() * 2);
+        else
+            for (auto ch : value) number(static_cast<std::uint16_t>(ch));
     }
     void count(std::size_t value, std::size_t maximum) {
         if (value > maximum) throw std::length_error("Collector array exceeds limit");
@@ -51,7 +60,13 @@ public:
     std::vector<std::byte> bytes;
 private:
     void require(std::size_t count) const {
-        if (count > maximumPayload - bytes.size()) throw std::length_error("Collector response exceeds limit");
+        if (bytes.size() > maximumPayload || count > maximumPayload - bytes.size())
+            throw std::length_error("Collector response exceeds limit");
+    }
+    void append(const void* source, std::size_t size) {
+        const auto begin = bytes.size();
+        bytes.resize(begin + size);
+        if (size) std::memcpy(bytes.data() + begin, source, size);
     }
 };
 
@@ -63,10 +78,17 @@ public:
     template<class T> T number() {
         static_assert(std::is_unsigned_v<T>);
         require(sizeof(T));
-        std::uint64_t value{};
-        for (std::size_t i = 0; i < sizeof(T); ++i)
-            value |= static_cast<std::uint64_t>(std::to_integer<unsigned char>(bytes[at++])) << (i * 8);
-        return static_cast<T>(value);
+        if constexpr (std::endian::native == std::endian::little
+            && static_cast<std::size_t>(std::numeric_limits<T>::digits) == sizeof(T) * 8) {
+            std::remove_cv_t<T> value{};
+            std::memcpy(&value, bytes.data() + at, sizeof(T)); at += sizeof(T);
+            return value;
+        } else {
+            std::uint64_t value{};
+            for (std::size_t i = 0; i < sizeof(T); ++i)
+                value |= static_cast<std::uint64_t>(std::to_integer<unsigned char>(bytes[at++])) << (i * 8);
+            return static_cast<T>(value);
+        }
     }
     std::int64_t signedNumber() { return std::bit_cast<std::int64_t>(number<std::uint64_t>()); }
     double real() {
@@ -82,9 +104,16 @@ public:
     bool boolean() { return enumeration<unsigned>(1) != 0; }
     std::wstring text() {
         const auto length = count(32767, 2);
-        std::wstring value; value.reserve(length);
-        for (std::uint32_t i = 0; i < length; ++i) value.push_back(static_cast<wchar_t>(number<std::uint16_t>()));
-        return value;
+        if constexpr (std::endian::native == std::endian::little && sizeof(wchar_t) == 2) {
+            std::wstring value(length, L'\0');
+            if (length) std::memcpy(value.data(), bytes.data() + at, length * 2);
+            at += length * 2;
+            return value;
+        } else {
+            std::wstring value; value.reserve(length);
+            for (std::uint32_t i = 0; i < length; ++i) value.push_back(static_cast<wchar_t>(number<std::uint16_t>()));
+            return value;
+        }
     }
     std::uint32_t count(std::size_t maximum, std::size_t minimumBytes) {
         const auto value = number<std::uint32_t>();
