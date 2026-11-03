@@ -13,7 +13,7 @@ public enum ProcessEventKind : uint { Started = 1, Stopped = 2 }
 public enum ProcessEventFlags : uint { HasExitStatus = 1, HasImageName = 2, Partial = 4, HasParentPid = 8 }
 [Flags]
 public enum ProcessEventFrameFlags : uint { ResyncRequired = 1, CleanupOutstanding = 2 }
-public enum ProcessTrafficAttribution : uint { Unknown, Correlated, Direct }
+public enum ProcessTrafficAttribution : uint { Unknown, Correlated, Direct, IssuingThreadOwner }
 public enum ProcessTrafficSource : uint { PhysicalDisk = 1, Tcp = 2, Udp = 3 }
 public enum ProcessTrafficDirection : uint { Read = 1, Write = 2, Sent = 3, Received = 4 }
 [Flags]
@@ -114,10 +114,12 @@ public sealed unsafe class NativeEventFrame : SafeHandleZeroOrMinusOneIsInvalid
             bool correlated = candidate && row.Attribution == ProcessTrafficAttribution.Correlated && row.IdentityState == SampleState.Unavailable;
             bool direct = candidate && row.Attribution == ProcessTrafficAttribution.Direct && row.IdentityState == SampleState.Valid;
             bool disk = row.Source == ProcessTrafficSource.PhysicalDisk;
+            bool issuingOwner = candidate && disk && row.Attribution == ProcessTrafficAttribution.IssuingThreadOwner
+                && row.IdentityState == SampleState.Valid && row.State == SampleState.Gap;
             var m = row.Measurement;
             if (!ids.Add(row.SampleId) || row.SampleId == 0 || row.StartQpc < 0 || row.EndQpc <= row.StartQpc
                 || view.QpcFrequency <= 0 || row.EndQpc - row.StartQpc != view.QpcFrequency || row.ObservedAtNs <= 0
-                || (!missing && !correlated && !direct) || row.Source is < ProcessTrafficSource.PhysicalDisk or > ProcessTrafficSource.Udp
+                || (!missing && !correlated && !direct && !issuingOwner) || row.Source is < ProcessTrafficSource.PhysicalDisk or > ProcessTrafficSource.Udp
                 || (disk ? row.Direction is < ProcessTrafficDirection.Read or > ProcessTrafficDirection.Write || (row.Flags & ProcessTrafficFlags.Ipv6) != 0
                     : row.Direction is < ProcessTrafficDirection.Sent or > ProcessTrafficDirection.Received)
                 || row.Operations == 0 || !double.IsFinite(row.ObservedBytesPerSecond) || row.ObservedBytesPerSecond < 0

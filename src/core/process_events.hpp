@@ -49,6 +49,7 @@ public:
     void push(ProcessEventRecord record);
     void thread(std::uint32_t pid, std::uint32_t tid, std::int64_t qpc, bool start);
     void traffic(ProcessTrafficObservation observation);
+    void diskInitiated(ProcessDiskInitiation initiation);
     void providers(SampleState disk, SampleState network, SampleState identity);
     void identityProvider(SampleState state);
     void decodeFailure();
@@ -59,6 +60,7 @@ private:
     void resync();
     void invalidate(bool conflict);
     void identityChanges(std::uint64_t evictions, std::uint64_t conflicts);
+    void trafficChanges(std::uint64_t epoch, std::uint64_t dropped, std::uint64_t evicted);
     std::mutex mutex;
     std::deque<ProcessEventRecord, EventAllocator<ProcessEventRecord>> records;
     EventIdentityIndex identities;

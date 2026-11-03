@@ -119,6 +119,7 @@ public static partial class WinUiChecks
         ProcessRefresh();
         ProcessBranchValues();
         ProcessLifetimes();
+        ProcessTrafficAttributionLabels();
         ProcessEventCloseOwnership();
         PublisherTrustChecks.Run();
         DeepTree();

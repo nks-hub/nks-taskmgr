@@ -95,6 +95,14 @@ public:
         if (!read(*property, bytes, sizeof(value)) || bytes.size() != sizeof(value)) return false;
         std::memcpy(&value, bytes.data(), sizeof(value)); return true;
     }
+    bool pointer(const wchar_t* name, std::uint64_t& value) {
+        const auto* property = find(name);
+        if (!property || property->nonStructType.InType != TDH_INTYPE_POINTER || contextCount != 1) return false;
+        const auto size = static_cast<std::size_t>(context.ParameterValue);
+        std::vector<BYTE> bytes;
+        if ((size != 4 && size != 8) || !read(*property, bytes, size) || bytes.size() != size) return false;
+        value = 0; std::memcpy(&value, bytes.data(), size); return value != 0;
+    }
     bool creationTime(std::uint64_t& value) {
         const auto* property = find(L"CreateTime");
         if (!property || property->nonStructType.InType != TDH_INTYPE_FILETIME) return false;
@@ -230,9 +238,19 @@ private:
         const bool tcp = IsEqualGUID(provider, tcpProvider), udp = IsEqualGUID(provider, udpProvider);
         if (!disk && !tcp && !udp) return;
         const auto opcode = record.EventHeader.EventDescriptor.Opcode;
-        if (disk ? opcode != 10 && opcode != 11 : opcode != 10 && opcode != 11 && opcode != 26 && opcode != 27) return;
+        const bool diskInit = disk && (opcode == 12 || opcode == 13);
+        if (disk ? opcode != 10 && opcode != 11 && !diskInit : opcode != 10 && opcode != 11 && opcode != 26 && opcode != 27) return;
         if (!disk && record.EventHeader.EventDescriptor.Version != 2) { events->decodeFailure(); return; }
         EventProperties data(record);
+        if (diskInit) {
+            ProcessDiskInitiation initiation;
+            initiation.qpc = record.EventHeader.TimeStamp.QuadPart;
+            initiation.observedAtNs = measurementTime(std::chrono::steady_clock::now());
+            initiation.direction = opcode == 12 ? ProcessTrafficDirection::read : ProcessTrafficDirection::write;
+            if (initiation.qpc < 0 || !data.pointer(L"Irp", initiation.irp)
+                || !data.unsigned32(L"IssuingThreadId", initiation.issuingTid)) { events->decodeFailure(); return; }
+            events->diskInitiated(initiation); return;
+        }
         ProcessTrafficObservation observation;
         observation.qpc = record.EventHeader.TimeStamp.QuadPart;
         observation.observedAtNs = measurementTime(std::chrono::steady_clock::now());
@@ -241,6 +259,7 @@ private:
         observation.source = disk ? ProcessTrafficSource::physicalDisk : tcp ? ProcessTrafficSource::tcp : ProcessTrafficSource::udp;
         observation.direction = disk ? (opcode == 10 ? ProcessTrafficDirection::read : ProcessTrafficDirection::write)
             : (opcode == 10 || opcode == 26 ? ProcessTrafficDirection::sent : ProcessTrafficDirection::received);
+        if (disk && !data.pointer(L"Irp", observation.irp)) events->decodeFailure();
         observation.ipv6 = !disk && opcode >= 26; events->traffic(observation);
     }
     void manifest(EVENT_RECORD& record) {
@@ -337,7 +356,7 @@ void EtwCollector::Run::control() noexcept
                 auto data = properties(); data.value.Wnode.ClientContext = 1;
                 data.value.BufferSize = 64; data.value.MinimumBuffers = 2; data.value.MaximumBuffers = 16;
                 data.value.FlushTimer = 1;
-                data.value.EnableFlags = EVENT_TRACE_FLAG_PROCESS | EVENT_TRACE_FLAG_THREAD | EVENT_TRACE_FLAG_DISK_IO
+                data.value.EnableFlags = EVENT_TRACE_FLAG_PROCESS | EVENT_TRACE_FLAG_THREAD | EVENT_TRACE_FLAG_DISK_IO | EVENT_TRACE_FLAG_DISK_IO_INIT
                     | EVENT_TRACE_FLAG_NETWORK_TCPIP | EVENT_TRACE_FLAG_NO_SYSCONFIG;
                 failure = StartTraceW(&session, name.data(), &data.value); owned = failure == ERROR_SUCCESS;
                 if (failure) events->providers(providerState(failure), providerState(failure), providerState(failure));

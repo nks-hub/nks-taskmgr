@@ -22,7 +22,11 @@ typedef enum NksProcessEventFlag {
     NKS_EVENT_HAS_EXIT_STATUS = 1, NKS_EVENT_HAS_IMAGE_NAME = 2, NKS_EVENT_PARTIAL = 4, NKS_EVENT_HAS_PARENT_PID = 8
 } NksProcessEventFlag;
 typedef enum NksEventFrameFlag { NKS_EVENTS_RESYNC_REQUIRED = 1, NKS_EVENTS_CLEANUP_OUTSTANDING = 2 } NksEventFrameFlag;
-typedef enum NksTrafficAttribution { NKS_TRAFFIC_UNKNOWN = 0, NKS_TRAFFIC_CORRELATED = 1, NKS_TRAFFIC_DIRECT = 2 } NksTrafficAttribution;
+typedef enum NksTrafficAttribution {
+    NKS_TRAFFIC_UNKNOWN = 0, NKS_TRAFFIC_CORRELATED = 1, NKS_TRAFFIC_DIRECT = 2,
+    // INIT/IRP proves the issuing thread's owner, not its attached I/O requestor.
+    NKS_TRAFFIC_ISSUING_THREAD_OWNER = 3
+} NksTrafficAttribution;
 typedef enum NksTrafficSource { NKS_TRAFFIC_PHYSICAL_DISK = 1, NKS_TRAFFIC_TCP = 2, NKS_TRAFFIC_UDP = 3 } NksTrafficSource;
 typedef enum NksTrafficDirection { NKS_TRAFFIC_READ = 1, NKS_TRAFFIC_WRITE = 2, NKS_TRAFFIC_SENT = 3, NKS_TRAFFIC_RECEIVED = 4 } NksTrafficDirection;
 typedef enum NksTrafficFlag {

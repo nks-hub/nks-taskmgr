@@ -26,8 +26,10 @@ void ProcessEventStore::initialize(BootIdentity boot, std::int64_t qpcFrequency)
 void ProcessEventStore::state(ProcessEventMonitorState value, std::uint32_t error, bool cleanupOutstanding)
 {
     std::lock_guard lock(mutex);
+    const auto epoch = transfers.info.attributionEpoch, dropped = transfers.info.pendingDropped, evicted = transfers.info.evictedSamples;
     if (!cleanupOutstanding && value != ProcessEventMonitorState::starting && value != ProcessEventMonitorState::idle)
         transfers.drain(measurementTime(std::chrono::steady_clock::now()), identities, true);
+    trafficChanges(epoch, dropped, evicted);
     info.state = value; info.win32Error = error;
     if (cleanupOutstanding) info.flags |= eventsCleanupOutstanding;
     else info.flags &= ~eventsCleanupOutstanding;
@@ -74,6 +76,10 @@ void ProcessEventStore::identityChanges(std::uint64_t evictions, std::uint64_t c
     if (identities.conflicts != conflicts) invalidate(true);
     else if (identities.evictions != evictions) invalidate(false);
 }
+void ProcessEventStore::trafficChanges(std::uint64_t epoch, std::uint64_t dropped, std::uint64_t evicted) {
+    if (epoch != transfers.info.attributionEpoch) { identities.clear(); resync(); }
+    else if (dropped != transfers.info.pendingDropped || evicted != transfers.info.evictedSamples) resync();
+}
 void ProcessEventStore::thread(std::uint32_t pid, std::uint32_t tid, std::int64_t qpc, bool start) {
     std::lock_guard lock(mutex);
     if (info.boot.state != SampleState::valid || info.boot.id.empty()) return;
@@ -83,9 +89,15 @@ void ProcessEventStore::thread(std::uint32_t pid, std::uint32_t tid, std::int64_
 }
 void ProcessEventStore::traffic(ProcessTrafficObservation observation) {
     std::lock_guard lock(mutex);
-    const auto dropped = transfers.info.pendingDropped, evicted = transfers.info.evictedSamples;
+    const auto epoch = transfers.info.attributionEpoch, dropped = transfers.info.pendingDropped, evicted = transfers.info.evictedSamples;
     transfers.observe(observation, identities);
-    if (dropped != transfers.info.pendingDropped || evicted != transfers.info.evictedSamples) resync();
+    trafficChanges(epoch, dropped, evicted);
+}
+void ProcessEventStore::diskInitiated(ProcessDiskInitiation initiation) {
+    std::lock_guard lock(mutex);
+    const auto epoch = transfers.info.attributionEpoch, dropped = transfers.info.pendingDropped, evicted = transfers.info.evictedSamples;
+    transfers.diskInitiated(initiation, identities);
+    trafficChanges(epoch, dropped, evicted);
 }
 void ProcessEventStore::providers(SampleState disk, SampleState network, SampleState identity) {
     std::lock_guard lock(mutex); transfers.providers(disk, network, identity);
@@ -105,9 +117,9 @@ ProcessEventBatch ProcessEventStore::read()
 {
     std::lock_guard lock(mutex);
     ProcessEventBatch batch; batch.events.reserve((std::min)(records.size(), maximumFrameEvents));
-    const auto dropped = transfers.info.pendingDropped, evicted = transfers.info.evictedSamples;
+    const auto epoch = transfers.info.attributionEpoch, dropped = transfers.info.pendingDropped, evicted = transfers.info.evictedSamples;
     batch.traffic = transfers.read(measurementTime(std::chrono::steady_clock::now()), identities);
-    if (dropped != transfers.info.pendingDropped || evicted != transfers.info.evictedSamples) resync();
+    trafficChanges(epoch, dropped, evicted);
     batch.info = info;
     if (info.state == ProcessEventMonitorState::stopping && stopRequestedAt != std::chrono::steady_clock::time_point{}
         && std::chrono::steady_clock::now() - stopRequestedAt >= std::chrono::seconds(5)) {

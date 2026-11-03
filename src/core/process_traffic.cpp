@@ -1,6 +1,7 @@
 #include "process_traffic.hpp"
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <limits>
 
 namespace nks {
@@ -14,7 +15,8 @@ constexpr std::int64_t reorderDelayNs = 2'000'000'000;
 
 void ProcessTrafficStore::initialize(std::int64_t value)
 {
-    invalidate(false); add(info.evictedSamples, history.size()); history.clear(); frequency = value; newestQpc = 0;
+    invalidate(false); add(info.evictedSamples, history.size()); history.clear(); frequency = value;
+    newestQpc = newestObservedQpc = epochFloorQpc = -1;
     info.diskState = info.networkState = info.identityProviderState = SampleState::unavailable;
 }
 void ProcessTrafficStore::providers(SampleState disk, SampleState network, SampleState identity)
@@ -28,46 +30,145 @@ void ProcessTrafficStore::dropped(const ProcessTrafficObservation& observation)
 void ProcessTrafficStore::observe(ProcessTrafficObservation observation, const EventIdentityIndex& identities)
 {
     if (frequency <= 0 || observation.qpc < 0 || observation.observedAtNs <= 0 || info.attributionEpoch == UINT64_MAX) { dropped(observation); return; }
+    const bool disk = observation.source == ProcessTrafficSource::physicalDisk && observation.irp;
+    if (disk && metadataIsLate(observation.qpc)) { invalidate(true); dropped(observation); return; }
+    newestObservedQpc = (std::max)(newestObservedQpc, observation.qpc);
+    if (disk && (observation.qpc <= epochFloorQpc || !diskCompletion(observation))) { dropped(observation); return; }
+    const auto epoch = info.attributionEpoch;
     drain(observation.observedAtNs, identities);
-    if (pending.size() == maximumPending) { dropped(pending.front()); pending.pop_front(); }
+    if (epoch != info.attributionEpoch) { dropped(observation); return; }
+    if (pending.size() == maximumPending) { invalidate(false); dropped(observation); return; }
     try { pending.push_back(observation); }
-    catch (const std::bad_alloc&) { dropped(observation); }
+    catch (const std::bad_alloc&) { invalidate(false); dropped(observation); }
     if (observation.source == ProcessTrafficSource::physicalDisk) info.diskState = SampleState::gap;
     else info.networkState = SampleState::gap;
 }
+
+bool ProcessTrafficStore::evidenceRoom()
+{
+    if (initiations.size() + completions.size() < maximumDiskEvidence) return true;
+    invalidate(false); add(info.pendingDropped); return false;
+}
+
+void ProcessTrafficStore::diskInitiated(ProcessDiskInitiation initiation, const EventIdentityIndex& identities)
+{
+    if (frequency <= 0 || initiation.qpc < 0 || initiation.observedAtNs <= 0 || !initiation.irp || !initiation.issuingTid
+        || (initiation.direction != ProcessTrafficDirection::read && initiation.direction != ProcessTrafficDirection::write)
+        || info.attributionEpoch == UINT64_MAX) { invalidate(false); add(info.pendingDropped); return; }
+    if (metadataIsLate(initiation.qpc)) { invalidate(true); add(info.pendingDropped); return; }
+    newestObservedQpc = (std::max)(newestObservedQpc, initiation.qpc);
+    if (initiation.qpc <= epochFloorQpc) { add(info.pendingDropped); return; }
+    const DiskKey key{initiation.irp, initiation.qpc};
+    if (initiations.contains(key)) { invalidate(true); add(info.pendingDropped); return; }
+    if (!evidenceRoom()) return;
+    try { initiations.emplace(key, initiation); }
+    catch (const std::bad_alloc&) { invalidate(false); add(info.pendingDropped); return; }
+    drain(initiation.observedAtNs, identities);
+}
+
+bool ProcessTrafficStore::diskCompletion(const ProcessTrafficObservation& observation)
+{
+    if (observation.direction != ProcessTrafficDirection::read && observation.direction != ProcessTrafficDirection::write) {
+        invalidate(true); return false;
+    }
+    const DiskKey key{observation.irp, observation.qpc};
+    if (completions.contains(key)) { invalidate(true); return false; }
+    if (!evidenceRoom()) return false;
+    try { completions.emplace(key, observation.direction); }
+    catch (const std::bad_alloc&) { invalidate(false); return false; }
+    return true;
+}
+
+bool ProcessTrafficStore::diskCandidate(const ProcessTrafficObservation& observation, const EventIdentityIndex& identities,
+    EventIdentityCandidate& candidate, DiskKey& usedInit)
+{
+    const auto completion = completions.find({observation.irp, observation.qpc});
+    if (completion == completions.end()) return false;
+    std::int64_t previous = -1;
+    const auto closed = closedDiskIrps.find(observation.irp);
+    if (closed != closedDiskIrps.end() && closed->second < observation.qpc) previous = closed->second;
+    if (completion != completions.begin()) {
+        const auto before = std::prev(completion);
+        if (before->first.first == observation.irp) previous = (std::max)(previous, before->first.second);
+    }
+    const ProcessDiskInitiation* initiation = nullptr;
+    // Observed completions delimit reuse even before either operation leaves the 2 s queue.
+    for (auto it = initiations.lower_bound({observation.irp, previous});
+        it != initiations.end() && it->first.first == observation.irp && it->first.second <= observation.qpc; ++it) {
+        if (it->first.second <= previous || it->first.second == observation.qpc || initiation) { invalidate(true); return false; }
+        initiation = &it->second;
+    }
+    if (!initiation) return true;
+    if (initiation->direction != observation.direction) { invalidate(true); return false; }
+    usedInit = {observation.irp, initiation->qpc};
+    candidate = identities.threadOwnerAt(initiation->issuingTid, initiation->qpc);
+    return true;
+}
+
+void ProcessTrafficStore::consumeDiskEvidence(const ProcessTrafficObservation& observation, const DiskKey& usedInit)
+{
+    if (usedInit.first) initiations.erase(usedInit);
+    completions.erase({observation.irp, observation.qpc});
+    auto closed = closedDiskIrps.find(observation.irp);
+    if (closed == closedDiskIrps.end()) {
+        // Evicted closed timestamps remain covered by the committed QPC watermark.
+        if (closedDiskIrps.size() == maximumClosedDiskIrps) closedDiskIrps.erase(closedDiskIrps.begin());
+        closedDiskIrps.emplace(observation.irp, observation.qpc);
+    } else closed->second = (std::max)(closed->second, observation.qpc);
+}
+
 void ProcessTrafficStore::drain(std::int64_t nowNs, const EventIdentityIndex& identities, bool finish)
 {
     while (!pending.empty()) {
         const auto observation = pending.front();
         if (!finish && (nowNs < observation.observedAtNs || nowNs - observation.observedAtNs < reorderDelayNs)) break;
-        const auto candidate = observation.source == ProcessTrafficSource::physicalDisk
-            ? identities.threadAt(observation.pidOrTid, observation.qpc) : identities.processAt(observation.pidOrTid, observation.qpc);
-        try { commit(observation, candidate); }
-        catch (const std::bad_alloc&) { dropped(observation); }
         pending.pop_front();
+        EventIdentityCandidate candidate;
+        DiskKey usedInit{};
+        auto attribution = ProcessTrafficAttribution::correlated;
+        if (observation.source == ProcessTrafficSource::physicalDisk && observation.irp) {
+            if (!diskCandidate(observation, identities, candidate, usedInit)) { dropped(observation); continue; }
+            attribution = ProcessTrafficAttribution::issuingThreadOwner;
+        } else candidate = observation.source == ProcessTrafficSource::physicalDisk
+            ? identities.threadAt(observation.pidOrTid, observation.qpc) : identities.processAt(observation.pidOrTid, observation.qpc);
+        bool committed = false;
+        try {
+            committed = commit(observation, candidate, attribution);
+            if (committed && observation.source == ProcessTrafficSource::physicalDisk && observation.irp)
+                consumeDiskEvidence(observation, usedInit);
+        }
+        catch (const std::bad_alloc&) { invalidate(false); if (!committed) dropped(observation); }
     }
 }
-void ProcessTrafficStore::commit(const ProcessTrafficObservation& observation, EventIdentityCandidate candidate)
+bool ProcessTrafficStore::commit(const ProcessTrafficObservation& observation, EventIdentityCandidate candidate, ProcessTrafficAttribution attribution)
 {
-    if (sequence == UINT64_MAX) { dropped(observation); return; }
+    if (sequence == UINT64_MAX) { dropped(observation); return false; }
     const auto start = observation.qpc / frequency * frequency;
-    if (start > INT64_MAX - frequency) { dropped(observation); return; }
+    if (start > INT64_MAX - frequency) { dropped(observation); return false; }
     const bool unknown = !candidate.creationTime;
+    if (unknown) attribution = ProcessTrafficAttribution::unknown;
     const auto pid = unknown && observation.source != ProcessTrafficSource::physicalDisk ? observation.pidOrTid : candidate.pid;
     // Unresolved observations never collapse several PID lifetimes into one process row.
     const Key key{info.attributionEpoch, start, pid, candidate.creationTime, observation.source, observation.direction,
-        observation.ipv6, unknown ? sequence + 1 : 0};
+        observation.ipv6, attribution, unknown ? sequence + 1 : 0};
     auto found = history.find(key);
     if (found == history.end()) {
         if (history.size() == maximumSamples) {
-            // The key starts with epoch and QPC window, so eviction stays logarithmic.
-            history.erase(history.begin()); add(info.evictedSamples);
+            auto victim = history.begin();
+            if (victim->second.sample.attribution == ProcessTrafficAttribution::issuingThreadOwner || victim->second.revocationPending) {
+                invalidate(false);
+                victim = std::find_if(history.begin(), history.end(), [](const auto& entry) { return !entry.second.revocationPending; });
+                if (victim != history.end()) { history.erase(victim); add(info.evictedSamples); }
+                dropped(observation); return false;
+            }
+            history.erase(victim); add(info.evictedSamples);
         }
         ProcessTrafficSample sample;
         sample.sampleId = ++sequence; sample.startQpc = start; sample.endQpc = start + frequency;
         sample.pid = pid; sample.generation = candidate.creationTime;
         sample.identityKind = unknown ? GenerationKind::missing : GenerationKind::creationTime;
-        sample.attribution = unknown ? ProcessTrafficAttribution::unknown : ProcessTrafficAttribution::correlated;
+        sample.attribution = attribution;
+        if (attribution == ProcessTrafficAttribution::issuingThreadOwner) sample.identityState = SampleState::valid;
         sample.source = observation.source; sample.direction = observation.direction; sample.attributionEpoch = info.attributionEpoch;
         if (observation.ipv6) sample.flags |= trafficIpv6;
         sample.measurement = measurementMetadata(MeasurementUnit::bytesPerSecond, MeasurementNormalization::none,
@@ -83,16 +184,23 @@ void ProcessTrafficStore::commit(const ProcessTrafficObservation& observation, E
     if (observation.qpc < newestQpc) { sample.flags |= trafficLate; add(info.lateEvents); }
     newestQpc = (std::max)(newestQpc, observation.qpc); stored.dirty = true;
     if (unknown) { add(info.unknownEvents); add(info.unknownBytes, observation.bytes); }
+    return true;
 }
 void ProcessTrafficStore::invalidate(bool conflict)
 {
     while (!pending.empty()) { dropped(pending.front()); pending.pop_front(); }
     if (conflict) add(info.identityConflicts);
+    epochFloorQpc = (std::max)(epochFloorQpc, newestObservedQpc);
+    initiations.clear(); completions.clear(); closedDiskIrps.clear();
     add(info.attributionEpoch);
     for (auto& [key, stored] : history) {
         (void)key;
-        if (!conflict || stored.sample.attribution == ProcessTrafficAttribution::unknown) continue;
-        stored.sample.flags |= trafficIdentityConflict;
+        if (stored.sample.attribution == ProcessTrafficAttribution::unknown
+            || (!conflict && stored.sample.attribution != ProcessTrafficAttribution::issuingThreadOwner)) continue;
+        if (conflict) stored.sample.flags |= trafficIdentityConflict;
+        stored.revocationPending |= stored.published;
+        stored.sample.flags |= trafficPartial; stored.sample.state = SampleState::gap;
+        stored.sample.pid = 0; stored.sample.identityState = SampleState::unavailable;
         stored.sample.identityKind = GenerationKind::missing; stored.sample.generation = 0;
         stored.sample.attribution = ProcessTrafficAttribution::unknown; stored.dirty = true;
     }
@@ -109,6 +217,7 @@ ProcessTrafficBatch ProcessTrafficStore::read(std::int64_t nowNs, const EventIde
         auto sample = stored.sample;
         if (open) sample.flags |= trafficWindowOpen;
         batch.samples.push_back(sample); stored.dirty = false; stored.publishedOpen = open;
+        stored.published = true; stored.revocationPending = false;
     }
     info.observedAtNs = nowNs; info.budgetBytesUsed = eventBudgetUsed.load(); batch.info = info;
     return batch;

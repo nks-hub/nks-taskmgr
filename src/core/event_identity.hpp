@@ -16,6 +16,7 @@ public:
     bool thread(std::uint32_t pid, std::uint32_t tid, std::int64_t qpc, bool start);
     EventIdentityCandidate processAt(std::uint32_t pid, std::int64_t qpc) const;
     EventIdentityCandidate threadAt(std::uint32_t tid, std::int64_t qpc) const;
+    EventIdentityCandidate threadOwnerAt(std::uint32_t tid, std::int64_t qpc) const;
     void clear() noexcept { processes.clear(); threads.clear(); }
     std::uint64_t evictions{}, conflicts{};
 private:

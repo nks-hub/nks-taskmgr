@@ -20,6 +20,7 @@ public sealed partial class ProcessEventRow
         IdentityText = item.Attribution switch {
             ProcessTrafficAttribution.Correlated => "Částečné · korelace PID/času · životnost nepotvrzená",
             ProcessTrafficAttribution.Direct => "Pozorovaná podmnožina · přímá historická životnost",
+            ProcessTrafficAttribution.IssuingThreadOwner => "Pozorovaná podmnožina · vlastník vydávajícího vlákna při zahájení",
             _ => "Částečné · nelze přiřadit historické životnosti"
         };
         if (item.Flags.HasFlag(ProcessTrafficFlags.IdentityConflict)) IdentityText += " · dřívější přiřazení odvoláno";
@@ -34,6 +35,7 @@ public sealed partial class ProcessEventRow
             string attribution = item.Attribution switch {
                 ProcessTrafficAttribution.Correlated => "Kandidát podle historického PID a času; není důkaz stejné životnosti.",
                 ProcessTrafficAttribution.Direct => "Identita pochází přímo z události; zachycený provoz přesto nemusí být úplný.",
+                ProcessTrafficAttribution.IssuingThreadOwner => "INIT a dokončení téhož I/O doložily životnost vlastníka vydávajícího vlákna při zahájení. Nejde o důkaz obecného žadatele I/O; vlákno může být připojené k jinému procesu.",
                 _ => "Životnost se nepodařilo určit; tento přenos není přiřazen současnému procesu."
             };
             return KindText + " · " + NameText + "\n" + TargetText + "\n" + IdentityText + "\n" + attribution
@@ -41,7 +43,8 @@ public sealed partial class ProcessEventRow
                 + "\nPozorované bajty (přesný čítač): " + item.ObservedBytes.ToString(CultureInfo.InvariantCulture)
                 + "\nPočet pozorovaných událostí: " + item.Operations.ToString(CultureInfo.InvariantCulture)
                 + "\nStav měření: " + item.State + " · stav identity: " + item.IdentityState + "\nPříznaky: " + item.Flags
-                + "\nKandidát generace: " + item.IdentityKind + " · " + item.Generation.ToString(CultureInfo.InvariantCulture)
+                + (item.Attribution == ProcessTrafficAttribution.IssuingThreadOwner ? "\nŽivotnost vlastníka vlákna: " : "\nKandidát generace: ")
+                + item.IdentityKind + " · " + item.Generation.ToString(CultureInfo.InvariantCulture)
                 + "\nBoot: " + boot.High.ToString("X16", CultureInfo.InvariantCulture) + boot.Low.ToString("X16", CultureInfo.InvariantCulture)
                 + "\nAgregační okno QPC: [" + item.StartQpc + ", " + item.EndQpc + ") · frekvence " + frequency
                 + "\nVýpočetní interval: " + item.Measurement.IntervalNs + " ns · jednotka " + item.Measurement.Unit

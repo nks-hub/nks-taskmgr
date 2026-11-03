@@ -7,7 +7,7 @@
 
 namespace nks {
 
-enum class ProcessTrafficAttribution : std::uint32_t { unknown, correlated, direct };
+enum class ProcessTrafficAttribution : std::uint32_t { unknown, correlated, direct, issuingThreadOwner = 3 };
 enum class ProcessTrafficSource : std::uint32_t { physicalDisk = 1, tcp = 2, udp = 3 };
 enum class ProcessTrafficDirection : std::uint32_t { read = 1, write = 2, sent = 3, received = 4 };
 enum ProcessTrafficFlag : std::uint32_t {
@@ -45,27 +45,45 @@ struct ProcessTrafficObservation {
     ProcessTrafficSource source{};
     ProcessTrafficDirection direction{};
     bool ipv6{};
+    std::uint64_t irp{};
+};
+struct ProcessDiskInitiation {
+    std::int64_t qpc{}, observedAtNs{};
+    std::uint64_t irp{};
+    std::uint32_t issuingTid{};
+    ProcessTrafficDirection direction{};
 };
 
 class ProcessTrafficStore {
 public:
     static constexpr std::size_t maximumPending = 8192, maximumSamples = 4096, maximumFrameSamples = 256;
+    static constexpr std::size_t maximumDiskEvidence = 16384;
+    static constexpr std::size_t maximumClosedDiskIrps = 8192;
     void initialize(std::int64_t frequency);
     void providers(SampleState disk, SampleState network, SampleState identity);
     void observe(ProcessTrafficObservation observation, const EventIdentityIndex& identities);
+    void diskInitiated(ProcessDiskInitiation initiation, const EventIdentityIndex& identities);
     void drain(std::int64_t nowNs, const EventIdentityIndex& identities, bool finish = false);
     void invalidate(bool conflict);
-    bool metadataIsLate(std::int64_t qpc) const noexcept { return newestQpc > 0 && qpc <= newestQpc; }
+    bool metadataIsLate(std::int64_t qpc) const noexcept { return newestQpc >= 0 && qpc <= newestQpc; }
     ProcessTrafficBatch read(std::int64_t nowNs, const EventIdentityIndex& identities);
     ProcessTrafficBatchInfo info;
 private:
-    using Key = std::tuple<std::uint64_t, std::int64_t, std::uint32_t, std::uint64_t, ProcessTrafficSource, ProcessTrafficDirection, bool, std::uint64_t>;
-    struct Stored { ProcessTrafficSample sample; bool dirty{true}, publishedOpen{}; };
-    void commit(const ProcessTrafficObservation& observation, EventIdentityCandidate candidate);
+    using Key = std::tuple<std::uint64_t, std::int64_t, std::uint32_t, std::uint64_t, ProcessTrafficSource, ProcessTrafficDirection, bool, ProcessTrafficAttribution, std::uint64_t>;
+    struct Stored { ProcessTrafficSample sample; bool dirty{true}, publishedOpen{}, published{}, revocationPending{}; };
+    using DiskKey = std::pair<std::uint64_t, std::int64_t>;
+    bool diskCompletion(const ProcessTrafficObservation& observation);
+    bool diskCandidate(const ProcessTrafficObservation& observation, const EventIdentityIndex& identities, EventIdentityCandidate& candidate, DiskKey& usedInit);
+    void consumeDiskEvidence(const ProcessTrafficObservation& observation, const DiskKey& usedInit);
+    bool evidenceRoom();
+    bool commit(const ProcessTrafficObservation& observation, EventIdentityCandidate candidate, ProcessTrafficAttribution attribution);
     void dropped(const ProcessTrafficObservation& observation);
     std::deque<ProcessTrafficObservation, EventAllocator<ProcessTrafficObservation>> pending;
     std::map<Key, Stored, std::less<Key>, EventAllocator<std::pair<const Key, Stored>>> history;
-    std::int64_t frequency{}, newestQpc{};
+    std::map<DiskKey, ProcessDiskInitiation, std::less<DiskKey>, EventAllocator<std::pair<const DiskKey, ProcessDiskInitiation>>> initiations;
+    std::map<DiskKey, ProcessTrafficDirection, std::less<DiskKey>, EventAllocator<std::pair<const DiskKey, ProcessTrafficDirection>>> completions;
+    std::map<std::uint64_t, std::int64_t, std::less<std::uint64_t>, EventAllocator<std::pair<const std::uint64_t, std::int64_t>>> closedDiskIrps;
+    std::int64_t frequency{}, newestQpc{-1}, newestObservedQpc{-1}, epochFloorQpc{-1};
     std::uint64_t sequence{};
 };
 

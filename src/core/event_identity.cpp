@@ -84,4 +84,31 @@ EventIdentityCandidate EventIdentityIndex::threadAt(std::uint32_t tid, std::int6
     return pid ? processAt(pid, qpc) : EventIdentityCandidate{};
 }
 
+EventIdentityCandidate EventIdentityIndex::threadOwnerAt(std::uint32_t tid, std::int64_t qpc) const
+{
+    if (qpc < 0) return {};
+    std::uint32_t pid = 0;
+    std::int64_t threadStart = -1;
+    for (auto it = threads.lower_bound({tid, 0}); it != threads.end() && it->first.first == tid; ++it) {
+        const auto& row = it->second;
+        if (qpc == row.time.start || (row.time.endSeen && qpc == row.time.end)) return {};
+        if (qpc <= row.time.start || (row.time.endSeen && qpc >= row.time.end)) continue;
+        if (pid) return {};
+        pid = row.pid; threadStart = row.time.start;
+    }
+    auto processOwner = [&](std::int64_t point) {
+        EventIdentityCandidate result;
+        for (auto it = processes.lower_bound({pid, 0}); pid && it != processes.end() && it->first.first == pid; ++it) {
+            const auto& time = it->second;
+            if ((time.startSeen && point == time.start) || (time.endSeen && point == time.end)) return EventIdentityCandidate{};
+            if (!time.startSeen || point <= time.start || (time.endSeen && point >= time.end)) continue;
+            if (result.creationTime) return EventIdentityCandidate{};
+            result = {pid, it->first.second};
+        }
+        return result;
+    };
+    const auto atStart = processOwner(threadStart), atInit = processOwner(qpc);
+    return atStart.creationTime && atStart.creationTime == atInit.creationTime ? atInit : EventIdentityCandidate{};
+}
+
 }
