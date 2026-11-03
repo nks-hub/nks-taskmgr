@@ -18,7 +18,7 @@ public sealed partial class MonitorModel : IDisposable
     private readonly List<(uint, uint)> removedProcessorKeys = [];
     private readonly HashSet<string> currentResourceIds = new(StringComparer.Ordinal);
     private readonly List<string> removedResourceIds = [];
-    private bool held, visualUpdates = true, resourceViewVisible = true;
+    private bool held, visualUpdates = true, resourceViewVisible = true, processViewVisible = true;
     private bool resourceMembershipDirty = true;
     private string query = string.Empty;
     private int sortColumn;
@@ -49,6 +49,7 @@ public sealed partial class MonitorModel : IDisposable
     public bool Held => held;
     public int SortColumn => sortColumn;
     public bool SortDescending => descending;
+    private bool ProcessVisualUpdates => visualUpdates && processViewVisible;
     internal ApplicationGroupModel Applications { get; } = new();
     internal void ApplyApplications(ProcessDetailsSnapshot snapshot) { Applications.Apply(snapshot); Rebuild(true); }
     internal void SelectApplication(ProcessKey key) { held = false; Applications.Select(key); Rebuild(true); }
@@ -71,6 +72,14 @@ public sealed partial class MonitorModel : IDisposable
         if (!value) return;
         SyncResources();
         foreach (var resource in Resources) resource.RefreshPreview();
+    }
+    internal void SetProcessViewVisible(bool value)
+    {
+        if (processViewVisible == value) return;
+        processViewVisible = value;
+        if (!value) return;
+        Rebuild(true);
+        foreach (var row in VisibleProcesses) row.NotifyUpdated();
     }
     public void SetInterval(uint value) { monitor.SetInterval(value); Interval = value; }
     public void SetQuery(string value) { held = false; query = value; Rebuild(true); }
@@ -108,7 +117,7 @@ public sealed partial class MonitorModel : IDisposable
         bool stale = !Paused && ProcessTime > 0 && now - ProcessTime > StaleAfterNs;
         if (stale != Stale) {
             Stale = stale;
-            foreach (var row in processes.Values) row.SetStatus(false, stale, visualUpdates);
+            foreach (var row in processes.Values) row.SetStatus(false, stale, ProcessVisualUpdates);
             branchTotalsDirty = true;
             if (RefreshProcessBranchValues() && BranchSort) Rebuild();
             changed = true;
@@ -120,14 +129,16 @@ public sealed partial class MonitorModel : IDisposable
         }
         if (resumed) {
             SyncResources();
-            Rebuild();
-            foreach (var row in VisibleProcesses) row.NotifyUpdated();
+            if (ProcessVisualUpdates) {
+                Rebuild();
+                foreach (var row in VisibleProcesses) row.NotifyUpdated();
+            }
         }
         if (changed && visualUpdates) {
             SyncResources();
             if (resourceViewVisible) foreach (var resource in Resources) resource.RefreshPreview();
         }
-        if (changed && visualUpdates && Mode == ProcessMode.Applications) Applications.RefreshMetrics(held);
+        if (changed && ProcessVisualUpdates && Mode == ProcessMode.Applications) Applications.RefreshMetrics(held);
         return changed;
     }
 
@@ -161,7 +172,7 @@ public sealed partial class MonitorModel : IDisposable
                 removedProcessKeys.Clear();
                 foreach (var key in processes.Keys) if (!currentProcessKeys.Contains(key)) removedProcessKeys.Add(key);
                 foreach (var key in removedProcessKeys) {
-                    processes[key].SetStatus(true, false, visualUpdates); processes.Remove(key);
+                    processes[key].SetStatus(true, false, ProcessVisualUpdates); processes.Remove(key);
                 }
             }
             processRevision = changes?.Revision ?? 0;
@@ -179,7 +190,7 @@ public sealed partial class MonitorModel : IDisposable
             foreach (var key in Processors.Keys) if (!currentProcessorKeys.Contains(key)) removedProcessorKeys.Add(key);
             foreach (var key in removedProcessorKeys) Processors.Remove(key);
             bool branchChanged = RefreshProcessBranchValues();
-            if ((orderChanged || BranchSort && branchChanged) && !held && visualUpdates) Rebuild();
+            if ((orderChanged || BranchSort && branchChanged) && !held && ProcessVisualUpdates) Rebuild();
         }
         if ((view.Flags & FrameFlags.ResourceData) != 0) {
             ResourceTime = view.Resources.MeasuredAtNs;
@@ -278,8 +289,9 @@ public sealed partial class MonitorModel : IDisposable
 
     private void Rebuild(bool explicitChange = false)
     {
-        RefreshProcessBranchValues();
-        if (held || (!explicitChange && !visualUpdates)) return;
+        if (!explicitChange && !ProcessVisualUpdates) return;
+        RefreshProcessBranchValues(explicitChange);
+        if (held) return;
         if (Mode == ProcessMode.Applications) Applications.Refresh(processes.Values, query);
         var rows = Ordered();
         if (Mode is ProcessMode.Tree or ProcessMode.Applications && query.Length == 0) rows = ProcessTree.Order(rows, collapsed);

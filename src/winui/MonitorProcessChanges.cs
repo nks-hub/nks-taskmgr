@@ -46,7 +46,7 @@ public sealed partial class MonitorModel
             var change = changes.Changes[i];
             var key = new ProcessKey(BootIdentity.Identifier, change.Pid, change.GenerationKind, change.Generation);
             if (change.Kind == ProcessChangeKind.Removed) {
-                processes[key].SetStatus(true, false, visualUpdates); processes.Remove(key); orderChanged = true;
+                processes[key].SetStatus(true, false, ProcessVisualUpdates); processes.Remove(key); orderChanged = true;
             } else {
                 orderChanged |= UpdateProcess(view.Processes.Processes[change.CurrentIndex], key, change.CurrentIndex, creation);
             }
@@ -71,7 +71,7 @@ public sealed partial class MonitorModel
             6 => !current.WriteIo.Value.Equals(source.WriteIoBytesPerSecond.Value), _ => false
         });
         string oldName = current.Name;
-        current.Update(source, visualUpdates); current.SetCreatedTime(created);
+        current.Update(source, ProcessVisualUpdates); current.SetCreatedTime(created);
         return order || !StringComparer.OrdinalIgnoreCase.Equals(oldName, current.Name) || Mode == ProcessMode.Active && active != Active(current);
     }
     private static bool Active(ProcessRow row) => row.Cpu.State == SampleState.Valid && row.Cpu.Value > 0

@@ -47,10 +47,11 @@ public sealed partial class MonitorModel
         held = false; TableValueMode = value; Rebuild(true);
     }
 
-    private bool RefreshProcessBranchValues()
+    private bool RefreshProcessBranchValues(bool force = false)
     {
+        if (!force && !ProcessVisualUpdates) return false;
         if (!BranchValuesEnabled) {
-            if (branchValuesShown) foreach (var row in processes.Values) row.SetBranchValues(row.BranchTotal, false, visualUpdates);
+            if (branchValuesShown) foreach (var row in processes.Values) row.SetBranchValues(row.BranchTotal, false, ProcessVisualUpdates);
             branchValuesShown = false; return false;
         }
         if (!branchTotalsDirty && branchValuesShown) return false;
@@ -60,10 +61,10 @@ public sealed partial class MonitorModel
             var totals = ProcessBranchTotals.Calculate(rows);
             for (int i = 0; i < rows.Length; ++i) {
                 if (BranchSort) orderChanged |= BranchSortValue(rows[i].BranchTotal) != BranchSortValue(totals[i]);
-                rows[i].SetBranchValues(totals[i], true, visualUpdates);
+                rows[i].SetBranchValues(totals[i], true, ProcessVisualUpdates);
             }
             branchTotalsDirty = false;
-        } else foreach (var row in processes.Values) row.SetBranchValues(row.BranchTotal, true, visualUpdates);
+        } else foreach (var row in processes.Values) row.SetBranchValues(row.BranchTotal, true, ProcessVisualUpdates);
         branchValuesShown = true; return orderChanged;
     }
 }
