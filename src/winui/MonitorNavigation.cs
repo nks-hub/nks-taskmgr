@@ -11,7 +11,7 @@ public sealed partial class MonitorModel
     {
         held = false; Mode = mode; query = text; sortColumn = column; descending = reverse;
         if (closed is not null) { collapsed.Clear(); foreach (var key in closed) collapsed.Add(key); }
-        if (mode == ProcessMode.Applications && application is { } key) Applications.Select(key);
+        if (mode == ProcessMode.Applications && application is { } applicationKey) Applications.Select(applicationKey);
         Rebuild(true);
     }
 }
