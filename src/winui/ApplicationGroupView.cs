@@ -24,6 +24,7 @@ public sealed partial class MainWindow
     private long nextApplicationRead;
     private ProcessKey? pendingApplicationSelection;
     private ProcessNavigationState? processNavigation, applicationNavigation;
+    private ProcessNavigationState? pendingNavigationRestore;
     private EventHandler<object>? navigationRestoreFrame;
 
     private sealed record ProcessNavigationState(ProcessMode Mode, string Query, int SortColumn, bool Descending,
@@ -89,12 +90,14 @@ public sealed partial class MainWindow
 
     private void SelectProcessMode(ProcessMode mode)
     {
+        var parked = pendingNavigationRestore;
         CancelNavigationRestore();
         bool entering = mode == ProcessMode.Applications && model.Mode != mode;
         bool leaving = model.Mode == ProcessMode.Applications && mode != model.Mode;
         if (!entering && !leaving) { model.SetMode(mode); RefreshProcesses(); return; }
         if (entering) {
-            processNavigation = CaptureProcessNavigation();
+            processNavigation = parked is { Mode: not ProcessMode.Applications } && NavigationModelMatches(parked)
+                ? parked : CaptureProcessNavigation();
             pendingApplicationSelection = applicationNavigation is null ? processNavigation.Primary : null;
         } else {
             applicationNavigation = CaptureProcessNavigation();
@@ -103,9 +106,16 @@ public sealed partial class MainWindow
         var state = entering ? applicationNavigation : processNavigation;
         state ??= new(mode, "", 0, false, [], [], null, null, null, 0, 0, 0);
         state = state with { Mode = mode };
-        processQuery = state.Query; search.Text = state.Query;
+        processQuery = state.Query; SetNavigationSearchText(state.Query);
         model.RestoreProcessNavigation(mode, state.Query, state.SortColumn, state.Descending, state.Application, state.Collapsed);
+        processTable.SetSort(model.SortColumn, model.SortDescending);
         RefreshProcesses(); RestoreProcessNavigation(state);
+    }
+
+    private void SetNavigationSearchText(string text)
+    {
+        if (search.Text == text) return;
+        navigationSearchText = text; search.Text = text;
     }
 
     private void ShowApplications(bool visible)
@@ -152,22 +162,50 @@ public sealed partial class MainWindow
 
     private void CancelNavigationRestore()
     {
-        if (navigationRestoreFrame is null) return;
-        CompositionTarget.Rendering -= navigationRestoreFrame; navigationRestoreFrame = null;
+        if (navigationRestoreFrame is not null) CompositionTarget.Rendering -= navigationRestoreFrame;
+        navigationRestoreFrame = null; pendingNavigationRestore = null;
     }
 
     private void RestoreProcessNavigation(ProcessNavigationState state)
     {
+        CancelNavigationRestore(); pendingNavigationRestore = state;
+        ResumeProcessNavigation();
+    }
+
+    private bool NavigationModelMatches(ProcessNavigationState state) => model.Mode == state.Mode
+        && model.ProcessQuery == state.Query && model.SortColumn == state.SortColumn && model.SortDescending == state.Descending;
+
+    private bool NavigationPageVisible(ProcessNavigationState state) => processPage.Visibility == Visibility.Visible
+        && view == (state.Mode == ProcessMode.Applications ? DesktopView.Applications : DesktopView.Processes);
+
+    private void ResumeProcessNavigation()
+    {
+        if (pendingNavigationRestore is not { } state) return;
+        if (applicationsClosed || !NavigationModelMatches(state)) { CancelNavigationRestore(); return; }
+        if (!NavigationPageVisible(state)) {
+            if (navigationRestoreFrame is not null) CompositionTarget.Rendering -= navigationRestoreFrame;
+            navigationRestoreFrame = null; return;
+        }
+        if (navigationRestoreFrame is not null) return;
         processList.SelectedItems.Clear();
         var current = model.VisibleProcesses.Where(row => model.IsCurrent(row) && HasNavigationIdentity(row)).ToDictionary(row => row.Key);
         if (state.Primary is { } primary && current.TryGetValue(primary, out var selected)) SelectProcess(selected, false);
         foreach (var key in state.Selection) if (key != state.Primary && current.TryGetValue(key, out var row)
             && slotsByRow.TryGetValue(row, out var slot)) processList.SelectedItems.Add(slot);
+        var restoredPrimary = SelectedProcess?.Key;
+        var restoredSelection = processList.SelectedItems.OfType<ProcessSlot>().Select(slot => slot.Row.Key).ToHashSet();
+        var restoredCollapsed = model.NavigationCollapsed.ToHashSet();
         int frames = 0, settled = 0;
         void Frame(object? sender, object args)
         {
-            if (applicationsClosed || model.Mode != state.Mode || ++frames > 8) { CancelNavigationRestore(); return; }
-            if (processPage.Visibility != Visibility.Visible || Descendant<ScrollViewer>(processList) is not { } scroll) return;
+            if (applicationsClosed || !NavigationModelMatches(state) || SelectedProcess?.Key != restoredPrimary
+                || !restoredSelection.SetEquals(processList.SelectedItems.OfType<ProcessSlot>().Select(slot => slot.Row.Key))
+                || !restoredCollapsed.SetEquals(model.NavigationCollapsed)) { CancelNavigationRestore(); return; }
+            if (!NavigationPageVisible(state)) {
+                CompositionTarget.Rendering -= navigationRestoreFrame; navigationRestoreFrame = null; return;
+            }
+            if (++frames > 8) { CancelNavigationRestore(); return; }
+            if (Descendant<ScrollViewer>(processList) is not { } scroll) return;
             var horizontal = processTable.HorizontalScroll;
             double horizontalOffset = Math.Min(state.HorizontalOffset, horizontal.ScrollableWidth);
             bool aligned = false;

@@ -68,6 +68,7 @@ public sealed partial class MainWindow : Window
     private DesktopView view = DesktopView.Performance;
     private bool performance => view == DesktopView.Performance;
     private string processQuery = "";
+    private string? navigationSearchText;
     private int cpuMode, rangeSeconds = 60, ticks;
     private string? smokePath;
     private bool smokeModelsChecked;
@@ -129,6 +130,10 @@ public sealed partial class MainWindow : Window
         pause.Click += (_, _) => { model.SetPaused(!model.Paused); pause.Content = model.Paused ? "Pokračovat" : "Pozastavit"; };
         interval.Click += (_, _) => { model.SetInterval(model.Interval == 1000 ? 250u : 1000u); interval.Content = model.Interval == 1000 ? "1 s" : "250 ms"; };
         search.TextChanged += (_, _) => {
+            if (navigationSearchText is { } expected) {
+                navigationSearchText = null;
+                if (search.Text == expected) return;
+            }
             if (view == DesktopView.Services) UpdateServices(() => servicesModel!.SetQuery(search.Text));
             else { processQuery = search.Text; model.SetQuery(search.Text); }
         };
@@ -290,6 +295,10 @@ public sealed partial class MainWindow : Window
     private void ShowView(bool value) => ShowView(value ? DesktopView.Performance : DesktopView.Processes);
     private void ShowView(DesktopView next)
     {
+        if (view == DesktopView.Processes && model.Mode != ProcessMode.Applications && next != DesktopView.Processes && next != DesktopView.Applications) {
+            var state = CaptureProcessNavigation(); CancelNavigationRestore();
+            processNavigation = pendingNavigationRestore = state;
+        }
         if (next == DesktopView.Applications && model.Mode != ProcessMode.Applications) ShowApplications(true);
         else if (next != DesktopView.Applications && model.Mode == ProcessMode.Applications) ShowApplications(false);
         model.SetHeld(false); view = next;
@@ -309,7 +318,7 @@ public sealed partial class MainWindow : Window
         interval.Visibility = services || hardware ? Visibility.Collapsed : Visibility.Visible;
         search.PlaceholderText = services ? "Hledat službu, účet nebo PID" : "Hledat název nebo PID";
         AutomationProperties.SetName(search, search.PlaceholderText);
-        search.Text = services ? servicesModel!.Query : processQuery;
+        SetNavigationSearchText(services ? servicesModel!.Query : processQuery);
         if (!services) model.SetQuery(processQuery);
         performanceNav.Background = Display.Brush(performance ? 0x3b3024u : 0x12181cu);
         processesNav.Background = Display.Brush(next == DesktopView.Processes ? 0x3b3024u : 0x12181cu);
@@ -320,6 +329,8 @@ public sealed partial class MainWindow : Window
         if (services && serviceList.ItemsSource is null) serviceList.ItemsSource = servicesModel!.Visible;
         Resize();
         if (hardware) RefreshHardware(); else if (services) RefreshServices(); else if (performance) RefreshPerformance(); else RefreshProcesses();
+        processTable.SetSort(model.SortColumn, model.SortDescending);
+        ResumeProcessNavigation();
     }
 
     private void Resize()

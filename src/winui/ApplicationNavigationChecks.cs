@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -17,17 +18,22 @@ public sealed partial class MainWindow
         var originalProcesses = processNavigation;
         var originalApplications = applicationNavigation;
         var originalPending = pendingApplicationSelection;
+        var originalPendingRestore = pendingNavigationRestore;
+        string? originalServiceQuery = servicesModel?.Query;
+        double originalIoWidth = processTable.Columns.Items.Single(column => column.Id == 6).Width;
         var restoreInventory = model.Applications.PreserveNavigationInventory();
         var rows = Enumerable.Range(0, 242).Select(index => NavigationProcess((uint)(900000 + index),
             index is 0 or 121 ? 0u : index < 121 ? 900000u : 900121u, "Navigation " + index.ToString("D3")))
             .Concat(Enumerable.Range(0, 28).Select(index => NavigationProcess((uint)(901000 + index), 0, "Navigation Group " + index.ToString("D2")))).ToArray();
         try {
+            processTable.Columns.Resize(6, 500);
             model.ReplayForBenchmark(rows);
             model.ApplyApplications(new ProcessDetailsSnapshot(ProcessDetailsCommand.Applications, ProcessDetailsState.Ok, 0, 0,
                 ProcessArchitecture.X64, false, [], [], null, DateTimeOffset.UtcNow) {
                 Applications = new[] { NavigationApplication(rows[0], "Navigation Group Alpha"), NavigationApplication(rows[121], "Navigation Group Beta") }
                     .Concat(rows.Skip(242).Select(row => NavigationApplication(row, row.Name))).ToArray()
             });
+            ProcessNavigationState? lastProcesses = null, lastApplications = null;
             foreach (var mode in new[] { ProcessMode.All, ProcessMode.Active, ProcessMode.Tree }) {
                 CancelNavigationRestore(); processNavigation = applicationNavigation = null; pendingApplicationSelection = null;
                 string text = mode == ProcessMode.Tree ? "" : "Navigation";
@@ -36,7 +42,7 @@ public sealed partial class MainWindow
                 processQuery = text; ShowView(DesktopView.Processes); RefreshProcesses();
                 await SetNavigationQueryAsync(text);
                 SelectNavigationRows(rows[5], rows[8]);
-                await ScrollNavigationAsync(model.VisibleProcesses[70]);
+                await ScrollNavigationAsync(model.VisibleProcesses[70], 20);
                 var processes = CaptureProcessNavigation();
                 NavigationRequire(processes.VerticalOffset > 0 && processes.Anchor is not null
                     && processes.Anchor != processes.Primary, "Process navigation did not capture a distinct visible scroll anchor.");
@@ -47,7 +53,7 @@ public sealed partial class MainWindow
                     && processModeButtons.All(item => item.Button.Visibility == Visibility.Collapsed), "Application navigation did not use its standalone view.");
                 applicationChoice.SelectedItem = model.Applications.Visible.Single(group => group.Key == rows[121].Key);
                 await SetNavigationQueryAsync("Navigation Group");
-                model.Sort(5); model.Toggle(rows[0]); RefreshProcesses();
+                new ButtonAutomationPeer(NavigationSortButton(5)).Invoke(); model.Toggle(rows[0]); RefreshProcesses();
                 SelectNavigationRows(rows[126], rows[129]);
                 await ScrollNavigationAsync(model.VisibleProcesses[60]);
                 applicationGroups.ScrollIntoView(model.Applications.Visible[12], ScrollIntoViewAlignment.Leading);
@@ -57,6 +63,10 @@ public sealed partial class MainWindow
                     && applications.Anchor != applications.Primary && applications.Primary != processes.Primary
                     && applications.GroupAnchor is not null && applications.GroupOffset > 0,
                     "Application navigation did not capture its own selection and anchor.");
+                NavigationRequire(Math.Abs(processes.VerticalOffset - applications.VerticalOffset) > 1
+                    && Math.Abs(processes.HorizontalOffset - applications.HorizontalOffset) > 1,
+                    "The navigation fixture needs distinct process/application vertical and horizontal offsets.");
+                CheckNavigationHeadings(applications, "application sort " + mode);
 
                 new ButtonAutomationPeer(processesNav).Invoke();
                 await NavigationRenderedAsync();
@@ -70,7 +80,32 @@ public sealed partial class MainWindow
                 new ButtonAutomationPeer(processesNav).Invoke();
                 await NavigationRenderedAsync();
                 CheckNavigationState(processes, "second process return " + mode);
+                lastProcesses = processes; lastApplications = applications;
             }
+
+            NavigationRequire(lastProcesses is not null && lastApplications is not null, "Navigation state fixture did not run.");
+            foreach (var (button, stage) in new[] { (performanceNav, "performance"), (servicesNav, "services"), (hardwareNav, "hardware") }) {
+                new ButtonAutomationPeer(applicationNav).Invoke(); await NavigationRenderedAsync();
+                CheckNavigationState(lastApplications!, "application before " + stage);
+                new ButtonAutomationPeer(button).Invoke(); await NavigationFramesAsync(12); await NavigationRenderedAsync();
+                NavigationRequire(processPage.Visibility == Visibility.Collapsed && navigationRestoreFrame is null
+                    && pendingNavigationRestore is not null, "A hidden process view lost its pending restoration or kept a rendering callback.");
+                new ButtonAutomationPeer(processesNav).Invoke(); await NavigationRenderedAsync();
+                CheckNavigationState(lastProcesses!, "indirect process return via " + stage);
+            }
+
+            new ButtonAutomationPeer(servicesNav).Invoke(); await NavigationRenderedAsync();
+            await SetNavigationQueryAsync("navigation-service-query");
+            new ButtonAutomationPeer(applicationNav).Invoke(); await NavigationRenderedAsync();
+            CheckNavigationState(lastApplications!, "application return from services");
+            NavigationRequire(servicesModel!.Query == "navigation-service-query", "Restoring application query overwrote the service query.");
+            new ButtonAutomationPeer(servicesNav).Invoke(); await NavigationFramesAsync(12); await NavigationRenderedAsync();
+            NavigationRequire(servicesModel.Query == "navigation-service-query" && search.Text == servicesModel.Query,
+                "Returning to Services lost its independent query.");
+            await SetNavigationQueryAsync("navigation-service-query-edited");
+            new ButtonAutomationPeer(processesNav).Invoke(); await NavigationRenderedAsync();
+            CheckNavigationState(lastProcesses!, "process return after user service query");
+            NavigationRequire(servicesModel.Query == "navigation-service-query-edited", "A normal service search was suppressed.");
 
             new ButtonAutomationPeer(applicationNav).Invoke();
             await NavigationRenderedAsync();
@@ -81,14 +116,16 @@ public sealed partial class MainWindow
             await NavigationRenderedAsync();
             NavigationRequire(SelectedProcess is null && processList.SelectedItems.Count == 0,
                 "Navigation restored an ended selection or retargeted a reused PID.");
-            App.Trace("Application navigation passed: actual buttons; All/Active/Tree; independent query, sort, collapsed branches, primary/multiselect and visible anchors; reused/ended targets rejected");
+            App.Trace("Application navigation passed: actual buttons; All/Active/Tree; independent query, headings, collapsed branches, primary/multiselect and visible anchors; service query; indirect hidden returns; reused/ended targets rejected");
         } finally {
             CancelNavigationRestore(); restoreInventory();
             model.ReplayForBenchmark(originalRows);
             model.RestoreProcessNavigation(originalState.Mode, originalState.Query, originalState.SortColumn, originalState.Descending, originalState.Application, originalState.Collapsed);
-            processQuery = originalState.Query; search.Text = originalState.Query;
+            processQuery = originalState.Query; SetNavigationSearchText(originalState.Query);
+            processTable.Columns.Resize(6, originalIoWidth);
+            servicesModel?.SetQuery(originalServiceQuery ?? "");
             processNavigation = originalProcesses; applicationNavigation = originalApplications; pendingApplicationSelection = originalPending;
-            ShowView(originalView); RefreshProcesses(); RestoreProcessNavigation(originalState);
+            ShowView(originalView); RefreshProcesses(); RestoreProcessNavigation(originalPendingRestore ?? originalState);
             await NavigationRenderedAsync();
         }
     }
@@ -110,15 +147,16 @@ public sealed partial class MainWindow
             finally { search.TextChanged -= TextChanged; }
         }
         await NavigationRenderedAsync();
-        NavigationRequire(model.ProcessQuery == text && processQuery == text, "Navigation query did not reach the shared model.");
+        NavigationRequire(view == DesktopView.Services ? servicesModel?.Query == text : model.ProcessQuery == text && processQuery == text,
+            "A normal user query did not reach the active view's model.");
     }
 
-    private async Task ScrollNavigationAsync(ProcessRow row)
+    private async Task ScrollNavigationAsync(ProcessRow row, double horizontal = 80)
     {
         NavigationRequire(slotsByRow.TryGetValue(row, out var slot), "Navigation anchor is not in the production table.");
         processList.ScrollIntoView(slot!, ScrollIntoViewAlignment.Leading);
         processList.UpdateLayout();
-        processTable.HorizontalScroll.ChangeView(Math.Min(80, processTable.HorizontalScroll.ScrollableWidth), null, null, true);
+        processTable.HorizontalScroll.ChangeView(Math.Min(horizontal, processTable.HorizontalScroll.ScrollableWidth), null, null, true);
         await NavigationRenderedAsync();
     }
 
@@ -135,6 +173,33 @@ public sealed partial class MainWindow
             && Math.Abs(actual.HorizontalOffset - expected.HorizontalOffset) < 1, "Navigation changed the actual visible anchor: " + stage);
         if (expected.Mode == ProcessMode.Applications) NavigationRequire(actual.GroupAnchor == expected.GroupAnchor
             && Math.Abs(actual.GroupTop - expected.GroupTop) < 1, "Navigation changed the application-group scroll anchor: " + stage);
+        CheckNavigationHeadings(expected, stage);
+    }
+
+    private Button NavigationSortButton(int id) => processTable.Header.Children.Select(cell => Descendant<Button>(cell)).OfType<Button>()
+        .SingleOrDefault(button => AutomationProperties.GetAutomationId(button) == "process-column-" + id)
+        ?? throw new InvalidOperationException("Actual process sort heading is missing: " + id);
+
+    private void CheckNavigationHeadings(ProcessNavigationState expected, string stage)
+    {
+        foreach (var column in processTable.Columns.Items) {
+            var button = NavigationSortButton(column.Id);
+            string arrow = column.Id == expected.SortColumn ? expected.Descending ? " ↓" : " ↑" : "";
+            string order = column.Id == expected.SortColumn ? expected.Descending ? ", sestupně" : ", vzestupně" : ", seřadit";
+            NavigationRequire(button.Content is string text && text == column.Title + arrow
+                && AutomationProperties.GetName(button).StartsWith(column.Title, StringComparison.Ordinal)
+                && AutomationProperties.GetName(button).EndsWith(order, StringComparison.Ordinal),
+                "Actual sort heading or its automation name did not restore: " + stage + "/" + column.Id);
+        }
+    }
+
+    private static async Task NavigationFramesAsync(int count)
+    {
+        var rendered = new TaskCompletionSource(); int frames = 0;
+        void Frame(object? sender, object args) { if (++frames >= count) rendered.TrySetResult(); }
+        CompositionTarget.Rendering += Frame;
+        try { await rendered.Task.WaitAsync(TimeSpan.FromSeconds(5)); }
+        finally { CompositionTarget.Rendering -= Frame; }
     }
 
     private async Task NavigationRenderedAsync()
