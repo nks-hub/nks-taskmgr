@@ -27,8 +27,10 @@ internal static class ProcessHistoryRanking
         foreach (var row in source) for (int i = 0; i < lists.Length; ++i) {
             var metric = (ProcessHistoryMetric)i; double value = Score(row, metric);
             if (!double.IsFinite(value)) continue;
-            var list = lists[i]; int at = list.FindIndex(item => Score(item, metric) < value);
-            if (at < 0) at = list.Count;
+            var list = lists[i];
+            if (list.Count == PerMetric && value <= Score(list[^1], metric)) continue;
+            int at = 0;
+            while (at < list.Count && Score(list[at], metric) >= value) ++at;
             if (at >= PerMetric) continue;
             list.Insert(at, row); if (list.Count > PerMetric) list.RemoveAt(PerMetric);
         }
