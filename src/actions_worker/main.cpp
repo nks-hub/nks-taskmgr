@@ -45,6 +45,8 @@ int main(int argc, char** argv)
     try {
         if (!headerValid(header)) { writeAll(output, response(header, FrameKind::rejected, 0, ERROR_INVALID_PARAMETER)); return 2; }
         const auto count = read32(header, 12); const auto command = static_cast<Command>(read(header, 6, 2));
+        // Only the elevated broker changes the system Task Manager registration.
+        if (command == Command::taskManager) { writeAll(output, response(header, FrameKind::rejected, 0, ERROR_NOT_SUPPORTED)); return 2; }
         std::vector<std::byte> payload(read32(header, 8));
         if (!readAll(input, payload)) return 2;
         BYTE extra{}; DWORD received = 0;

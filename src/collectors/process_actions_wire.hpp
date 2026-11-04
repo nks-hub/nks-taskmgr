@@ -35,11 +35,14 @@ inline void rowBytes(const Result& result, std::span<std::byte> row)
 inline bool headerValid(const Header& value)
 {
     auto command = read(value, 6, 2); auto count = read32(value, 12);
-    if (read32(value, 0) != magic || read(value, 4, 2) != version || command > static_cast<unsigned>(Command::cpuSets)
+    if (read32(value, 0) != magic || read(value, 4, 2) != version || command > static_cast<unsigned>(Command::taskManager)
         || !count || count > maximumTargets || !read64(value, 16) || (!read64(value, 24) && !read64(value, 32))
         || read32(value, 52) || read64(value, 56)) return false;
     if (command == static_cast<unsigned>(Command::queryCpuSets))
         return count == 1 && read32(value, 8) == targetBytes && !read64(value, 40) && !read32(value, 48);
+    // The single target is the requesting GUI; argument 1 enables the replacement, 2 restores the previous registration.
+    if (command == static_cast<unsigned>(Command::taskManager))
+        return count == 1 && read32(value, 8) == targetBytes && (read64(value, 40) == 1 || read64(value, 40) == 2) && !read32(value, 48);
     if (command == static_cast<unsigned>(Command::cpuSets))
         return count == 1 && read64(value, 40) <= maximumCpuSets && !read32(value, 48)
             && read32(value, 8) == targetBytes + 32 + read64(value, 40) * 4;

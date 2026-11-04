@@ -1,6 +1,8 @@
 #include "consent.hpp"
 #include "protocol.hpp"
+#include "core/taskmgr_replacement.hpp"
 #include <commctrl.h>
+#include <shlobj.h>
 #include <algorithm>
 
 #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -29,6 +31,7 @@ const wchar_t* actionName(actions::Command command)
     case Command::affinity: return L"Změnit afinitu v jedné skupině";
     case Command::queryCpuSets: return L"Načíst výchozí CPU sets procesu";
     case Command::cpuSets: return L"Změnit výchozí CPU sets procesu";
+    case Command::taskManager: return L"Změnit náhradu Správce úloh Windows";
     }
     return L"Neplatná akce";
 }
@@ -93,6 +96,31 @@ bool Consent::prepare(actions::Command command, std::span<actions::Result> resul
     return true;
 }
 
+DWORD Consent::prepareReplacement(const actions::Result& target, bool enabled, std::wstring& guiPath)
+{
+    if (!context_.ready || !peerAlive(gui_) || !peerAlive(bridge_)) return ERROR_INVALID_HANDLE;
+    FILETIME created{}, exited{}, kernel{}, user{};
+    if (target.target.key != gui_.key || target.target.window || !GetProcessTimes(gui_.process.get(), &created, &exited, &kernel, &user)
+        || ((static_cast<std::uint64_t>(created.dwHighDateTime) << 32) | created.dwLowDateTime) != target.target.created100ns) return trustRejected;
+    // The path comes from the verified, locked GUI image, never from the request.
+    std::wstring path(32768, L'\0');
+    const DWORD size = GetFinalPathNameByHandleW(gui_.image.get(), path.data(), static_cast<DWORD>(path.size()), FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    if (!size || size >= path.size()) return trustRejected;
+    path.resize(size);
+    if (path.starts_with(L"\\\\?\\")) path.erase(0, 4);
+    if (replacement::debuggerCommand(path).empty()) return replacementLocation;
+    if (enabled) {
+        // Every user's Task Manager would start this file, so it must sit in the admin-only machine install.
+        PWSTR programFiles = nullptr;
+        const bool inside = SUCCEEDED(SHGetKnownFolderPath(FOLDERID_ProgramFiles, KF_FLAG_DEFAULT, nullptr, &programFiles))
+            && replacement::insideDirectory(path, programFiles);
+        CoTaskMemFree(programFiles);
+        if (!inside) return replacementLocation;
+    }
+    description_ = L"Klíč: HKLM\\" + std::wstring(replacement::systemKey) + L", hodnota Debugger\nNKS: " + safePath(gui_.process.get()) + L"\n";
+    guiPath = std::move(path); return ERROR_SUCCESS;
+}
+
 bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uint32_t group, std::span<const std::uint32_t> selected)
 {
     TokenIdentity own;
@@ -101,6 +129,9 @@ bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uin
         L"Zakázané, systémové, kritické a chráněné procesy se nemění. Zrušení čekání nevrací zásah.\n";
     if (command == actions::Command::priority) content += L"Priorita: " + std::to_wstring(argument) + L"\n";
     if (command == actions::Command::affinity) content += L"Skupina: " + std::to_wstring(group) + L", maska: " + std::to_wstring(argument) + L"\n";
+    if (command == actions::Command::taskManager) content += argument == 1
+        ? L"Zapnout: vstupy spouštějící taskmgr.exe otevřou NKS Task Manager pro všechny uživatele. Předchozí registrace se uloží pro obnovení.\n"
+        : L"Vypnout: obnoví se předchozí registrace taskmgr.exe, jen pokud registrace stále patří NKS.\n";
     if (command == actions::Command::terminateTree) content += L"Rozsah: tento kořen a nově ověření potomci, nejvýše 256 cílů / 3 průchody / 5 s. Strom není atomický.\n";
     std::wstring cpuDetails;
     if (command == actions::Command::cpuSets) {

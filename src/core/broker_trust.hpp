@@ -8,6 +8,7 @@ using actions::Handle;
 constexpr DWORD trustNotConfigured = 0xe04e0001;
 constexpr DWORD trustRejected = 0xe04e0002;
 constexpr DWORD consentDeclined = 0xe04e0003;
+constexpr DWORD replacementLocation = 0xe04e0004;
 struct TokenIdentity {
     std::vector<std::byte> user, logon;
     DWORD session{}, integrity{};

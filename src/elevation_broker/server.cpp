@@ -1,6 +1,7 @@
 #include "transport.hpp"
 #include "consent.hpp"
 #include "core/broker_pipe.hpp"
+#include "core/taskmgr_replacement.hpp"
 #include <bcrypt.h>
 #include <thread>
 
@@ -36,7 +37,12 @@ int serve(const std::wstring& name, DWORD expectedClient)
     auto send = [&](std::span<const std::byte> bytes) { return pipeWrite(pipe.get(), bytes, client.process.get(), ioDeadline); };
     try {
         Consent consent(gui, client);
-        if (!consent.prepare(command, results) || !consent.confirm(command, read64(header, 40), read32(header, 48), selected)) {
+        const bool replacing = command == Command::taskManager; std::wstring guiPath;
+        if (const auto refused = replacing ? consent.prepareReplacement(results[0], read64(header, 40) == 1, guiPath) : 0) {
+            ioDeadline = GetTickCount64() + 1000;
+            send(response(header, FrameKind::rejected, 0, refused)); return 2;
+        }
+        if ((!replacing && !consent.prepare(command, results)) ||!consent.confirm(command, read64(header, 40), read32(header, 48), selected)) {
             ioDeadline = GetTickCount64() + 1000;
             send(response(header, FrameKind::rejected, 0, consentDeclined)); return 2;
         }
@@ -45,6 +51,16 @@ int serve(const std::wstring& name, DWORD expectedClient)
         accepted = true;
         std::thread([] { Sleep(static_cast<DWORD>(operationMs)); TerminateProcess(GetCurrentProcess(), ERROR_TIMEOUT); }).detach();
         // The bridge enforces a 5 s operation deadline; every action also rechecks the held bridge and GUI.
+        if (replacing) {
+            const auto change = replacement::applySystem(read64(header, 40) == 1, guiPath);
+            auto& result = results[0]; result.error = static_cast<DWORD>(change.error);
+            result.outcome = change.error ? Outcome::error : change.changed ? Outcome::applied
+                : change.before == replacement::Status::foreign ? Outcome::refused : Outcome::inspected;
+            if (!change.error && !change.changed) result.reason = change.before == replacement::Status::foreign ? Reason::ownerMismatch : Reason::alreadySame;
+            result.flags = change.changed ? (change.error ? mayHaveApplied : effectConfirmed) : 0;
+            std::vector<std::byte> bytes(resultBytes); rowBytes(result, bytes);
+            return send(response(header, FrameKind::results, 1)) && send(bytes) ? 0 : 4;
+        }
         if (command == Command::queryCpuSets || command == Command::cpuSets) {
             CpuSetsResult result; result.result = results[0];
             if (consent.target(0)) processHeldCpuSets(consent.context(), command, baseline, selected, consent.target(0), result);

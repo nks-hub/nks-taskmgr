@@ -86,6 +86,7 @@ add_library(nks_native STATIC
     src/collectors/cpu_sensors.cpp
     src/collectors/gpu_telemetry.cpp
     src/collectors/disk_telemetry.cpp
+    src/core/taskmgr_replacement.cpp
 )
 target_include_directories(nks_native PUBLIC src)
 target_include_directories(nks_native SYSTEM PRIVATE third_party/phnt/include)
@@ -253,6 +254,10 @@ if(BUILD_TESTING)
     target_link_libraries(nks-process-identity-match-tests PRIVATE nks_native)
     target_compile_options(nks-process-identity-match-tests PRIVATE /W4 /WX /utf-8 /permissive-)
     add_test(NAME process-identity-match COMMAND nks-process-identity-match-tests)
+    add_executable(nks-taskmgr-replacement-tests tests/taskmgr_replacement_tests.cpp)
+    target_link_libraries(nks-taskmgr-replacement-tests PRIVATE nks_native)
+    target_compile_options(nks-taskmgr-replacement-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    add_test(NAME taskmgr-replacement COMMAND nks-taskmgr-replacement-tests)
     add_executable(nks-hardware-tests tests/hardware_tests.cpp)
     target_link_libraries(nks-hardware-tests PRIVATE nks_native)
     target_compile_options(nks-hardware-tests PRIVATE /W4 /WX /utf-8 /permissive-)
