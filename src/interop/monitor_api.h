@@ -204,9 +204,10 @@ typedef struct NksSessionSum {
 } NksSessionSum;
 
 // info_state covers user, domain and protocol (first failure wins); ACCESS_DENIED means the caller may not query that session.
+// station is the window station name (Console, RDP-Tcp#N); client is the remote client name, empty for the console.
 typedef struct NksSession {
     uint32_t session_id, state, protocol, info_state;
-    NksString16 user, domain, station;
+    NksString16 user, domain, station, client;
     uint32_t process_count, reserved;
     NksSessionSum cpu_percent, working_set_bytes, private_bytes, io_bytes_per_second;
 } NksSession;
@@ -236,8 +237,11 @@ NKS_MONITOR_API NksResult __cdecl nks_frame_get_network_transfer_data(const NksF
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_boot_data(const NksFrame* frame, uint32_t data_size, NksBootData* result) NKS_NOEXCEPT;
 // Creation times are independent of generation_kind. A missing time has state UNAVAILABLE and value zero.
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_process_creation_data(const NksFrame* frame, uint32_t data_size, NksProcessCreationData* result) NKS_NOEXCEPT;
-// Queries WTS on the first call for a frame; the idle process (PID 0) is not part of any session sum.
+// Builds the session list on the first call for a frame from a process-wide WTS cache; the idle process (PID 0) is not part
+// of any session sum. Sessions without a logged-on user (session 0, listeners) and their processes are left out.
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_session_data(const NksFrame* frame, uint32_t data_size, NksSessionData* result) NKS_NOEXCEPT;
+// Drops the cached WTS session list, for example on WM_WTSSESSION_CHANGE; the next frame queries WTS again.
+NKS_MONITOR_API void __cdecl nks_sessions_invalidate(void) NKS_NOEXCEPT;
 // The caller retains ownership of the process HANDLE. VALID verifies that held object, not action permissions or continued liveness.
 NKS_MONITOR_API NksResult __cdecl nks_process_query_identity(void* process_handle, uint32_t generation_kind, uint32_t data_size, NksProcessIdentityData* result) NKS_NOEXCEPT;
 NKS_MONITOR_API void __cdecl nks_frame_retain(NksFrame* frame) NKS_NOEXCEPT;

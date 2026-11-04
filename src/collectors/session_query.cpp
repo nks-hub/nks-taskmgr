@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstring>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 
 namespace nks {
@@ -69,9 +70,41 @@ std::vector<SessionRecord> querySessions(SampleState& state)
         for (auto result : {query(session.id, WTSUserName, &session.user, nullptr), query(session.id, WTSDomainName, &session.domain, nullptr),
                  query(session.id, WTSClientProtocolType, nullptr, &session.protocol)})
             if (session.infoState == SampleState::valid) session.infoState = result;
+        // The client name is optional detail; its failure must not hide the user.
+        query(session.id, WTSClientName, &session.client, nullptr);
     }
     state = SampleState::valid;
     return sessions;
+}
+
+namespace {
+std::mutex cacheLock;
+std::vector<SessionRecord> cache;
+bool cacheValid{};
+}
+
+std::vector<SessionRecord> cachedSessions(SampleState& state)
+{
+    std::scoped_lock lock(cacheLock);
+    if (!cacheValid) {
+        auto fresh = querySessions(state);
+        if (state != SampleState::valid) return fresh;
+        cache = std::move(fresh);
+        cacheValid = true;
+    }
+    state = SampleState::valid;
+    return cache;
+}
+
+void invalidateSessions() noexcept
+{
+    std::scoped_lock lock(cacheLock);
+    cacheValid = false;
+}
+
+bool userless(const SessionRecord& session) noexcept
+{
+    return session.infoState == SampleState::valid && session.user.empty();
 }
 
 void aggregateSessions(std::vector<SessionRecord>& sessions, const std::vector<ProcessRecord>& processes)
@@ -91,6 +124,7 @@ void aggregateSessions(std::vector<SessionRecord>& sessions, const std::vector<P
         if (process.readIoBytesPerSecond.valid() && process.writeIoBytesPerSecond.valid())
             session.ioBytesPerSecond.add(process.readIoBytesPerSecond.value + process.writeIoBytesPerSecond.value);
     }
+    std::erase_if(sessions, userless);
     std::ranges::sort(sessions, {}, &SessionRecord::id);
 }
 

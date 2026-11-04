@@ -72,7 +72,7 @@ static_assert(sizeof(NksResource) == 128 && sizeof(NksResourceData) == 32 && siz
 static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGpuData) == 16);
 static_assert(sizeof(NksHardwareFact) == 48 && sizeof(NksHardwareData) == 16);
 static_assert(sizeof(NksNetworkTransfer) == 56 && sizeof(NksNetworkTransferData) == 16);
-static_assert(sizeof(NksSessionSum) == 16 && sizeof(NksSession) == 136 && sizeof(NksSessionData) == 32);
+static_assert(sizeof(NksSessionSum) == 16 && sizeof(NksSession) == 152 && sizeof(NksSessionData) == 32);
 static_assert(static_cast<unsigned>(nks::SessionState::init) == NKS_SESSION_INIT && static_cast<unsigned>(nks::SessionState::unknown) == NKS_SESSION_UNKNOWN);
 static_assert(static_cast<unsigned>(nks::SessionProtocol::rdp) == NKS_SESSION_RDP && static_cast<unsigned>(nks::SessionProtocol::unknown) == NKS_SESSION_PROTOCOL_UNKNOWN);
 static_assert(sizeof(NksProcessCreation) == 32 && sizeof(NksProcessCreationData) == 16 && sizeof(NksProcessIdentityData) == 40);
@@ -165,14 +165,14 @@ void NksFrame::buildSessions()
 {
     const auto& processRecords = processSnapshot->processes;
     nks::SampleState state{};
-    sessionRecords = nks::querySessions(state);
+    sessionRecords = nks::cachedSessions(state);
     nks::aggregateSessions(sessionRecords, processRecords);
     const auto sum = [](const nks::SessionSum& value) { return NksSessionSum{value.value, value.known, value.overflow ? 1u : 0u}; };
     sessions.clear(); processSessions.clear();
     sessions.reserve(sessionRecords.size());
     for (const auto& item : sessionRecords)
         sessions.push_back({item.id, static_cast<uint32_t>(item.state), static_cast<uint32_t>(item.protocol), static_cast<uint32_t>(item.infoState),
-            string(item.user), string(item.domain), string(item.station), item.processes, 0,
+            string(item.user), string(item.domain), string(item.station), string(item.client), item.processes, 0,
             sum(item.cpuPercent), sum(item.workingSetBytes), sum(item.privateBytes), sum(item.ioBytesPerSecond)});
     processSessions.reserve(processRecords.size());
     for (const auto& item : processRecords) processSessions.push_back(item.sessionId);
@@ -358,6 +358,8 @@ NksResult __cdecl nks_process_query_identity(void* process, uint32_t kind, uint3
     });
 }
 int64_t __cdecl nks_monotonic_now_ns() noexcept { return nanos(std::chrono::steady_clock::now()); }
+void __cdecl nks_sessions_invalidate() noexcept { nks::invalidateSessions(); }
+
 NksResult __cdecl nks_frame_get_session_data(const NksFrame* frame, uint32_t size, NksSessionData* result) noexcept
 {
     if (!frame || !result) return NKS_INVALID_ARGUMENT;

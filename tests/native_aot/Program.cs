@@ -15,6 +15,7 @@ internal static class Program
         Require(registration.Error == 0 && registration.Status != ReplacementStatus.ThisInstall && (registration.Status != ReplacementStatus.NotRegistered || registration.Debugger.Length == 0),
             "The managed replacement state does not match the native HKLM read.");
         ServiceChecks.Verify();
+        NksTaskMgr.WinUI.UserSessionText.Check();
         Require(sizeof(StartupItemInfo) == 80 && sizeof(StartupView) == 16, "Managed startup layout mismatch.");
         var startup = NativeStartup.Read();
         Require(startup.All(item => item.Location.Length > 0 && Enum.IsDefined(item.Source) && Enum.IsDefined(item.State)), "A startup item lost its location or state.");
@@ -28,7 +29,7 @@ internal static class Program
         Require(sizeof(GpuEngineInfo) == 48 && sizeof(GpuInfo) == 56 && sizeof(GpuData) == 16, "Managed GPU layout mismatch.");
         Require(sizeof(BootIdentityInfo) == 24, "Managed boot identity layout mismatch.");
         Require(sizeof(NetworkTransferInfo) == 56 && sizeof(NetworkTransferData) == 16, "Managed network transfer layout mismatch.");
-        Require(sizeof(SessionSum) == 16 && sizeof(SessionInfo) == 136 && sizeof(SessionData) == 32, "Managed session layout mismatch.");
+        Require(sizeof(SessionSum) == 16 && sizeof(SessionInfo) == 152 && sizeof(SessionData) == 32, "Managed session layout mismatch.");
         using var monitor = NativeMonitor.Open(250, paused: true);
         Thread.Sleep(300);
         using var pausedFrame = monitor.Read();
@@ -104,11 +105,15 @@ internal static class Program
             });
             Require(survived, "A retained AOT frame depended on the monitor or garbage collector.");
             uint sessions = 0;
+            NativeFrame.InvalidateSessions();
             retained.ReadSessions(data => {
                 Require(data.State == SampleState.Valid && data.ProcessCount == processCount, "AOT session data was incomplete.");
-                for (uint i = 0; i < data.SessionCount; ++i)
+                for (uint i = 0; i < data.SessionCount; ++i) {
+                    Require(data.Sessions[i].SessionId != 0, "AOT session data listed session 0 without a user.");
                     if (data.Sessions[i].SessionId == (uint)Process.GetCurrentProcess().SessionId)
-                        Require(data.Sessions[i].User.Copy().Equals(Environment.UserName, StringComparison.OrdinalIgnoreCase), "AOT session user was lost.");
+                        Require(data.Sessions[i].User.Copy().Equals(Environment.UserName, StringComparison.OrdinalIgnoreCase) && data.Sessions[i].Station.Length > 0
+                            && (data.Sessions[i].Protocol != SessionProtocol.Rdp || data.Sessions[i].Client.Length > 0), "AOT session user, station or client was lost.");
+                }
                 sessions = data.SessionCount;
             });
             Require(sessions > 0, "AOT session data was missing.");

@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\interop\dotnet\NksTaskMgr.Native.csproj" />
+    <Compile Include="..\..\src\winui\UserSessionText.cs" Link="UserSessionText.cs" />
     <None Include="$(NativeMonitorPath)" Link="nks-monitor.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
   </ItemGroup>
   <Target Name="RequireNativeMonitor" BeforeTargets="PrepareForBuild">

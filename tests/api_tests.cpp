@@ -1,6 +1,7 @@
 #include "interop/monitor_api.h"
 #include "interop/process_changes_api.h"
 #include <windows.h>
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -145,9 +146,15 @@ void verify()
         members += session.process_count;
         if (session.session_id == currentSession) ownSession = &session;
     }
-    uint32_t idle{};
-    for (uint32_t i = 0; i < p.process_count; ++i) idle += p.processes[i].pid == 0;
-    require(members + idle == p.process_count, "A process was not counted in exactly one session");
+    uint32_t idle{}, hidden{};
+    for (uint32_t i = 0; i < p.process_count; ++i) {
+        const bool listed = std::any_of(sessions.sessions, sessions.sessions + sessions.session_count,
+            [&](const NksSession& session) { return session.session_id == sessions.process_sessions[i]; });
+        if (p.processes[i].pid == 0) ++idle; else if (!listed) ++hidden;
+    }
+    require(members + idle + hidden == p.process_count, "A process was not counted in exactly one session");
+    require(hidden > 0 && std::none_of(sessions.sessions, sessions.sessions + sessions.session_count,
+        [](const NksSession& session) { return session.session_id == 0; }), "Session 0 without a user was listed");
     wchar_t user[257]{};
     DWORD userLength = static_cast<DWORD>(std::size(user));
     require(ownSession && ownSession->info_state == NKS_SAMPLE_VALID && GetUserNameW(user, &userLength)

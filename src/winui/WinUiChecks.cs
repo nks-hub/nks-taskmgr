@@ -129,6 +129,7 @@ public static partial class WinUiChecks
         ProcessEventCloseOwnership();
         PublisherTrustChecks.Run();
         ReplacementTextChecks.Run();
+        UserSessionText.Check();
         DeepTree();
         Graphs();
         GraphRefresh();

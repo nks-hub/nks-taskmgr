@@ -200,7 +200,7 @@ public struct SessionInfo
     public SessionConnectState State;
     public SessionProtocol Protocol;
     public SampleState InfoState;
-    public String16 User, Domain, Station;
+    public String16 User, Domain, Station, Client;
     public uint ProcessCount, Reserved;
     public SessionSum CpuPercent, WorkingSetBytes, PrivateBytes, IoBytesPerSecond;
 }
@@ -326,6 +326,9 @@ public sealed partial class NativeFrame : SafeHandleZeroOrMinusOneIsInvalid
         return identity;
     }
 
+    /// <summary>Makes the next frame re-enumerate WTS sessions instead of reusing the cached list.</summary>
+    public static void InvalidateSessions() => NativeMethods.InvalidateSessions();
+
     public unsafe void ReadSessions(Action<SessionData> visitor)
     {
         ArgumentNullException.ThrowIfNull(visitor);
@@ -392,6 +395,8 @@ internal static partial class NativeMethods
     internal static partial NativeResult GetProcessCreationData(nint frame, uint dataSize, out ProcessCreationData data);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_session_data")]
     internal static partial NativeResult GetSessionData(nint frame, uint dataSize, out SessionData data);
+    [LibraryImport(Library, EntryPoint = "nks_sessions_invalidate")]
+    internal static partial void InvalidateSessions();
     [LibraryImport(Library, EntryPoint = "nks_process_query_identity")]
     internal static partial NativeResult QueryProcessIdentity(SafeProcessHandle process, GenerationKind kind, uint dataSize, out ProcessIdentityInfo data);
     [LibraryImport(Library, EntryPoint = "nks_frame_retain")]
