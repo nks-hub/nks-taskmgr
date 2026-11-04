@@ -8,3 +8,4 @@ output/playwright/
 *.user
 *.suo
 CMakeUserPresets.json
+.claude/
