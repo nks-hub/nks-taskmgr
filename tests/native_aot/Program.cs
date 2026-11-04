@@ -50,7 +50,8 @@ internal static class Program
                         for (uint i = 0; i < processCount; ++i) {
                             var process = view.Processes.Processes[i];
                             if (process.Pid != (uint)Environment.ProcessId) continue;
-                            Require(process.GenerationKind == GenerationKind.CreationTime && process.Generation != 0, "The native process identity was lost.");
+                            // Builds with SystemBasicProcessInformation publish sequence numbers instead of creation times.
+                            Require(process.GenerationKind is GenerationKind.CreationTime or GenerationKind.SequenceNumber && process.Generation != 0, "The native process identity was lost.");
                             ownName = process.Name.Copy(); generation = process.Generation;
                             retained ??= frame!.Clone();
                         }
