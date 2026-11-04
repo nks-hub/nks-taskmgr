@@ -20,6 +20,8 @@ void ProcessEventStore::initialize(BootIdentity boot, std::int64_t qpcFrequency)
 {
     std::lock_guard lock(mutex);
     increment(info.queueDropped, records.size()); records.clear(); identities.clear(); transfers.initialize(qpcFrequency);
+    // A completion may resolve an INIT of maximum age, issued before its thread exited, after the reorder delay.
+    identities.retentionQpc = (std::max)(qpcFrequency, std::int64_t{}) * 2 * ProcessTrafficStore::maximumInitiationAgeSeconds;
     info.boot = boot; info.qpcFrequency = qpcFrequency;
     resync();
 }

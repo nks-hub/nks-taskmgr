@@ -59,6 +59,8 @@ public:
     static constexpr std::size_t maximumPending = 8192, maximumSamples = 4096, maximumFrameSamples = 256;
     static constexpr std::size_t maximumDiskEvidence = 16384;
     static constexpr std::size_t maximumClosedDiskIrps = 8192;
+    /// An INIT still without a completion this long after it, by the event clock, is dropped as lost evidence.
+    static constexpr std::int64_t maximumInitiationAgeSeconds = 60;
     void initialize(std::int64_t frequency);
     void providers(SampleState disk, SampleState network, SampleState identity);
     void observe(ProcessTrafficObservation observation, const EventIdentityIndex& identities);
@@ -76,6 +78,7 @@ private:
     bool diskCandidate(const ProcessTrafficObservation& observation, const EventIdentityIndex& identities, EventIdentityCandidate& candidate, DiskKey& usedInit);
     void consumeDiskEvidence(const ProcessTrafficObservation& observation, const DiskKey& usedInit);
     bool evidenceRoom();
+    void expireInitiations(bool full);
     bool commit(const ProcessTrafficObservation& observation, EventIdentityCandidate candidate, ProcessTrafficAttribution attribution);
     void dropped(const ProcessTrafficObservation& observation);
     std::deque<ProcessTrafficObservation, EventAllocator<ProcessTrafficObservation>> pending;
@@ -83,7 +86,7 @@ private:
     std::map<DiskKey, ProcessDiskInitiation, std::less<DiskKey>, EventAllocator<std::pair<const DiskKey, ProcessDiskInitiation>>> initiations;
     std::map<DiskKey, ProcessTrafficDirection, std::less<DiskKey>, EventAllocator<std::pair<const DiskKey, ProcessTrafficDirection>>> completions;
     std::map<std::uint64_t, std::int64_t, std::less<std::uint64_t>, EventAllocator<std::pair<const std::uint64_t, std::int64_t>>> closedDiskIrps;
-    std::int64_t frequency{}, newestQpc{-1}, newestObservedQpc{-1}, epochFloorQpc{-1};
+    std::int64_t frequency{}, newestQpc{-1}, newestObservedQpc{-1}, epochFloorQpc{-1}, nextInitiationSweep{-1};
     std::uint64_t sequence{};
 };
 

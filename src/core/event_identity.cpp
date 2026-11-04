@@ -5,23 +5,49 @@
 namespace nks {
 namespace {
 void add(std::uint64_t& value) { if (value != UINT64_MAX) ++value; }
-template<class Map, class Key> void makeRoom(Map& map, const Key& key, std::size_t maximum, std::uint64_t& evictions) {
-    auto begin = map.lower_bound({key.first, 0});
-    auto end = begin;
-    std::size_t count = 0;
-    while (end != map.end() && end->first.first == key.first) { ++end; ++count; }
-    if (count >= EventIdentityIndex::maximumGenerations) { map.erase(begin); add(evictions); }
-    if (map.size() >= maximum) { map.erase(map.begin()); add(evictions); }
+template<class Value> const auto& lifetimeOf(const Value& value) {
+    if constexpr (requires { value.time; }) return value.time; else return value;
 }
+template<class Map> void retire(Map& map, std::int64_t horizon) {
+    std::erase_if(map, [horizon](const auto& entry) { const auto& time = lifetimeOf(entry.second); return time.endSeen && time.end < horizon; });
+}
+// Generations of one PID or TID never overlap, so dropping an exited one can only turn a later lookup unknown.
+template<class Map, class Key> void makeRoom(Map& map, const Key& key, std::size_t maximum, std::int64_t horizon, std::int64_t newest,
+    std::uint64_t& evictions) {
+    const auto begin = map.lower_bound({key.first, 0});
+    auto victim = map.end();
+    std::size_t count = 0;
+    for (auto it = begin; it != map.end() && it->first.first == key.first; ++it, ++count)
+        if (victim == map.end() && lifetimeOf(it->second).endSeen) victim = it;
+    if (count >= EventIdentityIndex::maximumGenerations) {
+        if (victim == map.end()) { victim = begin; add(evictions); }
+        map.erase(victim);
+    }
+    // Exited lifetimes leave first, the earliest ended in each pass; evicting a live one makes the caller reset.
+    while (map.size() >= maximum) {
+        if (horizon > newest) { map.erase(map.begin()); add(evictions); return; }
+        retire(map, horizon);
+        horizon += (newest - horizon) / 2 + 1;
+    }
+}
+}
+
+void EventIdentityIndex::advance(std::int64_t qpc)
+{
+    newest = (std::max)(newest, qpc);
+    const auto horizon = newest - retentionQpc;
+    if (horizon <= nextSweep) return;
+    retire(processes, horizon); retire(threads, horizon); nextSweep = newest;
 }
 
 bool EventIdentityIndex::process(std::uint32_t pid, std::uint64_t creationTime, std::int64_t qpc, bool start)
 {
     if (!pid || !creationTime || qpc < 0) return false;
+    advance(qpc);
     const ProcessKey key{pid, creationTime};
     auto found = processes.find(key);
     if (found == processes.end()) {
-        makeRoom(processes, key, maximumProcesses, evictions);
+        makeRoom(processes, key, maximumProcesses, newest - retentionQpc, newest, evictions);
         found = processes.emplace(key, Lifetime{}).first;
     }
     auto& time = found->second;
@@ -39,10 +65,11 @@ bool EventIdentityIndex::process(std::uint32_t pid, std::uint64_t creationTime, 
 bool EventIdentityIndex::baseline(std::uint32_t pid, std::uint64_t creationTime, std::int64_t qpc)
 {
     if (!pid || !creationTime || qpc <= floor) return false;
+    advance(qpc);
     const ProcessKey key{pid, creationTime};
     auto found = processes.find(key);
     if (found == processes.end()) {
-        makeRoom(processes, key, maximumProcesses, evictions);
+        makeRoom(processes, key, maximumProcesses, newest - retentionQpc, newest, evictions);
         found = processes.emplace(key, Lifetime{}).first;
     }
     auto& time = found->second;
@@ -56,6 +83,7 @@ bool EventIdentityIndex::baseline(std::uint32_t pid, std::uint64_t creationTime,
 bool EventIdentityIndex::thread(std::uint32_t pid, std::uint32_t tid, std::int64_t qpc, bool start)
 {
     if (!pid || !tid || qpc < 0) return false;
+    advance(qpc);
     if (start) {
         const ThreadKey key{tid, qpc};
         const auto existing = threads.find(key);
@@ -63,7 +91,7 @@ bool EventIdentityIndex::thread(std::uint32_t pid, std::uint32_t tid, std::int64
             if (existing->second.pid != pid) { add(conflicts); return false; }
             return true;
         }
-        makeRoom(threads, key, maximumThreads, evictions);
+        makeRoom(threads, key, maximumThreads, newest - retentionQpc, newest, evictions);
         threads.emplace(key, ThreadLifetime{{qpc, 0, true, false}, pid}); return true;
     }
     ThreadLifetime* candidate = nullptr;

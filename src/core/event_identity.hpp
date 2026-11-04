@@ -24,15 +24,19 @@ public:
     /// Events up to floorQpc may be missing, so lifetimes starting there no longer prove ownership.
     void clear(std::int64_t floorQpc = -1) noexcept { processes.clear(); threads.clear(); floor = floorQpc; }
     std::int64_t resetFloor() const noexcept { return floor; }
+    /// Counts evicted live lifetimes only; exited ones are dropped without loss of proof.
     std::uint64_t evictions{}, conflicts{};
+    /// QPC ticks after its Stop, measured on the newest identity event, during which an exited lifetime can still be queried.
+    std::int64_t retentionQpc{INT64_MAX};
 private:
+    void advance(std::int64_t qpc);
     struct Lifetime { std::int64_t start{}, end{}, baseline{}; bool startSeen{}, endSeen{}, baselineSeen{}; };
     struct ThreadLifetime { Lifetime time; std::uint32_t pid{}; };
     using ProcessKey = std::pair<std::uint32_t, std::uint64_t>;
     using ThreadKey = std::pair<std::uint32_t, std::int64_t>;
     std::map<ProcessKey, Lifetime, std::less<ProcessKey>, EventAllocator<std::pair<const ProcessKey, Lifetime>>> processes;
     std::map<ThreadKey, ThreadLifetime, std::less<ThreadKey>, EventAllocator<std::pair<const ThreadKey, ThreadLifetime>>> threads;
-    std::int64_t floor{-1};
+    std::int64_t floor{-1}, newest{-1}, nextSweep{-1};
 };
 
 }

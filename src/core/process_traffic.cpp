@@ -21,7 +21,7 @@ bool attributed(ProcessTrafficAttribution value) {
 void ProcessTrafficStore::initialize(std::int64_t value)
 {
     invalidate(false); add(info.evictedSamples, history.size()); history.clear(); frequency = value;
-    newestQpc = newestObservedQpc = epochFloorQpc = -1;
+    newestQpc = newestObservedQpc = epochFloorQpc = nextInitiationSweep = -1;
     info.diskState = info.networkState = info.identityProviderState = SampleState::unavailable;
 }
 void ProcessTrafficStore::providers(SampleState disk, SampleState network, SampleState identity)
@@ -49,8 +49,18 @@ void ProcessTrafficStore::observe(ProcessTrafficObservation observation, const E
     else info.networkState = SampleState::gap;
 }
 
+void ProcessTrafficStore::expireInitiations(bool full)
+{
+    const auto horizon = newestObservedQpc - maximumInitiationAgeSeconds * frequency;
+    if (!full && horizon <= nextInitiationSweep) return;
+    nextInitiationSweep = newestObservedQpc;
+    // A completion that still arrives for an expired INIT stays unknown; only the stale INIT is lost.
+    add(info.pendingDropped, std::erase_if(initiations, [horizon](const auto& entry) { return entry.first.second < horizon; }));
+}
+
 bool ProcessTrafficStore::evidenceRoom()
 {
+    expireInitiations(initiations.size() + completions.size() >= maximumDiskEvidence);
     if (initiations.size() + completions.size() < maximumDiskEvidence) return true;
     invalidate(false); add(info.pendingDropped); return false;
 }

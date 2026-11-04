@@ -238,7 +238,7 @@ void evidenceLimit()
 {
     Fixture f; const auto before = publish(f);
     for (std::size_t i = 0; i <= ProcessTrafficStore::maximumDiskEvidence; ++i)
-        f.traffic.diskInitiated(init(10000 + i, 100 + static_cast<std::int64_t>(i)), f.identities);
+        f.traffic.diskInitiated(init(10000 + i, 100), f.identities);
     revoked(before, single(f.traffic.read(arrival + delay + 2000, f.identities)));
     require(f.traffic.info.pendingDropped && eventBudgetUsed.load() <= eventBudgetLimit, "Open IRPs exceeded fixed/shared budget limits");
 }
@@ -406,6 +406,64 @@ void networkSettledEviction()
     require(!batch.samples.empty() && std::all_of(batch.samples.begin(), batch.samples.end(), [](const auto& row) {
         return row.attribution == ProcessTrafficAttribution::direct; }), "Eviction dropped direct ownership");
 }
+void identityChurn()
+{
+    ProcessEventStore store; const auto before = publish(store);
+    std::int64_t qpc = 100;
+    for (std::uint32_t i = 0; i < 2 * EventIdentityIndex::maximumThreads; ++i, ++qpc) {
+        store.thread(10, 1000 + i, qpc, true); store.thread(10, 1000 + i, qpc + 1, false);
+        if (i >= 2 * EventIdentityIndex::maximumProcesses) continue;
+        auto row = start(5000 + i, 50000 + i, qpc); store.push(row);
+        row.kind = ProcessEventKind::stopped; row.timestampQpc = qpc + 1; store.push(row);
+    }
+    const auto quiet = store.read().traffic;
+    require(quiet.info.attributionEpoch == before.attributionEpoch && quiet.samples.empty(), "Exited thread/process churn forced a reset");
+    store.diskInitiated(init(2000, qpc + 10, 100, ProcessTrafficDirection::read, 1));
+    store.traffic(completion(2000, qpc + 20, 64, ProcessTrafficDirection::read, 1)); store.traffic(tcp(10, qpc + 30, 77, 1));
+    const auto batch = store.read().traffic;
+    const auto disk = std::find_if(batch.samples.begin(), batch.samples.end(), [](const auto& row) { return row.observedBytes == 64; });
+    require(disk != batch.samples.end() && batch.info.attributionEpoch == before.attributionEpoch, "Disk traffic after churn is missing");
+    issuing(*disk); require(ownerOf(batch, 77) == 10000, "Churn evicted a long-lived low-PID process");
+}
+void exitedLifetimeCleanup()
+{
+    EventIdentityIndex identities; identities.retentionQpc = 1000;
+    identities.process(10, 10000, 1, true); identities.process(30, 30000, 5, true);
+    identities.thread(10, 7, 100, true); identities.thread(10, 7, 200, false); identities.process(30, 30000, 250, false);
+    identities.thread(10, 8, 1100, true);
+    require(identities.threadOwnerAt(7, 150).creationTime == 10000 && identities.processOwnerAt(30, 100).creationTime == 30000,
+        "An exited lifetime was dropped inside its retention window");
+    identities.thread(10, 9, 2500, true);
+    require(!identities.threadOwnerAt(7, 150).creationTime && !identities.processOwnerAt(30, 100).creationTime,
+        "Exited lifetimes outlived their retention window");
+    require(identities.threadOwnerAt(8, 2600).creationTime == 10000 && !identities.evictions, "Cleanup dropped a live lifetime");
+    EventIdentityIndex full; full.process(10, 10000, 1, true); full.thread(10, 5, 2, true);
+    for (std::uint32_t i = 0; i < EventIdentityIndex::maximumThreads; ++i) {
+        full.thread(10, 100 + i, 10 + 2 * i, true); full.thread(10, 100 + i, 12 + 2 * i, false);
+    }
+    constexpr auto last = static_cast<std::uint32_t>(EventIdentityIndex::maximumThreads - 1);
+    require(!full.evictions && full.threadOwnerAt(5, 40000).creationTime == 10000 && full.threadOwnerAt(100 + last, 11 + 2 * last).creationTime == 10000,
+        "A full ledger evicted a live or the most recent exited thread before older exited ones");
+}
+void staleInitiationExpiry()
+{
+    Fixture f; const auto before = publish(f);
+    constexpr auto count = 2 * ProcessTrafficStore::maximumDiskEvidence;
+    for (std::size_t i = 0; i < count; ++i) f.traffic.diskInitiated(init(10000 + i, 100 + static_cast<std::int64_t>(i)), f.identities);
+    require(f.traffic.info.pendingDropped >= ProcessTrafficStore::maximumDiskEvidence
+        && f.traffic.read(arrival + delay + 2000, f.identities).samples.empty()
+        && f.traffic.info.attributionEpoch == before.attributionEpoch && !f.traffic.info.identityConflicts,
+        "INITs without completion forced a reset instead of expiring");
+    const auto qpc = 100 + static_cast<std::int64_t>(count);
+    f.traffic.diskInitiated(init(1000, qpc), f.identities); f.traffic.observe(completion(1000, qpc + 10, 64), f.identities);
+    f.traffic.observe(completion(10000, qpc + 20, 32), f.identities);
+    const auto batch = f.traffic.read(arrival + delay + 3000, f.identities);
+    const auto fresh = std::find_if(batch.samples.begin(), batch.samples.end(), [](const auto& row) { return row.observedBytes == 64; });
+    const auto stale = std::find_if(batch.samples.begin(), batch.samples.end(), [](const auto& row) { return row.observedBytes == 32; });
+    require(fresh != batch.samples.end() && stale != batch.samples.end() && batch.info.attributionEpoch == before.attributionEpoch,
+        "Disk traffic after INIT expiry is missing");
+    issuing(*fresh); require(stale->attribution == ProcessTrafficAttribution::unknown, "A completion of an expired INIT gained an owner");
+}
 void run(const char* name, void (*check)()) { currentCase = name; check(); ++cases; }
 }
 
@@ -427,7 +485,8 @@ int main(int argc, char** argv)
         run("network PID reuse", networkPidReuse); run("network missing baseline", networkMissingBaseline);
         run("network before start", networkBeforeStart); run("network reset floor", networkResetFloor);
         run("network loss gap", networkLossGap); run("network out-of-order", networkOutOfOrder);
-        run("network settled eviction", networkSettledEviction);
+        run("network settled eviction", networkSettledEviction); run("identity churn", identityChurn);
+        run("exited lifetime cleanup", exitedLifetimeCleanup); run("stale INIT expiry", staleInitiationExpiry);
         require(eventBudgetUsed.load() == 0, "Traffic tests retained shared-budget allocations");
         std::cout << cases << " process traffic checks passed\n"; return 0;
     } catch (const std::exception& error) { std::cerr << "FAIL " << (currentCase ? currentCase : "startup") << ": " << error.what() << '\n'; return 1; }
