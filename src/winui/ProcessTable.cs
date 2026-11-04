@@ -180,7 +180,9 @@ public sealed partial class ProcessRowGrid : Grid
     }
     private void BindNetwork()
     {
-        var nextSlot = IsLoaded && network is not null ? DataContext as ProcessSlot : null;
+        // The template binds the slot to the name cell with x:Bind; DataContext is not guaranteed to carry it.
+        var nextSlot = IsLoaded && network is not null
+            ? DataContext as ProcessSlot ?? (Children.Count > 0 ? (Children[0] as ProcessNameCell)?.Slot : null) : null;
         if (!ReferenceEquals(slot, nextSlot)) {
             if (slot is not null) slot.PropertyChanged -= SlotChanged;
             slot = nextSlot;
@@ -194,6 +196,7 @@ public sealed partial class ProcessRowGrid : Grid
         }
         UpdateNetwork();
     }
+    internal void NameSlotChanged() => BindNetwork();
     private void SlotChanged(object? sender, PropertyChangedEventArgs args)
     {
         if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName == nameof(ProcessSlot.Row)) BindNetwork();
@@ -254,6 +257,7 @@ public sealed partial class ProcessNameCell : Grid
         set {
             if (ReferenceEquals(slot, value)) return;
             Detach(); slot = value; RefreshRow();
+            (Parent as ProcessRowGrid)?.NameSlotChanged();
         }
     }
     internal ProcessRow? Row => row;
