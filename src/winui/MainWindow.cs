@@ -163,7 +163,7 @@ public sealed partial class MainWindow : Window
         timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromMilliseconds(100);
         timer.Tick += (_, _) => Tick(); timer.Start();
         Closed += (_, _) => { timer.Stop(); IconWorkers.Stop(); servicesModel?.Dispose(); model.Dispose(); };
-        AppWindow.Changed += (_, _) => Resize();
+        AppWindow.Changed += (_, _) => { Resize(); PaceTimer(); };
         smokePath = App.SmokePath;
         ConfigureGapDiagnostics();
         ShowView(LaunchArguments.Parse(Environment.GetCommandLineArgs()).View ?? DesktopView.Performance);
@@ -362,12 +362,29 @@ public sealed partial class MainWindow : Window
         if (performance) RefreshPerformance();
     }
 
+    private void PaceTimer()
+    {
+        // Deferred: ShowWindow inside Tick can raise AppWindow.Changed synchronously.
+        if (PaceTimer(IsIconic(windowHandle))) DispatcherQueue.TryEnqueue(Tick);
+    }
+
+    // Minimized ticks only drain the newest-frame mailbox and history; half the sampling interval still reads
+    // every frame, and a frame overwritten before it is read is reported as a gap (F127).
+    private bool PaceTimer(bool minimized)
+    {
+        var wanted = TimeSpan.FromMilliseconds(minimized ? Math.Max(100u, model.Interval / 2) : 100u);
+        if (timer.Interval == wanted) return false;
+        timer.Interval = wanted;
+        return !minimized;
+    }
+
     private void Tick()
     {
         if (sortBenchmarkRunning || applicationTemplateCheckRunning || processBranchCheckRunning) return;
         long cpuTick = BeginLiveCpuTick();
         try {
             bool minimized = IsIconic(windowHandle);
+            PaceTimer(minimized);
             SetLiveCpuState(cpuTick, minimized);
             MarkLiveCpuModel(cpuTick, true);
             bool changed = model.Tick(!minimized && view != DesktopView.Services);
