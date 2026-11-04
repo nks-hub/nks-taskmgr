@@ -23,6 +23,12 @@ public static partial class WinUiChecks
             Require(row.CpuText == "0,0 %" && changed.Contains(nameof(ProcessRow.CpuText)) && !changed.Contains(nameof(ProcessRow.WorkingText)), "First-to-zero CPU did not update only the affected cells.");
             changed.Clear(); source.WorkingSetBytes = 64 * 1024 * 1024; row.Update(source);
             Require(row.WorkingText == "64 MiB" && changed.Contains(nameof(ProcessRow.WorkingText)) && !changed.Contains(nameof(ProcessRow.CpuText)), "A memory update invalidated unrelated cells.");
+            changed.Clear(); source.CpuPercent.Value = 0.01; source.WorkingSetBytes += 1; row.Update(source);
+            Require(changed.Contains(nameof(ProcessRow.Cpu)) && changed.Contains(nameof(ProcessRow.WorkingBytes))
+                && !changed.Contains(nameof(ProcessRow.CpuText)) && !changed.Contains(nameof(ProcessRow.TableCpuText))
+                && !changed.Contains(nameof(ProcessRow.WorkingText)) && !changed.Contains(nameof(ProcessRow.TableWorkingText)),
+                "A raw value change that leaves the cell text identical invalidated the text bindings.");
+            source.WorkingSetBytes = 64 * 1024 * 1024;
             row.SetStatus(false, true); changed.Clear(); row.Update(source);
             Require(row.CpuText == "0,0 %" && changed.Any(string.IsNullOrEmpty), "Returning from stale data left stale cell text.");
             row.SetStatus(true, false); row.Update(source);

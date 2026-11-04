@@ -63,6 +63,10 @@ public static partial class WinUiChecks
         Require(root.BranchTotal.Cpu.Value == 7 && notifications != 0 && heldOrder.SequenceEqual(model.VisibleProcesses)
             && ReferenceEquals(root, model.Processes.Single(row => row.Key.Pid == 10)) && root.Cpu.Value == 5,
             "A child-only change left its held ancestor stale or replaced/reordered held row identities.");
+        int settled = notifications; child.CpuPercent.Value = 1.01;
+        ApplyProcesses(model, parent, child, grandchild, other);
+        Require(root.BranchTotal.Cpu.Value > 7 && notifications == settled, "A branch total with identical cell text invalidated its table bindings.");
+        child.CpuPercent.Value = 1; ApplyProcesses(model, parent, child, grandchild, other);
         model.SetHeld(false);
         Require(model.VisibleProcesses[0].Key.Pid == 40, "Releasing held order did not sort by the current branch CPU.");
         model.SetTableValueMode(ProcessTableValueMode.Own);

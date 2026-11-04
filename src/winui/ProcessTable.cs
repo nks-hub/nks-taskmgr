@@ -271,17 +271,39 @@ public sealed partial class ProcessNameCell : Grid
     }
     private void Changed(object? sender, PropertyChangedEventArgs args)
     {
-        if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName is nameof(ProcessRow.DisplayName) or nameof(ProcessRow.Indent) or nameof(ProcessRow.Note)) Update();
+        switch (args.PropertyName) {
+            case nameof(ProcessRow.Indent): UpdateIndent(); break;
+            case nameof(ProcessRow.DisplayName): UpdateLabel(); break;
+            case nameof(ProcessRow.Note): UpdateNote(); break;
+            case null or "": Update(); break;
+        }
     }
-    private void Update()
+    private void Update() { UpdateIndent(); UpdateLabel(); UpdateNote(); }
+
+    // Every write is skipped when equal: a property write invalidates layout even if the value is unchanged.
+    private void UpdateIndent()
     {
-        Margin = row?.Indent ?? new Thickness(0);
-        name.Text = row is null ? "" : row.Name + (row.Ended ? " · ukončeno" : row.Stale ? " · zastaralé" : "");
-        branch.Opacity = row?.HasChildren == true ? 1 : 0;
-        branch.IsHitTestVisible = branch.IsEnabled = row is { HasChildren: true, Ended: false };
-        rotation.Angle = row?.Collapsed == true ? 0 : 90;
-        AutomationProperties.SetName(branch, (row?.Collapsed == true ? "Rozbalit " : "Sbalit ") + row?.Name);
-        ToolTipService.SetToolTip(this, row?.Note);
+        var indent = row?.Indent ?? new Thickness(0);
+        if (Margin.Left != indent.Left) Margin = indent;
+    }
+    private void UpdateLabel()
+    {
+        string text = row is null ? "" : row.Name + (row.Ended ? " · ukončeno" : row.Stale ? " · zastaralé" : "");
+        if (name.Text != text) name.Text = text;
+        double opacity = row?.HasChildren == true ? 1 : 0;
+        if (branch.Opacity != opacity) branch.Opacity = opacity;
+        bool enabled = row is { HasChildren: true, Ended: false };
+        if (branch.IsEnabled != enabled) branch.IsEnabled = enabled;
+        if (branch.IsHitTestVisible != enabled) branch.IsHitTestVisible = enabled;
+        double angle = row?.Collapsed == true ? 0 : 90;
+        if (rotation.Angle != angle) rotation.Angle = angle;
+        string label = (row?.Collapsed == true ? "Rozbalit " : "Sbalit ") + row?.Name;
+        if (AutomationProperties.GetName(branch) != label) AutomationProperties.SetName(branch, label);
+    }
+    private void UpdateNote()
+    {
+        string? note = row?.Note;
+        if (!Equals(ToolTipService.GetToolTip(this), note)) ToolTipService.SetToolTip(this, note);
     }
 }
 

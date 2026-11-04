@@ -50,7 +50,7 @@ public sealed partial class MainWindow
 
     private void UpdateProcessDetailsCommand()
     {
-        processDetailsButton.IsEnabled = SelectedProcess is { } row && CanReadDetails(row);
+        SetEnabled(processDetailsButton, SelectedProcess is { } row && CanReadDetails(row));
         processDetailsWindow?.UpdateAvailability();
     }
 }

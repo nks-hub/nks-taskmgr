@@ -53,8 +53,8 @@ public sealed partial class MainWindow
     private void RefreshProcessActions()
     {
         var rows = ActionSelection();
-        processActionsButton.IsEnabled = !processActionBusy && !processActionsClient.IsBusy && !elevationBrokerClient.IsBusy && rows.Length is > 0 and <= 64 && rows.All(Actionable);
-        ToolTipService.SetToolTip(processActionsButton, processActionsClient.IsBusy || elevationBrokerClient.IsBusy ? "Čekám na ukončení vlastního pracovníka nebo zvýšeného požadavku. Neopakujte akci." : rows.Length > 64 ? "Vyberte nejvýše 64 procesů."
+        SetEnabled(processActionsButton, !processActionBusy && !processActionsClient.IsBusy && !elevationBrokerClient.IsBusy && rows.Length is > 0 and <= 64 && rows.All(Actionable));
+        SetToolTip(processActionsButton, processActionsClient.IsBusy || elevationBrokerClient.IsBusy ? "Čekám na ukončení vlastního pracovníka nebo zvýšeného požadavku. Neopakujte akci." : rows.Length > 64 ? "Vyberte nejvýše 64 procesů."
             : "Zavření oken, ukončení, pozastavení, priorita a afinita živých procesů stejného uživatele a relace");
         if (!processActionBusy) return;
         bool current = ActionSelectionUnchanged(processActionTargets);

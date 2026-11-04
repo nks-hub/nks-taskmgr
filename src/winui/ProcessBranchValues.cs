@@ -66,13 +66,17 @@ public sealed partial class ProcessRow
 
     internal void SetBranchValues(ProcessBranchTotal total, bool show, bool notify)
     {
-        bool changed = BranchTotal != total || tableBranchValues != show;
+        if (BranchTotal == total && tableBranchValues == show) return;
+        string[]? before = notify && PropertyChanged is not null ? TableTexts() : null;
         BranchTotal = total; tableBranchValues = show;
-        if (changed && notify) {
-            Notify(nameof(TableCpuText)); Notify(nameof(TableWorkingText)); Notify(nameof(TablePrivateText));
-            Notify(nameof(TableReadText)); Notify(nameof(TableWriteText)); Notify(nameof(TableMetricsDescription));
-        }
+        if (before is null) return;
+        var after = TableTexts();
+        for (int i = 0; i < after.Length; ++i) if (before[i] != after[i]) Notify(TableProperties[i]);
     }
+
+    private static readonly string[] TableProperties = [nameof(TableCpuText), nameof(TableWorkingText), nameof(TablePrivateText),
+        nameof(TableReadText), nameof(TableWriteText), nameof(TableMetricsDescription)];
+    private string[] TableTexts() => [TableCpuText, TableWorkingText, TablePrivateText, TableReadText, TableWriteText, TableMetricsDescription];
 
     private void NotifyOwnTableValue(string property)
     {

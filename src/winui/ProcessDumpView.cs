@@ -44,9 +44,9 @@ public sealed partial class MainWindow
         && row.Key == target.Key && row.Created100ns == target.Created100ns && ReferenceEquals(SelectedProcess, row) && processList.SelectedItems.Count == 1;
     private void RefreshProcessDump()
     {
-        processDumpButton.IsEnabled = !dumpClosed && !dumping;
-        captureDumpCommand.IsEnabled = !dumping && !processDumpClient.IsBusy && processList.SelectedItems.Count == 1 && SelectedProcess is { } row && CanDump(row);
-        ToolTipService.SetToolTip(processDumpButton, processDumpClient.CleanupError ?? (processDumpClient.IsBusy ? "Probíhá dump nebo úklid vlastního dočasného souboru." : "Dump x64 nebo 32bitového procesu po potvrzení obsahu a cílového souboru"));
+        SetEnabled(processDumpButton, !dumpClosed && !dumping);
+        SetEnabled(captureDumpCommand, !dumping && !processDumpClient.IsBusy && processList.SelectedItems.Count == 1 && SelectedProcess is { } row && CanDump(row));
+        SetToolTip(processDumpButton, processDumpClient.CleanupError ?? (processDumpClient.IsBusy ? "Probíhá dump nebo úklid vlastního dočasného souboru." : "Dump x64 nebo 32bitového procesu po potvrzení obsahu a cílového souboru"));
         if (dumpCleanup is { } cleanup) cleanup.Text = processDumpClient.CleanupError ?? (processDumpClient.IsBusy ? "Čekám na dokončení pracovníka a vypořádání vlastního dočasného souboru…" : "");
         if (dumping && !DumpSelectionCurrent()) { dumpOperation?.Cancel(); if (dumpDialog is { } dialog) dialog.IsPrimaryButtonEnabled = false; }
     }

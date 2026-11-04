@@ -339,10 +339,16 @@ public sealed partial class MainWindow
     {
         if (applicationWorkspace.ColumnDefinitions.Count == 0) return;
         bool apps = model.Mode == ProcessMode.Applications, wide = root.ActualWidth >= 1200;
-        applicationWorkspace.ColumnDefinitions[0].Width = new GridLength(apps && wide ? 250 : 0);
-        var sidebar = applicationWorkspace.Children[0]; sidebar.Visibility = apps && wide ? Visibility.Visible : Visibility.Collapsed;
-        applicationToolbar.Visibility = apps ? Visibility.Visible : Visibility.Collapsed;
-        applicationChoice.Visibility = apps && !wide ? Visibility.Visible : Visibility.Collapsed;
+        var column = applicationWorkspace.ColumnDefinitions[0];
+        double groupWidth = apps && wide ? 250 : 0;
+        if (column.Width.GridUnitType != GridUnitType.Pixel || column.Width.Value != groupWidth) column.Width = new GridLength(groupWidth);
+        SetVisible(applicationWorkspace.Children[0], apps && wide); SetVisible(applicationToolbar, apps); SetVisible(applicationChoice, apps && !wide);
+    }
+
+    private static void SetVisible(UIElement element, bool visible)
+    {
+        var value = visible ? Visibility.Visible : Visibility.Collapsed;
+        if (element.Visibility != value) element.Visibility = value;
     }
 
     private static (ApplicationGroupRow Row, int Index, double Top)? FirstVisibleApplicationGroup(ListView list)

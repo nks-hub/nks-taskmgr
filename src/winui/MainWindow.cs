@@ -435,16 +435,20 @@ public sealed partial class MainWindow : Window
     private void RefreshProcesses()
     {
         bool treeValues = model.Mode == ProcessMode.Tree;
-        processValueMode.Visibility = treeValues ? Visibility.Visible : Visibility.Collapsed;
+        var valueModeVisibility = treeValues ? Visibility.Visible : Visibility.Collapsed;
+        if (processValueMode.Visibility != valueModeVisibility) processValueMode.Visibility = valueModeVisibility;
         int selectedValue = model.TableValueMode == ProcessTableValueMode.ProcessWithDescendants ? 1 : 0;
         if (processValueMode.SelectedIndex != selectedValue) processValueMode.SelectedIndex = selectedValue;
         processTable.SetBranchValues(treeValues && selectedValue == 1);
         foreach (var item in processModeButtons) {
-            item.Button.Background = item.Mode == model.Mode ? choiceSelected : choiceIdle;
-            item.Button.Foreground = item.Mode == model.Mode ? performanceInk : performanceMuted;
+            var background = item.Mode == model.Mode ? choiceSelected : choiceIdle;
+            var foreground = item.Mode == model.Mode ? performanceInk : performanceMuted;
+            if (!ReferenceEquals(item.Button.Background, background)) item.Button.Background = background;
+            if (!ReferenceEquals(item.Button.Foreground, foreground)) item.Button.Foreground = foreground;
         }
         RefreshApplicationGroups();
-        processCount.Text = model.VisibleProcesses.Count + (model.Held ? " položek · pořadí přidrženo" : " položek");
+        string countText = model.VisibleProcesses.Count + (model.Held ? " položek · pořadí přidrženo" : " položek");
+        if (processCount.Text != countText) processCount.Text = countText;
         RefreshProcessOverview();
         RefreshSelection();
     }

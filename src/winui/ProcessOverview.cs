@@ -53,8 +53,13 @@ public sealed partial class MainWindow
         }
         if (value.Caption.Text != caption) value.Caption.Text = caption;
         if (value.Value.Text != text) value.Value.Text = text;
-        value.Action.DataContext = target; value.Action.IsEnabled = target is not null;
-        if (!Equals(ToolTipService.GetToolTip(value.Action), description)) ToolTipService.SetToolTip(value.Action, description);
-        AutomationProperties.SetName(value.Action, caption + ": " + text);
+        if (!ReferenceEquals(value.Action.DataContext, target)) value.Action.DataContext = target;
+        SetEnabled(value.Action, target is not null); SetToolTip(value.Action, description);
+        string name = caption + ": " + text;
+        if (AutomationProperties.GetName(value.Action) != name) AutomationProperties.SetName(value.Action, name);
     }
+
+    // Property writes with an unchanged value still invalidate layout and notify automation, so refresh paths write only on change.
+    private static void SetEnabled(Control control, bool value) { if (control.IsEnabled != value) control.IsEnabled = value; }
+    private static void SetToolTip(DependencyObject target, string? tip) { if (!Equals(ToolTipService.GetToolTip(target), tip)) ToolTipService.SetToolTip(target, tip); }
 }
