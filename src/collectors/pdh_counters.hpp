@@ -7,6 +7,11 @@
 
 namespace nks {
 
+using PdhArrayRead = PDH_STATUS (WINAPI*)(PDH_HCOUNTER, DWORD, LPDWORD, LPDWORD, PPDH_FMT_COUNTERVALUE_ITEM_W);
+// Only PDH_CSTATUS_VALID_DATA/NEW_DATA with a finite non-negative value is valid; a failed read yields no instances.
+std::vector<NamedCounter> readCounterArray(PDH_HCOUNTER counter, std::unique_ptr<std::byte[]>& scratch,
+    DWORD& scratchBytes, PdhArrayRead read = PdhGetFormattedCounterArrayW);
+
 class PdhCounters {
 public:
     PdhCounters();

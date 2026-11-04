@@ -6,7 +6,6 @@
 namespace nks {
 namespace {
 
-using PdhArrayRead = PDH_STATUS (WINAPI*)(PDH_HCOUNTER, DWORD, LPDWORD, LPDWORD, PPDH_FMT_COUNTERVALUE_ITEM_W);
 constexpr DWORD retainedArrayBytes = 256 * 1024, maximumArrayBytes = 16 * 1024 * 1024;
 
 std::vector<NamedCounter> counterArrayValues(PDH_FMT_COUNTERVALUE_ITEM_W* items, DWORD count, DWORD capacity)
@@ -24,8 +23,10 @@ std::vector<NamedCounter> counterArrayValues(PDH_FMT_COUNTERVALUE_ITEM_W* items,
     return result;
 }
 
+}
+
 std::vector<NamedCounter> readCounterArray(PDH_HCOUNTER counter, std::unique_ptr<std::byte[]>& scratch,
-    DWORD& scratchBytes, PdhArrayRead read = PdhGetFormattedCounterArrayW)
+    DWORD& scratchBytes, PdhArrayRead read)
 {
     if (!counter) return {};
     constexpr DWORD flags = PDH_FMT_DOUBLE | PDH_FMT_NOCAP100;
@@ -61,8 +62,6 @@ std::vector<NamedCounter> readCounterArray(PDH_HCOUNTER counter, std::unique_ptr
         return counterArrayValues(items, count, capacity);
     }
     return {};
-}
-
 }
 
 PdhCounters::PdhCounters() { retryMissing(); }

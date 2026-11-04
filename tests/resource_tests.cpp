@@ -2,6 +2,9 @@
 #include "core/history.hpp"
 #include "core/process_sampler.hpp"
 #include "collectors/gpu_telemetry.hpp"
+#include "collectors/pdh_counters.hpp"
+#include <pdhmsg.h>
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -89,12 +92,64 @@ void gpuTemperatureStates()
     }
     require(failures == 0, "GPU temperature state regressions failed");
 }
+
+struct PdhInstance { std::wstring name; DWORD status; double value; };
+std::vector<PdhInstance> pdhInstances;
+PDH_STATUS pdhReadStatus{};
+
+PDH_STATUS WINAPI fakePdhArray(PDH_HCOUNTER, DWORD, LPDWORD bytes, LPDWORD count, PPDH_FMT_COUNTERVALUE_ITEM_W items)
+{
+    DWORD required = static_cast<DWORD>(pdhInstances.size() * sizeof(PDH_FMT_COUNTERVALUE_ITEM_W));
+    for (const auto& instance : pdhInstances) required += static_cast<DWORD>((instance.name.size() + 1) * sizeof(wchar_t));
+    *count = static_cast<DWORD>(pdhInstances.size());
+    if (!items || *bytes < required) { *bytes = required; return PDH_MORE_DATA; }
+    if (pdhReadStatus != ERROR_SUCCESS) return pdhReadStatus;
+    auto* names = reinterpret_cast<wchar_t*>(items + pdhInstances.size());
+    for (std::size_t i = 0; i < pdhInstances.size(); ++i) {
+        wcscpy_s(names, pdhInstances[i].name.size() + 1, pdhInstances[i].name.c_str());
+        items[i].szName = names;
+        items[i].FmtValue.CStatus = pdhInstances[i].status;
+        items[i].FmtValue.doubleValue = pdhInstances[i].value;
+        names += pdhInstances[i].name.size() + 1;
+    }
+    return ERROR_SUCCESS;
+}
+
+void pdhSampleStates()
+{
+    const auto counter = reinterpret_cast<PDH_HCOUNTER>(1);
+    std::unique_ptr<std::byte[]> scratch;
+    DWORD scratchBytes = 0;
+    pdhInstances = {{L"0 C:", PDH_CSTATUS_VALID_DATA, 12}, {L"1 D:", PDH_CSTATUS_NEW_DATA, 3},
+        {L"2 E:", PDH_CSTATUS_INVALID_DATA, 40}, {L"3 F:", PDH_CSTATUS_VALID_DATA, -1},
+        {L"4 G:", PDH_CSTATUS_VALID_DATA, std::nan("")}, {L"5 H:", PDH_CSTATUS_NO_INSTANCE, 7}};
+    auto values = nks::readCounterArray(counter, scratch, scratchBytes, fakePdhArray);
+    require(values.size() == 6 && values[0].name == L"0 C:" && values[0].metric.valid() && values[0].metric.value == 12
+        && values[1].metric.valid() && values[1].metric.value == 3, "Valid or new PDH data was not accepted");
+    for (std::size_t i = 2; i < values.size(); ++i)
+        require(values[i].metric.state == nks::SampleState::unavailable && values[i].metric.value == 0,
+            "Invalid, negative, NaN or missing PDH instance became a measured value");
+    pdhInstances.erase(pdhInstances.begin());
+    values = nks::readCounterArray(counter, scratch, scratchBytes, fakePdhArray);
+    require(values.size() == 5 && std::none_of(values.begin(), values.end(), [](const auto& v) { return v.name == L"0 C:"; }),
+        "Vanished PDH instance kept a stale value");
+    pdhInstances.push_back({L"6 I:", PDH_CSTATUS_VALID_DATA, 9});
+    pdhInstances.push_back({L"7 J:", PDH_CSTATUS_VALID_DATA, 8});
+    values = nks::readCounterArray(counter, scratch, scratchBytes, fakePdhArray);
+    require(values.size() == 7 && values.back().name == L"7 J:" && values.back().metric.value == 8, "Added PDH instance was not read after growth");
+    pdhReadStatus = PDH_INVALID_DATA;
+    require(nks::readCounterArray(counter, scratch, scratchBytes, fakePdhArray).empty(), "Failed PDH array read returned stale instances");
+    pdhReadStatus = ERROR_SUCCESS;
+    require(nks::readCounterArray(nullptr, scratch, scratchBytes, fakePdhArray).empty(), "Missing PDH counter returned instances");
+    std::cout << "PASS PDH sample states and vanished instances\n";
+}
 }
 
 int main()
 {
     try {
         gpuTemperatureStates();
+        pdhSampleStates();
         auto rate = nks::networkRate(300, 100, 2);
         require(rate.valid() && rate.value == 800, "Network rate must use bits and actual seconds");
         require(nks::networkRate(300, 100, 0).state == nks::SampleState::gap, "Zero interval accepted");
