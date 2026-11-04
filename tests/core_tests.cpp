@@ -317,7 +317,109 @@ int main() {
             after.processors[0].idle100ns += 1; sampler.apply(after);
             require(after.systemCpuPercent.state == nks::SampleState::gap, "Invalid logical idle became a valid total");
         }},
-        {"unavailable system counters stay unavailable", [] { nks::ProcessSampler s; auto a = sample(); a.processorState = nks::SampleState::valid; s.apply(a); auto b = sample(2); s.apply(b); require(b.systemCpuPercent.state == nks::SampleState::unavailable, "Missing system counters became a valid zero"); }},
+        {"first sample marks every rate as first with no measured interval", [] {
+            nks::ProcessSampler sampler;
+            auto first = sample(); first.processes[0].counters = {5000000, 5000000, 4096, 4096};
+            first.processorState = nks::SampleState::valid; first.systemKernel100ns = 100; first.systemUser100ns = 100;
+            first.processors = {{0, 0, 100, 100, 40}};
+            sampler.apply(first);
+            const auto& row = first.processes[0];
+            require(row.cpuPercent.state == nks::SampleState::first && row.cpuPercent.value == 0
+                && row.readIoBytesPerSecond.state == nks::SampleState::first && row.writeIoBytesPerSecond.state == nks::SampleState::first
+                && first.systemCpuPercent.state == nks::SampleState::first && first.processors[0].cpuPercent.state == nks::SampleState::first,
+                "First sample reported a measured rate");
+            require(first.measurements.processCpu.intervalState == nks::MeasurementIntervalState::unavailable
+                && first.measurements.processCpu.intervalNs == 0, "First sample claimed a measured interval");
+            auto next = sample(2); next.processes.push_back(next.processes[0]); next.processes[1].identity.pid = 43;
+            next.processes[0].counters = first.processes[0].counters; sampler.apply(next);
+            require(next.processes[0].cpuPercent.valid() && next.processes[1].cpuPercent.state == nks::SampleState::first,
+                "A process seen for the first time inherited another baseline");
+        }},
+        {"process and system CPU use distinct methods", [] {
+            nks::ProcessSampler sampler; auto a = sample(); sampler.apply(a); auto b = sample(2); sampler.apply(b);
+            const auto& m = b.measurements;
+            require(m.processCpu.basis == nks::MeasurementBasis::elapsedDelta && m.processCpu.normalization == nks::MeasurementNormalization::wholeMachine
+                && m.systemCpu.basis == nks::MeasurementBasis::counterRatio && m.systemCpu.normalization == nks::MeasurementNormalization::wholeMachine
+                && m.logicalCpu.basis == nks::MeasurementBasis::counterRatio && m.logicalCpu.normalization == nks::MeasurementNormalization::logicalProcessor
+                && m.processIo.basis == nks::MeasurementBasis::elapsedDelta && m.processIo.unit == nks::MeasurementUnit::bytesPerSecond,
+                "CPU methods are not distinguishable in metadata");
+        }},
+        {"any decreasing process counter yields a gap without negative or huge rates", [] {
+            for (int field = 0; field < 4; ++field) {
+                nks::ProcessSampler sampler; auto a = sample(); a.processes[0].counters = {50000000, 50000000, 8192, 8192}; sampler.apply(a);
+                auto b = sample(2); b.processes[0].counters = {60000000, 60000000, 16384, 16384};
+                auto& counters = b.processes[0].counters;
+                (field == 0 ? counters.kernel100ns : field == 1 ? counters.user100ns : field == 2 ? counters.readIoBytes : counters.writeIoBytes) = 1;
+                sampler.apply(b);
+                const auto& row = b.processes[0];
+                for (const auto* metric : {&row.cpuPercent, &row.readIoBytesPerSecond, &row.writeIoBytesPerSecond})
+                    require(metric->value >= 0 && metric->value <= 100000, "Counter rollback produced a negative or wrapped rate");
+                require((field < 2) == (row.cpuPercent.state == nks::SampleState::gap)
+                    && (field == 2) == (row.readIoBytesPerSecond.state == nks::SampleState::gap)
+                    && (field == 3) == (row.writeIoBytesPerSecond.state == nks::SampleState::gap),
+                    "Counter rollback was not isolated to its own rate");
+                auto c = b; c.measuredAt += std::chrono::seconds(1);
+                c.processes[0].counters.kernel100ns += 5000000; c.processes[0].counters.user100ns += 5000000;
+                sampler.apply(c);
+                require(c.processes[0].cpuPercent.valid() && std::abs(c.processes[0].cpuPercent.value - 25) < .001,
+                    "Rolled-back counters did not become the next baseline");
+            }
+        }},
+        {"CPU divides by the actual monotonic interval", [] {
+            nks::ProcessSampler sampler; auto a = sample(); sampler.apply(a);
+            auto b = sample(); b.measuredAt += std::chrono::milliseconds(7500); b.processes[0].counters.user100ns = 150000000;
+            sampler.apply(b);
+            require(b.processes[0].cpuPercent.valid() && std::abs(b.processes[0].cpuPercent.value - 50) < .001
+                && b.measurements.processCpu.intervalNs == 7500000000 && b.measurements.processCpu.intervalState == nks::MeasurementIntervalState::measured,
+                "CPU used a nominal instead of the measured interval");
+        }},
+        {"suspend boundary, non-advancing clock and recovery after a gap", [] {
+            nks::ProcessSampler sampler; auto a = sample(); sampler.apply(a);
+            auto b = sample(32); b.processes[0].counters.user100ns = 10000000; sampler.apply(b);
+            require(b.processes[0].cpuPercent.state == nks::SampleState::gap && b.measurements.processCpu.intervalNs == 0
+                && b.measurements.processCpu.intervalState == nks::MeasurementIntervalState::unavailable,
+                "Interval over 30 s after suspend was measured");
+            auto c = sample(33); c.processes[0].counters.user100ns = 20000000; sampler.apply(c);
+            require(c.processes[0].cpuPercent.valid() && std::abs(c.processes[0].cpuPercent.value - 25) < .001,
+                "Sample after suspend did not use the post-suspend baseline");
+            auto same = c; sampler.apply(same);
+            require(same.processes[0].cpuPercent.state == nks::SampleState::gap, "Zero interval produced a rate");
+            nks::ProcessSampler edge; auto d = sample(); edge.apply(d);
+            auto e = sample(31); e.processes[0].counters.user100ns = 120000000; edge.apply(e);
+            require(e.processes[0].cpuPercent.valid() && std::abs(e.processes[0].cpuPercent.value - 10) < .001,
+                "Exactly 30 s interval was rejected");
+        }},
+        {"processor groups use all logical processors as divisor", [] {
+            nks::ProcessSampler sampler; auto a = sample(); a.logicalProcessors = 72;
+            a.processorState = nks::SampleState::valid;
+            for (std::uint16_t i = 0; i < 72; ++i)
+                a.processors.push_back({static_cast<std::uint16_t>(i < 64 ? 0 : 1), static_cast<std::uint16_t>(i < 64 ? i : i - 64), 1000, 0, 1000});
+            a.systemKernel100ns = 72000; a.systemIdle100ns = 72000;
+            sampler.apply(a);
+            auto b = a; b.measuredAt += std::chrono::seconds(1);
+            b.processes[0].counters.user100ns = 360000000;
+            for (auto& processor : b.processors) {
+                processor.kernel100ns += 10000000;
+                if (processor.group == 1) processor.idle100ns += 10000000;
+            }
+            b.systemKernel100ns += 720000000; b.systemIdle100ns += 80000000;
+            sampler.apply(b);
+            require(b.measurements.processCpu.normalizationDivisor == 72, "Divisor ignored the second processor group");
+            require(b.processes[0].cpuPercent.valid() && std::abs(b.processes[0].cpuPercent.value - 50) < .001,
+                "Process CPU was normalized by one processor group");
+            require(b.systemCpuPercent.valid() && std::abs(b.systemCpuPercent.value - 64. / 72 * 100) < .001
+                && b.processors[63].cpuPercent.value == 100 && b.processors[64].cpuPercent.valid() && b.processors[64].cpuPercent.value == 0,
+                "System CPU omitted a processor group");
+            auto c = b; c.measuredAt += std::chrono::seconds(1);
+            c.processors[64].group = 0; sampler.apply(c);
+            require(c.processors[64].cpuPercent.state == nks::SampleState::gap, "Logical processors from different groups were mixed");
+            failSecondGroup = false;
+            const std::array<nks::ProcessorGroup, 2> groups{{{0, 64}, {1, 8}}};
+            const auto times = nks::queryProcessorTimes(groups, fakeGroup);
+            require(times.state == nks::SampleState::valid && times.processors.size() == 72 && times.processors[64].group == 1
+                && times.processors[64].index == 0 && times.processors[71].index == 7, "Group-relative processor numbers were lost");
+        }},
+        {"unavailable system counters stay unavailable",[] { nks::ProcessSampler s; auto a = sample(); a.processorState = nks::SampleState::valid; s.apply(a); auto b = sample(2); s.apply(b); require(b.systemCpuPercent.state == nks::SampleState::unavailable, "Missing system counters became a valid zero"); }},
     };
     unsigned failures = 0;
     for (const auto& [name, run] : cases) {
