@@ -2,14 +2,13 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 
 namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly ObservableCollection<ProcessSlot> processSlots = [];
+    private readonly ProcessSlots processSlots = [];
     private readonly Dictionary<ProcessRow, ProcessSlot> slotsByRow = [];
     private bool updatingProcessSlots;
     private double slotsAssignMs, slotsRestoreMs, slotsFocusMs;
@@ -55,6 +54,7 @@ public sealed partial class MainWindow
             if (!bound) return;
             long began = Stopwatch.GetTimestamp();
             processList.SelectedItems.Clear();
+            processSlots.BeginBulk(source.VisibleProcesses.Count);
             while (processSlots.Count > source.VisibleProcesses.Count) processSlots.RemoveAt(processSlots.Count - 1);
             slotsByRow.Clear();
             for (int i = 0; i < source.VisibleProcesses.Count; ++i) {
@@ -63,6 +63,7 @@ public sealed partial class MainWindow
                 else processSlots[i].Assign(row);
                 slotsByRow.Add(row, processSlots[i]);
             }
+            processSlots.EndBulk();
             long assigned = Stopwatch.GetTimestamp();
             if (primary is not null && slotsByRow.TryGetValue(primary, out var main)) processList.SelectedItems.Add(main);
             foreach (var row in selected) if (row != primary && slotsByRow.TryGetValue(row, out var slot)) processList.SelectedItems.Add(slot);

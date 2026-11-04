@@ -172,6 +172,11 @@ public sealed partial class MainWindow
                     "no_match" => count == 0, "clear" => count == rows, _ => count > 0 && model.VisibleProcesses.Contains(middle)
                 };
                 if (!applied) throw new InvalidOperationException($"Search '{name}' did not apply the filtered process list.");
+                var expected = model.Processes.Where(row => query.Length == 0 || row.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                    || row.PidText.Contains(query, StringComparison.Ordinal)).ToHashSet();
+                if (!expected.SetEquals(model.VisibleProcesses) || !processSlots.Select(slot => slot.Row).SequenceEqual(model.VisibleProcesses)
+                    || slotsByRow.Count != count || model.VisibleProcesses.Any(row => !ReferenceEquals(slotsByRow[row].Row, row)))
+                    throw new InvalidOperationException($"Search '{name}' produced rows or slots that differ from the reference filter.");
             });
         var scroll = Descendant<ScrollViewer>(processList)!;
         async Task ResetSelection()
