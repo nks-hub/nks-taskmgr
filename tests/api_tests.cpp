@@ -73,7 +73,12 @@ void verify()
     require(p.cpu_percent.value >= 0 && p.cpu_percent.value <= 100, "ABI CPU normalization failed");
     const NksProcess* own{};
     for (uint32_t i = 0; i < p.process_count; ++i) if (p.processes[i].pid == GetCurrentProcessId()) own = &p.processes[i];
-    require(own && own->generation_kind == NKS_GENERATION_CREATION_TIME && own->generation && own->name.length && own->name.data, "ABI process identity or name was lost");
+    require(own && (own->generation_kind == NKS_GENERATION_CREATION_TIME || own->generation_kind == NKS_GENERATION_SEQUENCE_NUMBER)
+        && own->generation && own->name.length && own->name.data, "ABI process identity or name was lost");
+    NksProcessIdentityData ownIdentity{};
+    require(nks_process_query_identity(GetCurrentProcess(), own->generation_kind, sizeof(ownIdentity), &ownIdentity) == NKS_OK
+        && ownIdentity.state == NKS_SAMPLE_VALID && ownIdentity.generation_kind == own->generation_kind
+        && ownIdentity.generation == own->generation, "ABI process identity differs from the held process");
     const auto name = std::wstring(own->name.data, own->name.length);
     const auto generation = own->generation;
     require(p.memory.state == NKS_SAMPLE_VALID && p.memory.available_bytes <= p.memory.physical_bytes, "ABI memory fields were misaligned");

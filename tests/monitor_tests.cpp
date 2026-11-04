@@ -1,4 +1,5 @@
 #include "core/monitor.hpp"
+#include "collectors/process_identity.hpp"
 #include <windows.h>
 #include <algorithm>
 #include <iostream>
@@ -53,7 +54,12 @@ void liveMonitor()
     }
     require(processes && processes->systemCpuPercent.valid() && resources, "The monitor did not publish both streams after resuming");
     const auto own = std::find_if(processes->processes.begin(), processes->processes.end(), [](const auto& process) { return process.identity.pid == GetCurrentProcessId(); });
-    require(own != processes->processes.end() && own->identity.generationKind == nks::GenerationKind::creationTime && own->identity.generation != 0,
+    require(own != processes->processes.end(), "The monitor did not retain the real process identity");
+    // Builds with SystemBasicProcessInformation publish sequence numbers; older builds publish creation times.
+    const auto kind = own->identity.generationKind;
+    const auto expected = nks::queryProcessIdentity(GetCurrentProcess(), kind);
+    require((kind == nks::GenerationKind::creationTime || kind == nks::GenerationKind::sequenceNumber) && own->identity.generation != 0
+        && expected.state == nks::SampleState::valid && expected.identity.generation == own->identity.generation,
         "The monitor did not retain the real process identity");
     rejected = false;
     try { monitor.start(); } catch (const std::logic_error&) { rejected = true; }
