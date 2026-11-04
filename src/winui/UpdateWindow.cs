@@ -45,7 +45,9 @@ internal sealed partial class UpdateWindow : Window
         var heading = new StackPanel { Spacing = 7 };
         heading.Children.Add(Text("Aktualizace a návrat verze", 23));
         heading.Children.Add(Text("Aktuální sestavení: " + CurrentVersion()));
-        heading.Children.Add(Text("Vyberte podepsaný instalátor. Ověřená instalace i přenosná kopie zachovají svůj režim. Nastavení mimo soubory aplikace se nepřepisuje."));
+        heading.Children.Add(Text(UpdateWorkerClient.IsConfigured
+            ? "Vyberte podepsaný instalátor. Ověřená instalace i přenosná kopie zachovají svůj režim. Nastavení mimo soubory aplikace se nepřepisuje."
+            : StatusText(UpdateStatus.TrustMissing) + " Balíčky se bez něj neověřují ani nespouštějí."));
         heading.Children.Add(location);
         root.Children.Add(heading);
         Grid.SetRow(status, 1); root.Children.Add(status);
