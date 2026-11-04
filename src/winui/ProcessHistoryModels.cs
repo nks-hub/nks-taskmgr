@@ -34,6 +34,7 @@ public sealed partial class ProcessHistoryRow
     }
     public string NameText { get; }
     public string PidText { get; }
+    public override string ToString() => NameText + ", PID " + PidText + ", " + TimeText;
     public string CpuText { get; }
     public string MemoryText { get; }
     public string IoText { get; }

@@ -10,6 +10,7 @@ internal sealed record GlobalObjectSearchQuery(string Name, string Type)
 
 public sealed class GlobalObjectSearchResult
 {
+    public override string ToString() => OwnerName + ", PID " + Owner.Pid + ", " + DisplayName;
     internal ProcessKey Owner { get; }
     internal string OwnerName { get; }
     internal ProcessHandleInfo Handle { get; }

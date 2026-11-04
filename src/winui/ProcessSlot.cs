@@ -31,6 +31,7 @@ public sealed partial class ProcessSlot(ProcessRow row) : INotifyPropertyChanged
 {
     public ProcessRow Row { get; private set; } = row;
     public string AccessibleName => Row.Name + ", PID " + Row.PidText;
+    public override string ToString() => AccessibleName;
     public event PropertyChangedEventHandler? PropertyChanged;
     public void Assign(ProcessRow value)
     {

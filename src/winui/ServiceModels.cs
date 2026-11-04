@@ -52,6 +52,7 @@ public sealed partial class ServiceRow(string name) : INotifyPropertyChanged
     public int ReportedHostCount { get; private set; }
     public ServiceConfiguration Config { get; private set; } = ServiceConfiguration.Empty;
     public string StateText => ServiceText.State(State);
+    public override string ToString() => Title + " (" + Name + "), " + StateText;
     public string PidText => Pid == 0 ? "—" : Pid.ToString(System.Globalization.CultureInfo.InvariantCulture);
     public string HostCountText => ReportedHostCount > 1 ? ServiceText.Count(ReportedHostCount) : "";
     public string HostSummary => Pid == 0 ? "PID není hlášen." : "Hlášený PID " + PidText + " · " + ServiceText.Count(ReportedHostCount);

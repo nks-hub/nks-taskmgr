@@ -122,6 +122,7 @@ public sealed partial class MainWindow : Window
         resourceList.ItemTemplate = resourceTemplate.As<DataTemplate>();
         processList.ItemTemplate = Application.Current.Resources["ProcessTemplate"].As<DataTemplate>();
         App.Trace("Templates assigned");
+        ListAccessibility.NameResourceItems(resourceList);
         resourceList.SelectionChanged += (_, _) => { selectedResource = resourceList.SelectedItem as ResourceRow; RefreshPerformance(); };
         processList.SelectionChanged += (_, _) => RefreshSelection();
         processList.PointerMoved += HoldRows;
@@ -536,6 +537,7 @@ public sealed partial class MainWindow : Window
             App.Trace("Icon worker isolation passed: timeout, restart, generation, shutdown");
             if (smokeSharedIcon is not { IsCompletedSuccessfully: true })
                 throw new InvalidOperationException("Shared executable icon checks did not pass.", smokeSharedIcon?.Exception);
+            ListAccessibility.RequireItemNames(processList, "Process list");
             verifyProcessTable!(); model.VisibleProcesses.RefreshView(); smokeColumnsChecked = true; resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Memory); ShowView(true);
         }
         if (smokeModelsChecked && elapsed == 30) { CheckGraphRefresh(); resourceList.SelectedItem = model.Resources.First(row => row.Kind == ResourceKind.Cpu); cpuMode = 1; RefreshPerformance(); }
@@ -543,6 +545,7 @@ public sealed partial class MainWindow : Window
             if (coreCharts.Count != model.Processors.Count || coreCharts.Values.Any(core => core.ActualWidth <= 0)) throw new InvalidOperationException("Logical CPU charts did not render.");
             cpuMode = 2; RefreshPerformance();
             CheckResourceViews();
+            ListAccessibility.RequireItemNames(resourceList, "Resource list");
             ShowView(DesktopView.Hardware); root.UpdateLayout();
             if (hardwareSections.Values.Any(section => section.Panel.Children.Count == 0) || hardwareCards.ActualWidth <= 0)
                 throw new InvalidOperationException("Hardware overview did not render its facts.");

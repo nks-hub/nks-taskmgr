@@ -40,6 +40,7 @@ public sealed partial class ProcessEventRow
     public string NameText { get; }
     public string TargetText { get; }
     public string IdentityText { get; }
+    public override string ToString() => KindText + ", " + NameText + ", " + TargetText + ", " + TimeText;
 }
 
 [WinRT.GeneratedWinRTExposedType]

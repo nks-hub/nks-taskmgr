@@ -8,6 +8,7 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class ApplicationGroupRow(ProcessKey key) : INotifyPropertyChanged
 {
     public ProcessKey Key { get; } = key;
+    public override string ToString() => Title;
     public string Title { get; private set; } = "";
     public string Summary { get; private set; } = "";
     internal ProcessRow[] Members { get; private set; } = [];

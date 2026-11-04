@@ -13,5 +13,6 @@ public sealed partial class ProcessDetailsRow
     internal object Source { get; }
     private string? text;
     public string Text => text ??= Source.ToString()!;
+    public override string ToString() => Text;
     internal ProcessDetailsRow(object source) { Source = source; }
 }
