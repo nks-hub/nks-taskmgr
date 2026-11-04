@@ -39,6 +39,7 @@ internal sealed partial class ProcessDetailsView
             if (observation is not null && ReferenceEquals(observationHandle, handle)) {
                 text.Append("Aktuálně zachycený typ: ").Append(ObjectText(observation.Type, observation.TypeState, observation.TypeNtStatus, false)).AppendLine();
                 text.Append("Aktuálně zachycený název: ").Append(ObjectText(observation.Name, observation.NameState, observation.NameNtStatus, true)).AppendLine();
+                if (observation.Fingerprint.Present) text.Append("Otisk objektu: ").Append(observation.Fingerprint.Text).AppendLine();
                 text.Append("Pozorováno: ").Append(observationTime?.LocalDateTime.ToString("g", Czech)).AppendLine();
             } else text.AppendLine("Typ a název objektu zatím nebyly dotázané.");
             text.AppendLine().Append("Dotaz zachytí objekt aktuálně duplikovaný pod touto hodnotou. Po uzavření a opětovném použití handle může jít o jiný objekt než ve snímku.");
@@ -89,7 +90,9 @@ internal sealed partial class ProcessDetailsView
         await ReadAsync(ProcessDetailsCommand.HandleInfo, handle: handle);
         if (closed || targetChanged || !isCurrent() || !ReferenceEquals(observationHandle, handle) || observation is not { } seen) return;
         if (seen.TypeState != SampleState.Valid) { state.Text = "Typ objektu nelze ověřit, proto handle nelze bezpečně zavřít."; return; }
-        var spec = new ProcessHandleSpec(handle.Value, handle.GrantedAccess, handle.TypeIndex, seen.Type, seen.NameState == SampleState.Valid ? seen.Name : null);
+        if (seen.Type == "File" && seen.NameState != SampleState.Valid) { state.Text = "Název souboru nelze přečíst, proto handle nelze bezpečně zavřít."; return; }
+        var spec = new ProcessHandleSpec(handle.Value, handle.GrantedAccess, handle.TypeIndex, seen.Type,
+            seen.NameState == SampleState.Valid ? seen.Name : null, seen.Fingerprint);
         if (!await ConfirmHandleCloseAsync(spec, elevated) || closed) return;
         if (targetChanged || !isCurrent() || operation is not null) { state.Text = "Proces už není aktuální. Handle nebyl zavřen."; return; }
         using var current = new CancellationTokenSource(); operation = current; UpdateAvailability();
@@ -117,7 +120,9 @@ internal sealed partial class ProcessDetailsView
         var acknowledge = new CheckBox { Content = "Rozumím, že proces může spadnout nebo přijít o data.", FontSize = 12 };
         var dialog = HandleDialog("Zavřít handle v cizím procesu", HandleSummary(spec) + "\n\n"
             + "Proces o zavření neví a s handlem může dál počítat. Může spadnout, přestat fungovat nebo ztratit či poškodit neuložená data. Zavření nelze vrátit.\n\n"
-            + "Těsně před zavřením se znovu ověří identita procesu a to, že pod hodnotou je stále stejný objekt. Pokud se cokoli změnilo, zavření se odmítne."
+            + "Těsně před zavřením se znovu ověří identita procesu a to, že pod hodnotou je objekt stejného typu a přístupu"
+            + (spec.Name is { Length: > 0 } ? ", se stejným názvem" : "") + (spec.Fingerprint.Present ? ", se stejným otiskem" : "") + ". Pokud se cokoli změnilo, zavření se odmítne."
+            + (spec.Name is { Length: > 0 } || spec.Fingerprint.Present ? "" : " Objekt nemá název ani otisk, takže jeho totožnost s tímto řádkem prokázat nelze; ověří se jen typ a přístup.")
             + (elevated ? "\n\nNásleduje UAC a vlastní potvrzení správce. Nepotvrzený požadavek se neopakuje." : ""), acknowledge);
         dialog.PrimaryButtonText = "Zavřít handle"; dialog.CloseButtonText = "Zrušit"; dialog.IsPrimaryButtonEnabled = false;
         acknowledge.Checked += (_, _) => dialog.IsPrimaryButtonEnabled = true;
@@ -127,7 +132,8 @@ internal sealed partial class ProcessDetailsView
 
     private string HandleSummary(ProcessHandleSpec spec) => "Proces: " + processName + " · PID " + Key.Pid.ToString(Czech)
         + "\nHandle: 0x" + spec.Value.ToString("X") + " · přístup 0x" + spec.GrantedAccess.ToString("X8")
-        + "\nObjekt: " + spec.Type + " · " + (spec.Name is null ? "název nelze ověřit" : spec.Name.Length == 0 ? "nepojmenovaný" : Flat(spec.Name));
+        + "\nObjekt: " + spec.Type + " · " + (spec.Name is null ? "název nelze ověřit" : spec.Name.Length == 0 ? "nepojmenovaný" : Flat(spec.Name))
+        + (spec.Fingerprint.Present ? "\nOtisk: " + spec.Fingerprint.Text : "");
 
     private ContentDialog HandleDialog(string heading, string text, UIElement? extra = null)
     {

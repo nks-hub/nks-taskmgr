@@ -224,7 +224,8 @@ bool targetAllowed(const Context& context, Result& result)
     return true;
 }
 
-bool admitted(const Context& context, HANDLE process, Result& result)
+// sameUser keeps the GUI user's SID mandatory even after broker consent, which excludes DWM/UMFD-style session accounts.
+bool admitted(const Context& context, HANDLE process, Result& result, bool sameUser = false)
 {
     if (!targetAllowed(context, result)) return false;
     if (!process) { refuse(result, Reason::identityUnverifiable, ERROR_INVALID_HANDLE); return false; }
@@ -232,7 +233,7 @@ bool admitted(const Context& context, HANDLE process, Result& result)
     std::vector<std::byte> user; DWORD session = 0;
     if (!tokenIdentity(process, user, session)) { refuse(result, Reason::protectionUnverifiable, lastError()); return false; }
     if (!session || systemUser(user)) { refuse(result, Reason::systemTarget); return false; }
-    if (session != context.session || (!context.brokerConsented()
+    if (session != context.session || ((sameUser || !context.brokerConsented())
         && !EqualSid(user.data(), const_cast<std::byte*>(context.user.data())))) { refuse(result, Reason::ownerMismatch); return false; }
     return true;
 }
@@ -242,6 +243,8 @@ HANDLE handleValue(const HandleSpec& handle) { return reinterpret_cast<HANDLE>(s
 // Rereads the confirmed row from the target's own table and pins the object it names now.
 bool matchHandle(HANDLE process, const HandleSpec& handle, Result& result, Handle& pinned)
 {
+    // A file object without a readable name has nothing that ties it to the confirmed file.
+    if (handle.type == L"File" && !(handle.flags & verifyHandleName)) { refuse(result, Reason::handleUnverifiable, ERROR_INVALID_DATA); return false; }
     ProcessDetailsResult table;
     readProcessHandles(process, table);
     if (table.state != details::ResultState::ok) {
@@ -268,27 +271,49 @@ bool matchHandle(HANDLE process, const HandleSpec& handle, Result& result, Handl
         if (!NT_SUCCESS(status)) { refuse(result, Reason::handleUnverifiable, RtlNtStatusToDosError(status)); result.ntStatus = status; return false; }
         if (text != (name ? handle.name : handle.type)) { refuse(result, Reason::handleChanged, ERROR_RETRY); return false; }
     }
+    if (handle.fingerprint.kind != static_cast<std::uint32_t>(details::FingerprintKind::none)) {
+        details::HandleFingerprint actual;
+        if (!readHandleFingerprint(process, handle.value, raw, handle.type, actual)) { refuse(result, Reason::handleUnverifiable, ERROR_INVALID_DATA); return false; }
+        if (actual != handle.fingerprint) { refuse(result, Reason::handleChanged, ERROR_RETRY); return false; }
+    }
     return true;
 }
 }
 
+void closeVerifiedHandle(const HandleSpec& handle, HANDLE process, HANDLE pinned, Result& result)
+{
+    result.flags |= mayHaveApplied;
+    HANDLE raw = nullptr;
+    // DUPLICATE_CLOSE_SOURCE closes the value even if the copy fails; the copy shows which object left the slot.
+    if (DuplicateHandle(process, handleValue(handle), GetCurrentProcess(), &raw, 0, FALSE, DUPLICATE_CLOSE_SOURCE)) {
+        Handle closed(raw);
+        if (NtCompareObjects(pinned, closed.get()) == STATUS_SUCCESS) {
+            result.outcome = Outcome::applied; result.flags |= effectConfirmed;
+            if (((handle.flags & verifyHandleName) && !handle.name.empty())
+                || handle.fingerprint.kind != static_cast<std::uint32_t>(details::FingerprintKind::none)) result.flags |= objectMatched;
+        } else { result.outcome = Outcome::unverified; result.reason = Reason::handleChanged; result.error = ERROR_RETRY; }
+    } else if ((result.error = lastError()) == ERROR_INVALID_HANDLE) {
+        refuse(result, Reason::handleMissing, ERROR_INVALID_HANDLE); result.flags &= ~static_cast<std::uint32_t>(mayHaveApplied); return;
+    } else { result.outcome = Outcome::unverified; result.reason = Reason::handleUnverifiable; }
+    // A close-protected or silently refused close leaves the same object under the value.
+    HANDLE probe = nullptr;
+    if (DuplicateHandle(process, handleValue(handle), GetCurrentProcess(), &probe, 0, FALSE, 0)) {
+        Handle still(probe);
+        if (NtCompareObjects(still.get(), pinned) == STATUS_SUCCESS) {
+            result.outcome = Outcome::unverified; result.reason = Reason::handleProtected; result.error = ERROR_RETRY;
+            result.flags &= ~static_cast<std::uint32_t>(effectConfirmed | objectMatched);
+        }
+    }
+}
+
 void closeHeldHandle(const Context& context, const HandleSpec& handle, HANDLE process, Result& result)
 {
-    if (!admitted(context, process, result)) return;
+    if (!admitted(context, process, result, true)) return;
     Handle pinned;
     if (!matchHandle(process, handle, result, pinned)) return;
     if (!parentAlive(context)) { refuse(result, Reason::parentUnavailable); return; }
     if (!verify(process, result, false) || protectedTarget(process, result)) return;
-    result.flags |= mayHaveApplied;
-    HANDLE raw = nullptr;
-    // DUPLICATE_CLOSE_SOURCE closes the value even if the copy fails; the copy proves which object was closed.
-    if (DuplicateHandle(process, handleValue(handle), GetCurrentProcess(), &raw, 0, FALSE, DUPLICATE_CLOSE_SOURCE)) {
-        Handle closed(raw);
-        if (NtCompareObjects(pinned.get(), closed.get()) == STATUS_SUCCESS) { result.outcome = Outcome::applied; result.flags |= effectConfirmed; }
-        else { result.outcome = Outcome::unverified; result.reason = Reason::handleChanged; result.error = ERROR_RETRY; }
-    } else if ((result.error = lastError()) == ERROR_INVALID_HANDLE) {
-        refuse(result, Reason::handleMissing, ERROR_INVALID_HANDLE); result.flags &= ~static_cast<std::uint32_t>(mayHaveApplied);
-    } else { result.outcome = Outcome::unverified; result.reason = Reason::handleUnverifiable; }
+    closeVerifiedHandle(handle, process, pinned.get(), result);
     lifeAfter(process, Command::closeHandle, result);
 }
 

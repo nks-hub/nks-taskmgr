@@ -263,7 +263,9 @@ public sealed partial class MainWindow
     {
         string text = result.Outcome switch {
             ProcessActionOutcome.Inspected => "Nastavení bylo načteno.", ProcessActionOutcome.Applied => command is ProcessActionCommand.Terminate or ProcessActionCommand.TerminateTree ? "Konec tohoto procesu byl potvrzen."
-                : command == ProcessActionCommand.CloseHandle ? "Handle byl zavřen. Zavřený objekt je stejný jako ten, který jste potvrdili." : "Změna byla ověřena zpětným čtením.",
+                : command == ProcessActionCommand.CloseHandle ? result.Flags.HasFlag(ProcessActionFlags.ObjectMatched)
+                    ? "Handle byl zavřen. Název nebo otisk zavřeného objektu odpovídá potvrzenému objektu."
+                    : "Zavřen objekt stejného typu a přístupu; totožnost s potvrzeným objektem nelze prokázat." : "Změna byla ověřena zpětným čtením.",
             ProcessActionOutcome.CloseRequested => "Požadavek zavření byl odeslán; zavření není potvrzené.", ProcessActionOutcome.TerminationRequested => "Požadavek ukončení byl přijat; konec procesu zatím není potvrzený.",
             ProcessActionOutcome.NativeRequestAccepted => "Systém přijal požadavek. Stav všech vláken není potvrzený.", ProcessActionOutcome.Refused => "Akce byla odmítnuta.",
             ProcessActionOutcome.IdentityChanged => result.Flags.HasFlag(ProcessActionFlags.MayHaveApplied) ? "Identita procesu se změnila; výsledek není ověřený." : "Identita procesu se změnila. Akce nebyla provedena.",

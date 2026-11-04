@@ -71,6 +71,8 @@ void readProcessMemory(HANDLE process, ProcessDetailsResult& result);
 void readProcessHandles(HANDLE process, ProcessDetailsResult& result);
 void readProcessHandleInfo(HANDLE process, std::uint64_t value, ProcessDetailsResult& result);
 LONG queryObjectText(HANDLE object, bool name, std::wstring& text);
+// Reads the fingerprint of the object that `pinned` refers to through a same-access copy of `value`; false when unavailable.
+bool readHandleFingerprint(HANDLE process, std::uint64_t value, HANDLE pinned, const std::wstring& type, details::HandleFingerprint& fingerprint);
 void readProcessOwners(const ProcessDetailsRequest& request, ProcessDetailsResult& result);
 void readProcessApplications(const ProcessDetailsRequest& request, ProcessDetailsResult& result);
 

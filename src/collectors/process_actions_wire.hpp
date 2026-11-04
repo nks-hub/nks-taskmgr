@@ -78,7 +78,15 @@ inline bool closeHandleRequest(const Header& header, std::span<const std::byte> 
     handle.value = read64(header, 40); handle.flags = read32(header, 48);
     handle.grantedAccess = read32(payload, targetBytes); handle.typeIndex = read32(payload, targetBytes + 4);
     const std::size_t typeChars = read32(payload, targetBytes + 8), nameChars = read32(payload, targetBytes + 12);
-    if (!typeChars || typeChars > maximumHandleTypeChars || nameChars > maximumHandleNameChars
+    auto& print = handle.fingerprint;
+    print.kind = read32(payload, targetBytes + 16); print.id = read32(payload, targetBytes + 20);
+    print.value0 = read64(payload, targetBytes + 24); print.value1 = read64(payload, targetBytes + 32); print.value2 = read64(payload, targetBytes + 40);
+    using details::FingerprintKind;
+    const auto kind = static_cast<FingerprintKind>(print.kind);
+    const bool printValid = kind == FingerprintKind::none ? print == details::HandleFingerprint{}
+        : kind == FingerprintKind::file ? !print.id && (print.value0 || print.value1 || print.value2)
+        : (kind == FingerprintKind::process || kind == FingerprintKind::thread) && print.id && print.value0 && !print.value1 && !print.value2;
+    if (!typeChars || typeChars > maximumHandleTypeChars || nameChars > maximumHandleNameChars || !printValid
         || (nameChars && !(handle.flags & verifyHandleName))
         || payload.size() != targetBytes + handleSpecBytes + (typeChars + nameChars) * 2) return false;
     const auto text = [&](std::size_t at, std::size_t chars, std::wstring& value) {
@@ -86,8 +94,9 @@ inline bool closeHandleRequest(const Header& header, std::span<const std::byte> 
         for (std::size_t i = 0; i < chars; ++i) if (!(value[i] = static_cast<wchar_t>(read(payload, at + i * 2, 2)))) return false;
         return true;
     };
-    return text(targetBytes + handleSpecBytes, typeChars, handle.type)
-        && text(targetBytes + handleSpecBytes + typeChars * 2, nameChars, handle.name);
+    if (!text(targetBytes + handleSpecBytes, typeChars, handle.type) || !text(targetBytes + handleSpecBytes + typeChars * 2, nameChars, handle.name))
+        return false;
+    return kind == FingerprintKind::none || handle.type == (kind == FingerprintKind::process ? L"Process" : kind == FingerprintKind::thread ? L"Thread" : L"File");
 }
 template<class Write> bool cpuSetsFrame(Write&& output, const Header& request, const CpuSetsResult& result)
 {

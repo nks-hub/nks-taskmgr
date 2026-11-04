@@ -11,7 +11,7 @@ constexpr std::size_t headerBytes = 64, targetBytes = 48, resultBytes = 112, max
 constexpr std::size_t maximumTreeTargets = 256, treePrefixBytes = 64, treeNodeBytes = 64;
 constexpr std::size_t maximumCpuSets = 4096, cpuSetsPrefixBytes = 48, cpuSetBytes = 32;
 constexpr std::size_t maximumCpuSetsResponse = resultBytes + cpuSetsPrefixBytes + maximumCpuSets * (cpuSetBytes + 4);
-constexpr std::size_t handleSpecBytes = 16, maximumHandleTypeChars = 128, maximumHandleNameChars = 32767;
+constexpr std::size_t handleSpecBytes = 48, maximumHandleTypeChars = 128, maximumHandleNameChars = 32767;
 constexpr std::uint32_t verifyHandleName = 1;
 
 enum class Command : std::uint16_t { query, closeWindows, terminate, suspend, resume, priority, affinity, terminateTree, queryCpuSets = 8, cpuSets = 9, closeHandle = 10, taskManager = 11 };
@@ -30,7 +30,8 @@ enum class Reason : std::uint32_t {
 enum TreeFlag : std::uint32_t { nonAtomic = 1, targetLimit = 2, timeLimit = 4, passLimit = 8, censusFailed = 16, parentLost = 32, residual = 64 };
 enum Flag : std::uint32_t {
     identityVerified = 1, aliveBefore = 2, aliveAfter = 4, exitedAfter = 8,
-    priorityAvailable = 16, affinityAvailable = 32, effectConfirmed = 64, mayHaveApplied = 128
+    priorityAvailable = 16, affinityAvailable = 32, effectConfirmed = 64, mayHaveApplied = 128,
+    objectMatched = 256 // closeHandle only: a non-empty name or a fingerprint tied the closed object to the confirmed one
 };
 
 inline std::uint64_t read(std::span<const std::byte> bytes, std::size_t at, std::size_t size)

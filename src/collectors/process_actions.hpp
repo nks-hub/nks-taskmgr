@@ -1,6 +1,7 @@
 #pragma once
 #include "process_identity.hpp"
 #include "actions_worker/protocol.hpp"
+#include "details_worker/protocol.hpp"
 #include <cstddef>
 #include <memory>
 #include <string>
@@ -20,6 +21,7 @@ struct HandleSpec {
     std::uint64_t value{};
     std::uint32_t grantedAccess{}, typeIndex{}, flags{};
     std::wstring type, name;
+    details::HandleFingerprint fingerprint;
 };
 struct Result {
     Target target;
@@ -56,4 +58,6 @@ void applyAction(const Context& context, Command command, std::uint64_t argument
 void applyHeldAction(const Context& context, Command command, std::uint64_t argument, std::uint32_t group, HANDLE process, Result& result);
 void closeHandle(const Context& context, const HandleSpec& handle, Result& result);
 void closeHeldHandle(const Context& context, const HandleSpec& handle, HANDLE process, Result& result);
+// Final step of closeHeldHandle after every check: closes the value and proves the pinned object left that slot.
+void closeVerifiedHandle(const HandleSpec& handle, HANDLE process, HANDLE pinned, Result& result);
 }

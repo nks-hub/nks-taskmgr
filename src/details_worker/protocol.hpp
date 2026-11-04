@@ -82,10 +82,20 @@ struct HandleEntry {
     std::uint32_t grantedAccess{}, typeIndex{}, attributes{}, reserved{};
 };
 
+enum class FingerprintKind : std::uint32_t { none, process, thread, file };
+
+// Process/Thread: id is the PID/TID and value0 its creation FILETIME. File: value0 is the volume serial, value1/2 the FILE_ID_128.
+struct HandleFingerprint {
+    std::uint32_t kind{}, id{};
+    std::uint64_t value0{}, value1{}, value2{};
+    bool operator==(const HandleFingerprint&) const = default;
+};
+
 struct HandleInfo {
     std::uint64_t value{};
     std::uint32_t typeChars{}, nameChars{}, typeState{}, nameState{};
     std::int32_t typeNtStatus{}, nameNtStatus{};
+    HandleFingerprint fingerprint;
 };
 
 struct Owner {
@@ -110,7 +120,7 @@ static_assert(sizeof(Response) == 80 && offsetof(Response, win32Error) == 56 && 
 static_assert(sizeof(Thread) == 56 && offsetof(Thread, timesState) == 40);
 static_assert(sizeof(Module) == 24 && sizeof(Signature) == 24);
 static_assert(sizeof(MemoryRegion) == 40 && offsetof(MemoryRegion, state) == 24);
-static_assert(sizeof(HandleEntry) == 24 && sizeof(HandleInfo) == 32 && sizeof(Owner) == 24);
+static_assert(sizeof(HandleEntry) == 24 && sizeof(HandleInfo) == 64 && sizeof(HandleFingerprint) == 32 && sizeof(Owner) == 24);
 static_assert(sizeof(Application) == 64 && offsetof(Application, titleChars) == 40);
 
 }

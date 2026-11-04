@@ -20,10 +20,10 @@ internal enum ProcessActionReason : uint {
 [Flags]
 internal enum ProcessActionFlags : uint {
     IdentityVerified = 1, AliveBefore = 2, AliveAfter = 4, ExitedAfter = 8,
-    PriorityAvailable = 16, AffinityAvailable = 32, EffectConfirmed = 64, MayHaveApplied = 128
+    PriorityAvailable = 16, AffinityAvailable = 32, EffectConfirmed = 64, MayHaveApplied = 128, ObjectMatched = 256
 }
 // Name null leaves the object name unchecked; an empty name requires an unnamed object.
-internal sealed record ProcessHandleSpec(ulong Value, uint GrantedAccess, uint TypeIndex, string Type, string? Name);
+internal sealed record ProcessHandleSpec(ulong Value, uint GrantedAccess, uint TypeIndex, string Type, string? Name, ProcessHandleFingerprint Fingerprint);
 internal sealed record ProcessActionTarget(ProcessKey Key, ulong Created100ns, ulong Window = 0);
 internal sealed record ProcessActionsRequest(ProcessActionCommand Command, ProcessActionTarget[] Targets, ulong Argument = 0, uint Group = 0,
     ProcessCpuSetsSelection? CpuSets = null, ProcessHandleSpec? Handle = null);
@@ -112,7 +112,9 @@ internal static partial class ProcessActionsProtocol
             var flags = (ProcessActionFlags)UInt(row, 64);
             if (!row[..40].SequenceEqual(expected[..40]) || UInt(row, 108) != 0 || (uint)outcome > (uint)ProcessActionOutcome.Unverified
                 || (uint)reason > (uint)ProcessActionReason.NativeUnavailable && !(command == ProcessActionCommand.CloseHandle
-                    && reason is >= ProcessActionReason.HandleMissing and <= ProcessActionReason.HandleProtected) || ((uint)flags & ~255u) != 0
+                    && reason is >= ProcessActionReason.HandleMissing and <= ProcessActionReason.HandleProtected)
+                || ((uint)flags & ~(command == ProcessActionCommand.CloseHandle ? 511u : 255u)) != 0
+                || flags.HasFlag(ProcessActionFlags.ObjectMatched) && outcome != ProcessActionOutcome.Applied
                 || flags.HasFlag(ProcessActionFlags.AliveAfter) && flags.HasFlag(ProcessActionFlags.ExitedAfter)
                 || flags.HasFlag(ProcessActionFlags.IdentityVerified) && ULong(row, 40) != ULong(expected, 32)
                 || flags.HasFlag(ProcessActionFlags.PriorityAvailable) && (UInt(row, 68) == 0 || UInt(row, 92) != 0)
@@ -153,17 +155,20 @@ internal static partial class ProcessActionsProtocol
         var handle = request.Handle;
         if (request.Targets.Length != 1 || request.Argument != 0 || request.Group != 0 || request.CpuSets is not null || handle is null
             || handle.Value == 0 || (handle.Value & 3) != 0 || handle.Value >= 0xfffffff0 || handle.Type.Length is < 1 or > 128
-            || handle.Name is { Length: > 32767 } || handle.Type.Contains('\0') || handle.Name?.Contains('\0') == true)
+            || handle.Name is { Length: > 32767 } || handle.Type.Contains('\0') || handle.Name?.Contains('\0') == true
+            || !ProcessDetailsProtocol.FingerprintValid(handle.Fingerprint, handle.Type))
             throw new ArgumentException("Zavření handle vyžaduje jeden proces, platnou hodnotu a ověřený typ objektu.", nameof(request));
         var basis = Request(request with { Command = ProcessActionCommand.Query, Handle = null });
         string text = handle.Type + handle.Name;
-        var bytes = new byte[112 + 16 + text.Length * 2];
+        var bytes = new byte[112 + 48 + text.Length * 2];
         basis.CopyTo(bytes, 0);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(6), (ushort)ProcessActionCommand.CloseHandle);
         Write(bytes, 8, (uint)(bytes.Length - 64)); Write(bytes, 40, handle.Value); Write(bytes, 48, handle.Name is null ? 0u : 1u);
         Write(bytes, 112, handle.GrantedAccess); Write(bytes, 116, handle.TypeIndex);
         Write(bytes, 120, (uint)handle.Type.Length); Write(bytes, 124, (uint)(handle.Name?.Length ?? 0));
-        MemoryMarshal.AsBytes(text.AsSpan()).CopyTo(bytes.AsSpan(128));
+        var print = handle.Fingerprint;
+        Write(bytes, 128, print.Kind); Write(bytes, 132, print.Id); Write(bytes, 136, print.Value0); Write(bytes, 144, print.Value1); Write(bytes, 152, print.Value2);
+        MemoryMarshal.AsBytes(text.AsSpan()).CopyTo(bytes.AsSpan(160));
         return bytes;
     }
 

@@ -184,12 +184,46 @@ void readProcessHandleInfo(HANDLE process, std::uint64_t value, ProcessDetailsRe
     // Both queries observe this held duplicate, not an object from an earlier refresh.
     detail.info.typeNtStatus = objectText(duplicate.get(), ObjectTypeInformation, detail.type);
     detail.info.nameNtStatus = objectText(duplicate.get(), ObjectNameInformation, detail.name);
+    if (NT_SUCCESS(detail.info.typeNtStatus) && !readHandleFingerprint(process, value, duplicate.get(), detail.type, detail.info.fingerprint))
+        detail.info.fingerprint = {};
     detail.info.typeState = static_cast<std::uint32_t>(NT_SUCCESS(detail.info.typeNtStatus) ? SampleState::valid : queryState(detail.info.typeNtStatus));
     detail.info.nameState = static_cast<std::uint32_t>(NT_SUCCESS(detail.info.nameNtStatus) ? SampleState::valid : queryState(detail.info.nameNtStatus));
     detail.info.typeChars = static_cast<std::uint32_t>(detail.type.size()); detail.info.nameChars = static_cast<std::uint32_t>(detail.name.size());
     if (detail.info.typeState != static_cast<std::uint32_t>(SampleState::valid)
         || detail.info.nameState != static_cast<std::uint32_t>(SampleState::valid)) result.flags |= details::partialMetrics;
     result.handleInfo = std::move(detail); result.state = details::ResultState::ok;
+}
+
+bool readHandleFingerprint(HANDLE process, std::uint64_t value, HANDLE pinned, const std::wstring& type, details::HandleFingerprint& fingerprint)
+{
+    using details::FingerprintKind;
+    fingerprint = {};
+    const auto kind = type == L"Process" ? FingerprintKind::process : type == L"Thread" ? FingerprintKind::thread
+        : type == L"File" ? FingerprintKind::file : FingerprintKind::none;
+    if (kind == FingerprintKind::none) return true;
+    HANDLE raw = nullptr;
+    if (!validHandleValue(value) || !DuplicateHandle(process, reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(value)),
+        GetCurrentProcess(), &raw, 0, FALSE, DUPLICATE_SAME_ACCESS)) return false;
+    DetailHandle copy(raw);
+    // The value may have been closed and reused between the pinned copy and this one.
+    if (NtCompareObjects(copy.get(), pinned) != STATUS_SUCCESS) return false;
+    details::HandleFingerprint read{static_cast<std::uint32_t>(kind)};
+    FILETIME created{}, exited{}, kernel{}, user{};
+    if (kind == FingerprintKind::file) {
+        FILE_ID_INFO id{};
+        if (!GetFileInformationByHandleEx(copy.get(), FileIdInfo, &id, sizeof(id))) return false;
+        read.value0 = id.VolumeSerialNumber;
+        std::memcpy(&read.value1, id.FileId.Identifier, sizeof(read.value1));
+        std::memcpy(&read.value2, id.FileId.Identifier + sizeof(read.value1), sizeof(read.value2));
+        if (!read.value0 && !read.value1 && !read.value2) return false;
+    } else {
+        read.id = kind == FingerprintKind::process ? GetProcessId(copy.get()) : GetThreadId(copy.get());
+        if (!read.id || !(kind == FingerprintKind::process ? GetProcessTimes(copy.get(), &created, &exited, &kernel, &user)
+            : GetThreadTimes(copy.get(), &created, &exited, &kernel, &user))) return false;
+        read.value0 = (static_cast<std::uint64_t>(created.dwHighDateTime) << 32) | created.dwLowDateTime;
+        if (!read.value0) return false;
+    }
+    fingerprint = read; return true;
 }
 
 LONG queryObjectText(HANDLE object, bool name, std::wstring& text)

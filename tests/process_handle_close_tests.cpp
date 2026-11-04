@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
 #include <cstdio>
 #include <filesystem>
 #include <iostream>
@@ -68,12 +69,15 @@ int child(bool restrictAccess, const wchar_t* file)
     const HANDLE plain = CreateEventW(nullptr, TRUE, FALSE, nullptr), named = CreateEventW(nullptr, TRUE, FALSE, name.c_str());
     const HANDLE guarded = CreateEventW(nullptr, TRUE, FALSE, nullptr), spare = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     const HANDLE exclusive = file ? CreateFileW(file, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_TEMPORARY, nullptr) : nullptr;
-    if (!plain || !named || !guarded || !spare || exclusive == INVALID_HANDLE_VALUE
+    const HANDLE self = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, GetCurrentProcessId());
+    const HANDLE thread = OpenThread(THREAD_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, GetCurrentThreadId());
+    if (!plain || !named || !guarded || !spare || exclusive == INVALID_HANDLE_VALUE || !self || !thread
         || !SetHandleInformation(guarded, HANDLE_FLAG_PROTECT_FROM_CLOSE, HANDLE_FLAG_PROTECT_FROM_CLOSE)) return 4;
-    char ready[160]{};
-    std::snprintf(ready, sizeof(ready), "%llx %llx %llx %llx %llx\n", reinterpret_cast<unsigned long long>(plain),
+    char ready[240]{};
+    std::snprintf(ready, sizeof(ready), "%llx %llx %llx %llx %llx %llx %llx %lx\n", reinterpret_cast<unsigned long long>(plain),
         reinterpret_cast<unsigned long long>(named), reinterpret_cast<unsigned long long>(guarded),
-        reinterpret_cast<unsigned long long>(spare), reinterpret_cast<unsigned long long>(exclusive));
+        reinterpret_cast<unsigned long long>(spare), reinterpret_cast<unsigned long long>(exclusive),
+        reinterpret_cast<unsigned long long>(self), reinterpret_cast<unsigned long long>(thread), GetCurrentThreadId());
     if (!writeText(output, ready)) return 5;
     for (;;) {
         std::string line;
@@ -116,7 +120,7 @@ struct Child {
             std::size_t used = 0; handles.push_back(std::stoull(line.substr(at), &used, 16)); at += used;
             while (at < line.size() && line[at] == ' ') ++at;
         }
-        if (handles.size() != 5) throw std::runtime_error("Child ready line is malformed");
+        if (handles.size() != 8) throw std::runtime_error("Child ready line is malformed");
         const auto identity = queryProcessIdentity(process, GenerationKind::creationTime);
         FILETIME start{}, end{}, kernel{}, user{};
         if (identity.state != SampleState::valid || !GetProcessTimes(process, &start, &end, &kernel, &user)) throw std::runtime_error("Child identity unavailable");
@@ -155,6 +159,7 @@ HandleSpec specFor(HANDLE process, std::uint64_t value, bool withName)
     if (!NT_SUCCESS(queryObjectText(raw, false, spec.type)) || (withName && !NT_SUCCESS(queryObjectText(raw, true, spec.name))))
         throw std::runtime_error("Child object text unavailable");
     if (withName) spec.flags = verifyHandleName;
+    if (!readHandleFingerprint(process, value, raw, spec.type, spec.fingerprint)) spec.fingerprint = {};
     return spec;
 }
 
@@ -172,10 +177,11 @@ void refused(const Result& result, Reason reason, const char* name)
             + std::to_string(static_cast<unsigned>(result.outcome)) + " reason " + std::to_string(static_cast<unsigned>(result.reason)));
 }
 
-void closed(const Result& result, const char* name)
+void closed(const Result& result, const char* name, bool matched)
 {
     constexpr auto expected = identityVerified | aliveBefore | effectConfirmed | mayHaveApplied | aliveAfter;
-    require(result.outcome == Outcome::applied && (result.flags & expected) == expected && !result.error,
+    require(result.outcome == Outcome::applied && (result.flags & expected) == expected && !result.error
+        && ((result.flags & objectMatched) != 0) == matched,
         std::string(name) + ": close not confirmed, outcome " + std::to_string(static_cast<unsigned>(result.outcome))
             + " reason " + std::to_string(static_cast<unsigned>(result.reason)) + " error " + std::to_string(result.error));
 }
@@ -206,6 +212,12 @@ void wireChecks()
     require(!wire::closeHandleRequest(header, bad, spec), "A NUL inside the type name was accepted");
     bad = payload; write(bad, targetBytes + 8, 0, 4); bad.resize(targetBytes + handleSpecBytes);
     require(!wire::closeHandleRequest(header, bad, spec), "An empty type name was accepted");
+    bad = payload; write(bad, targetBytes + 16, 1, 4); write(bad, targetBytes + 20, 8, 4); write(bad, targetBytes + 24, 9, 8);
+    require(!wire::closeHandleRequest(header, bad, spec), "A process fingerprint on an Event was accepted");
+    bad = payload; write(bad, targetBytes + 16, 4, 4);
+    require(!wire::closeHandleRequest(header, bad, spec), "An unknown fingerprint kind was accepted");
+    bad = payload; write(bad, targetBytes + 40, 1, 8);
+    require(!wire::closeHandleRequest(header, bad, spec), "Fingerprint bytes without a kind were accepted");
 }
 
 // Sends one NKA1 close request through the real asInvoker worker and returns the result row.
@@ -234,6 +246,8 @@ std::array<std::byte, resultBytes> workerClose(const Target& target, const Handl
     const auto block = headerBytes + targetBytes;
     write(bytes, block, spec.grantedAccess, 4); write(bytes, block + 4, spec.typeIndex, 4);
     write(bytes, block + 8, spec.type.size(), 4); write(bytes, block + 12, spec.name.size(), 4);
+    write(bytes, block + 16, spec.fingerprint.kind, 4); write(bytes, block + 20, spec.fingerprint.id, 4);
+    write(bytes, block + 24, spec.fingerprint.value0, 8); write(bytes, block + 32, spec.fingerprint.value1, 8); write(bytes, block + 40, spec.fingerprint.value2, 8);
     const auto text = spec.type + spec.name;
     for (std::size_t i = 0; i < text.size(); ++i) write(bytes, block + handleSpecBytes + i * 2, static_cast<std::uint16_t>(text[i]), 2);
     DWORD written = 0;
@@ -267,6 +281,7 @@ int parent()
     const auto temp = std::filesystem::temp_directory_path() / (L"nks-handle-close-" + std::to_wstring(GetCurrentProcessId()) + L".tmp");
     Child first(L"--child \"" + temp.wstring() + L"\"");
     const auto plain = first.handles[0], named = first.handles[1], guarded = first.handles[2], spare = first.handles[3], file = first.handles[4];
+    const auto selfHandle = first.handles[5], threadHandle = first.handles[6], childThread = first.handles[7];
 
     const auto namedSpec = specFor(first.process, named, true);
     require(namedSpec.type == L"Event" && namedSpec.name.find(L"nks-handle-close-") != std::wstring::npos, "Named event observation is wrong");
@@ -321,22 +336,66 @@ int parent()
     }
 
     // Real closes, observed by the child and, for the exclusive file, by an independent reopen.
-    closed(run(context, first.target, specFor(first.process, plain, true)), "event");
+    closed(run(context, first.target, specFor(first.process, plain, true)), "unnamed event", false);
     require(!first.open(plain), "The child still holds the closed event");
     const auto fileSpec = specFor(first.process, file, true);
-    require(fileSpec.type == L"File", "Exclusive file observation is wrong");
-    closed(run(context, first.target, fileSpec), "file");
+    require(fileSpec.type == L"File" && fileSpec.fingerprint.kind == static_cast<std::uint32_t>(details::FingerprintKind::file),
+        "Exclusive file observation is wrong");
+    spec = fileSpec; spec.flags = 0; spec.name.clear();
+    refused(run(context, first.target, spec), Reason::handleUnverifiable, "file without a readable name");
+    spec = fileSpec; spec.fingerprint.value1 ^= 1;
+    refused(run(context, first.target, spec), Reason::handleChanged, "file with another file ID");
+    require(first.open(file), "A refused file request closed the handle");
+    closed(run(context, first.target, fileSpec), "file", true);
     require(!first.open(file), "The child still holds the closed file");
     Handle reopened(CreateFileW(temp.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, 0, nullptr));
     require(reopened.get() != INVALID_HANDLE_VALUE, "The exclusive file is still open somewhere after the close");
+    FILE_ID_INFO fileId{};
+    require(GetFileInformationByHandleEx(reopened.get(), FileIdInfo, &fileId, sizeof(fileId)) && fileId.VolumeSerialNumber == fileSpec.fingerprint.value0
+        && !std::memcmp(fileId.FileId.Identifier, &fileSpec.fingerprint.value1, 8) && !std::memcmp(fileId.FileId.Identifier + 8, &fileSpec.fingerprint.value2, 8),
+        "The file fingerprint differs from the independently reopened file");
     reopened.reset(); DeleteFileW(temp.c_str());
     refused(run(context, first.target, fileSpec), Reason::handleMissing, "second close of the same value");
+
+    // Process and thread fingerprints: independent oracles, refusal of a different PID or creation time, real closes.
+    const auto selfSpec = specFor(first.process, selfHandle, true);
+    require(selfSpec.fingerprint.kind == static_cast<std::uint32_t>(details::FingerprintKind::process) && selfSpec.fingerprint.id == first.target.key.pid
+        && selfSpec.fingerprint.value0 == first.target.created100ns, "Process fingerprint differs from the child identity");
+    const auto threadSpec = specFor(first.process, threadHandle, true);
+    require(threadSpec.fingerprint.kind == static_cast<std::uint32_t>(details::FingerprintKind::thread) && threadSpec.fingerprint.id == childThread
+        && threadSpec.fingerprint.value0 >= first.target.created100ns, "Thread fingerprint differs from the child main thread");
+    spec = selfSpec; ++spec.fingerprint.id;
+    refused(run(context, first.target, spec), Reason::handleChanged, "process fingerprint with another PID");
+    spec = selfSpec; ++spec.fingerprint.value0;
+    refused(run(context, first.target, spec), Reason::handleChanged, "process fingerprint with another creation time");
+    spec = threadSpec; ++spec.fingerprint.value0;
+    refused(run(context, first.target, spec), Reason::handleChanged, "thread fingerprint with another creation time");
+    require(first.open(selfHandle) && first.open(threadHandle), "A refused fingerprint request closed the handle");
+    closed(run(context, first.target, selfSpec), "process handle", true);
+    closed(run(context, first.target, threadSpec), "thread handle", true);
+    require(!first.open(selfHandle) && !first.open(threadHandle), "The child still holds the closed process or thread handle");
+
+    // A close that leaves the same object under the value (close protection) is never reported as closed.
+    {
+        const auto guardedSpec = specFor(first.process, guarded, true);
+        HANDLE raw = nullptr;
+        require(DuplicateHandle(first.process, reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(guarded)), GetCurrentProcess(), &raw, 0, FALSE, 0) != FALSE,
+            "Protected handle cannot be pinned");
+        Handle pinned(raw);
+        Result probe; probe.target = first.target;
+        closeVerifiedHandle(guardedSpec, first.process, pinned.get(), probe);
+        require(probe.outcome == Outcome::unverified && probe.reason == Reason::handleProtected && !(probe.flags & (effectConfirmed | objectMatched)),
+            "A surviving protected handle was reported as closed: outcome " + std::to_string(static_cast<unsigned>(probe.outcome))
+                + " reason " + std::to_string(static_cast<unsigned>(probe.reason)));
+        require(first.open(guarded), "The protected handle disappeared");
+    }
 
     // The same command through the asInvoker worker and its NKA1 validation.
     std::uint32_t frame = 0;
     const auto row = workerClose(first.target, specFor(first.process, spare, true), frame);
     require(frame == static_cast<std::uint32_t>(FrameKind::results) && read32(row, 48) == static_cast<std::uint32_t>(Outcome::applied)
-        && (read32(row, 64) & effectConfirmed) && read32(row, 16) == first.target.key.pid, "Worker did not confirm the close");
+        && (read32(row, 64) & effectConfirmed) && !(read32(row, 64) & objectMatched) && read32(row, 16) == first.target.key.pid,
+        "Worker did not confirm the close or claimed a matched unnamed object");
     require(!first.open(spare), "The child still holds the handle closed by the worker");
     spec = namedSpec; spec.flags = 0;
     workerClose(first.target, spec, frame);

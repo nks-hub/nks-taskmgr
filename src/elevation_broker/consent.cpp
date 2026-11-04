@@ -42,11 +42,20 @@ bool duplicate(HANDLE source, Handle& output)
     if (!DuplicateHandle(GetCurrentProcess(), source, GetCurrentProcess(), &raw, 0, FALSE, DUPLICATE_SAME_ACCESS)) return false;
     output.reset(raw); return true;
 }
-std::wstring safeText(std::wstring text, const wchar_t* shortened = L" (zkráceno)")
+bool invisible(wchar_t character)
 {
-    for (auto& character : text) if (character < L' ' || (character >= 0x202a && character <= 0x202e)
-        || (character >= 0x2066 && character <= 0x2069)) character = L' ';
-    if (text.size() > 1024) text = text.substr(0, 1024) + shortened;
+    return character < L' ' || character == 0x7f || character == 0x061c || (character >= 0x200b && character <= 0x200f)
+        || (character >= 0x202a && character <= 0x202e) || (character >= 0x2060 && character <= 0x2069) || character == 0xfeff;
+}
+// Long text keeps both ends because a spoofed path or name usually differs at its end.
+std::wstring safeText(std::wstring text, const wchar_t* shortened = L" (zkráceno) ")
+{
+    if (text.size() > 1024) text = text.substr(0, 640) + L" …" + shortened + L"… " + text.substr(text.size() - 360);
+    for (std::size_t i = 0; i < text.size(); ++i) {
+        const auto character = text[i];
+        if (character >= 0xd800 && character <= 0xdbff && i + 1 < text.size() && text[i + 1] >= 0xdc00 && text[i + 1] <= 0xdfff) { ++i; continue; }
+        if (invisible(character) || (character >= 0xd800 && character <= 0xdfff)) text[i] = L' ';
+    }
     return text;
 }
 std::wstring safePath(HANDLE process)
