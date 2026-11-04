@@ -75,6 +75,10 @@ public sealed partial class MainWindow
                 throw new InvalidOperationException("Sort benchmark requires a verified boot identity.");
             model.SetPaused(true); model.SetMode(ProcessMode.All); model.SetQuery(""); ShowView(false);
             using var output = new StreamWriter(path, false);
+            using var interaction = new StreamWriter(path + ".interaction.csv", false);
+            using var interactionSummary = new StreamWriter(path + ".interaction-summary.csv", false);
+            await interaction.WriteLineAsync("scenario,rows,case,iteration,handler_ms,layout_ms,two_frames_ms");
+            await interactionSummary.WriteLineAsync("scenario,rows,case,samples,p95_handler_ms,max_handler_ms,p95_two_frames_ms,max_two_frames_ms,target_ms,target_met");
             await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc,sort_model_ms,sort_header_ms,sort_overview_ms,slots_assign_ms,slots_restore_ms,slots_focus_ms,icons_enabled,icon_apply_ms,icon_apply_max_ms,icon_start_ms,icon_start_max_ms");
             foreach (string scenario in new[] { "live", "replay" }) {
                 if (scenario == "replay") model.ReplayForBenchmark(ReplayRows(model.BootIdentity.Identifier));
@@ -119,9 +123,85 @@ public sealed partial class MainWindow
                 SortProcesses(1); processList.UpdateLayout(); await NextRenderedFrame(); await NextRenderedFrame();
                 if (model.VisibleProcesses[Math.Min(model.VisibleProcesses.Count - 1, (int)(scroll.VerticalOffset / ProcessTable.RowHeight))] != anchor)
                     throw new InvalidOperationException("Sorting lost the scrolled process identity.");
+                await RunInteractionBenchmark(scenario, interaction, interactionSummary);
             }
         } catch (Exception error) {
             File.AppendAllText(path + ".error.txt", error.ToString()); Environment.ExitCode = 1;
         } finally { RequestMainClose(); }
+    }
+
+    private static double Percentile95(List<double> values)
+    {
+        var sorted = values.Order().ToArray();
+        return sorted[(int)Math.Ceiling(sorted.Length * 0.95) - 1];
+    }
+
+    private async Task<(double Handler, double Layout, double Total)> TimeInteraction(Action action)
+    {
+        var watch = Stopwatch.StartNew();
+        action(); double handler = watch.Elapsed.TotalMilliseconds;
+        processList.UpdateLayout(); double layout = watch.Elapsed.TotalMilliseconds;
+        await NextRenderedFrame(); await NextRenderedFrame();
+        return (handler, layout, watch.Elapsed.TotalMilliseconds);
+    }
+
+    /// <summary>Measures search and selection latency (handler plus two rendering callbacks) and reports p95/max per case against the T44 targets without enforcing them.</summary>
+    private async Task RunInteractionBenchmark(string scenario, StreamWriter samples, StreamWriter summary)
+    {
+        const int iterations = 20;
+        const double searchTargetMs = 100, selectionTargetMs = 50;
+        static string F(double value) => value.ToString("F3", CultureInfo.InvariantCulture);
+        var results = new Dictionary<string, (List<double> Handler, List<double> Total, double Target)>();
+        int rows = model.VisibleProcesses.Count;
+        if (rows < 2 || processSlots.Count != rows) throw new InvalidOperationException("Interaction benchmark requires a bound process list with at least two rows.");
+        async Task Measure(string name, double target, int iteration, Action action, Action verify)
+        {
+            var (handler, layout, total) = await TimeInteraction(action);
+            verify();
+            if (!results.TryGetValue(name, out var list)) results[name] = list = (new List<double>(), new List<double>(), target);
+            list.Handler.Add(handler); list.Total.Add(total);
+            await samples.WriteLineAsync(string.Join(',', scenario, rows, name, iteration, F(handler), F(layout), F(total)));
+            await samples.FlushAsync();
+        }
+        var middle = model.VisibleProcesses[rows / 2];
+        (string Case, string Query)[] queries = [("prefix", middle.Name.Length > 1 ? middle.Name[..^1] : middle.Name), ("pid", middle.PidText), ("no_match", "no-such-process-zz"), ("clear", "")];
+        for (int i = 0; i < iterations; ++i) foreach (var (name, query) in queries)
+            await Measure("search_" + name, searchTargetMs, i, () => { processQuery = query; model.SetQuery(query); RefreshProcesses(); }, () => {
+                int count = model.VisibleProcesses.Count;
+                bool applied = processSlots.Count == count && name switch {
+                    "no_match" => count == 0, "clear" => count == rows, _ => count > 0 && model.VisibleProcesses.Contains(middle)
+                };
+                if (!applied) throw new InvalidOperationException($"Search '{name}' did not apply the filtered process list.");
+            });
+        var scroll = Descendant<ScrollViewer>(processList)!;
+        async Task ResetSelection()
+        {
+            SelectProcess(processSlots[0].Row); processList.UpdateLayout(); await NextRenderedFrame(); await NextRenderedFrame();
+        }
+        async Task Select(string name, int iteration, int index, bool scrollIntoView)
+        {
+            index = Math.Min(index, rows - 1);
+            var slot = processSlots[index];
+            await Measure(name, selectionTargetMs, iteration, () => {
+                SelectProcess(slot.Row, false);
+                if (scrollIntoView) processList.ScrollIntoView(slot);
+            }, () => {
+                if (!ReferenceEquals(processList.SelectedItem, slot) || SelectedProcess != slot.Row) throw new InvalidOperationException($"Selection '{name}' did not select the requested process.");
+            });
+        }
+        await ResetSelection();
+        for (int i = 0; i < iterations; ++i) await Select("select_click_visible", i, (int)(scroll.VerticalOffset / ProcessTable.RowHeight) + 2 + i % 4 * 2, false);
+        await ResetSelection();
+        for (int i = 0; i < iterations; ++i) await Select("select_step_1", i, i + 1, true);
+        await ResetSelection();
+        for (int i = 0; i < iterations; ++i) await Select("select_step_5", i, 5 * (i + 1), true);
+        await ResetSelection();
+        for (int i = 0; i < iterations; ++i) await Select("select_jump_scroll", i, i % 2 == 0 ? rows * 3 / 4 : 0, true);
+        foreach (var (name, (handler, total, target)) in results) {
+            double p95Total = Percentile95(total);
+            await summary.WriteLineAsync(string.Join(',', scenario, rows, name, total.Count, F(Percentile95(handler)), F(handler.Max()), F(p95Total), F(total.Max()), F(target), p95Total <= target));
+        }
+        await summary.FlushAsync();
+        await ResetSelection();
     }
 }
