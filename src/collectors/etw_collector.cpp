@@ -2,6 +2,8 @@
 #include <phnt.h>
 #include "etw_collector.hpp"
 #include "boot_identity.hpp"
+#include "process_parser.hpp"
+#include "process_query.h"
 #include <evntrace.h>
 #include <evntcons.h>
 #include <tdh.h>
@@ -205,6 +207,24 @@ ULONG identityKeywords(ULONGLONG& keywords) {
     return found == 3 && keywords ? ERROR_SUCCESS : ERROR_NOT_SUPPORTED;
 }
 
+// Live generations after the session already delivers Start/Stop; the ledger trusts them only after qpc returned here.
+void baselineProcesses(ProcessEventStore& events, std::uint64_t epoch, BootIdentifier boot)
+{
+    void* bytes = nullptr; ULONG size = 0, used = 0;
+    NksProcessQueryBudget limits{4, NKS_PROCESS_BUFFER_LIMIT - 8 * 1024 * 1024};
+    const auto status = NksQueryProcessBufferBudgeted(systemQuery, SystemProcessInformation, &bytes, &size, &used, &limits);
+    struct Buffer { void* data; ~Buffer() { NksFreeProcessBuffer(data); } } owner{bytes};
+    LARGE_INTEGER completed{};
+    if (!NT_SUCCESS(status) || !QueryPerformanceCounter(&completed)) return;
+    std::vector<ProcessBaselineEntry> entries;
+    for (const auto& process : parseProcesses({static_cast<const std::byte*>(bytes), used}, boot)) {
+        // A thread-less entry already ran its Stop, possibly before this session existed.
+        if (process.identity.pid && process.created100ns && process.counters.threads)
+            entries.push_back({process.identity.pid, process.created100ns});
+    }
+    events.baseline(epoch, completed.QuadPart, entries);
+}
+
 SampleState providerState(ULONG error) {
     if (error == ERROR_SUCCESS) return SampleState::first;
     if (error == ERROR_ACCESS_DENIED || error == ERROR_PRIVILEGE_NOT_HELD) return SampleState::accessDenied;
@@ -382,7 +402,11 @@ void EtwCollector::Run::control() noexcept
                     self->consumerDone = true; self->wake.notify_all();
                 });
                 if (!stopRequested) events->state(ProcessEventMonitorState::running, 0, true);
+                const auto boot = queryBootIdentity(systemQuery).id;
                 while (!stopRequested && !consumerDone) {
+                    // Without a baseline only generations started in this session are attributable.
+                    try { if (const auto epoch = events->baselineWanted()) baselineProcesses(*events, *epoch, boot); }
+                    catch (const std::exception&) {}
                     std::unique_lock lock(mutex);
                     wake.wait_for(lock, std::chrono::seconds(1), [&] { return stopRequested || consumerDone; });
                     lock.unlock();

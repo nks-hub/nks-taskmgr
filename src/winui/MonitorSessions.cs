@@ -28,6 +28,22 @@ public sealed partial class MonitorModel
         sessionViewVisible = value;
     }
 
+    /// <summary>True while the event window's ETW capture provides per-process network rates.</summary>
+    internal bool NetworkAvailable { get; private set; }
+
+    /// <summary>Copies per-generation network rates to the rows; true when the network sort order may have changed.</summary>
+    private bool ApplyProcessNetwork()
+    {
+        var rates = ProcessNetwork.Rates(out bool partial, out bool totalPartial);
+        NetworkAvailable = rates is not null;
+        bool changed = false;
+        foreach (var row in processes.Values) {
+            ProcessNetworkRate? rate = rates is null || row.Key.Kind != GenerationKind.CreationTime ? null : rates.GetValueOrDefault(row.Key);
+            changed |= row.SetNetwork(rate, partial, totalPartial, ProcessVisualUpdates);
+        }
+        return changed && sortColumn == 7;
+    }
+
     private void ReadSessions(NativeFrame frame, FrameView view)
     {
         if (!sessionViewVisible || (view.Flags & FrameFlags.ProcessData) == 0) return;

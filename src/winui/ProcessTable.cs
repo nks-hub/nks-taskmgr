@@ -118,6 +118,8 @@ public sealed partial class ProcessTable : Grid
             string help = "Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další volby.";
             if (metric) help += branchValues ? " Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené." : " Vlastní hodnota procesu bez potomků.";
             if (branchValues && column.Id == 3) help += " Sdílené stránky RAM se mohou započítat opakovaně.";
+            if (column.Id == 7) help += " Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů,"
+                + " který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.";
             ToolTipService.SetToolTip(button, help);
         }
     }
@@ -133,6 +135,11 @@ public sealed partial class ProcessTable : Grid
 
 public sealed partial class ProcessRowGrid : Grid
 {
+    // The network cell is created here so the shared row template stays unchanged.
+    private const int NetworkColumn = 7;
+    private TextBlock? network;
+    private ProcessSlot? slot;
+    private ProcessRow? row;
     private ProcessColumns? columns;
     private bool subscribed, unloadCheckQueued;
     internal bool ColumnsSubscribed => subscribed;
@@ -156,8 +163,9 @@ public sealed partial class ProcessRowGrid : Grid
     public ProcessRowGrid()
     {
         Height = ProcessTable.RowHeight;
-        Loaded += (_, _) => { ++LoadCount; Attach(); Apply(); };
+        Loaded += (_, _) => { ++LoadCount; Attach(); Apply(); BindNetwork(); };
         Unloaded += (_, _) => { ++UnloadCount; CheckAfterUnload(); };
+        DataContextChanged += (_, _) => BindNetwork();
     }
     // Recycling can deliver Unloaded while the template is already loaded again.
     private void CheckAfterUnload()
@@ -167,7 +175,38 @@ public sealed partial class ProcessRowGrid : Grid
         if (!DispatcherQueue.TryEnqueue(() => {
             unloadCheckQueued = false;
             if (IsLoaded) { Attach(); Apply(); } else Detach();
-        })) { unloadCheckQueued = false; Detach(); }
+            BindNetwork();
+        })) { unloadCheckQueued = false; Detach(); BindNetwork(); }
+    }
+    private void BindNetwork()
+    {
+        var nextSlot = IsLoaded && network is not null ? DataContext as ProcessSlot : null;
+        if (!ReferenceEquals(slot, nextSlot)) {
+            if (slot is not null) slot.PropertyChanged -= SlotChanged;
+            slot = nextSlot;
+            if (slot is not null) slot.PropertyChanged += SlotChanged;
+        }
+        var nextRow = slot?.Row;
+        if (!ReferenceEquals(row, nextRow)) {
+            if (row is not null) row.PropertyChanged -= RowChanged;
+            row = nextRow;
+            if (row is not null) row.PropertyChanged += RowChanged;
+        }
+        UpdateNetwork();
+    }
+    private void SlotChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName == nameof(ProcessSlot.Row)) BindNetwork();
+    }
+    private void RowChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName == nameof(ProcessRow.TableNetworkText)) UpdateNetwork();
+    }
+    private void UpdateNetwork()
+    {
+        if (network is null) return;
+        string text = row?.TableNetworkText ?? "";
+        if (network.Text != text) network.Text = text;
     }
     private void Attach()
     {
@@ -182,6 +221,11 @@ public sealed partial class ProcessRowGrid : Grid
     private void Apply()
     {
         if (columns is null || Children.Count == 0) return;
+        if (network is null && Children.Count == NetworkColumn && columns.Items.Count == NetworkColumn + 1) {
+            network = new TextBlock { FontFamily = UiTypography.Font, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
+                HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+            Children.Add(network); BindNetwork();
+        }
         Width = columns.LayoutWidth;
         if (Children.Count != columns.Items.Count) {
             if (IsLoaded) throw new InvalidOperationException("Procesní řádek nemá všechny buňky sdílených sloupců.");

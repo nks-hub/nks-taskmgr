@@ -11,6 +11,11 @@ bool add(std::uint64_t& value, std::uint64_t amount = 1) {
     value += (std::min)(amount, UINT64_MAX - value); return overflow;
 }
 constexpr std::int64_t reorderDelayNs = 2'000'000'000;
+// Loss polling (1 s) and the reorder delay bound when a committed network window can still be revoked.
+constexpr std::int64_t settledWindows = 10;
+bool attributed(ProcessTrafficAttribution value) {
+    return value == ProcessTrafficAttribution::issuingThreadOwner || value == ProcessTrafficAttribution::direct;
+}
 }
 
 void ProcessTrafficStore::initialize(std::int64_t value)
@@ -129,8 +134,12 @@ void ProcessTrafficStore::drain(std::int64_t nowNs, const EventIdentityIndex& id
         if (observation.source == ProcessTrafficSource::physicalDisk && observation.irp) {
             if (!diskCandidate(observation, identities, candidate, usedInit)) { dropped(observation); continue; }
             attribution = ProcessTrafficAttribution::issuingThreadOwner;
-        } else candidate = observation.source == ProcessTrafficSource::physicalDisk
-            ? identities.threadAt(observation.pidOrTid, observation.qpc) : identities.processAt(observation.pidOrTid, observation.qpc);
+        } else if (observation.source == ProcessTrafficSource::physicalDisk) candidate = identities.threadAt(observation.pidOrTid, observation.qpc);
+        else {
+            // The TCP/UDP payload PID names the endpoint owner; the ledger proves which generation held that PID.
+            candidate = identities.processOwnerAt(observation.pidOrTid, observation.qpc);
+            attribution = ProcessTrafficAttribution::direct;
+        }
         bool committed = false;
         try {
             committed = commit(observation, candidate, attribution);
@@ -155,7 +164,10 @@ bool ProcessTrafficStore::commit(const ProcessTrafficObservation& observation, E
     if (found == history.end()) {
         if (history.size() == maximumSamples) {
             auto victim = history.begin();
-            if (victim->second.sample.attribution == ProcessTrafficAttribution::issuingThreadOwner || victim->second.revocationPending) {
+            const auto& old = victim->second.sample;
+            const bool settled = old.attribution == ProcessTrafficAttribution::direct
+                && old.endQpc <= newestQpc - settledWindows * frequency;
+            if ((attributed(old.attribution) && !settled) || victim->second.revocationPending) {
                 invalidate(false);
                 victim = std::find_if(history.begin(), history.end(), [](const auto& entry) { return !entry.second.revocationPending; });
                 if (victim != history.end()) { history.erase(victim); add(info.evictedSamples); }
@@ -168,7 +180,7 @@ bool ProcessTrafficStore::commit(const ProcessTrafficObservation& observation, E
         sample.pid = pid; sample.generation = candidate.creationTime;
         sample.identityKind = unknown ? GenerationKind::missing : GenerationKind::creationTime;
         sample.attribution = attribution;
-        if (attribution == ProcessTrafficAttribution::issuingThreadOwner) sample.identityState = SampleState::valid;
+        if (attributed(attribution)) sample.identityState = SampleState::valid;
         sample.source = observation.source; sample.direction = observation.direction; sample.attributionEpoch = info.attributionEpoch;
         if (observation.ipv6) sample.flags |= trafficIpv6;
         sample.measurement = measurementMetadata(MeasurementUnit::bytesPerSecond, MeasurementNormalization::none,
@@ -196,7 +208,7 @@ void ProcessTrafficStore::invalidate(bool conflict)
     for (auto& [key, stored] : history) {
         (void)key;
         if (stored.sample.attribution == ProcessTrafficAttribution::unknown
-            || (!conflict && stored.sample.attribution != ProcessTrafficAttribution::issuingThreadOwner)) continue;
+            || (!conflict && !attributed(stored.sample.attribution))) continue;
         if (conflict) stored.sample.flags |= trafficIdentityConflict;
         stored.revocationPending |= stored.published;
         stored.sample.flags |= trafficPartial; stored.sample.state = SampleState::gap;

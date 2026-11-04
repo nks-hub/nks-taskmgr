@@ -12,7 +12,6 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private const string NetworkUnavailable = "nedostupné";
     private static readonly double[] userColumns = [0, 104, 44, 104, 120, 80, 110, 100, 90];
     private const int FirstMetricColumn = 5;
     private readonly Button usersNav = Button("Uživatelé");
@@ -25,6 +24,7 @@ public sealed partial class MainWindow
     private readonly HashSet<uint> expandedSessions = [];
     private readonly Dictionary<uint, SessionLine> sessionLines = [];
     private readonly List<ProcessLine> processLines = [];
+    private readonly Dictionary<uint, (ProcessBranchMetric Sum, int Count)> sessionNetwork = [];
     private readonly Dictionary<string, string> fullNames = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> fullNamesPending = new(StringComparer.OrdinalIgnoreCase);
     private uint? selectedSession;
@@ -71,7 +71,8 @@ public sealed partial class MainWindow
             "Součet CPU procesů relace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.",
             "Součet pracovních sad procesů relace. Sdílené stránky RAM mohou být započteny opakovaně; privátní paměť je v popisku řádku.",
             "Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory), nejen fyzického disku.",
-            "Síťový provoz zatím nelze spolehlivě přiřadit procesům, proto se nesčítá."];
+            "Součet odeslaných a přijatých bajtů TCP/UDP procesů relace. Měří se jen během vlastního záznamu ETW v okně Události procesů,"
+                + " který vyžaduje správce; jinak nedostupné. ≥ označuje známou část, když provoz nebo některý proces nešlo přiřadit."];
         for (int i = 0; i < titles.Length; ++i) { titles[i].Text = names[i]; ToolTipService.SetToolTip(titles[i], tips[i]); }
         Grid.SetRow(header, 1); usersPage.Children.Add(header);
         var scroll = new ScrollViewer { Content = userLines, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
@@ -129,8 +130,12 @@ public sealed partial class MainWindow
             _ => "Seznam relací Windows je nedostupný; relace jsou odvozené jen z procesů."
         } + (model.Stale ? " · údaje jsou zastaralé" : "");
         var members = new Dictionary<uint, List<ProcessRow>>();
+        sessionNetwork.Clear();
         foreach (var row in model.Processes) {
-            if (row.Key.Pid == 0 || !model.ProcessSessions.TryGetValue(row.Key, out uint id) || !expandedSessions.Contains(id)) continue;
+            if (row.Key.Pid == 0 || !model.ProcessSessions.TryGetValue(row.Key, out uint id)) continue;
+            var (sum, count) = sessionNetwork.GetValueOrDefault(id);
+            sessionNetwork[id] = (sum.Add(row.Ended || row.Stale ? default : row.Network), count + 1);
+            if (!expandedSessions.Contains(id)) continue;
             if (!members.TryGetValue(id, out var list)) members.Add(id, list = []);
             list.Add(row);
         }
@@ -197,18 +202,21 @@ public sealed partial class MainWindow
             _ => session.InfoState == SampleState.AccessDenied ? "nedostupné" : "neznámé"
         };
         string state = UserSessionText.State(session.State);
+        var (network, networkMembers) = sessionNetwork.GetValueOrDefault(session.Id);
         string[] texts = [
             (expanded ? "⌄ " : "› ") + UserSessionText.Title(name, session.Members), state, session.Id.ToString(), session.Station, session.Client,
             session.Cpu.Text(session.Members, false, " %"),
-            session.Working.Text(session.Members, false), session.Io.Text(session.Members, false, " MiB/s", 1048576), NetworkUnavailable];
+            session.Working.Text(session.Members, false), session.Io.Text(session.Members, false, " MiB/s", 1048576),
+            network.NetworkText(networkMembers, networkMembers != session.Members)];
         for (int i = 0; i < texts.Length; ++i) if (line.Cells[i].Text != texts[i]) line.Cells[i].Text = texts[i];
-        line.Cells[^1].Foreground = Display.Brush(0x95a4ad);
+        line.Cells[^1].Foreground = Display.Brush(network.Known == 0 ? 0x95a4adu : 0xe9eef0u);
         line.Button.Background = Display.Brush(selected ? 0x28343bu : 0x171d21u);
         string account = session.User.Length == 0 ? name : UserSessionText.Account(session.User, session.Domain);
         string tip = $"{account} · relace {session.Id} · {protocol}" + (session.Station.Length > 0 ? $" · stanice {session.Station}" : "")
             + (session.Client.Length > 0 ? $" · klient {session.Client}" : "") + "\n"
             + (session.InfoState == SampleState.AccessDenied ? "Údaje o uživateli této relace vyžadují oprávnění správce.\n" : "")
-            + $"Známé aktuální vzorky: CPU {session.Cpu.Known}/{session.Members}, paměť {session.Working.Known}/{session.Members}, I/O {session.Io.Known}/{session.Members}.\n"
+            + $"Známé aktuální vzorky: CPU {session.Cpu.Known}/{session.Members}, paměť {session.Working.Known}/{session.Members}, I/O {session.Io.Known}/{session.Members}, "
+            + (model.NetworkAvailable ? $"síť {network.Known}/{session.Members}.\n" : "síť jen během záznamu ETW se správcem.\n")
             + $"Privátní paměť: {session.Private.Text(session.Members, false)}.\n"
             + "≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.";
         if (ToolTipService.GetToolTip(line.Button) as string != tip) ToolTipService.SetToolTip(line.Button, tip);
@@ -229,7 +237,7 @@ public sealed partial class MainWindow
             : row.ReadIo.State == SampleState.Valid && row.WriteIo.State == SampleState.Valid
                 ? Display.Number((row.ReadIo.Value + row.WriteIo.Value) / 1048576, " MiB/s")
                 : Display.Metric(row.ReadIo.State != SampleState.Valid ? row.ReadIo : row.WriteIo, " MiB/s", 1048576);
-        string[] texts = [row.Name, "", "", "PID " + row.PidText, "", row.CpuText, row.WorkingText, disk, ""];
+        string[] texts = [row.Name, "", "", "PID " + row.PidText, "", row.CpuText, row.WorkingText, disk, row.NetworkText];
         for (int i = 0; i < texts.Length; ++i) if (line.Cells[i].Text != texts[i]) line.Cells[i].Text = texts[i];
         return line.Line;
     }

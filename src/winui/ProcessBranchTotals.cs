@@ -33,10 +33,10 @@ public sealed partial class MonitorModel
     private bool branchTotalsDirty = true, branchValuesShown;
     public ProcessTableValueMode TableValueMode { get; private set; }
     private bool BranchValuesEnabled => Mode == ProcessMode.Tree && TableValueMode == ProcessTableValueMode.ProcessWithDescendants;
-    private bool BranchSort => BranchValuesEnabled && sortColumn is >= 2 and <= 6;
+    private bool BranchSort => BranchValuesEnabled && sortColumn is >= 2 and <= 7;
     private double BranchSortValue(ProcessBranchTotal total) => sortColumn switch {
         2 => total.Cpu.SortValue, 3 => total.Working.SortValue, 4 => total.Private.SortValue,
-        5 => total.Read.SortValue, 6 => total.Write.SortValue, _ => throw new InvalidOperationException("Branch sort requires a metric column.")
+        5 => total.Read.SortValue, 6 => total.Write.SortValue, 7 => total.Network.SortValue, _ => throw new InvalidOperationException("Branch sort requires a metric column.")
     };
 
     public void SetTableValueMode(ProcessTableValueMode value)

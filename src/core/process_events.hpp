@@ -4,6 +4,8 @@
 #include "process_traffic.hpp"
 #include <deque>
 #include <mutex>
+#include <optional>
+#include <span>
 
 namespace nks {
 
@@ -34,6 +36,7 @@ struct ProcessEventBatchInfo {
     std::int64_t qpcFrequency{};
     std::uint64_t providerEventsLost{}, providerBuffersLost{}, queueDropped{}, decodeErrors{}, ambiguous{}, resyncVersion{};
 };
+struct ProcessBaselineEntry { std::uint32_t pid{}; std::uint64_t creationTime{}; };
 struct ProcessEventBatch {
     ProcessEventBatchInfo info;
     EventVector<ProcessEventRecord> events;
@@ -55,6 +58,10 @@ public:
     void decodeFailure();
     void lost(std::uint64_t events, std::uint64_t buffers);
     void acknowledgeResync(std::uint64_t version);
+    /// The attribution epoch a new live-process snapshot must be taken in, when the ledger has no baseline for it.
+    std::optional<std::uint64_t> baselineWanted();
+    /// Applies a snapshot that completed at qpc only if no reset happened since baselineWanted returned epoch.
+    bool baseline(std::uint64_t epoch, std::int64_t qpc, std::span<const ProcessBaselineEntry> entries);
     ProcessEventBatch read();
 private:
     void resync();
@@ -66,7 +73,7 @@ private:
     EventIdentityIndex identities;
     ProcessTrafficStore transfers;
     ProcessEventBatchInfo info;
-    std::uint64_t sequence{};
+    std::uint64_t sequence{}, baselineEpoch{UINT64_MAX};
     std::chrono::steady_clock::time_point stopRequestedAt{};
 };
 

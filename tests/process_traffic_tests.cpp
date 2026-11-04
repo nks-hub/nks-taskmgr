@@ -1,4 +1,5 @@
 #include "core/process_events.hpp"
+#include <windows.h>
 #include <algorithm>
 #include <cstddef>
 #include <iostream>
@@ -111,6 +112,8 @@ void distinctOrigins()
     require(batch.samples.size() == 4, "Attribution origins collapsed into one aggregate");
     for (const auto& row : batch.samples) {
         if (row.observedBytes == 128) issuing(row);
+        else if (row.source == ProcessTrafficSource::tcp) require(row.attribution == ProcessTrafficAttribution::direct
+            && row.identityState == SampleState::valid && row.pid == 10 && row.generation == 10000, "A witnessed PID lifetime did not prove TCP ownership");
         else require(row.attribution == (row.source == ProcessTrafficSource::udp ? ProcessTrafficAttribution::unknown
             : ProcessTrafficAttribution::correlated) && row.identityState == SampleState::unavailable, "Correlation was promoted to proven ownership");
     }
@@ -269,6 +272,140 @@ void allocationFailure()
     }
     revoked(before, single(f.traffic.read(arrival + delay + 2000, f.identities)));
 }
+ProcessTrafficObservation tcp(std::uint32_t pid, std::int64_t qpc, std::uint32_t bytes = 100, std::int64_t observed = arrival)
+{
+    return {qpc, observed, pid, bytes, ProcessTrafficSource::tcp, ProcessTrafficDirection::sent, false, 0};
+}
+std::uint64_t ownerOf(const ProcessTrafficBatch& batch, std::uint64_t bytes)
+{
+    const auto found = std::find_if(batch.samples.begin(), batch.samples.end(), [&](const auto& row) { return row.observedBytes == bytes; });
+    require(found != batch.samples.end(), "Network sample is missing");
+    if (found->attribution == ProcessTrafficAttribution::unknown) {
+        require(!found->generation && found->identityState == SampleState::unavailable, "Unknown network traffic kept an identity"); return 0;
+    }
+    require(found->attribution == ProcessTrafficAttribution::direct && found->identityState == SampleState::valid
+        && found->identityKind == GenerationKind::creationTime && found->state == SampleState::gap && (found->flags & trafficPartial),
+        "Network traffic claimed something other than a direct observed subset");
+    return found->generation;
+}
+const ProcessTrafficSample& withId(const ProcessTrafficBatch& batch, std::uint64_t id)
+{
+    const auto found = std::find_if(batch.samples.begin(), batch.samples.end(), [&](const auto& row) { return row.sampleId == id; });
+    require(found != batch.samples.end(), "An attributed network sample was not republished"); return *found;
+}
+void networkPidReuse()
+{
+    EventIdentityIndex identities; ProcessTrafficStore traffic; traffic.initialize(100);
+    require(identities.baseline(10, 1000, 100), "Baseline was rejected");
+    identities.process(10, 1000, 200, false); identities.process(10, 2000, 300, true);
+    traffic.observe(tcp(10, 150, 11), identities); traffic.observe(tcp(10, 250, 12), identities);
+    traffic.observe(tcp(10, 350, 13), identities); traffic.observe(tcp(10, 99, 14), identities);
+    const auto batch = traffic.read(arrival + delay + 1, identities);
+    require(ownerOf(batch, 11) == 1000 && !ownerOf(batch, 12) && ownerOf(batch, 13) == 2000 && !ownerOf(batch, 14),
+        "PID reuse moved traffic across generations or attributed the gap");
+}
+void networkMissingBaseline()
+{
+    EventIdentityIndex identities; ProcessTrafficStore traffic; traffic.initialize(100);
+    identities.process(20, 2000, 50, true);
+    traffic.observe(tcp(10, 150, 11), identities); traffic.observe(tcp(20, 150, 12), identities);
+    const auto batch = traffic.read(arrival + delay + 1, identities);
+    require(!ownerOf(batch, 11) && ownerOf(batch, 12) == 2000, "Without a baseline a pre-existing PID was attributed");
+    identities.process(10, 1000, 200, false);
+    traffic.observe(tcp(10, 160, 21, arrival + 10), identities);
+    require(!ownerOf(traffic.read(arrival + delay + 20, identities), 21), "A Stop without Start or baseline proved ownership");
+}
+void networkBeforeStart()
+{
+    EventIdentityIndex identities; ProcessTrafficStore traffic; traffic.initialize(100);
+    identities.process(10, 1000, 300, true); identities.baseline(30, 3000, 500);
+    traffic.observe(tcp(10, 250, 11), identities); traffic.observe(tcp(10, 300, 12), identities);
+    traffic.observe(tcp(10, 301, 13), identities); traffic.observe(tcp(30, 450, 14), identities);
+    traffic.observe(tcp(30, 500, 15), identities); traffic.observe(tcp(30, 501, 16), identities);
+    const auto batch = traffic.read(arrival + delay + 1, identities);
+    require(!ownerOf(batch, 11) && !ownerOf(batch, 12) && ownerOf(batch, 13) == 1000, "Traffic at or before Start was attributed");
+    require(!ownerOf(batch, 14) && !ownerOf(batch, 15) && ownerOf(batch, 16) == 3000, "Traffic at or before the baseline snapshot was attributed");
+    require(!identities.baseline(10, 1000, 200) && identities.conflicts == 1, "A Start after the snapshot that listed it was accepted");
+}
+void networkResetFloor()
+{
+    EventIdentityIndex identities; ProcessTrafficStore traffic; traffic.initialize(100);
+    identities.clear(400); identities.process(10, 1000, 300, true); identities.process(20, 2000, 450, true);
+    require(!identities.baseline(30, 3000, 400), "A baseline from before the reset was accepted");
+    identities.baseline(10, 1000, 500);
+    traffic.observe(tcp(10, 420, 11), identities); traffic.observe(tcp(10, 520, 12), identities);
+    traffic.observe(tcp(20, 460, 13), identities);
+    const auto batch = traffic.read(arrival + delay + 1, identities);
+    require(!ownerOf(batch, 11) && ownerOf(batch, 12) == 1000 && ownerOf(batch, 13) == 2000,
+        "A lifetime begun before the loss reset proved ownership without a new baseline");
+}
+std::int64_t now() { LARGE_INTEGER value{}; QueryPerformanceCounter(&value); return value.QuadPart; }
+void baselineStore(ProcessEventStore& store)
+{
+    BootIdentity boot; boot.id = {1, 2}; boot.state = SampleState::valid;
+    store.initialize(boot, 100); store.providers(SampleState::first, SampleState::first, SampleState::first);
+}
+void networkLossGap()
+{
+    ProcessEventStore store; baselineStore(store);
+    const auto epoch = store.baselineWanted();
+    require(epoch.has_value(), "A started ledger did not request a baseline");
+    const ProcessBaselineEntry entries[] = {{10, 1000}};
+    auto at = now();
+    require(store.baseline(*epoch, at, entries) && !store.baselineWanted(), "Baseline was not applied once");
+    store.traffic(tcp(10, at + 10, 11, 1));
+    const auto first = store.read().traffic;
+    require(ownerOf(first, 11) == 1000, "Baseline generation did not own its traffic");
+    const auto published = first.samples.front();
+    store.lost(1, 0);
+    store.traffic(tcp(10, at + 20, 12, 1));
+    const auto lost = store.read().traffic;
+    revoked(published, withId(lost, published.sampleId));
+    require(!ownerOf(lost, 12), "Traffic inside the loss gap was attributed");
+    const auto next = store.baselineWanted();
+    require(next && *next != *epoch, "Loss did not request a new baseline epoch");
+    require(!store.baseline(*epoch, now(), entries), "A baseline from the lost epoch was applied");
+    at = now();
+    require(store.baseline(*next, at, entries), "A fresh baseline was rejected");
+    store.traffic(tcp(10, at + 10, 13, 1));
+    require(ownerOf(store.read().traffic, 13) == 1000, "Attribution did not recover after a fresh baseline");
+    store.decodeFailure();
+    const auto stale = store.baselineWanted();
+    require(stale.has_value(), "A decode failure kept the baseline");
+    store.lost(0, 1);
+    require(!store.baseline(*stale, now(), entries), "A snapshot spanning a reset was applied");
+    store.identityProvider(SampleState::unsupported);
+    require(!store.baselineWanted(), "A baseline was requested without CreateTime on Start/Stop");
+}
+void networkOutOfOrder()
+{
+    ProcessEventStore store; baselineStore(store);
+    const ProcessBaselineEntry entries[] = {{10, 1000}};
+    const auto at = now();
+    require(store.baseline(*store.baselineWanted(), at, entries), "Baseline was rejected");
+    store.traffic(tcp(10, at + 450, 13, 1)); store.traffic(tcp(10, at + 50, 11, 1)); store.traffic(tcp(10, at + 250, 12, 1));
+    auto stop = start(10, 1000, at + 100); stop.kind = ProcessEventKind::stopped; store.push(stop);
+    store.push(start(10, 2000, at + 200));
+    const auto batch = store.read().traffic;
+    require(ownerOf(batch, 11) == 1000 && ownerOf(batch, 12) == 2000 && ownerOf(batch, 13) == 2000,
+        "Delivery order instead of timestamps chose the generation");
+    const auto published = *std::find_if(batch.samples.begin(), batch.samples.end(), [](const auto& row) { return row.observedBytes == 12; });
+    auto late = start(10, 2000, at + 300); late.kind = ProcessEventKind::stopped; store.push(late);
+    const auto& old = withId(store.read().traffic, published.sampleId);
+    require(old.flags & trafficIdentityConflict, "Late metadata did not revoke as a conflict");
+    revoked(published, old);
+}
+void networkSettledEviction()
+{
+    Fixture f; const auto epoch = f.traffic.info.attributionEpoch;
+    for (std::size_t i = 0; i <= ProcessTrafficStore::maximumSamples; ++i)
+        f.traffic.observe(tcp(10, 100 + static_cast<std::int64_t>(i) * 100, 1), f.identities);
+    const auto batch = f.traffic.read(arrival + delay + 1, f.identities);
+    require(f.traffic.info.attributionEpoch == epoch && f.traffic.info.evictedSamples == 1 && !f.traffic.info.pendingDropped,
+        "Settled network windows forced a revocation instead of eviction");
+    require(!batch.samples.empty() && std::all_of(batch.samples.begin(), batch.samples.end(), [](const auto& row) {
+        return row.attribution == ProcessTrafficAttribution::direct; }), "Eviction dropped direct ownership");
+}
 void run(const char* name, void (*check)()) { currentCase = name; check(); ++cases; }
 }
 
@@ -287,6 +424,10 @@ int main(int argc, char** argv)
         run("loss/late metadata revocation", lossAndMetadataRevocations); run("epoch separation", epochSeparation);
         run("completed stream", completedStream); run("evidence cap", evidenceLimit); run("identity eviction", identityEviction);
         run("sample eviction", sampleEviction); run("allocation failure", allocationFailure);
+        run("network PID reuse", networkPidReuse); run("network missing baseline", networkMissingBaseline);
+        run("network before start", networkBeforeStart); run("network reset floor", networkResetFloor);
+        run("network loss gap", networkLossGap); run("network out-of-order", networkOutOfOrder);
+        run("network settled eviction", networkSettledEviction);
         require(eventBudgetUsed.load() == 0, "Traffic tests retained shared-budget allocations");
         std::cout << cases << " process traffic checks passed\n"; return 0;
     } catch (const std::exception& error) { std::cerr << "FAIL " << (currentCase ? currentCase : "startup") << ": " << error.what() << '\n'; return 1; }

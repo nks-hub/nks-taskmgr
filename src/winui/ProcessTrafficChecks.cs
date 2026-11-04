@@ -42,5 +42,35 @@ public static partial class WinUiChecks
             && rows.Values.Last().Detail.Contains("není důkaz stejné životnosti", StringComparison.Ordinal),
             "Disk owner evidence incorrectly confirmed a network process lifetime.");
         App.Trace("Process traffic labels passed: issuing owner, requestor distinction, revocation upsert and unverified network identity");
+        ProcessNetworkRates(owner);
+    }
+
+    private static void ProcessNetworkRates(ProcessTrafficSample template)
+    {
+        long frequency = System.Diagnostics.Stopwatch.Frequency, later = System.Diagnostics.Stopwatch.GetTimestamp() + 20 * frequency;
+        long window = (later / frequency - 5) * frequency;
+        var running = new ProcessEventBatchInfo(ProcessEventMonitorState.Running, 0, 0, new(1, 2), SampleState.Valid, frequency, 0, 0, 0, 0, 0, 0);
+        var info = new ProcessTrafficBatchInfo(SampleState.Gap, SampleState.Gap, SampleState.Valid, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 8 * 1024 * 1024);
+        var sent = template with { SampleId = 10, StartQpc = window, EndQpc = window + frequency, Source = ProcessTrafficSource.Tcp,
+            Direction = ProcessTrafficDirection.Sent, Attribution = ProcessTrafficAttribution.Direct, ObservedBytes = 1000 };
+        var received = sent with { SampleId = 11, Source = ProcessTrafficSource.Udp, Direction = ProcessTrafficDirection.Received, ObservedBytes = 500 };
+        var older = sent with { SampleId = 12, StartQpc = window - frequency, EndQpc = window, ObservedBytes = 2000 };
+        var key = new ProcessKey(new(1, 2), template.Pid, GenerationKind.CreationTime, template.Generation);
+        ProcessNetwork.Clear();
+        ProcessNetwork.Observe(running, new(info, [sent, received, older, template]));
+        var rates = ProcessNetwork.Rates(out bool partial, out bool totalPartial, later);
+        Require(rates is not null && rates[key] == new ProcessNetworkRate(1000, 500, 3500) && !partial && !totalPartial
+            && ProcessNetwork.Rates(out _, out _) is null, "Direct network samples did not sum per generation or an incomplete window was shown.");
+        ProcessNetwork.Observe(running, new(info, [sent with { Attribution = ProcessTrafficAttribution.Unknown, IdentityKind = GenerationKind.Missing,
+            Generation = 0, Pid = 0, IdentityState = SampleState.Unavailable }]));
+        rates = ProcessNetwork.Rates(out partial, out totalPartial, later);
+        var row = new ProcessRow(key);
+        row.SetNetwork(rates![key], partial, totalPartial, false);
+        Require(rates[key] == new ProcessNetworkRate(0, 500, 2500) && partial && totalPartial && row.NetworkText.StartsWith("≥ ", StringComparison.Ordinal)
+            && row.TableMetricsDescription.Contains("≥ 2,4 KiB", StringComparison.Ordinal), "A revoked network sample stayed in the sum or the partial window was not marked.");
+        ProcessNetwork.Observe(running with { State = ProcessEventMonitorState.Stopped }, null);
+        row.SetNetwork(null, false, false, false);
+        Require(ProcessNetwork.Rates(out _, out _, later) is null && row.NetworkText == "Nedostupné", "Network rates survived the end of the ETW capture.");
+        App.Trace("Process network rates passed: per-generation window, revocation, partial window and capture end");
     }
 }

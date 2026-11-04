@@ -90,7 +90,7 @@ internal sealed partial class ProcessEventsWindow : Window
             }
         };
         AppWindow.Closing += OnClosing;
-        Closed += (_, _) => { closed = true; timer.Stop(); filterTimer.Stop(); monitor?.Dispose(); monitor = null; };
+        Closed += (_, _) => { closed = true; timer.Stop(); filterTimer.Stop(); monitor?.Dispose(); monitor = null; ProcessNetwork.Clear(); };
         Identify(start, "events-start", "Spustit vlastní záznam ETW"); Identify(stop, "events-stop", "Zastavit vlastní záznam ETW");
         Identify(clear, "events-clear", "Vymazat zobrazené události"); Identify(search, "events-filter", "Filtrovat zaznamenané události");
         Identify(kinds, "events-kind", "Druh události"); Identify(list, "events-list", "Historické události, pouze pro čtení");
@@ -150,7 +150,7 @@ internal sealed partial class ProcessEventsWindow : Window
                 + " · vynechané pořadí zdroje " + lifetimes.MissingSequences + " · označení nejistoty " + lifetimes.GapBoundaries;
             if (hold.IsChecked == true) counters.Text += "\nZobrazení je podržené; vytěsněno z podrženého seznamu " + heldTrimmed + ".";
             notice.Text = TrafficMode
-                ? "Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. Korelace PID/času není ověřená životnost."
+                ? "Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používají i sloupec Síť v Procesech a Uživatelích."
                 : LifetimeMode ? "Start a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří."
                 : "CreateTime přímo z události s ověřeným bootem určuje historickou životnost. Ostatní řádky zůstávají neověřené.";
             notice.Text += " Žádné živé akce podle PID. Čas je relativní QPC; nové spuštění nahradí seznam."
@@ -168,7 +168,9 @@ internal sealed partial class ProcessEventsWindow : Window
             UpdateCommands();
             uiCheckBatch?.Invoke(info, events.Length, trafficCount);
             return events.Length + trafficCount;
-        } catch (Exception error) when (InteropError(error)) { timer.Stop(); status.Text = "Čtení událostí selhalo: " + error.Message; return -1; }
+        } catch (Exception error) when (InteropError(error)) {
+            timer.Stop(); ProcessNetwork.Clear(); status.Text = "Čtení událostí selhalo: " + error.Message; return -1;
+        }
     }
 
     private void ClearRows()
@@ -238,10 +240,12 @@ internal sealed partial class ProcessEventsWindow : Window
 
     private int ReadTraffic(NativeEventFrame frame, ProcessEventBatchInfo info)
     {
-        if (!trafficSupported) return 0;
+        if (!trafficSupported) { ProcessNetwork.Clear(); return 0; }
         ProcessTrafficBatch batch;
         try { batch = frame.CopyTraffic(); }
-        catch (EntryPointNotFoundException) { trafficSupported = false; trafficRows.Clear(); trafficInfo = null; dirty = true; return 0; }
+        catch (EntryPointNotFoundException) { trafficSupported = false; trafficRows.Clear(); trafficInfo = null; dirty = true; ProcessNetwork.Clear(); return 0; }
+        catch { ProcessNetwork.Clear(); throw; }
+        ProcessNetwork.Observe(info, batch);
         trafficInfo = batch.Info;
         if (!hasOrigin && batch.Samples.Length > 0) { originQpc = batch.Samples[0].StartQpc; hasOrigin = true; }
         foreach (var item in batch.Samples) trafficRows.Upsert(item, info.QpcFrequency, originQpc, info.Boot);

@@ -195,6 +195,7 @@ public sealed partial class MonitorModel : IDisposable
             removedProcessorKeys.Clear();
             foreach (var key in Processors.Keys) if (!currentProcessorKeys.Contains(key)) removedProcessorKeys.Add(key);
             foreach (var key in removedProcessorKeys) Processors.Remove(key);
+            orderChanged |= ApplyProcessNetwork();
             bool branchChanged = RefreshProcessBranchValues();
             if ((orderChanged || BranchSort && branchChanged) && !held && ProcessVisualUpdates) Rebuild();
         }
@@ -300,7 +301,8 @@ public sealed partial class MonitorModel : IDisposable
                 || row.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || row.PidText.Contains(query, StringComparison.Ordinal)));
         Comparison<ProcessRow> comparison = sortColumn switch {
             1 => (a, b) => a.Key.Pid.CompareTo(b.Key.Pid),
-            >= 2 and <= 6 when BranchValuesEnabled => (a, b) => BranchSortValue(a.BranchTotal).CompareTo(BranchSortValue(b.BranchTotal)),
+            >= 2 and <= 7 when BranchValuesEnabled => (a, b) => BranchSortValue(a.BranchTotal).CompareTo(BranchSortValue(b.BranchTotal)),
+            7 => (a, b) => a.Network.SortValue.CompareTo(b.Network.SortValue),
             2 => (a, b) => a.Cpu.Value.CompareTo(b.Cpu.Value), 3 => (a, b) => a.WorkingBytes.CompareTo(b.WorkingBytes),
             4 => (a, b) => a.PrivateBytes.CompareTo(b.PrivateBytes), 5 => (a, b) => a.ReadIo.Value.CompareTo(b.ReadIo.Value),
             6 => (a, b) => a.WriteIo.Value.CompareTo(b.WriteIo.Value),

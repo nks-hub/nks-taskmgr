@@ -26,12 +26,30 @@ bool EventIdentityIndex::process(std::uint32_t pid, std::uint64_t creationTime, 
     }
     auto& time = found->second;
     if (start) {
-        if ((time.startSeen && time.start != qpc) || (time.endSeen && qpc > time.end)) { add(conflicts); return false; }
+        if ((time.startSeen && time.start != qpc) || (time.endSeen && qpc > time.end)
+            || (time.baselineSeen && qpc > time.baseline)) { add(conflicts); return false; }
         time.start = qpc; time.startSeen = true;
     } else {
         if ((time.endSeen && time.end != qpc) || (time.startSeen && qpc < time.start)) { add(conflicts); return false; }
         time.end = qpc; time.endSeen = true;
     }
+    return true;
+}
+
+bool EventIdentityIndex::baseline(std::uint32_t pid, std::uint64_t creationTime, std::int64_t qpc)
+{
+    if (!pid || !creationTime || qpc <= floor) return false;
+    const ProcessKey key{pid, creationTime};
+    auto found = processes.find(key);
+    if (found == processes.end()) {
+        makeRoom(processes, key, maximumProcesses, evictions);
+        found = processes.emplace(key, Lifetime{}).first;
+    }
+    auto& time = found->second;
+    // A generation listed alive at the snapshot cannot have started after the snapshot completed.
+    if (time.startSeen && time.start > qpc) { add(conflicts); return false; }
+    if (!time.baselineSeen || qpc < time.baseline) time.baseline = qpc;
+    time.baselineSeen = true;
     return true;
 }
 
@@ -96,19 +114,25 @@ EventIdentityCandidate EventIdentityIndex::threadOwnerAt(std::uint32_t tid, std:
         if (pid) return {};
         pid = row.pid; threadStart = row.time.start;
     }
-    auto processOwner = [&](std::int64_t point) {
-        EventIdentityCandidate result;
-        for (auto it = processes.lower_bound({pid, 0}); pid && it != processes.end() && it->first.first == pid; ++it) {
-            const auto& time = it->second;
-            if ((time.startSeen && point == time.start) || (time.endSeen && point == time.end)) return EventIdentityCandidate{};
-            if (!time.startSeen || point <= time.start || (time.endSeen && point >= time.end)) continue;
-            if (result.creationTime) return EventIdentityCandidate{};
-            result = {pid, it->first.second};
-        }
-        return result;
-    };
-    const auto atStart = processOwner(threadStart), atInit = processOwner(qpc);
+    const auto atStart = processOwnerAt(pid, threadStart), atInit = processOwnerAt(pid, qpc);
     return atStart.creationTime && atStart.creationTime == atInit.creationTime ? atInit : EventIdentityCandidate{};
+}
+
+EventIdentityCandidate EventIdentityIndex::processOwnerAt(std::uint32_t pid, std::int64_t point) const
+{
+    EventIdentityCandidate result;
+    if (!pid || point < 0) return result;
+    for (auto it = processes.lower_bound({pid, 0}); it != processes.end() && it->first.first == pid; ++it) {
+        const auto& time = it->second;
+        if ((time.startSeen && point == time.start) || (time.baselineSeen && point == time.baseline)
+            || (time.endSeen && point == time.end)) return {};
+        if ((time.endSeen && point > time.end) || (time.startSeen && point < time.start)) continue;
+        // Only a lifetime witnessed after the last reset is proof; any other possibly alive generation makes the PID ambiguous.
+        const bool proven = (time.startSeen && time.start > floor) || (time.baselineSeen && point > time.baseline);
+        if (!proven || result.creationTime) return {};
+        result = {pid, it->first.second};
+    }
+    return result;
 }
 
 }

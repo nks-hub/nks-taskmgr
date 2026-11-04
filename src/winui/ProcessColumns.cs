@@ -23,7 +23,7 @@ public sealed class ProcessColumns
     private readonly List<ProcessColumn> columns = [
         new(0, "Proces", 260, 210), new(1, "PID", 70, 60), new(2, "CPU", 86, 70),
         new(3, "Pracovní sada", 120, 100), new(4, "Soukromá paměť", 126, 110),
-        new(5, "Čtení I/O", 108, 90), new(6, "Zápis I/O", 108, 90)
+        new(5, "Čtení I/O", 108, 90), new(6, "Zápis I/O", 108, 90), new(7, "Síť", 104, 90)
     ];
     private bool fillName = true;
     private double viewport;
@@ -86,7 +86,7 @@ public sealed class ProcessColumns
 
     public void Reset()
     {
-        double[] widths = [260, 70, 86, 120, 126, 108, 108];
+        double[] widths = [260, 70, 86, 120, 126, 108, 108, 104];
         columns.Sort((a, b) => a.Id.CompareTo(b.Id));
         foreach (var column in columns) { column.Width = widths[column.Id]; column.Visible = true; }
         fillName = true; NotifyChanged();
