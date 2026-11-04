@@ -128,6 +128,7 @@ public sealed partial class MainWindow
             };
             choices.Add(mode, item); menu.Items.Add(item);
         }
+        AddReplacementMenu(menu);
         menu.Opening += (_, _) => UpdateChecks();
         appearance.Flyout = menu; sidebar.Children.Add(appearance);
     }

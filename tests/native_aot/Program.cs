@@ -11,6 +11,9 @@ internal static class Program
 
     private static unsafe void Verify()
     {
+        var registration = NativeReplacement.Read(@"C:\Nks Probe\NksTaskMgr.WinUI.exe");
+        Require(registration.Error == 0 && registration.Status != ReplacementStatus.ThisInstall && (registration.Status != ReplacementStatus.NotRegistered || registration.Debugger.Length == 0),
+            "The managed replacement state does not match the native HKLM read.");
         ServiceChecks.Verify();
         Require(sizeof(StartupItemInfo) == 80 && sizeof(StartupView) == 16, "Managed startup layout mismatch.");
         var startup = NativeStartup.Read();

@@ -43,6 +43,8 @@ internal sealed class ElevationBrokerClient : IDisposable
         0xe04e0001 => "TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv.",
         0xe04e0002 => "Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.",
         0xe04e0003 => "Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána.",
+        0xe04e0004 => "Náhradu lze zapnout jen z instalace v Program Files.",
+        0xe04e0005 => "Složka instalace není chráněná proti zápisu běžných uživatelů.",
         1223 => "Zvýšení práv bylo v UAC zrušeno. Akce nebyla odeslána.",
         _ => ""
     };

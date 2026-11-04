@@ -230,7 +230,8 @@ public sealed partial class MainWindow
         ProcessActionCommand.Suspend => "Pozastavit proces", ProcessActionCommand.Resume => "Obnovit běh procesu",
         ProcessActionCommand.Priority => "Změnit prioritu", ProcessActionCommand.Affinity => "Afinita procesorů",
         ProcessActionCommand.CpuSets or ProcessActionCommand.QueryCpuSets => "Výchozí CPU sets",
-        ProcessActionCommand.CloseHandle => "Zavřít handle v procesu", _ => "Nastavení procesu"
+        ProcessActionCommand.CloseHandle => "Zavřít handle v procesu",
+        ProcessActionCommand.TaskManager => "Správce úloh Windows", _ => "Nastavení procesu"
     };
     private static string ActionExplanation(ProcessActionCommand command) => command switch {
         ProcessActionCommand.CloseWindows => "Pošle požadavek zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.",
@@ -261,6 +262,8 @@ public sealed partial class MainWindow
 
     internal static string ActionResultText(ProcessActionResult result, ProcessActionCommand command)
     {
+        if (command == ProcessActionCommand.TaskManager)
+            return ReplacementText.Result(result) + WindowsError(result.Error) + "\nAktuální stav: " + CurrentReplacementText();
         string text = result.Outcome switch {
             ProcessActionOutcome.Inspected => "Nastavení bylo načteno.", ProcessActionOutcome.Applied => command is ProcessActionCommand.Terminate or ProcessActionCommand.TerminateTree ? "Konec tohoto procesu byl potvrzen."
                 : command == ProcessActionCommand.CloseHandle ? result.Flags.HasFlag(ProcessActionFlags.ObjectMatched)

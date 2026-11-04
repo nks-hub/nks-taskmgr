@@ -96,7 +96,7 @@ target_compile_definitions(nks_native PRIVATE PHNT_VERSION=117)
 target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32 gdi32 wintrust crypt32 bcrypt tdh ole32 winhttp rasapi32 wtsapi32 shell32)
 target_compile_options(nks_native PRIVATE /W4 /WX /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
 
-add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/services_api.cpp src/interop/history_api.cpp src/interop/events_api.cpp src/interop/startup_api.cpp)
+add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/replacement_api.cpp src/interop/services_api.cpp src/interop/history_api.cpp src/interop/events_api.cpp src/interop/startup_api.cpp)
 target_include_directories(nks-monitor PUBLIC src)
 target_compile_definitions(nks-monitor PRIVATE NKS_MONITOR_EXPORTS)
 target_compile_options(nks-monitor PRIVATE /W4 /WX /utf-8 /permissive-)

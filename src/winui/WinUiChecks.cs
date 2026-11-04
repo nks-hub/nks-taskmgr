@@ -128,6 +128,7 @@ public static partial class WinUiChecks
         ProcessTrafficAttributionLabels();
         ProcessEventCloseOwnership();
         PublisherTrustChecks.Run();
+        ReplacementTextChecks.Run();
         DeepTree();
         Graphs();
         GraphRefresh();

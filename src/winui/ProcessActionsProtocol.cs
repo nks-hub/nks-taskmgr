@@ -5,7 +5,7 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-internal enum ProcessActionCommand : ushort { Query, CloseWindows, Terminate, Suspend, Resume, Priority, Affinity, TerminateTree, QueryCpuSets, CpuSets, CloseHandle }
+internal enum ProcessActionCommand : ushort { Query, CloseWindows, Terminate, Suspend, Resume, Priority, Affinity, TerminateTree, QueryCpuSets, CpuSets, CloseHandle, TaskManager }
 internal enum ProcessActionFrame : uint { Accepted, Results, Rejected, Failed, TreePlan, TreeResults, CpuSets }
 internal enum ProcessActionOutcome : uint {
     Inspected, Applied, CloseRequested, TerminationRequested, NativeRequestAccepted, Refused,
@@ -47,17 +47,21 @@ internal static partial class ProcessActionsProtocol
     {
         if (request.Command is ProcessActionCommand.QueryCpuSets or ProcessActionCommand.CpuSets) return CpuSetsRequest(request);
         if (request.Command == ProcessActionCommand.CloseHandle) return CloseHandleRequest(request);
-        if (request.CpuSets is not null) throw new ArgumentException("Výběr CPU sets nepatří k této akci.", nameof(request));
+        if (request.Command == ProcessActionCommand.TaskManager) {
+            // The single target is the requesting GUI; the broker takes the path from its verified image, never from the request.
+            if (request.Targets.Length != 1 || request.Argument is not (1 or 2) || request.Group != 0 || request.CpuSets is not null)
+                throw new ArgumentException("Náhrada Správce úloh vyžaduje jediný cíl, volbu 1 nebo 2 a žádnou skupinu.", nameof(request));
+        } else if (request.CpuSets is not null) throw new ArgumentException("Výběr CPU sets nepatří k této akci.", nameof(request));
         if (request.Handle is not null) throw new ArgumentException("Handle nepatří k této akci.", nameof(request));
-        if ((ushort)request.Command > (ushort)ProcessActionCommand.TerminateTree || request.Targets.Length is < 1 or > 64)
+        if (request.Command != ProcessActionCommand.TaskManager && (ushort)request.Command > (ushort)ProcessActionCommand.TerminateTree || request.Targets.Length is < 1 or > 64)
             throw new ArgumentException("Akce vyžaduje 1 až 64 vybraných procesů.", nameof(request));
         if (request.Command == ProcessActionCommand.TerminateTree && request.Targets.Length != 1)
             throw new ArgumentException("Ukončení stromu vyžaduje jeden potvrzený kořen.", nameof(request));
         if (request.Command == ProcessActionCommand.Affinity) {
             if (request.Targets.Length != 1 || request.Argument == 0 || request.Group > ushort.MaxValue)
                 throw new ArgumentException("Afinita vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů.", nameof(request));
-        } else if (request.Group != 0 || (request.Command == ProcessActionCommand.Priority
-            ? !PriorityAllowed(request.Argument) : request.Argument != 0)) throw new ArgumentException("Neplatná hodnota akce.", nameof(request));
+        } else if (request.Command != ProcessActionCommand.TaskManager && (request.Group != 0 || (request.Command == ProcessActionCommand.Priority
+            ? !PriorityAllowed(request.Argument) : request.Argument != 0))) throw new ArgumentException("Neplatná hodnota akce.", nameof(request));
         var bytes = new byte[64 + 48 * request.Targets.Length];
         BinaryPrimitives.WriteUInt32LittleEndian(bytes, Magic);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(4), 1);
@@ -122,18 +126,20 @@ internal static partial class ProcessActionsProtocol
                     || (ULong(row, 72) & ~ULong(row, 80)) != 0 || UInt(row, 88) > ushort.MaxValue || UInt(row, 96) != 0)
                 || !flags.HasFlag(ProcessActionFlags.PriorityAvailable) && UInt(row, 68) != 0
                 || !flags.HasFlag(ProcessActionFlags.AffinityAvailable) && (ULong(row, 72) != 0 || ULong(row, 80) != 0 || UInt(row, 88) != 0)
-                || outcome == ProcessActionOutcome.Inspected && command is not (ProcessActionCommand.Query or ProcessActionCommand.QueryCpuSets)
+                || outcome == ProcessActionOutcome.Inspected && command is not (ProcessActionCommand.Query or ProcessActionCommand.QueryCpuSets or ProcessActionCommand.TaskManager)
                 || outcome == ProcessActionOutcome.CloseRequested && command != ProcessActionCommand.CloseWindows
                 || outcome == ProcessActionOutcome.TerminationRequested && command != ProcessActionCommand.Terminate
                 || outcome == ProcessActionOutcome.NativeRequestAccepted && command is not (ProcessActionCommand.Suspend or ProcessActionCommand.Resume)
                 || outcome is ProcessActionOutcome.CloseRequested or ProcessActionOutcome.TerminationRequested or ProcessActionOutcome.NativeRequestAccepted
                     && (flags & (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.MayHaveApplied))
                         != (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.MayHaveApplied)
-                || outcome == ProcessActionOutcome.Applied && (command is not (ProcessActionCommand.Priority or ProcessActionCommand.Affinity or ProcessActionCommand.Terminate or ProcessActionCommand.CpuSets or ProcessActionCommand.CloseHandle)
+                || outcome == ProcessActionOutcome.Applied && (command is not (ProcessActionCommand.Priority or ProcessActionCommand.Affinity or ProcessActionCommand.Terminate or ProcessActionCommand.CpuSets or ProcessActionCommand.CloseHandle or ProcessActionCommand.TaskManager)
+                    // A registry change reports no target process state, only that the change was made.
                     || (flags & (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.EffectConfirmed | ProcessActionFlags.MayHaveApplied))
-                        != (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.EffectConfirmed | ProcessActionFlags.MayHaveApplied))
+                        != (command == ProcessActionCommand.TaskManager ? ProcessActionFlags.EffectConfirmed
+                            : ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.EffectConfirmed | ProcessActionFlags.MayHaveApplied))
                 || (command is ProcessActionCommand.Query or ProcessActionCommand.QueryCpuSets) && (flags & (ProcessActionFlags.MayHaveApplied | ProcessActionFlags.EffectConfirmed)) != 0
-                || outcome == ProcessActionOutcome.Inspected && (flags & (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore))
+                || outcome == ProcessActionOutcome.Inspected && command != ProcessActionCommand.TaskManager && (flags & (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore))
                     != (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore)
                 || outcome == ProcessActionOutcome.CloseRequested && UInt(row, 100) == 0
                 || outcome == ProcessActionOutcome.Applied && command == ProcessActionCommand.Terminate && !flags.HasFlag(ProcessActionFlags.ExitedAfter)
