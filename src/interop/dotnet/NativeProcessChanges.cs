@@ -19,9 +19,27 @@ public unsafe struct ProcessChangesData
     public ProcessChange* Changes;
     public uint ChangeCount, ProcessCount;
 }
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct ProcessLossData
+{
+    public ulong DroppedSnapshots;
+}
 
 public sealed partial class NativeFrame
 {
+    /// <summary>Counts process snapshots published but overwritten before the read that produced this frame.</summary>
+    public unsafe ulong ReadDroppedProcessSnapshots()
+    {
+        ulong dropped = 0;
+        Use(pointer => {
+            var result = NativeMethods.GetProcessLossData(pointer, (uint)sizeof(ProcessLossData), out var data);
+            if (result == NativeResult.NoData) return;
+            NativeMonitor.Check(result);
+            dropped = data.DroppedSnapshots;
+        });
+        return dropped;
+    }
+
     public unsafe bool ReadProcessChanges(Action<ProcessChangesData> visitor)
     {
         ArgumentNullException.ThrowIfNull(visitor);
@@ -49,4 +67,6 @@ internal static partial class NativeMethods
 {
     [LibraryImport(Library, EntryPoint = "nks_frame_get_process_changes")]
     internal static partial NativeResult GetProcessChanges(nint frame, uint size, out ProcessChangesData data);
+    [LibraryImport(Library, EntryPoint = "nks_frame_get_process_loss_data")]
+    internal static partial NativeResult GetProcessLossData(nint frame, uint size, out ProcessLossData data);
 }

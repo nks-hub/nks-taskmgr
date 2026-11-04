@@ -17,6 +17,7 @@ public sealed partial class MonitorModel
                 frame.ReadProcessCreationTimes(creation => { Apply(view, creation, false, changes); applied = true; });
             if (!applied) Apply(view, default, false, changes);
         }
+        if ((view.Flags & FrameFlags.ProcessData) != 0) processHistory.AddDropped(frame.ReadDroppedProcessSnapshots());
         if (!changesApiMissing && (view.Flags & FrameFlags.ProcessData) != 0) {
             try { if (frame.ReadProcessChanges(data => ApplyChanges(data))) return; }
             catch (EntryPointNotFoundException) { changesApiMissing = true; }

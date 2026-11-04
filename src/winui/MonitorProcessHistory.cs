@@ -17,14 +17,16 @@ internal sealed class ProcessHistoryStore
     private sealed record Frame(long Time, long WallTime, ulong Revision, int OriginalCount, ProcessHistorySample[] Rows, bool Gap, ulong? MissingFrames);
     private readonly LinkedList<Frame> frames = new();
     private long lastTime, bytes;
-    private ulong lastRevision, evictedFrames, evictedRows;
+    private ulong lastRevision, evictedFrames, evictedRows, pendingDropped;
     private int rowCount;
+
+    internal void AddDropped(ulong count) => pendingDropped += count;
 
     internal void Capture(long time, long wallTime, ulong revision, IReadOnlyCollection<ProcessRow> source, MeasurementMetadata? cpu, MeasurementMetadata? io)
     {
         if (time <= 0 || time <= lastTime) return;
-        ulong? missing = lastRevision != 0 && revision > lastRevision ? revision - lastRevision - 1 : null;
-        bool gap = lastTime != 0 && (time - lastTime > MonitorModel.StaleAfterNs || missing > 0 || revision != 0 && lastRevision != 0 && revision <= lastRevision);
+        ulong? missing = lastRevision != 0 && revision > lastRevision ? revision - lastRevision - 1 + pendingDropped : null;
+        bool gap = lastTime != 0 && (time - lastTime > MonitorModel.StaleAfterNs || missing > 0 || pendingDropped > 0 || revision != 0 && lastRevision != 0 && revision <= lastRevision);
         bool late = NativeMonitor.MonotonicNowNs - time > MonitorModel.StaleAfterNs;
         var chosen = ProcessHistoryRanking.Pick(source);
         var rows = new ProcessHistorySample[chosen.Length];
@@ -36,7 +38,7 @@ internal sealed class ProcessHistoryStore
                 row.Stale ? SampleState.Stale : SampleState.Valid, row.ReadIo, row.WriteIo, late || row.Stale, cpu, io);
         }
         frames.AddLast(new Frame(time, wallTime, revision, source.Count, rows, gap, missing));
-        bytes += FrameBytes + RowBytes * rows.Length; rowCount += rows.Length; lastTime = time; lastRevision = revision;
+        bytes += FrameBytes + RowBytes * rows.Length; rowCount += rows.Length; lastTime = time; lastRevision = revision; pendingDropped = 0;
         while (frames.First is { } first && (bytes > MaximumBytes || rowCount > MaximumRows || time - first.Value.Time > MaximumAgeNs)) {
             bytes -= FrameBytes + RowBytes * first.Value.Rows.Length; rowCount -= first.Value.Rows.Length;
             ++evictedFrames; evictedRows += (ulong)first.Value.Rows.Length; frames.RemoveFirst();

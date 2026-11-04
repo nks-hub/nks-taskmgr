@@ -1,4 +1,5 @@
 #include "interop/monitor_api.h"
+#include "interop/process_changes_api.h"
 #include <windows.h>
 #include <chrono>
 #include <iostream>
@@ -68,6 +69,11 @@ void verify()
     require(nks_frame_get_boot_data(processFrame.get(), sizeof(boot), &boot) == NKS_OK && boot.state == NKS_SAMPLE_VALID
         && (boot.low || boot.high), "ABI boot GUID was not available");
     const auto retainedBoot = boot;
+    NksProcessLossData loss{};
+    require(nks_frame_get_process_loss_data(nullptr, sizeof(loss), &loss) == NKS_INVALID_ARGUMENT, "Null loss frame was accepted");
+    require(nks_frame_get_process_loss_data(processFrame.get(), sizeof(loss), nullptr) == NKS_INVALID_ARGUMENT, "Null loss output was accepted");
+    require(nks_frame_get_process_loss_data(processFrame.get(), sizeof(loss) - 1, &loss) == NKS_ABI_MISMATCH, "Wrong loss layout was accepted");
+    require(nks_frame_get_process_loss_data(processFrame.get(), sizeof(loss), &loss) == NKS_OK, "Process loss count was not available");
     const auto& p = processes.processes;
     require(p.process_count > 0 && p.processes && p.processor_count == p.logical_processors && p.processors, "ABI arrays were not complete");
     require(p.cpu_percent.value >= 0 && p.cpu_percent.value <= 100, "ABI CPU normalization failed");

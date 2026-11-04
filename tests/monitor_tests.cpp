@@ -17,8 +17,12 @@ void latestSample()
         slot.publish(std::move(snapshot));
     }
     std::wstring error;
-    auto latest = slot.take(error);
+    std::uint64_t dropped = 99;
+    auto latest = slot.take(error, &dropped);
     require(latest && latest->logicalProcessors == 3, "Mailbox queued old samples instead of retaining the newest");
+    require(dropped == 2, "Mailbox did not count the overwritten samples");
+    slot.publish(nks::ProcessSnapshot{});
+    require(slot.take(error, &dropped) && dropped == 0, "Mailbox counted a sample that was never replaced");
     require(!slot.take(error), "Mailbox returned a consumed sample twice");
     slot.fail("Collection failed");
     require(!slot.take(error) && error == L"Collection failed", "Mailbox lost its error");

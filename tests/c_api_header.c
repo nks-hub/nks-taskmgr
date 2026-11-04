@@ -1,9 +1,11 @@
 #include "interop/monitor_api.h"
+#include "interop/process_changes_api.h"
 #include "interop/services_api.h"
 
 _Static_assert(sizeof(NksFrameView) == 288, "C frame layout changed");
 _Static_assert(sizeof(NksProcess) == 152, "C process layout changed");
 _Static_assert(sizeof(NksBootData) == 24, "C boot identity layout changed");
+_Static_assert(sizeof(NksProcessLossData) == 8, "C process loss layout changed");
 _Static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGpuData) == 16, "C GPU layout changed");
 _Static_assert(offsetof(NksProcess, name) == 136, "C UTF-16 name offset changed");
 _Static_assert(sizeof(NksServiceConfig) == 80 && sizeof(NksService) == 128, "C service layout changed");

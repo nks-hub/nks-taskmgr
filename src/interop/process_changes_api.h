@@ -21,11 +21,16 @@ typedef struct NksProcessChangesData {
     const NksProcessChange* changes;
     uint32_t change_count, process_count;
 } NksProcessChangesData;
+typedef struct NksProcessLossData {
+    uint64_t dropped_snapshots;
+} NksProcessLossData;
 #pragma pack(pop)
 
 // Revisions follow delivered process frames. On a reset or a missing base, use that frame's full view.
 // Entries and indexed current rows remain valid until the final frame release.
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_process_changes(const NksFrame* frame, uint32_t size, NksProcessChangesData* data) NKS_CHANGES_NOEXCEPT;
+// dropped_snapshots counts process snapshots published but overwritten before the read preceding this frame. It does not renumber revisions.
+NKS_MONITOR_API NksResult __cdecl nks_frame_get_process_loss_data(const NksFrame* frame, uint32_t size, NksProcessLossData* data) NKS_CHANGES_NOEXCEPT;
 
 #ifdef __cplusplus
 }

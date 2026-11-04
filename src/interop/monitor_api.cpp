@@ -22,7 +22,7 @@ struct NksFrame {
     NksProcessMeasurements processMeasurements{};
     std::vector<NksResourceMeasurements> resourceMeasurements;
     std::vector<NksProcessChange> processChanges;
-    std::uint64_t processRevision{}, processBaseRevision{};
+    std::uint64_t processRevision{}, processBaseRevision{}, processDropped{};
     std::uint32_t processChangeFlags{};
     NksFrameView view{};
     void build();
@@ -64,7 +64,7 @@ static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGp
 static_assert(sizeof(NksHardwareFact) == 48 && sizeof(NksHardwareData) == 16);
 static_assert(sizeof(NksProcessCreation) == 32 && sizeof(NksProcessCreationData) == 16 && sizeof(NksProcessIdentityData) == 40);
 static_assert(sizeof(NksMeasurementMetadata) == 32 && offsetof(NksMeasurementMetadata, observed_at_ns) == 8);
-static_assert(sizeof(NksProcessChange) == 24 && sizeof(NksProcessChangesData) == 40);
+static_assert(sizeof(NksProcessChange) == 24 && sizeof(NksProcessChangesData) == 40 && sizeof(NksProcessLossData) == 8);
 static_assert(sizeof(NksProcessMeasurements) == 192 && sizeof(NksResourceMeasurements) == 240 && sizeof(NksMeasurementData) == 216);
 static_assert(static_cast<unsigned>(nks::MeasurementUnit::operationsPerSecond) == NKS_UNIT_OPERATIONS_PER_SECOND);
 static_assert(static_cast<unsigned>(nks::MeasurementNormalization::deviceActiveTime) == NKS_NORMALIZATION_DEVICE_ACTIVE_TIME);
@@ -189,7 +189,8 @@ NksResult __cdecl nks_monitor_read(NksMonitor* monitor, NksFrame** result) noexc
     return invoke([&] {
         std::lock_guard lock(monitor->readMutex);
         std::wstring pendingProcessError, pendingResourceError;
-        auto processSnapshot = monitor->monitor.takeProcesses(pendingProcessError);
+        std::uint64_t processDropped{};
+        auto processSnapshot = monitor->monitor.takeProcesses(pendingProcessError, &processDropped);
         auto resourceSnapshot = monitor->monitor.takeResources(pendingResourceError);
         uint32_t flags = 0;
         if (processSnapshot) flags |= NKS_PROCESS_DATA;
@@ -200,6 +201,7 @@ NksResult __cdecl nks_monitor_read(NksMonitor* monitor, NksFrame** result) noexc
         auto frame = std::make_unique<NksFrame>();
         frame->processSnapshot = std::move(processSnapshot);
         frame->resourceSnapshot = std::move(resourceSnapshot);
+        frame->processDropped = processDropped;
         frame->processError = std::move(pendingProcessError);
         frame->resourceError = std::move(pendingResourceError);
         frame->view.flags = flags;
@@ -250,6 +252,15 @@ NksResult __cdecl nks_frame_get_process_changes(const NksFrame* frame, uint32_t 
     if (!frame->processSnapshot) return NKS_NO_DATA;
     *result = {NKS_PROCESS_CHANGES_ABI_VERSION, frame->processChangeFlags, frame->processRevision, frame->processBaseRevision,
         frame->processChanges.data(), count(frame->processChanges.size()), count(frame->processes.size())};
+    return NKS_OK;
+}
+
+NksResult __cdecl nks_frame_get_process_loss_data(const NksFrame* frame, uint32_t size, NksProcessLossData* result) noexcept
+{
+    if (!frame || !result) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksProcessLossData)) return NKS_ABI_MISMATCH;
+    if (!frame->processSnapshot) return NKS_NO_DATA;
+    *result = {frame->processDropped};
     return NKS_OK;
 }
 
