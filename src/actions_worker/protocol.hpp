@@ -11,8 +11,10 @@ constexpr std::size_t headerBytes = 64, targetBytes = 48, resultBytes = 112, max
 constexpr std::size_t maximumTreeTargets = 256, treePrefixBytes = 64, treeNodeBytes = 64;
 constexpr std::size_t maximumCpuSets = 4096, cpuSetsPrefixBytes = 48, cpuSetBytes = 32;
 constexpr std::size_t maximumCpuSetsResponse = resultBytes + cpuSetsPrefixBytes + maximumCpuSets * (cpuSetBytes + 4);
+constexpr std::size_t handleSpecBytes = 16, maximumHandleTypeChars = 128, maximumHandleNameChars = 32767;
+constexpr std::uint32_t verifyHandleName = 1;
 
-enum class Command : std::uint16_t { query, closeWindows, terminate, suspend, resume, priority, affinity, terminateTree, queryCpuSets = 8, cpuSets = 9, taskManager = 11 };
+enum class Command : std::uint16_t { query, closeWindows, terminate, suspend, resume, priority, affinity, terminateTree, queryCpuSets = 8, cpuSets = 9, closeHandle = 10, taskManager = 11 };
 enum class FrameKind : std::uint32_t { accepted, results, rejected, failed, treePlan, treeResults, cpuSets = 6 };
 enum class Outcome : std::uint32_t {
     inspected, applied, closeRequested, terminationRequested, nativeRequestAccepted, refused,
@@ -22,7 +24,8 @@ enum class Reason : std::uint32_t {
     none, invalidTarget, ownOrParent, systemTarget, critical, protectedTarget, ownerMismatch,
     accessDenied, identityUnverifiable, rawTimeMismatch, noWindows, windowMismatch, invalidArgument,
     multipleGroups, partialClose, readbackMismatch, protectionUnverifiable, parentUnavailable,
-    alreadySame, windowLimit, nativeUnavailable, treeBoundary, treeBudget, treeCensus, treeUncertain
+    alreadySame, windowLimit, nativeUnavailable, treeBoundary, treeBudget, treeCensus, treeUncertain,
+    handleMissing, handleChanged, handleUnverifiable, handleProtected
 };
 enum TreeFlag : std::uint32_t { nonAtomic = 1, targetLimit = 2, timeLimit = 4, passLimit = 8, censusFailed = 16, parentLost = 32, residual = 64 };
 enum Flag : std::uint32_t {

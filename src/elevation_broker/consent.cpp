@@ -32,6 +32,7 @@ const wchar_t* actionName(actions::Command command)
     case Command::queryCpuSets: return L"Načíst výchozí CPU sets procesu";
     case Command::cpuSets: return L"Změnit výchozí CPU sets procesu";
     case Command::taskManager: return L"Změnit náhradu Správce úloh Windows";
+    case Command::closeHandle: return L"Zavřít handle v cizím procesu";
     }
     return L"Neplatná akce";
 }
@@ -41,18 +42,19 @@ bool duplicate(HANDLE source, Handle& output)
     if (!DuplicateHandle(GetCurrentProcess(), source, GetCurrentProcess(), &raw, 0, FALSE, DUPLICATE_SAME_ACCESS)) return false;
     output.reset(raw); return true;
 }
-std::wstring safeText(std::wstring text)
+std::wstring safeText(std::wstring text, const wchar_t* shortened = L" (zkráceno)")
 {
     for (auto& character : text) if (character < L' ' || (character >= 0x202a && character <= 0x202e)
         || (character >= 0x2066 && character <= 0x2069)) character = L' ';
-    if (text.size() > 1024) text = text.substr(0, 1024) + L" (zkráceno)";
+    if (text.size() > 1024) text = text.substr(0, 1024) + shortened;
     return text;
 }
 std::wstring safePath(HANDLE process)
 {
     std::wstring path(32768, L'\0'); DWORD size = static_cast<DWORD>(path.size());
     if (!QueryFullProcessImageNameW(process, 0, path.data(), &size)) return L"(cestu nelze přečíst)";
-    path.resize(size); return safeText(std::move(path));
+    path.resize(size);
+    return safeText(std::move(path), L" (cesta zkrácena)");
 }
 }
 
@@ -76,6 +78,7 @@ bool Consent::prepare(actions::Command command, std::span<actions::Result> resul
         if (command == Command::suspend || command == Command::resume) access |= 0x0800;
         if (command == Command::priority || command == Command::affinity) access |= PROCESS_SET_INFORMATION;
         if (command == Command::cpuSets) access |= PROCESS_SET_LIMITED_INFORMATION;
+        if (command == Command::closeHandle) access |= PROCESS_QUERY_INFORMATION | PROCESS_DUP_HANDLE;
         if (!key.pid || key.pid == 4 || key.pid == context_.ownPid || key.pid == gui_.key.pid || key.pid == bridge_.key.pid) {
             result.reason = key.pid <= 4 ? Reason::systemTarget : Reason::ownOrParent; result.error = ERROR_ACCESS_DENIED;
         } else targets_[i].reset(OpenProcess(access, FALSE, key.pid));
@@ -152,7 +155,8 @@ DWORD Consent::prepareReplacement(const actions::Result& target, bool enabled, s
     guiPath = std::move(path); return ERROR_SUCCESS;
 }
 
-bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uint32_t group, std::span<const std::uint32_t> selected)
+bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uint32_t group, std::span<const std::uint32_t> selected,
+    const actions::HandleSpec* handle)
 {
     TokenIdentity own;
     if (!readToken(GetCurrentProcess(), own) || !own.elevated || own.integrity < SECURITY_MANDATORY_HIGH_RID) return false;
@@ -163,6 +167,12 @@ bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uin
     if (command == actions::Command::affinity) content += L"Skupina: " + std::to_wstring(group) + L", maska: " + std::to_wstring(argument) + L"\n";
     if (command == actions::Command::terminateTree) content += L"Rozsah: tento kořen a nově ověření potomci, nejvýše 256 cílů / 3 průchody / 5 s. Strom není atomický.\n";
     std::wstring cpuDetails;
+    if (command == actions::Command::closeHandle && handle) {
+        wchar_t value[32]{}; swprintf_s(value, L"0x%llX", static_cast<unsigned long long>(handle->value));
+        content += L"Handle " + std::wstring(value) + L" · typ " + safeText(handle->type) + L"\nObjekt: "
+            + (handle->flags & actions::verifyHandleName ? handle->name.empty() ? L"(nepojmenovaný)" : safeText(handle->name) : L"(název neověřen)")
+            + L"\nCílový proces o zavření neví. Může spadnout, ztratit nebo poškodit neuložená data. Zavření nelze vrátit.\n";
+    }
     if (command == actions::Command::cpuSets) {
         content += selected.empty() ? L"Zrušit výchozí výběr CPU sets procesu.\n"
             : L"Nastavit výchozí měkký výběr: " + std::to_wstring(selected.size()) + L" CPU set ID.\n";

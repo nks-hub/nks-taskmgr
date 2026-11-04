@@ -36,9 +36,14 @@ inline bool headerValid(const Header& value)
 {
     auto command = read(value, 6, 2); auto count = read32(value, 12);
     if (read32(value, 0) != magic || read(value, 4, 2) != version || command > static_cast<unsigned>(Command::taskManager)
-        || command == 10 // reserved for closeHandle
         || !count || count > maximumTargets || !read64(value, 16) || (!read64(value, 24) && !read64(value, 32))
         || read32(value, 52) || read64(value, 56)) return false;
+    if (command == static_cast<unsigned>(Command::closeHandle)) {
+        const auto handle = read64(value, 40); const auto bytes = read32(value, 8);
+        return count == 1 && handle && !(handle & 3) && handle < 0xfffffff0 && read32(value, 48) <= verifyHandleName
+            && bytes >= targetBytes + handleSpecBytes + 2
+            && bytes <= targetBytes + handleSpecBytes + (maximumHandleTypeChars + maximumHandleNameChars) * 2;
+    }
     if (command == static_cast<unsigned>(Command::queryCpuSets))
         return count == 1 && read32(value, 8) == targetBytes && !read64(value, 40) && !read32(value, 48);
     // The single target is the requesting GUI; argument 1 enables the replacement, 2 restores the previous registration.
@@ -66,6 +71,23 @@ inline bool cpuSetsRequest(const Header& header, std::span<const std::byte> payl
         selected.push_back(id);
     }
     return true;
+}
+inline bool closeHandleRequest(const Header& header, std::span<const std::byte> payload, HandleSpec& handle)
+{
+    if (read(header, 6, 2) != static_cast<unsigned>(Command::closeHandle) || payload.size() < targetBytes + handleSpecBytes) return false;
+    handle.value = read64(header, 40); handle.flags = read32(header, 48);
+    handle.grantedAccess = read32(payload, targetBytes); handle.typeIndex = read32(payload, targetBytes + 4);
+    const std::size_t typeChars = read32(payload, targetBytes + 8), nameChars = read32(payload, targetBytes + 12);
+    if (!typeChars || typeChars > maximumHandleTypeChars || nameChars > maximumHandleNameChars
+        || (nameChars && !(handle.flags & verifyHandleName))
+        || payload.size() != targetBytes + handleSpecBytes + (typeChars + nameChars) * 2) return false;
+    const auto text = [&](std::size_t at, std::size_t chars, std::wstring& value) {
+        value.resize(chars);
+        for (std::size_t i = 0; i < chars; ++i) if (!(value[i] = static_cast<wchar_t>(read(payload, at + i * 2, 2)))) return false;
+        return true;
+    };
+    return text(targetBytes + handleSpecBytes, typeChars, handle.type)
+        && text(targetBytes + handleSpecBytes + typeChars * 2, nameChars, handle.name);
 }
 template<class Write> bool cpuSetsFrame(Write&& output, const Header& request, const CpuSetsResult& result)
 {

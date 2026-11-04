@@ -229,7 +229,8 @@ public sealed partial class MainWindow
         ProcessActionCommand.TerminateTree => "Ukončit strom",
         ProcessActionCommand.Suspend => "Pozastavit proces", ProcessActionCommand.Resume => "Obnovit běh procesu",
         ProcessActionCommand.Priority => "Změnit prioritu", ProcessActionCommand.Affinity => "Afinita procesorů",
-        ProcessActionCommand.CpuSets or ProcessActionCommand.QueryCpuSets => "Výchozí CPU sets", _ => "Nastavení procesu"
+        ProcessActionCommand.CpuSets or ProcessActionCommand.QueryCpuSets => "Výchozí CPU sets",
+        ProcessActionCommand.CloseHandle => "Zavřít handle v procesu", _ => "Nastavení procesu"
     };
     private static string ActionExplanation(ProcessActionCommand command) => command switch {
         ProcessActionCommand.CloseWindows => "Pošle požadavek zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.",
@@ -258,10 +259,11 @@ public sealed partial class MainWindow
         }
     }
 
-    private static string ActionResultText(ProcessActionResult result, ProcessActionCommand command)
+    internal static string ActionResultText(ProcessActionResult result, ProcessActionCommand command)
     {
         string text = result.Outcome switch {
-            ProcessActionOutcome.Inspected => "Nastavení bylo načteno.", ProcessActionOutcome.Applied => command is ProcessActionCommand.Terminate or ProcessActionCommand.TerminateTree ? "Konec tohoto procesu byl potvrzen." : "Změna byla ověřena zpětným čtením.",
+            ProcessActionOutcome.Inspected => "Nastavení bylo načteno.", ProcessActionOutcome.Applied => command is ProcessActionCommand.Terminate or ProcessActionCommand.TerminateTree ? "Konec tohoto procesu byl potvrzen."
+                : command == ProcessActionCommand.CloseHandle ? "Handle byl zavřen. Zavřený objekt je stejný jako ten, který jste potvrdili." : "Změna byla ověřena zpětným čtením.",
             ProcessActionOutcome.CloseRequested => "Požadavek zavření byl odeslán; zavření není potvrzené.", ProcessActionOutcome.TerminationRequested => "Požadavek ukončení byl přijat; konec procesu zatím není potvrzený.",
             ProcessActionOutcome.NativeRequestAccepted => "Systém přijal požadavek. Stav všech vláken není potvrzený.", ProcessActionOutcome.Refused => "Akce byla odmítnuta.",
             ProcessActionOutcome.IdentityChanged => result.Flags.HasFlag(ProcessActionFlags.MayHaveApplied) ? "Identita procesu se změnila; výsledek není ověřený." : "Identita procesu se změnila. Akce nebyla provedena.",
@@ -288,6 +290,10 @@ public sealed partial class MainWindow
         ProcessActionReason.ParentUnavailable => "Identitu řídicí aplikace nelze ověřit.", ProcessActionReason.AlreadySame => "Hodnota už byla nastavená.",
         ProcessActionReason.WindowLimit => "Byl překročen omezený počet oken.", ProcessActionReason.NativeUnavailable => "Potřebná systémová funkce není dostupná.",
         ProcessActionReason.TreeBoundary => "Vazbu na potvrzený strom nelze ověřit.", ProcessActionReason.TreeBudget => "Pro tento cíl nezbyl čas v omezeném průchodu.",
-        ProcessActionReason.TreeCensus => "Nový inventář stromu není dostupný.", ProcessActionReason.TreeUncertain => "Zásah nebyl bezpečně ověřitelný.", _ => ""
+        ProcessActionReason.TreeCensus => "Nový inventář stromu není dostupný.", ProcessActionReason.TreeUncertain => "Zásah nebyl bezpečně ověřitelný.",
+        ProcessActionReason.HandleMissing => "Handle s touto hodnotou už v procesu není.",
+        ProcessActionReason.HandleChanged => "Pod hodnotou handle je jiný objekt, typ nebo přístup než při potvrzení.",
+        ProcessActionReason.HandleUnverifiable => "Objekt handle nelze ověřit.",
+        ProcessActionReason.HandleProtected => "Handle je chráněný proti zavření.", _ => ""
     };
 }

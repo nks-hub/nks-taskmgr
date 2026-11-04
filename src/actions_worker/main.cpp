@@ -71,6 +71,10 @@ int main(int argc, char** argv)
         if (cpuSets && !cpuSetsRequest(header, payload, baseline, selected)) {
             writeAll(output, response(header, FrameKind::rejected, 0, ERROR_INVALID_PARAMETER)); return 2;
         }
+        HandleSpec handle;
+        if (command == Command::closeHandle && !closeHandleRequest(header, payload, handle)) {
+            writeAll(output, response(header, FrameKind::rejected, 0, ERROR_INVALID_PARAMETER)); return 2;
+        }
         if (!writeAll(output, response(header, FrameKind::accepted, count))) return 4;
         accepted = true;
         const auto context = actionContext();
@@ -87,7 +91,10 @@ int main(int argc, char** argv)
             return delivered && treeFrame([&](std::span<const std::byte> bytes) { return writeAll(output, bytes); }, header, tree, FrameKind::treeResults) ? 0 : 4;
         }
         for (std::uint32_t i = 0; i < count; ++i) {
-            try { applyAction(context, command, read64(header, 40), read32(header, 48), results[i]); }
+            try {
+                if (command == Command::closeHandle) closeHandle(context, handle, results[i]);
+                else applyAction(context, command, read64(header, 40), read32(header, 48), results[i]);
+            }
             catch (...) {
                 auto& result = results[i]; result.outcome = result.flags & mayHaveApplied ? Outcome::unverified : Outcome::error;
                 result.flags &= ~static_cast<std::uint32_t>(effectConfirmed);

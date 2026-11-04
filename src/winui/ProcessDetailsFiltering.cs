@@ -36,6 +36,7 @@ internal sealed partial class ProcessDetailsView
         Identify(handles, "process-details-handles", "Handly procesu");
         Identify(observeObject, "process-details-object-name", "Zjistit aktuální typ a název duplikovaného objektu");
         inspector.Children.Add(observeObject);
+        ConfigureHandleClose();
         var filters = new Grid { ColumnSpacing = 8 };
         filters.ColumnDefinitions.Add(new ColumnDefinition()); filters.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         filters.Children.Add(find); filters.Children.Add(stateFilter); Grid.SetColumn(stateFilter, 1);

@@ -192,6 +192,12 @@ void readProcessHandleInfo(HANDLE process, std::uint64_t value, ProcessDetailsRe
     result.handleInfo = std::move(detail); result.state = details::ResultState::ok;
 }
 
+LONG queryObjectText(HANDLE object, bool name, std::wstring& text)
+{
+    text.clear(); // An unnamed object leaves the output untouched.
+    return objectText(object, name ? ObjectNameInformation : ObjectTypeInformation, text);
+}
+
 void readProcessOwners(const ProcessDetailsRequest& request, ProcessDetailsResult& result)
 {
     if (!verifyBoot(request, result)) return;

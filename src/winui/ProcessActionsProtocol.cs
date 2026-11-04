@@ -1,10 +1,11 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-internal enum ProcessActionCommand : ushort { Query, CloseWindows, Terminate, Suspend, Resume, Priority, Affinity, TerminateTree, QueryCpuSets, CpuSets }
+internal enum ProcessActionCommand : ushort { Query, CloseWindows, Terminate, Suspend, Resume, Priority, Affinity, TerminateTree, QueryCpuSets, CpuSets, CloseHandle }
 internal enum ProcessActionFrame : uint { Accepted, Results, Rejected, Failed, TreePlan, TreeResults, CpuSets }
 internal enum ProcessActionOutcome : uint {
     Inspected, Applied, CloseRequested, TerminationRequested, NativeRequestAccepted, Refused,
@@ -14,16 +15,18 @@ internal enum ProcessActionReason : uint {
     None, InvalidTarget, OwnOrParent, SystemTarget, Critical, Protected, OwnerMismatch, AccessDenied,
     IdentityUnverifiable, RawTimeMismatch, NoWindows, WindowMismatch, InvalidArgument, MultipleGroups,
     PartialClose, ReadbackMismatch, ProtectionUnverifiable, ParentUnavailable, AlreadySame, WindowLimit, NativeUnavailable,
-    TreeBoundary, TreeBudget, TreeCensus, TreeUncertain
+    TreeBoundary, TreeBudget, TreeCensus, TreeUncertain, HandleMissing, HandleChanged, HandleUnverifiable, HandleProtected
 }
 [Flags]
 internal enum ProcessActionFlags : uint {
     IdentityVerified = 1, AliveBefore = 2, AliveAfter = 4, ExitedAfter = 8,
     PriorityAvailable = 16, AffinityAvailable = 32, EffectConfirmed = 64, MayHaveApplied = 128
 }
+// Name null leaves the object name unchecked; an empty name requires an unnamed object.
+internal sealed record ProcessHandleSpec(ulong Value, uint GrantedAccess, uint TypeIndex, string Type, string? Name);
 internal sealed record ProcessActionTarget(ProcessKey Key, ulong Created100ns, ulong Window = 0);
 internal sealed record ProcessActionsRequest(ProcessActionCommand Command, ProcessActionTarget[] Targets, ulong Argument = 0, uint Group = 0,
-    ProcessCpuSetsSelection? CpuSets = null);
+    ProcessCpuSetsSelection? CpuSets = null, ProcessHandleSpec? Handle = null);
 internal sealed record ProcessActionResult(ProcessActionTarget Target, ulong ObservedCreated100ns, ProcessActionOutcome Outcome,
     ProcessActionReason Reason, uint Error, int NtStatus, ProcessActionFlags Flags, uint PriorityClass,
     ulong ProcessMask, ulong SystemMask, uint Group, uint PriorityError, uint AffinityError, uint WindowsPosted, uint WindowsFailed);
@@ -43,7 +46,9 @@ internal static partial class ProcessActionsProtocol
     internal static byte[] Request(ProcessActionsRequest request)
     {
         if (request.Command is ProcessActionCommand.QueryCpuSets or ProcessActionCommand.CpuSets) return CpuSetsRequest(request);
+        if (request.Command == ProcessActionCommand.CloseHandle) return CloseHandleRequest(request);
         if (request.CpuSets is not null) throw new ArgumentException("Výběr CPU sets nepatří k této akci.", nameof(request));
+        if (request.Handle is not null) throw new ArgumentException("Handle nepatří k této akci.", nameof(request));
         if ((ushort)request.Command > (ushort)ProcessActionCommand.TerminateTree || request.Targets.Length is < 1 or > 64)
             throw new ArgumentException("Akce vyžaduje 1 až 64 vybraných procesů.", nameof(request));
         if (request.Command == ProcessActionCommand.TerminateTree && request.Targets.Length != 1)
@@ -106,7 +111,8 @@ internal static partial class ProcessActionsProtocol
             var outcome = (ProcessActionOutcome)UInt(row, 48); var reason = (ProcessActionReason)UInt(row, 52);
             var flags = (ProcessActionFlags)UInt(row, 64);
             if (!row[..40].SequenceEqual(expected[..40]) || UInt(row, 108) != 0 || (uint)outcome > (uint)ProcessActionOutcome.Unverified
-                || (uint)reason > (uint)ProcessActionReason.NativeUnavailable || ((uint)flags & ~255u) != 0
+                || (uint)reason > (uint)ProcessActionReason.NativeUnavailable && !(command == ProcessActionCommand.CloseHandle
+                    && reason is >= ProcessActionReason.HandleMissing and <= ProcessActionReason.HandleProtected) || ((uint)flags & ~255u) != 0
                 || flags.HasFlag(ProcessActionFlags.AliveAfter) && flags.HasFlag(ProcessActionFlags.ExitedAfter)
                 || flags.HasFlag(ProcessActionFlags.IdentityVerified) && ULong(row, 40) != ULong(expected, 32)
                 || flags.HasFlag(ProcessActionFlags.PriorityAvailable) && (UInt(row, 68) == 0 || UInt(row, 92) != 0)
@@ -121,7 +127,7 @@ internal static partial class ProcessActionsProtocol
                 || outcome is ProcessActionOutcome.CloseRequested or ProcessActionOutcome.TerminationRequested or ProcessActionOutcome.NativeRequestAccepted
                     && (flags & (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.MayHaveApplied))
                         != (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.MayHaveApplied)
-                || outcome == ProcessActionOutcome.Applied && (command is not (ProcessActionCommand.Priority or ProcessActionCommand.Affinity or ProcessActionCommand.Terminate or ProcessActionCommand.CpuSets)
+                || outcome == ProcessActionOutcome.Applied && (command is not (ProcessActionCommand.Priority or ProcessActionCommand.Affinity or ProcessActionCommand.Terminate or ProcessActionCommand.CpuSets or ProcessActionCommand.CloseHandle)
                     || (flags & (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.EffectConfirmed | ProcessActionFlags.MayHaveApplied))
                         != (ProcessActionFlags.IdentityVerified | ProcessActionFlags.AliveBefore | ProcessActionFlags.EffectConfirmed | ProcessActionFlags.MayHaveApplied))
                 || (command is ProcessActionCommand.Query or ProcessActionCommand.QueryCpuSets) && (flags & (ProcessActionFlags.MayHaveApplied | ProcessActionFlags.EffectConfirmed)) != 0
@@ -140,6 +146,25 @@ internal static partial class ProcessActionsProtocol
         return new(command, frame, UInt(header, 44), rows, DateTimeOffset.UtcNow) {
             CpuSets = frame == ProcessActionFrame.CpuSets ? CpuSetsSnapshot(payload[112..], rows[0], request) : null
         };
+    }
+
+    private static byte[] CloseHandleRequest(ProcessActionsRequest request)
+    {
+        var handle = request.Handle;
+        if (request.Targets.Length != 1 || request.Argument != 0 || request.Group != 0 || request.CpuSets is not null || handle is null
+            || handle.Value == 0 || (handle.Value & 3) != 0 || handle.Value >= 0xfffffff0 || handle.Type.Length is < 1 or > 128
+            || handle.Name is { Length: > 32767 } || handle.Type.Contains('\0') || handle.Name?.Contains('\0') == true)
+            throw new ArgumentException("Zavření handle vyžaduje jeden proces, platnou hodnotu a ověřený typ objektu.", nameof(request));
+        var basis = Request(request with { Command = ProcessActionCommand.Query, Handle = null });
+        string text = handle.Type + handle.Name;
+        var bytes = new byte[112 + 16 + text.Length * 2];
+        basis.CopyTo(bytes, 0);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(6), (ushort)ProcessActionCommand.CloseHandle);
+        Write(bytes, 8, (uint)(bytes.Length - 64)); Write(bytes, 40, handle.Value); Write(bytes, 48, handle.Name is null ? 0u : 1u);
+        Write(bytes, 112, handle.GrantedAccess); Write(bytes, 116, handle.TypeIndex);
+        Write(bytes, 120, (uint)handle.Type.Length); Write(bytes, 124, (uint)(handle.Name?.Length ?? 0));
+        MemoryMarshal.AsBytes(text.AsSpan()).CopyTo(bytes.AsSpan(128));
+        return bytes;
     }
 
     private static bool PriorityAllowed(ulong value) => value is 0x40 or 0x4000 or 0x20 or 0x8000 or 0x80;

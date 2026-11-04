@@ -3,6 +3,7 @@
 #include "actions_worker/protocol.hpp"
 #include <cstddef>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace nks::broker { class Consent; }
@@ -13,6 +14,12 @@ using Handle = std::unique_ptr<void, HandleCloser>;
 struct Target {
     ProcessIdentity key;
     std::uint64_t created100ns{}, window{};
+};
+// Handle row as the user confirmed it; the object is rechecked on the held target before closing.
+struct HandleSpec {
+    std::uint64_t value{};
+    std::uint32_t grantedAccess{}, typeIndex{}, flags{};
+    std::wstring type, name;
 };
 struct Result {
     Target target;
@@ -47,4 +54,6 @@ Context actionContext();
 bool priorityAllowed(std::uint64_t value) noexcept;
 void applyAction(const Context& context, Command command, std::uint64_t argument, std::uint32_t group, Result& result);
 void applyHeldAction(const Context& context, Command command, std::uint64_t argument, std::uint32_t group, HANDLE process, Result& result);
+void closeHandle(const Context& context, const HandleSpec& handle, Result& result);
+void closeHeldHandle(const Context& context, const HandleSpec& handle, HANDLE process, Result& result);
 }

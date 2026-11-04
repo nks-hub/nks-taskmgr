@@ -31,8 +31,8 @@ int serve(const std::wstring& name, DWORD expectedClient)
         || !pipeIo(pipe.get(), header, false, client.process.get(), ioDeadline) || !headerValid(header)
         || !validEnvelope(binding, header, client, gui, challenge)) return 2;
     std::vector<std::byte> payload(read32(header, 8)); std::vector<Result> results;
-    CpuSetsHash baseline{}; std::vector<std::uint32_t> selected;
-    if (!pipeIo(pipe.get(), payload, false, client.process.get(), ioDeadline) || !decodeTargets(header, payload, results, baseline, selected)) return 2;
+    CpuSetsHash baseline{}; std::vector<std::uint32_t> selected; HandleSpec handle;
+    if (!pipeIo(pipe.get(), payload, false, client.process.get(), ioDeadline) || !decodeTargets(header, payload, results, baseline, selected, &handle)) return 2;
     const auto command = static_cast<Command>(read(header, 6, 2)); bool accepted = false;
     auto send = [&](std::span<const std::byte> bytes) { return pipeWrite(pipe.get(), bytes, client.process.get(), ioDeadline); };
     try {
@@ -42,7 +42,7 @@ int serve(const std::wstring& name, DWORD expectedClient)
             ioDeadline = GetTickCount64() + 1000;
             send(response(header, FrameKind::rejected, 0, refused)); return 2;
         }
-        if ((!replacing && !consent.prepare(command, results)) ||!consent.confirm(command, read64(header, 40), read32(header, 48), selected)) {
+        if ((!replacing && !consent.prepare(command, results)) ||!consent.confirm(command, read64(header, 40), read32(header, 48), selected, &handle)) {
             ioDeadline = GetTickCount64() + 1000;
             send(response(header, FrameKind::rejected, 0, consentDeclined)); return 2;
         }
@@ -85,7 +85,8 @@ int serve(const std::wstring& name, DWORD expectedClient)
             if (GetTickCount64() >= ioDeadline) {
                 results[i].outcome = Outcome::refused; results[i].reason = Reason::nativeUnavailable; results[i].error = ERROR_TIMEOUT; continue;
             }
-            applyHeldAction(consent.context(), command, read64(header, 40), read32(header, 48), consent.target(i), results[i]);
+            if (command == Command::closeHandle) closeHeldHandle(consent.context(), handle, consent.target(i), results[i]);
+            else applyHeldAction(consent.context(), command, read64(header, 40), read32(header, 48), consent.target(i), results[i]);
         }
         std::vector<std::byte> bytes(results.size() * resultBytes);
         for (std::size_t i = 0; i < results.size(); ++i) rowBytes(results[i], std::span(bytes).subspan(i * resultBytes, resultBytes));

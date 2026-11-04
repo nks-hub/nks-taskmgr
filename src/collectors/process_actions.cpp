@@ -1,6 +1,7 @@
 #include <phnt_windows.h>
 #include <phnt.h>
 #include "process_actions.hpp"
+#include "process_details.hpp"
 #include <array>
 #include <limits>
 #include <algorithm>
@@ -124,7 +125,7 @@ void lifeAfter(HANDLE process, Command command, Result& result)
         result.flags |= exitedAfter;
         if (command == Command::terminate && result.outcome == Outcome::terminationRequested) {
             result.outcome = Outcome::applied; result.flags |= effectConfirmed;
-        } else if (command != Command::closeWindows) {
+        } else if (command != Command::closeWindows && command != Command::closeHandle) {
             result.outcome = Outcome::alreadyExited; result.flags &= ~static_cast<std::uint32_t>(effectConfirmed);
         }
     } else {
@@ -212,21 +213,105 @@ Context actionContext()
     context.parentKey = parent.identity; context.ready = true; return context;
 }
 
+namespace {
+bool targetAllowed(const Context& context, Result& result)
+{
+    const auto pid = result.target.key.pid;
+    if (!pid || pid == 4) { refuse(result, Reason::systemTarget); return false; }
+    if (pid == context.ownPid || pid == context.parentPid
+        || std::find(context.protectedPids.begin(), context.protectedPids.end(), pid) != context.protectedPids.end()) { refuse(result, Reason::ownOrParent); return false; }
+    if (!parentAlive(context)) { refuse(result, context.ready ? Reason::parentUnavailable : context.denial); return false; }
+    return true;
+}
+
+bool admitted(const Context& context, HANDLE process, Result& result)
+{
+    if (!targetAllowed(context, result)) return false;
+    if (!process) { refuse(result, Reason::identityUnverifiable, ERROR_INVALID_HANDLE); return false; }
+    if (!verify(process, result, true) || protectedTarget(process, result)) return false;
+    std::vector<std::byte> user; DWORD session = 0;
+    if (!tokenIdentity(process, user, session)) { refuse(result, Reason::protectionUnverifiable, lastError()); return false; }
+    if (!session || systemUser(user)) { refuse(result, Reason::systemTarget); return false; }
+    if (session != context.session || (!context.brokerConsented()
+        && !EqualSid(user.data(), const_cast<std::byte*>(context.user.data())))) { refuse(result, Reason::ownerMismatch); return false; }
+    return true;
+}
+
+HANDLE handleValue(const HandleSpec& handle) { return reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(handle.value)); }
+
+// Rereads the confirmed row from the target's own table and pins the object it names now.
+bool matchHandle(HANDLE process, const HandleSpec& handle, Result& result, Handle& pinned)
+{
+    ProcessDetailsResult table;
+    readProcessHandles(process, table);
+    if (table.state != details::ResultState::ok) {
+        const bool denied = table.state == details::ResultState::accessDenied;
+        refuse(result, denied ? Reason::accessDenied : Reason::handleUnverifiable,
+            table.win32Error ? table.win32Error : denied ? ERROR_ACCESS_DENIED : ERROR_INVALID_DATA);
+        result.ntStatus = table.ntStatus; return false;
+    }
+    const auto entry = std::find_if(table.handles.begin(), table.handles.end(), [&](const auto& row) { return row.value == handle.value; });
+    if (entry == table.handles.end()) { refuse(result, Reason::handleMissing, ERROR_INVALID_HANDLE); return false; }
+    if (entry->grantedAccess != handle.grantedAccess || entry->typeIndex != handle.typeIndex) { refuse(result, Reason::handleChanged, ERROR_RETRY); return false; }
+    if (entry->attributes & OBJ_PROTECT_CLOSE) { refuse(result, Reason::handleProtected); return false; }
+    HANDLE raw = nullptr;
+    if (!DuplicateHandle(process, handleValue(handle), GetCurrentProcess(), &raw, 0, FALSE, 0)) {
+        const auto error = lastError();
+        refuse(result, error == ERROR_ACCESS_DENIED ? Reason::accessDenied : error == ERROR_INVALID_HANDLE ? Reason::handleMissing : Reason::handleUnverifiable, error);
+        return false;
+    }
+    pinned.reset(raw);
+    std::wstring text;
+    for (const bool name : {false, true}) {
+        if (name && !(handle.flags & verifyHandleName)) break;
+        const auto status = queryObjectText(raw, name, text);
+        if (!NT_SUCCESS(status)) { refuse(result, Reason::handleUnverifiable, RtlNtStatusToDosError(status)); result.ntStatus = status; return false; }
+        if (text != (name ? handle.name : handle.type)) { refuse(result, Reason::handleChanged, ERROR_RETRY); return false; }
+    }
+    return true;
+}
+}
+
+void closeHeldHandle(const Context& context, const HandleSpec& handle, HANDLE process, Result& result)
+{
+    if (!admitted(context, process, result)) return;
+    Handle pinned;
+    if (!matchHandle(process, handle, result, pinned)) return;
+    if (!parentAlive(context)) { refuse(result, Reason::parentUnavailable); return; }
+    if (!verify(process, result, false) || protectedTarget(process, result)) return;
+    result.flags |= mayHaveApplied;
+    HANDLE raw = nullptr;
+    // DUPLICATE_CLOSE_SOURCE closes the value even if the copy fails; the copy proves which object was closed.
+    if (DuplicateHandle(process, handleValue(handle), GetCurrentProcess(), &raw, 0, FALSE, DUPLICATE_CLOSE_SOURCE)) {
+        Handle closed(raw);
+        if (NtCompareObjects(pinned.get(), closed.get()) == STATUS_SUCCESS) { result.outcome = Outcome::applied; result.flags |= effectConfirmed; }
+        else { result.outcome = Outcome::unverified; result.reason = Reason::handleChanged; result.error = ERROR_RETRY; }
+    } else if ((result.error = lastError()) == ERROR_INVALID_HANDLE) {
+        refuse(result, Reason::handleMissing, ERROR_INVALID_HANDLE); result.flags &= ~static_cast<std::uint32_t>(mayHaveApplied);
+    } else { result.outcome = Outcome::unverified; result.reason = Reason::handleUnverifiable; }
+    lifeAfter(process, Command::closeHandle, result);
+}
+
+void closeHandle(const Context& context, const HandleSpec& handle, Result& result)
+{
+    if (!targetAllowed(context, result)) return;
+    const auto pid = result.target.key.pid;
+    Handle process(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_DUP_HANDLE | SYNCHRONIZE, FALSE, pid));
+    if (!process) {
+        const auto error = lastError();
+        // A denied open of a PPL or critical target is reported as protection, not as a plain access failure.
+        Handle limited(error == ERROR_ACCESS_DENIED ? OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid) : nullptr);
+        if (!limited || !protectedTarget(limited.get(), result))
+            refuse(result, error == ERROR_ACCESS_DENIED ? Reason::accessDenied : Reason::identityUnverifiable, error);
+        return;
+    }
+    closeHeldHandle(context, handle, process.get(), result);
+}
+
 void applyHeldAction(const Context& context, Command command, std::uint64_t argument, std::uint32_t group, HANDLE process,
     Result& result)
 {
-    const auto pid = result.target.key.pid;
-    if (!pid || pid == 4) { refuse(result, Reason::systemTarget); return; }
-    if (pid == context.ownPid || pid == context.parentPid
-        || std::find(context.protectedPids.begin(), context.protectedPids.end(), pid) != context.protectedPids.end()) { refuse(result, Reason::ownOrParent); return; }
-    if (!parentAlive(context)) { refuse(result, context.ready ? Reason::parentUnavailable : context.denial); return; }
-    if (!process) { refuse(result, Reason::identityUnverifiable, ERROR_INVALID_HANDLE); return; }
-    if (!verify(process, result, true) || protectedTarget(process, result)) return;
-    std::vector<std::byte> user; DWORD session = 0;
-    if (!tokenIdentity(process, user, session)) { refuse(result, Reason::protectionUnverifiable, lastError()); return; }
-    if (!session || systemUser(user)) { refuse(result, Reason::systemTarget); return; }
-    if (session != context.session || (!context.brokerConsented()
-        && !EqualSid(user.data(), const_cast<std::byte*>(context.user.data())))) { refuse(result, Reason::ownerMismatch); return; }
+    if (!admitted(context, process, result)) return;
     metadata(process, result);
     if (command == Command::query) { result.outcome = Outcome::inspected; lifeAfter(process, command, result); return; }
     if (command == Command::affinity && (!(result.flags & affinityAvailable) || result.group != group)) {
@@ -268,10 +353,8 @@ void applyHeldAction(const Context& context, Command command, std::uint64_t argu
 
 void applyAction(const Context& context, Command command, std::uint64_t argument, std::uint32_t group, Result& result)
 {
+    if (!targetAllowed(context, result)) return;
     const auto pid = result.target.key.pid;
-    if (!pid || pid == 4) { refuse(result, Reason::systemTarget); return; }
-    if (pid == context.ownPid || pid == context.parentPid) { refuse(result, Reason::ownOrParent); return; }
-    if (!parentAlive(context)) { refuse(result, context.ready ? Reason::parentUnavailable : context.denial); return; }
     DWORD access = PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE;
     if (command == Command::terminate) access |= PROCESS_TERMINATE;
     if (command == Command::suspend || command == Command::resume) access |= PROCESS_SUSPEND_RESUME;

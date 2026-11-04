@@ -29,7 +29,8 @@ public sealed partial class MainWindow
             try {
                 if (processDetailsWindow is { } previous && previous.Key != row.Key) { processDetailsWindow = null; previous.Close(); }
                 if (processDetailsWindow is null) {
-                    var window = new ProcessDetailsView(processDetailsClient, row.Key, row.Name, () => model.IsCurrent(row));
+                    var window = new ProcessDetailsView(processDetailsClient, row.Key, row.Name, () => model.IsCurrent(row),
+                        row.Created100ns, ExecuteActionRequestAsync);
                     processDetailsWindow = window;
                     window.Closed += (_, _) => { if (ReferenceEquals(processDetailsWindow, window)) processDetailsWindow = null; };
                 }
@@ -77,9 +78,11 @@ internal sealed partial class ProcessDetailsView : Window
     private bool activated, closed, targetChanged;
     internal ProcessKey Key { get; }
 
-    internal ProcessDetailsView(ProcessDetailsClient client, ProcessKey key, string name, Func<bool> isCurrent)
+    internal ProcessDetailsView(ProcessDetailsClient client, ProcessKey key, string name, Func<bool> isCurrent,
+        ulong created100ns = 0, Func<ProcessActionsRequest, bool, CancellationToken, Task<ProcessActionsBatch>>? executeAction = null)
     {
         this.client = client; Key = key; this.isCurrent = isCurrent;
+        this.created100ns = created100ns; this.executeAction = executeAction; processName = Flat(name);
         Title = "Podrobnosti procesu · NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.Resize(new SizeInt32(1100, 780));
         Appearance.Attach(this, layout);
