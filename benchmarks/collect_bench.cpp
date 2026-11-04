@@ -6,11 +6,15 @@
 #include <array>
 #include <iomanip>
 #include <iostream>
+#include <string_view>
 
-int main()
+int main(int argc, char** argv)
 {
     try {
-        nks::ProcessCollector collector;
+        // --sequence matches the collector worker, which adds two identity queries where Windows supports them.
+        const bool sequence = argc > 1 && std::string_view(argv[1]) == "--sequence";
+        nks::ProcessCollector collector(sequence ? nks::ProcessIdentityPreference::sequenceNumberWhenSupported
+                                                 : nks::ProcessIdentityPreference::creationTime);
         nks::ProcessSampler sampler;
         std::array<std::vector<double>, 5> timings;
         for (auto& stage : timings) stage.reserve(200);
@@ -40,6 +44,7 @@ int main()
         const auto median = (total[total.size() / 2 - 1] + total[total.size() / 2]) / 2;
         std::cout << std::fixed << std::setprecision(3)
             << "{\"scenario\":\"native_collection_and_sampling\",\"samples\":" << total.size()
+            << ",\"identity\":\"" << (sequence ? "sequenceNumberWhenSupported" : "creationTime") << '"'
             << ",\"processes\":" << processCount
             << ",\"medianMs\":" << median
             << ",\"p95Ms\":" << total[(total.size() * 95 + 99) / 100 - 1]
