@@ -120,6 +120,13 @@ public sealed partial class MainWindow
             if (resource.Kind == ResourceKind.Network) {
                 Fact("Příjem", resource.Stale ? "Zastaralé" : Display.Metric(resource.Primary, " Mbit/s", 1_000_000));
                 Fact("Odesílání", resource.Stale ? "Zastaralé" : Display.Metric(resource.Secondary, " Mbit/s", 1_000_000));
+                NetworkTotals? since = model.NetworkTransfers.TryGetValue(resource.Id, out var own) ? own : null;
+                Fact("Přijato od spuštění", NetworkTotal(since, true, resource.Stale));
+                Fact("Odesláno od spuštění", NetworkTotal(since, false, resource.Stale));
+                Fact("Počítáno od", since is { State: SampleState.Valid, StartedAtUnixNs: > 0 } start
+                    ? DateTimeOffset.FromUnixTimeMilliseconds(start.StartedAtUnixNs / 1_000_000).LocalDateTime.ToString("d. M. yyyy H:mm:ss") : "nedostupné");
+                Fact("Fyzické adaptéry od spuštění", resource.Stale ? "Zastaralé" : model.PhysicalNetworkTotals() is { State: SampleState.Valid } physical
+                    ? "↓ " + Display.Bytes(physical.ReceivedBytes) + " · ↑ " + Display.Bytes(physical.SentBytes) : "nedostupné");
             } else if (resource.Kind == ResourceKind.Disk) {
                 Fact("Čtení", resource.Stale ? "Zastaralé" : Display.Metric(resource.Secondary, " MiB/s", 1048576)); Fact("Zápis", resource.Stale ? "Zastaralé" : Display.Metric(resource.Tertiary, " MiB/s", 1048576));
                 RefreshDiskFacts(resource, Fact);
@@ -140,6 +147,9 @@ public sealed partial class MainWindow
         ArrangePerformanceFacts();
         RefreshConsumers(cpu, memory, color);
     }
+
+    private static string NetworkTotal(NetworkTotals? value, bool received, bool stale) => stale ? "Zastaralé"
+        : value is { State: SampleState.Valid } total ? Display.Bytes(received ? total.ReceivedBytes : total.SentBytes) : "nedostupné";
 
     private void RefreshProcessors(long now)
     {

@@ -92,13 +92,7 @@ internal sealed partial class UpdateWindow
         return count;
     }
 
-    private static string CleanupBytes(ulong? value) => value switch {
-        null => "velikost nezjištěná",
-        >= 1073741824 => Display.Number(value.Value / 1073741824d, " GiB", 2),
-        >= 1048576 => Display.Number(value.Value / 1048576d, " MiB", 1),
-        >= 1024 => Display.Number(value.Value / 1024d, " KiB", 1),
-        _ => value.Value.ToString("N0", CultureInfo.GetCultureInfo("cs-CZ")) + " B"
-    };
+    private static string CleanupBytes(ulong? value) => value is null ? "velikost nezjištěná" : Display.Bytes(value.Value);
 
     private static string CleanupItemLabel(UpdateCleanupItem item)
     {

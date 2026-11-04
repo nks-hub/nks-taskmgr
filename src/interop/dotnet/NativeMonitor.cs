@@ -177,6 +177,19 @@ public struct HardwareFactInfo { public String16 ResourceId, Name, Value; }
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
 public unsafe struct HardwareData { public HardwareFactInfo* Facts; public uint FactCount, Reserved; }
 
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct NetworkTransferInfo
+{
+    public String16 ResourceId;
+    public ulong ReceivedBytes, SentBytes;
+    public long StartedAtNs, StartedAtUnixNs;
+    public SampleState State;
+    public uint Reserved;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public unsafe struct NetworkTransferData { public NetworkTransferInfo* Adapters; public uint AdapterCount, Reserved; }
+
 public sealed class NativeMonitorException(NativeResult result) : Exception($"Native monitor returned {result}.")
 {
     public NativeResult Result { get; } = result;
@@ -262,6 +275,17 @@ public sealed partial class NativeFrame : SafeHandleZeroOrMinusOneIsInvalid
         });
     }
 
+    public unsafe void ReadNetworkTransfers(Action<NetworkTransferData> visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+        Use(pointer => {
+            var status = NativeMethods.GetNetworkTransferData(pointer, (uint)sizeof(NetworkTransferData), out var data);
+            if (status == NativeResult.NoData) return;
+            NativeMonitor.Check(status);
+            visitor(data);
+        });
+    }
+
     public unsafe BootIdentityInfo? ReadBootIdentity()
     {
         BootIdentityInfo? identity = null;
@@ -321,6 +345,8 @@ internal static partial class NativeMethods
     internal static partial NativeResult GetGpuData(nint frame, uint dataSize, out GpuData data);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_hardware_data")]
     internal static partial NativeResult GetHardwareData(nint frame, uint dataSize, out HardwareData data);
+    [LibraryImport(Library, EntryPoint = "nks_frame_get_network_transfer_data")]
+    internal static partial NativeResult GetNetworkTransferData(nint frame, uint dataSize, out NetworkTransferData data);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_boot_data")]
     internal static partial NativeResult GetBootData(nint frame, uint dataSize, out BootIdentityInfo data);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_process_creation_data")]

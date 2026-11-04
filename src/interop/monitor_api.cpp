@@ -19,6 +19,7 @@ struct NksFrame {
     std::vector<NksGpu> gpus;
     std::vector<std::vector<NksGpuEngine>> gpuEngines;
     std::vector<NksHardwareFact> hardware;
+    std::vector<NksNetworkTransfer> networkTransfers;
     NksProcessMeasurements processMeasurements{};
     std::vector<NksResourceMeasurements> resourceMeasurements;
     std::vector<NksProcessChange> processChanges;
@@ -62,6 +63,7 @@ static_assert(sizeof(NksMemory) == 96 && sizeof(NksProcessData) == 208);
 static_assert(sizeof(NksResource) == 128 && sizeof(NksResourceData) == 32 && sizeof(NksFrameView) == 288);
 static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGpuData) == 16);
 static_assert(sizeof(NksHardwareFact) == 48 && sizeof(NksHardwareData) == 16);
+static_assert(sizeof(NksNetworkTransfer) == 56 && sizeof(NksNetworkTransferData) == 16);
 static_assert(sizeof(NksProcessCreation) == 32 && sizeof(NksProcessCreationData) == 16 && sizeof(NksProcessIdentityData) == 40);
 static_assert(sizeof(NksMeasurementMetadata) == 32 && offsetof(NksMeasurementMetadata, observed_at_ns) == 8);
 static_assert(sizeof(NksProcessChange) == 24 && sizeof(NksProcessChangesData) == 40 && sizeof(NksProcessLossData) == 8);
@@ -136,6 +138,11 @@ void NksFrame::build()
                 auto& engines = gpuEngines.emplace_back();
                 for (const auto& engine : item.engines) engines.push_back({string(engine.id), string(engine.name), metric(engine.utilization)});
                 gpus.push_back({string(item.id), item.sharedCapacity, metric(item.temperature), engines.data(), count(engines.size()), 0});
+            }
+            if (item.kind == nks::ResourceKind::network) {
+                const auto& t = item.transfer;
+                networkTransfers.push_back({string(item.id), t.receivedBytes, t.sentBytes, t.startedAtNs, t.startedAtUnixNs,
+                    static_cast<uint32_t>(t.state), 0});
             }
         }
         view.resources = {nanos(source.measuredAt), source.diskCountersAvailable ? 1u : 0u, source.gpuCountersAvailable ? 1u : 0u,
@@ -278,6 +285,13 @@ NksResult __cdecl nks_frame_get_hardware_data(const NksFrame* frame, uint32_t si
     if (size != sizeof(NksHardwareData)) return NKS_ABI_MISMATCH;
     *result = {frame->hardware.data(), count(frame->hardware.size()), 0};
     return NKS_OK;
+}
+NksResult __cdecl nks_frame_get_network_transfer_data(const NksFrame* frame, uint32_t size, NksNetworkTransferData* result) noexcept
+{
+    if (!frame || !result) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksNetworkTransferData)) return NKS_ABI_MISMATCH;
+    *result = {frame->networkTransfers.data(), count(frame->networkTransfers.size()), 0};
+    return frame->resourceSnapshot ? NKS_OK : NKS_NO_DATA;
 }
 NksResult __cdecl nks_frame_get_boot_data(const NksFrame* frame, uint32_t size, NksBootData* result) noexcept
 {

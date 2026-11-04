@@ -225,6 +225,8 @@ Controlled disk observations exercise the production event store, C API serializ
 
 Process identity uses the full 128-bit Windows boot identifier with the PID and generation. `nks_frame_get_boot_data` returns both identifier halves and their availability state. The ABI v1 `boot_time` field remains wall-clock metadata and is not an identity key. Denied or unsupported boot queries report their state without stopping process collection.
 
+`nks_frame_get_network_transfer_data` returns bytes received and sent per network adapter since the monitor first observed it, with the start time. Totals add only non-negative deltas of the 64-bit interface octet counters; a counter decrease, an unavailable sample or a missing adapter restarts the baseline without adding traffic.
+
 Run the collection benchmark:
 
 ```powershell

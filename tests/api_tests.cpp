@@ -111,6 +111,21 @@ void verify()
         require(gpu.resource_id.length > 0 && gpu.shared_capacity >= 0, "GPU capacity or identity was lost");
         for (uint32_t j = 0; j < gpu.engine_count; ++j) require(gpu.engines[j].id.length > 0 && gpu.engines[j].name.length > 0, "GPU engine string was invalidated");
     }
+    NksNetworkTransferData transfers{};
+    require(nks_frame_get_network_transfer_data(nullptr, sizeof(transfers), &transfers) == NKS_INVALID_ARGUMENT, "Null network transfer frame was accepted");
+    require(nks_frame_get_network_transfer_data(resourceFrame.get(), sizeof(transfers) - 1, &transfers) == NKS_ABI_MISMATCH, "Wrong network transfer layout was accepted");
+    require(nks_frame_get_network_transfer_data(resourceFrame.get(), sizeof(transfers), &transfers) == NKS_OK, "Network transfers depended on the destroyed monitor");
+    uint32_t networks = 0;
+    for (uint32_t i = 0; i < resources.resources.resource_count; ++i) networks += resources.resources.resources[i].kind == NKS_RESOURCE_NETWORK;
+    require(transfers.adapter_count == networks, "Network transfer entries differ from network resources");
+    for (uint32_t i = 0; i < transfers.adapter_count; ++i) {
+        const auto& adapter = transfers.adapters[i];
+        require(adapter.resource_id.length > 0 && adapter.started_at_ns > 0 && adapter.started_at_ns <= resources.resources.measured_at_ns
+            && adapter.started_at_unix_ns > 0, "Network transfer identity or start time was lost");
+        require(adapter.state == NKS_SAMPLE_VALID || adapter.state == NKS_SAMPLE_UNAVAILABLE, "Network transfer state is outside its contract");
+    }
+    require((processes.flags & NKS_RESOURCE_DATA) || nks_frame_get_network_transfer_data(processFrame.get(), sizeof(transfers), &transfers) == NKS_NO_DATA,
+        "A process-only frame reported network transfers");
     require(own->generation == generation && std::wstring(own->name.data, own->name.length) == name, "A frame depended on a destroyed monitor");
     NksFrameView retained{};
     require(nks_frame_get_view(processFrame.get(), sizeof(retained), &retained) == NKS_OK && retained.processes.process_count == p.process_count, "A retained frame was invalidated");

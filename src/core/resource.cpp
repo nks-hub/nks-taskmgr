@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cwctype>
+#include <set>
 
 namespace nks {
 
@@ -10,6 +11,36 @@ Metric<double> networkRate(std::uint64_t current, std::uint64_t previous, double
     if (seconds <= 0 || seconds > 30 || current < previous)
         return {0, SampleState::gap, MetricSource::networkInterface};
     return {static_cast<double>(current - previous) * 8 / seconds, SampleState::valid, MetricSource::networkInterface};
+}
+
+void NetworkTransferTotals::apply(ResourceSnapshot& snapshot, std::int64_t wallTimeUnixNs)
+{
+    const auto observedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(snapshot.measuredAt.time_since_epoch()).count();
+    std::set<std::wstring> seen;
+    for (auto& device : snapshot.devices) {
+        if (device.kind != ResourceKind::network) continue;
+        auto [entry, added] = adapters.try_emplace(device.id);
+        auto& adapter = entry->second;
+        if (added) adapter.totals = {0, 0, observedNs, wallTimeUnixNs, SampleState::valid};
+        seen.insert(device.id);
+        if (!device.octetsValid) {
+            adapter.continuous = false;
+            device.transfer = adapter.totals;
+            device.transfer.state = SampleState::unavailable;
+            continue;
+        }
+        if (adapter.continuous) {
+            if (device.receivedOctets >= adapter.received) adapter.totals.receivedBytes += device.receivedOctets - adapter.received;
+            if (device.sentOctets >= adapter.sent) adapter.totals.sentBytes += device.sentOctets - adapter.sent;
+        }
+        adapter.received = device.receivedOctets;
+        adapter.sent = device.sentOctets;
+        adapter.continuous = true;
+        adapter.totals.state = SampleState::valid;
+        device.transfer = adapter.totals;
+    }
+    for (auto& [id, adapter] : adapters)
+        if (!seen.contains(id)) adapter.continuous = false;
 }
 
 std::vector<GpuEngine> gpuEngines(std::span<const NamedCounter> counters, const std::wstring& luid)

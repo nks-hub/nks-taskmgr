@@ -39,11 +39,14 @@ void Monitor::start()
             SetThreadDescription(GetCurrentThread(), L"NKS resource collector");
             try {
                 CollectorClient collector(collector::Kind::resources);
+                NetworkTransferTotals transfers;
                 while (!stop.stop_requested()) {
                     if (!paused()) {
                         try {
                             auto sample = collector.resources(stop, cpuSensorsState.load());
                             if (stop.stop_requested()) break;
+                            transfers.apply(sample, std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                std::chrono::system_clock::now().time_since_epoch()).count());
                             try { history.append(sample); } catch (const std::exception&) { history.failed(); }
                             resourceSlot.publish(std::move(sample));
                         } catch (const std::exception& error) {

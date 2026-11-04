@@ -4,6 +4,7 @@ using NksTaskMgr.Native;
 namespace NksTaskMgr.WinUI;
 
 public enum ProcessMode { All, Active, Tree, Applications }
+internal readonly record struct NetworkTotals(ulong ReceivedBytes, ulong SentBytes, long StartedAtUnixNs, SampleState State);
 
 public sealed partial class MonitorModel : IDisposable
 {
@@ -32,6 +33,7 @@ public sealed partial class MonitorModel : IDisposable
     public HistorySeries PageFile { get; private set; } = new();
     private readonly HardwareFactCache hardwareFacts = new();
     public Dictionary<string, Dictionary<string, string>> Hardware => hardwareFacts.Values;
+    internal Dictionary<string, NetworkTotals> NetworkTransfers { get; } = new(StringComparer.Ordinal);
     public MemoryInfo Memory { get; private set; }
     public BootIdentityInfo BootIdentity { get; private set; } = new() { State = SampleState.Unavailable };
     public string CpuModel { get; private set; } = string.Empty;
@@ -107,7 +109,10 @@ public sealed partial class MonitorModel : IDisposable
                 if ((view.Flags & FrameFlags.ProcessData) != 0)
                     BootIdentity = frame.ReadBootIdentity() ?? new BootIdentityInfo { State = SampleState.Unavailable };
                 ApplyFrame(frame, view);
-                if ((view.Flags & FrameFlags.ResourceData) != 0) frame.ReadGpu(data => ApplyGpu(data, false));
+                if ((view.Flags & FrameFlags.ResourceData) != 0) {
+                    frame.ReadGpu(data => ApplyGpu(data, false));
+                    frame.ReadNetworkTransfers(ApplyNetworkTransfers);
+                }
             });
             frame.ReadHardware(data => ApplyHardware(data, hardwareScope));
             changed = true;
@@ -234,6 +239,27 @@ public sealed partial class MonitorModel : IDisposable
             var gpu = data.Gpus[i];
             if (resources.TryGetValue(gpu.ResourceId.Copy(), out var row)) row.Gpu?.Apply(gpu, row, ResourceTime, recordHistory);
         }
+    }
+
+    private unsafe void ApplyNetworkTransfers(NetworkTransferData data)
+    {
+        NetworkTransfers.Clear();
+        for (uint i = 0; i < data.AdapterCount; ++i) {
+            var item = data.Adapters[i];
+            NetworkTransfers[item.ResourceId.Copy()] = new(item.ReceivedBytes, item.SentBytes, item.StartedAtUnixNs, item.State);
+        }
+    }
+
+    // Only physical adapters: VPN and virtual interfaces carry the same bytes a second time.
+    internal NetworkTotals? PhysicalNetworkTotals()
+    {
+        NetworkTotals? sum = null;
+        foreach (var row in resources.Values) {
+            if (row.Kind != ResourceKind.Network || !row.HardwareFacts.TryGetValue("Druh rozhraní", out var type) || type != "Fyzické") continue;
+            if (!NetworkTransfers.TryGetValue(row.Id, out var item) || item.State != SampleState.Valid) return new(0, 0, 0, SampleState.Unavailable);
+            sum = sum is { } s ? new(s.ReceivedBytes + item.ReceivedBytes, s.SentBytes + item.SentBytes, Math.Min(s.StartedAtUnixNs, item.StartedAtUnixNs), SampleState.Valid) : item;
+        }
+        return sum;
     }
 
     private unsafe void ApplyHardware(HardwareData data, FrameFlags scope)

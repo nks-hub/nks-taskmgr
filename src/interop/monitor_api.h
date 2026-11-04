@@ -149,6 +149,20 @@ typedef struct NksHardwareData {
     uint32_t fact_count, reserved;
 } NksHardwareData;
 
+// Bytes since the monitor first observed the adapter, from cumulative interface counters.
+// started_at_ns uses the frame's monotonic clock; started_at_unix_ns uses the Unix epoch.
+typedef struct NksNetworkTransfer {
+    NksString16 resource_id;
+    uint64_t received_bytes, sent_bytes;
+    int64_t started_at_ns, started_at_unix_ns;
+    uint32_t state, reserved;
+} NksNetworkTransfer;
+
+typedef struct NksNetworkTransferData {
+    const NksNetworkTransfer* adapters;
+    uint32_t adapter_count, reserved;
+} NksNetworkTransferData;
+
 typedef struct NksBootData {
     uint64_t low, high;
     uint32_t state, reserved;
@@ -184,6 +198,8 @@ NKS_MONITOR_API NksResult __cdecl nks_monitor_read(NksMonitor* monitor, NksFrame
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_view(const NksFrame* frame, uint32_t view_size, NksFrameView* result) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_gpu_data(const NksFrame* frame, uint32_t data_size, NksGpuData* result) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_hardware_data(const NksFrame* frame, uint32_t data_size, NksHardwareData* result) NKS_NOEXCEPT;
+// A state other than VALID means this frame has no counter for the adapter; the byte fields then keep the last known totals.
+NKS_MONITOR_API NksResult __cdecl nks_frame_get_network_transfer_data(const NksFrame* frame, uint32_t data_size, NksNetworkTransferData* result) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_boot_data(const NksFrame* frame, uint32_t data_size, NksBootData* result) NKS_NOEXCEPT;
 // Creation times are independent of generation_kind. A missing time has state UNAVAILABLE and value zero.
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_process_creation_data(const NksFrame* frame, uint32_t data_size, NksProcessCreationData* result) NKS_NOEXCEPT;

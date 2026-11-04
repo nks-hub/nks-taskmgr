@@ -16,7 +16,7 @@ namespace nks::collector {
 
 constexpr std::size_t maximumPayload = 64 * 1024 * 1024;
 constexpr std::size_t headerBytes = 32;
-constexpr std::uint32_t protocolVersion = 2;
+constexpr std::uint32_t protocolVersion = 3;
 enum class Kind : std::uint32_t { processes = 1, resources = 2, services = 3, serviceDetail = 4 };
 struct Header {
     Kind kind{};

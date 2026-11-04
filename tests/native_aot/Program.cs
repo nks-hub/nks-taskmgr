@@ -16,6 +16,7 @@ internal static class Program
         Require(sizeof(FrameView) == 288 && sizeof(ProcessInfo) == 152 && sizeof(ResourceInfo) == 128, "Managed ABI layout mismatch.");
         Require(sizeof(GpuEngineInfo) == 48 && sizeof(GpuInfo) == 56 && sizeof(GpuData) == 16, "Managed GPU layout mismatch.");
         Require(sizeof(BootIdentityInfo) == 24, "Managed boot identity layout mismatch.");
+        Require(sizeof(NetworkTransferInfo) == 56 && sizeof(NetworkTransferData) == 16, "Managed network transfer layout mismatch.");
         using var monitor = NativeMonitor.Open(250, paused: true);
         Thread.Sleep(300);
         using var pausedFrame = monitor.Read();
@@ -68,6 +69,11 @@ internal static class Program
                         var gpu = data.Gpus[i]; Require(gpu.ResourceId.Copy().Length > 0 && gpu.SharedCapacity >= 0, "AOT GPU identity or capacity was lost.");
                         for (uint j = 0; j < gpu.EngineCount; ++j) Require(gpu.Engines[j].Id.Copy().Length > 0 && gpu.Engines[j].Name.Copy().Length > 0, "AOT GPU engine strings were lost.");
                     }
+                });
+                frame?.ReadNetworkTransfers(data => {
+                    Require(data.AdapterCount == networks, "AOT network transfer entries differ from network resources.");
+                    for (uint i = 0; i < data.AdapterCount; ++i)
+                        Require(data.Adapters[i].ResourceId.Copy().Length > 0 && data.Adapters[i].StartedAtNs > 0, "AOT network transfer identity or start was lost.");
                 });
                 if (retained is not null && resourceStream) break;
                 Thread.Sleep(20);

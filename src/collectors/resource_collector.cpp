@@ -187,6 +187,7 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
             setMeasurementInterval(item.measurements.primary, 0, false);
             setMeasurementInterval(item.measurements.secondary, 0, false);
             item.status = L"Měření nedostupné";
+            item.octetsValid = false;
             snapshot.devices.push_back(std::move(item));
         }
         previousNetworks.clear();
@@ -250,6 +251,9 @@ void ResourceCollector::networks(ResourceSnapshot& snapshot)
                     {L"Stav rozhraní Windows", std::to_wstring(static_cast<unsigned>(row.OperStatus))},
                     {L"Typ rozhraní Windows", std::to_wstring(row.Type)}, {L"Typ tunelu Windows", std::to_wstring(static_cast<unsigned>(row.TunnelType))}};
             }
+            network.receivedOctets = row.InOctets;
+            network.sentOctets = row.OutOctets;
+            network.octetsValid = true;
             network.primary = {0, connected ? SampleState::first : SampleState::unavailable, MetricSource::networkInterface};
             network.secondary = network.primary;
             const auto beforeNs = before == previousNetworks.end() ? 0 : measurementTime(before->second.measuredAt);

@@ -173,6 +173,7 @@ std::vector<std::byte> encode(const ResourceSnapshot& value)
         out.real(device.capacity); out.real(device.sharedCapacity); out.count(device.engines.size(), 256);
         for (const auto& engine : device.engines) { out.text(engine.id); out.text(engine.name); metric(out, engine.utilization); }
         metric(out, device.temperature); resourceMetadata(out, device.measurements);
+        out.number(device.receivedOctets); out.number(device.sentOctets); out.number<std::uint32_t>(device.octetsValid);
     }
     return std::move(out.bytes);
 }
@@ -183,7 +184,7 @@ ResourceSnapshot decodeResources(std::span<const std::byte> payload)
     value.upsFacts = facts(in); value.cpuSensorFacts = facts(in);
     value.measuredAt = timePoint<std::chrono::steady_clock>(in);
     value.diskCountersAvailable = in.boolean(); value.gpuCountersAvailable = in.boolean();
-    const auto count = in.count(4096, 332); value.devices.reserve(count);
+    const auto count = in.count(4096, 352); value.devices.reserve(count);
     for (std::uint32_t i = 0; i < count; ++i) {
         ResourceRecord device;
         device.facts = facts(in); device.id = in.text(); device.kind = in.enumeration<ResourceKind>(4);
@@ -192,7 +193,9 @@ ResourceSnapshot decodeResources(std::span<const std::byte> payload)
         device.capacity = in.real(); device.sharedCapacity = in.real(); const auto engines = in.count(256, 24);
         device.engines.reserve(engines);
         for (std::uint32_t j = 0; j < engines; ++j) device.engines.push_back({in.text(), in.text(), metric(in)});
-        device.temperature = metric(in); device.measurements = resourceMetadata(in); value.devices.push_back(std::move(device));
+        device.temperature = metric(in); device.measurements = resourceMetadata(in);
+        device.receivedOctets = in.number<std::uint64_t>(); device.sentOctets = in.number<std::uint64_t>(); device.octetsValid = in.boolean();
+        value.devices.push_back(std::move(device));
     }
     in.finished(); return value;
 }

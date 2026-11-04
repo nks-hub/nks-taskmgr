@@ -152,9 +152,9 @@ void arrayGuards()
 void headerPackets()
 {
     const nks::collector::Header value{nks::collector::Kind::processes, 0, 0x0102030405060708ull, 0x1234};
-    const auto expected = octets({0x4e, 0x4b, 0x43, 0x31, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+    const auto expected = octets({0x4e, 0x4b, 0x43, 0x31, 3, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
         8, 7, 6, 5, 4, 3, 2, 1, 0x34, 0x12, 0, 0, 0, 0, 0, 0});
-    require(nks::collector::encodeHeader(value) == expected, "Protocol-2 header bytes changed");
+    require(nks::collector::encodeHeader(value) == expected, "Protocol-3 header bytes changed");
     const auto read = nks::collector::decodeHeader(expected);
     require(read.kind == value.kind && read.status == value.status && read.requestId == value.requestId
         && read.payloadBytes == value.payloadBytes, "Header did not round trip");
