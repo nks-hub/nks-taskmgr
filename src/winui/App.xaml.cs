@@ -16,11 +16,28 @@ public partial class App : Application
     internal static void Trace(string stage) { if ((SmokePath ?? EventsCheckPath ?? ActionsCheckPath ?? DumpCheckPath ?? ApplicationGroupsCheckPath ?? ProcessDetailsCheckPath) is { } path) File.AppendAllText(path, stage + Environment.NewLine); }
     private Window? window;
 
+    /// <summary>
+    /// Appends an unhandled UI-thread exception to a local, size-bounded log; nothing is sent anywhere.
+    /// Without it a release build without Sentry leaves only a minidump that lacks the managed exception.
+    /// </summary>
+    private static void RecordCrash(Exception error)
+    {
+        try {
+            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NksTaskMgr");
+            Directory.CreateDirectory(folder);
+            string path = Path.Combine(folder, "crash.log");
+            var info = new FileInfo(path);
+            if (info.Exists && info.Length > 256 * 1024) File.Move(path, path + ".1", true);
+            File.AppendAllText(path, $"{DateTimeOffset.Now:O} {System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(App).Assembly)?.InformationalVersion} {error}{Environment.NewLine}{Environment.NewLine}");
+        } catch (Exception logError) when (logError is IOException or UnauthorizedAccessException) { }
+    }
+
     public App()
     {
         SentryDiagnostics.Initialize();
         UnhandledException += (_, args) => {
             Trace(args.Exception.ToString());
+            RecordCrash(args.Exception);
             if (ApplicationGroupsCheckPath is not null) {
                 ApplicationGroupsUnhandledError = true;
                 Environment.ExitCode = 1;
