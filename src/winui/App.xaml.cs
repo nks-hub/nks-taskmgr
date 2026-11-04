@@ -66,6 +66,8 @@ public partial class App : Application
 
     private void LaunchApplication()
     {
+        bool shared = !LaunchArguments.Parse(Environment.GetCommandLineArgs()).Independent;
+        if (shared && !SingleInstance.TryBecomePrimary()) Environment.Exit(0);
         if (EventsCheckPath is { } path) {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
             var events = new ProcessEventsWindow(() => (0L, default(NksTaskMgr.Native.BootIdentifier), NksTaskMgr.Native.SampleState.Unavailable));
@@ -87,6 +89,10 @@ public partial class App : Application
         var main = new MainWindow();
         window = main;
         main.Activate();
+        if (shared) {
+            SingleInstance.Listen(main.DispatcherQueue, main.ActivateExisting);
+            main.Closed += (_, _) => SingleInstance.Stop();
+        }
         if (ApplicationGroupsCheckPath is not null) main.BeginApplicationGroupChecks();
         if (ProcessDetailsCheckPath is { } processDetailsPath) main.BeginProcessDetailsChecks(processDetailsPath, () => ProcessDetailsUnhandledError);
     }

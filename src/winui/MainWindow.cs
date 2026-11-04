@@ -24,6 +24,9 @@ public sealed partial class MainWindow : Window
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool ShowWindow(nint window, int command);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetForegroundWindow(nint window);
     private readonly nint windowHandle;
     private readonly MonitorModel model = new();
     private readonly Grid root = new() { Background = Display.Brush(0x171d21) };
@@ -163,9 +166,7 @@ public sealed partial class MainWindow : Window
         AppWindow.Changed += (_, _) => Resize();
         smokePath = App.SmokePath;
         ConfigureGapDiagnostics();
-        ShowView(Environment.GetCommandLineArgs().Contains("--view=Services", StringComparer.OrdinalIgnoreCase) ? DesktopView.Services
-            : Environment.GetCommandLineArgs().Contains("--view=Applications", StringComparer.OrdinalIgnoreCase) ? DesktopView.Applications
-            : Environment.GetCommandLineArgs().Contains("--view=Processes", StringComparer.OrdinalIgnoreCase) ? DesktopView.Processes : DesktopView.Performance);
+        ShowView(LaunchArguments.Parse(Environment.GetCommandLineArgs()).View ?? DesktopView.Performance);
         App.Trace("Window initialized");
     }
 
@@ -293,6 +294,13 @@ public sealed partial class MainWindow : Window
         var workspace = BuildApplicationGroups(processTable); filters.Children.Insert(0, applicationToolbar);
         Grid.SetRow(workspace, 1); processPage.Children.Add(workspace);
         processPage.Visibility = Visibility.Collapsed; page.Children.Add(processPage);
+    }
+
+    internal void ActivateExisting()
+    {
+        if (IsIconic(windowHandle)) ShowWindow(windowHandle, 9);
+        Activate();
+        SetForegroundWindow(windowHandle);
     }
 
     private void ShowView(bool value) => ShowView(value ? DesktopView.Performance : DesktopView.Processes);
@@ -473,7 +481,7 @@ public sealed partial class MainWindow : Window
             smokeBranchValues.GetAwaiter().GetResult();
             CheckHeldProcessRefresh();
             CheckHardwareRefresh();
-            WinUiChecks.ContextMenus();
+            WinUiChecks.ContextMenus(); LaunchArguments.Check();
             WinUiChecks.ModelInvariants(model); WinUiChecks.ProcessNotifications(); smokeSnapshotExport = WinUiChecks.SnapshotExportChecks(SnapshotDocument.Capture(model)); smokeModelsChecked = true;
             smokeReadyAt = ticks;
             ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);
