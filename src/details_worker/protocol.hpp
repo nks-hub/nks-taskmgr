@@ -18,7 +18,7 @@ constexpr std::uint32_t maximumHandles = 65536;
 constexpr std::uint32_t maximumOwners = 32768;
 constexpr std::uint32_t maximumApplications = 1024;
 
-enum class Command : std::uint16_t { threads = 1, modules = 2, signature = 3, memory = 4, handles = 5, handleInfo = 6, owners = 7, applications = 8 };
+enum class Command : std::uint16_t { threads = 1, modules = 2, signature = 3, memory = 4, handles = 5, handleInfo = 6, owners = 7, applications = 8, fileSignature = 9 };
 enum class ResultState : std::uint32_t {
     ok, accessDenied, unsupported, unavailable, targetChanged, invalidRequest, limitExceeded, error
 };

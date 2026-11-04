@@ -53,6 +53,11 @@ bool validText(std::wstring_view text)
     return true;
 }
 
+bool signatureCommand(nks::details::Command command)
+{
+    return command == nks::details::Command::signature || command == nks::details::Command::fileSignature;
+}
+
 bool requestData(const nks::details::Request& header, const std::vector<std::byte>& payload, nks::ProcessDetailsRequest& request)
 {
     if (header.reserved || header.generationKind < 1 || header.generationKind > 2
@@ -61,6 +66,14 @@ bool requestData(const nks::details::Request& header, const std::vector<std::byt
     request.command = header.command;
     if (header.command == nks::details::Command::owners || header.command == nks::details::Command::applications)
         return !header.pid && !header.generation && payload.empty();
+    if (header.command == nks::details::Command::fileSignature) {
+        std::uint32_t chars{};
+        if (header.pid || header.generation || payload.size() < 4) return false;
+        std::memcpy(&chars, payload.data(), 4);
+        if (!chars || chars > nks::details::maximumStringChars || payload.size() != 4ull + chars * 2ull) return false;
+        request.modulePath.resize(chars); std::memcpy(request.modulePath.data(), payload.data() + 4, chars * sizeof(wchar_t));
+        return validText(request.modulePath);
+    }
     if (!header.generation) return false;
     if (header.command == nks::details::Command::threads || header.command == nks::details::Command::modules
         || header.command == nks::details::Command::memory || header.command == nks::details::Command::handles) return payload.empty();
@@ -102,7 +115,7 @@ void responseData(nks::details::Response& header, const nks::ProcessDetailsResul
 {
     header.state = result.state; header.win32Error = result.win32Error; header.ntStatus = result.ntStatus;
     header.architecture = result.architecture;
-    header.flags = header.command == nks::details::Command::signature ? nks::details::diskFile : 0;
+    header.flags = signatureCommand(header.command) ? nks::details::diskFile : 0;
     if (result.state != nks::details::ResultState::ok) return;
     header.flags |= result.flags;
     if (header.command == nks::details::Command::threads) {
@@ -116,7 +129,7 @@ void responseData(nks::details::Response& header, const nks::ProcessDetailsResul
             nks::details::Module row{module.base, module.imageSize, static_cast<std::uint32_t>(module.name.size()), static_cast<std::uint32_t>(module.path.size())};
             payload.append(row); payload.text(module.name); payload.text(module.path);
         }
-    } else if (header.command == nks::details::Command::signature && result.signature) {
+    } else if (signatureCommand(header.command) && result.signature) {
         const auto& signature = *result.signature;
         nks::details::Signature row{signature.state, signature.source, signature.trustCode, 0,
             static_cast<std::uint32_t>(signature.path.size()), static_cast<std::uint32_t>(signature.publisher.size())};
@@ -185,7 +198,7 @@ int serveRequest(HANDLE input, HANDLE output, bool server)
     catch (const std::invalid_argument&) { response.state = nks::details::ResultState::error; response.win32Error = ERROR_NO_UNICODE_TRANSLATION; }
     if (response.state != nks::details::ResultState::ok) {
         response.payloadBytes = response.rowCount = 0; bytes.clear();
-        response.flags = response.command == nks::details::Command::signature ? nks::details::diskFile : 0;
+        response.flags = signatureCommand(response.command) ? nks::details::diskFile : 0;
     }
     return writeAll(output, &response, sizeof(response)) && writeAll(output, bytes.data(), response.payloadBytes) ? 0 : 4;
 }

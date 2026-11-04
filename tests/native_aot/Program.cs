@@ -12,6 +12,14 @@ internal static class Program
     private static unsafe void Verify()
     {
         ServiceChecks.Verify();
+        Require(sizeof(StartupItemInfo) == 80 && sizeof(StartupView) == 16, "Managed startup layout mismatch.");
+        var startup = NativeStartup.Read();
+        Require(startup.All(item => item.Location.Length > 0 && Enum.IsDefined(item.Source) && Enum.IsDefined(item.State)), "A startup item lost its location or state.");
+        bool machineRefused = false;
+        try { NativeStartup.SetEnabled(StartupSource.MachineRun, "NksProbeMissing", false); }
+        catch (NativeMonitorException error) when (error.Result == NativeResult.InvalidArgument) { machineRefused = true; }
+        Require(machineRefused, "A machine-wide startup item crossed the unelevated write boundary.");
+        Require(NativeStartup.SetEnabled(StartupSource.UserRun, "NksProbeMissing-" + Guid.NewGuid().ToString("N"), false) == 2, "A missing Run value was approved.");
         Require(!RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled, "The probe must run as a published Native AOT executable.");
         Require(sizeof(FrameView) == 288 && sizeof(ProcessInfo) == 152 && sizeof(ResourceInfo) == 128, "Managed ABI layout mismatch.");
         Require(sizeof(GpuEngineInfo) == 48 && sizeof(GpuInfo) == 56 && sizeof(GpuData) == 16, "Managed GPU layout mismatch.");

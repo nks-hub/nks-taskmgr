@@ -1,6 +1,7 @@
 #include "interop/monitor_api.h"
 #include "interop/process_changes_api.h"
 #include "interop/services_api.h"
+#include "interop/startup_api.h"
 
 _Static_assert(sizeof(NksFrameView) == 288, "C frame layout changed");
 _Static_assert(sizeof(NksProcess) == 152, "C process layout changed");
@@ -12,6 +13,7 @@ _Static_assert(sizeof(NksSessionSum) == 16 && sizeof(NksSession) == 136 && sizeo
 _Static_assert(offsetof(NksProcess, name) == 136, "C UTF-16 name offset changed");
 _Static_assert(sizeof(NksServiceConfig) == 80 && sizeof(NksService) == 128, "C service layout changed");
 _Static_assert(sizeof(NksServiceDetail) == 168 && sizeof(NksServiceFrameView) == 248, "C service detail layout changed");
+_Static_assert(sizeof(NksStartupItem) == 80 && sizeof(NksStartupView) == 16, "C startup layout changed");
 
 NksResult nks_test_c_version(NksMonitor** result)
 {

@@ -35,6 +35,9 @@ internal sealed class ProcessDetailsClient : IDisposable
     internal Task<ProcessDetailsSnapshot> ReadApplicationsAsync(BootIdentifier boot, GenerationKind preference, CancellationToken cancellation)
         => ReadCoreAsync(ProcessDetailsCommand.Applications, new(boot, 0, preference, 0), null, null, true, cancellation);
 
+    internal Task<ProcessDetailsSnapshot> ReadFileSignatureAsync(BootIdentifier boot, string path, CancellationToken cancellation)
+        => ReadCoreAsync(ProcessDetailsCommand.FileSignature, new(boot, 0, GenerationKind.SequenceNumber, 0), new(0, 0, "", path), null, true, cancellation);
+
     private async Task<ProcessDetailsSnapshot> ReadCoreAsync(ProcessDetailsCommand command, ProcessKey key,
         ProcessModuleInfo? module, ulong? handle, bool persistent, CancellationToken cancellation)
     {

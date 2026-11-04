@@ -4,7 +4,7 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-internal enum ProcessDetailsCommand : ushort { Threads = 1, Modules = 2, Signature = 3, Memory = 4, Handles = 5, HandleInfo = 6, Owners = 7, Applications = 8 }
+internal enum ProcessDetailsCommand : ushort { Threads = 1, Modules = 2, Signature = 3, Memory = 4, Handles = 5, HandleInfo = 6, Owners = 7, Applications = 8, FileSignature = 9 }
 internal enum ProcessDetailsState : uint { Ok, AccessDenied, Unsupported, Unavailable, TargetChanged, InvalidRequest, LimitExceeded, Error }
 internal enum ProcessArchitecture : uint { Unknown, X86, X64, Arm64 }
 internal enum ModuleSignatureState : uint { Valid, Unsigned, Untrusted, Unavailable }
@@ -46,15 +46,16 @@ internal static partial class ProcessDetailsProtocol
 
     internal static byte[] Request(ProcessDetailsCommand command, ProcessKey key, ulong requestId, ProcessModuleInfo? module, ulong? handle = null)
     {
-        bool owners = command is ProcessDetailsCommand.Owners or ProcessDetailsCommand.Applications;
+        bool owners = command is ProcessDetailsCommand.Owners or ProcessDetailsCommand.Applications or ProcessDetailsCommand.FileSignature;
+        bool signature = command is ProcessDetailsCommand.Signature or ProcessDetailsCommand.FileSignature;
         if (key.Boot.IsEmpty || key.Kind is not (GenerationKind.CreationTime or GenerationKind.SequenceNumber)
             || (owners ? key.Pid != 0 || key.Generation != 0 : key.Generation == 0))
             throw new ArgumentException("Proces nemá ověřitelnou identitu.", nameof(key));
         int pathChars = module?.Path.Length ?? 0;
-        if (command == ProcessDetailsCommand.Signature && (module is null || pathChars is 0 or > 32767 || module.Path.Contains('\0')))
+        if (signature && (module is null || pathChars is 0 or > 32767 || module.Path.Contains('\0')))
             throw new ArgumentException("Podpis vyžaduje cestu vybraného modulu.", nameof(module));
         if (command == ProcessDetailsCommand.HandleInfo && handle is null) throw new ArgumentException("Chybí hodnota handle.", nameof(handle));
-        int payload = command == ProcessDetailsCommand.Signature ? checked(12 + pathChars * 2) : command == ProcessDetailsCommand.HandleInfo ? 8 : 0;
+        int payload = command == ProcessDetailsCommand.Signature ? checked(12 + pathChars * 2) : command == ProcessDetailsCommand.FileSignature ? checked(4 + pathChars * 2) : command == ProcessDetailsCommand.HandleInfo ? 8 : 0;
         var bytes = new byte[56 + payload];
         BinaryPrimitives.WriteUInt32LittleEndian(bytes, Magic);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(4), 1);
@@ -72,6 +73,11 @@ internal static partial class ProcessDetailsProtocol
             try { Utf16.GetBytes(module.Path, bytes.AsSpan(68)); }
             catch (EncoderFallbackException error) { throw new ArgumentException("Cesta modulu obsahuje neplatný Unicode text.", nameof(module), error); }
         }
+        if (command == ProcessDetailsCommand.FileSignature) {
+            BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(56), (uint)pathChars);
+            try { Utf16.GetBytes(module!.Path, bytes.AsSpan(60)); }
+            catch (EncoderFallbackException error) { throw new ArgumentException("Cesta souboru obsahuje neplatný Unicode text.", nameof(module), error); }
+        }
         if (command == ProcessDetailsCommand.HandleInfo) BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(56), handle!.Value);
         return bytes;
     }
@@ -86,14 +92,15 @@ internal static partial class ProcessDetailsProtocol
         var command = (ProcessDetailsCommand)BinaryPrimitives.ReadUInt16LittleEndian(header[6..]);
         if (length > MaximumResponseBytes || state > (uint)ProcessDetailsState.Error || architecture > (uint)ProcessArchitecture.Arm64)
             throw Invalid("Pracovník překročil protokol nebo datový limit.");
-        uint expectedFlags = command == ProcessDetailsCommand.Signature ? 2u : 0u;
+        bool signature = command is ProcessDetailsCommand.Signature or ProcessDetailsCommand.FileSignature;
+        uint expectedFlags = signature ? 2u : 0u;
         uint allowedFlags = command is ProcessDetailsCommand.Threads or ProcessDetailsCommand.HandleInfo or ProcessDetailsCommand.Owners or ProcessDetailsCommand.Applications ? 1u : expectedFlags;
-        if ((flags & ~allowedFlags) != 0 || (command == ProcessDetailsCommand.Signature && flags != expectedFlags))
+        if ((flags & ~allowedFlags) != 0 || (signature && flags != expectedFlags))
             throw Invalid("Pracovník vrátil neplatné příznaky.");
         if (state != 0 && (length != 0 || rows != 0)) throw Invalid("Chybový výsledek obsahuje neověřená data.");
         if (command == ProcessDetailsCommand.Threads && (rows > 16384 || state == 0 && length != rows * 56)
             || command == ProcessDetailsCommand.Modules && rows > 4096
-            || command is ProcessDetailsCommand.Signature or ProcessDetailsCommand.HandleInfo && state == 0 && rows != 1
+            || command is ProcessDetailsCommand.Signature or ProcessDetailsCommand.FileSignature or ProcessDetailsCommand.HandleInfo && state == 0 && rows != 1
             || command == ProcessDetailsCommand.Memory && (rows > 65536 || state == 0 && length != rows * 40)
             || command == ProcessDetailsCommand.Handles && (rows > 65536 || state == 0 && length != rows * 24)
             || command == ProcessDetailsCommand.Owners && rows > 32768

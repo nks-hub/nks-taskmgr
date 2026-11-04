@@ -82,6 +82,7 @@ add_library(nks_native STATIC
     src/core/service.cpp
     src/core/service_monitor.cpp
     src/collectors/service_collector.cpp
+    src/collectors/startup_items.cpp
     src/collectors/pdh_counters.cpp
     src/collectors/resource_collector.cpp
     src/collectors/cpu_sensors.cpp
@@ -92,10 +93,10 @@ add_library(nks_native STATIC
 target_include_directories(nks_native PUBLIC src)
 target_include_directories(nks_native SYSTEM PRIVATE third_party/phnt/include)
 target_compile_definitions(nks_native PRIVATE PHNT_VERSION=117)
-target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32 gdi32 wintrust crypt32 bcrypt tdh ole32 winhttp rasapi32 wtsapi32)
+target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32 gdi32 wintrust crypt32 bcrypt tdh ole32 winhttp rasapi32 wtsapi32 shell32)
 target_compile_options(nks_native PRIVATE /W4 /WX /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
 
-add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/services_api.cpp src/interop/history_api.cpp src/interop/events_api.cpp)
+add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/services_api.cpp src/interop/history_api.cpp src/interop/events_api.cpp src/interop/startup_api.cpp)
 target_include_directories(nks-monitor PUBLIC src)
 target_compile_definitions(nks-monitor PRIVATE NKS_MONITOR_EXPORTS)
 target_compile_options(nks-monitor PRIVATE /W4 /WX /utf-8 /permissive-)
@@ -363,6 +364,11 @@ if(BUILD_TESTING)
     target_link_libraries(nks-service-view-tests PRIVATE nks_native comctl32 uxtheme)
     target_compile_options(nks-service-view-tests PRIVATE /W4 /WX /utf-8 /permissive-)
     add_test(NAME service-view COMMAND nks-service-view-tests)
+    add_executable(nks-startup-items-tests tests/startup_items_tests.cpp src/collectors/process_applications.cpp)
+    target_link_libraries(nks-startup-items-tests PRIVATE nks_native user32 dwmapi)
+    target_compile_options(nks-startup-items-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    add_test(NAME startup-items COMMAND nks-startup-items-tests)
+    set_tests_properties(startup-items PROPERTIES TIMEOUT 30)
 endif()
 
 add_executable(nks-collect-bench benchmarks/collect_bench.cpp)

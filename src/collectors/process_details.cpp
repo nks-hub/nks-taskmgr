@@ -167,7 +167,15 @@ void readModules(std::uint32_t pid, ProcessDetailsResult& result)
 ProcessDetailsResult readProcessDetails(const ProcessDetailsRequest& request)
 {
     ProcessDetailsResult result;
-    if (request.command == details::Command::signature) result.flags |= details::diskFile;
+    if (request.command == details::Command::signature || request.command == details::Command::fileSignature) result.flags |= details::diskFile;
+    if (request.command == details::Command::fileSignature) {
+        if (request.target.boot.empty() || request.target.pid || request.target.generation || request.modulePath.empty()) {
+            result.state = details::ResultState::invalidRequest; return result;
+        }
+        readFileSignatureOnDisk(request.modulePath, result);
+        if (result.state != details::ResultState::ok) result.signature.reset();
+        return result;
+    }
     if (request.command == details::Command::owners || request.command == details::Command::applications) {
         if (request.target.boot.empty() || request.target.pid || request.target.generation
             || (request.target.generationKind != GenerationKind::creationTime && request.target.generationKind != GenerationKind::sequenceNumber)) {

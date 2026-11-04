@@ -14,7 +14,7 @@ using WinRT;
 using System.Runtime.InteropServices;
 
 namespace NksTaskMgr.WinUI;
-internal enum DesktopView { Processes, Performance, Services, Hardware, Applications, Users }
+internal enum DesktopView { Processes, Performance, Services, Hardware, Applications, Users, Startup }
 
 public sealed partial class MainWindow : Window
 {
@@ -107,7 +107,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureProcessActions(); ConfigureProcessDump(); ConfigureProcessEvents(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); ConfigureUpdates(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware(); BuildUsers(); InitializeContextMenus();
+        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureProcessActions(); ConfigureProcessDump(); ConfigureProcessEvents(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); ConfigureUpdates(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware(); BuildUsers(); BuildStartup(); InitializeContextMenus();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");
@@ -153,7 +153,7 @@ public sealed partial class MainWindow : Window
             static bool IsDown(VirtualKey key) => (InputKeyboardSource.GetKeyStateForCurrentThread(key) & CoreVirtualKeyStates.Down) != 0;
             if (!IsDown(VirtualKey.Control) || IsDown(VirtualKey.Shift) || IsDown(VirtualKey.Menu)
                 || IsDown(VirtualKey.LeftWindows) || IsDown(VirtualKey.RightWindows)) return;
-            if (view is DesktopView.Performance or DesktopView.Hardware) ShowView(false);
+            if (view is DesktopView.Performance or DesktopView.Hardware or DesktopView.Startup) ShowView(false);
             search.Focus(FocusState.Keyboard);
             args.Handled = true;
         };
@@ -225,13 +225,14 @@ public sealed partial class MainWindow : Window
         titleText.Margin = new Thickness(42, 0, 0, 0); title.Children.Add(titleText);
         Grid.SetColumnSpan(title, 2); root.Children.Add(title); SetTitleBar(title);
         var nav = new StackPanel { Spacing = 4, Margin = new Thickness(6, 8, 6, 0) };
-        foreach (var button in new[] { processesNav, applicationNav, performanceNav, servicesNav, usersNav, hardwareNav }) {
+        foreach (var button in new[] { processesNav, applicationNav, performanceNav, servicesNav, usersNav, hardwareNav, startupNav }) {
             button.Height = 44; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 11; button.BorderThickness = new Thickness(0);
             button.Padding = new Thickness(4, 0, 4, 0);
             var content = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Center };
-            string name = button == usersNav ? "Uživatelé" : button == applicationNav ? "Aplikace" : button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : button == hardwareNav ? "Sestava" : "Procesy";
+            string name = button == startupNav ? "Po spuštění" : button == usersNav ? "Uživatelé" : button == applicationNav ? "Aplikace" : button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : button == hardwareNav ? "Sestava" : "Procesy";
             AutomationProperties.SetName(button, name);
-            content.Children.Add(button == applicationNav || button == usersNav ? new SymbolIcon(button == usersNav ? Symbol.People : Symbol.AllApps) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
+            content.Children.Add(button == startupNav ? new SymbolIcon(Symbol.Play) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
+                : button == applicationNav || button == usersNav ? new SymbolIcon(button == usersNav ? Symbol.People : Symbol.AllApps) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
                 : UiIcon.Create(button == performanceNav ? "performance" : button == servicesNav ? "services" : button == hardwareNav ? "hardware" : "processes", 0x95a4ad));
             content.Children.Add(Label(name, 9, 0x95a4ad));
             button.Content = content;
@@ -316,9 +317,10 @@ public sealed partial class MainWindow : Window
         bool services = next == DesktopView.Services;
         bool hardware = next == DesktopView.Hardware;
         bool applications = next == DesktopView.Applications;
+        bool startup = next == DesktopView.Startup;
         if (services) servicesModel ??= new ServiceModel();
-        heading.Text = hardware ? "Sestava" : services ? "Služby" : performance ? "Výkon" : applications ? "Aplikace" : "Procesy";
-        heading.Visibility = services || hardware ? Visibility.Visible : Visibility.Collapsed;
+        heading.Text = startup ? "Po spuštění" : hardware ? "Sestava" : services ? "Služby" : performance ? "Výkon" : applications ? "Aplikace" : "Procesy";
+        heading.Visibility = services || hardware || startup ? Visibility.Visible : Visibility.Collapsed;
         model.SetResourceViewVisible(performance);
         performancePage.Visibility = performance ? Visibility.Visible : Visibility.Collapsed;
         processPage.Visibility = next is DesktopView.Processes or DesktopView.Applications ? Visibility.Visible : Visibility.Collapsed;
@@ -326,9 +328,9 @@ public sealed partial class MainWindow : Window
         foreach (var item in processModeButtons) item.Button.Visibility = applications ? Visibility.Collapsed : Visibility.Visible;
         servicesPage.Visibility = services ? Visibility.Visible : Visibility.Collapsed;
         hardwarePage.Visibility = hardware ? Visibility.Visible : Visibility.Collapsed;
-        search.Visibility = performance || hardware ? Visibility.Collapsed : Visibility.Visible;
+        search.Visibility = performance || hardware || startup ? Visibility.Collapsed : Visibility.Visible;
         overviewScroll.Visibility = next == DesktopView.Processes ? Visibility.Visible : Visibility.Collapsed;
-        interval.Visibility = services || hardware ? Visibility.Collapsed : Visibility.Visible;
+        interval.Visibility = services || hardware || startup ? Visibility.Collapsed : Visibility.Visible;
         search.PlaceholderText = services ? "Hledat službu, účet nebo PID" : "Hledat název nebo PID";
         AutomationProperties.SetName(search, search.PlaceholderText);
         SetNavigationSearchText(services ? servicesModel!.Query : processQuery);
@@ -339,10 +341,11 @@ public sealed partial class MainWindow : Window
         servicesNav.Background = Display.Brush(services ? 0x28343bu : 0x12181cu);
         hardwareNav.Background = Display.Brush(hardware ? 0x28343bu : 0x12181cu);
         ShowUsers(next == DesktopView.Users);
+        ShowStartupPage(startup);
         servicesModel?.SetActivity(services && !IsIconic(windowHandle), model.Paused);
         if (services && serviceList.ItemsSource is null) serviceList.ItemsSource = servicesModel!.Visible;
         Resize();
-        if (hardware) RefreshHardware(); else if (services) RefreshServices(); else if (performance) RefreshPerformance(); else RefreshProcesses();
+        if (hardware) RefreshHardware(); else if (services) RefreshServices(); else if (performance) RefreshPerformance(); else if (!startup) RefreshProcesses();
         processTable.SetSort(model.SortColumn, model.SortDescending);
         ResumeProcessNavigation();
     }
