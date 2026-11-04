@@ -2,7 +2,7 @@ namespace NksTaskMgr.WinUI;
 
 public partial class App
 {
-    internal static string? GapDiagnosticsPath { get; } = ParseGapDiagnosticsPath(Environment.GetCommandLineArgs());
+    internal static string? GapDiagnosticsPath { get; } = ParseGapDiagnosticsPath(LaunchArguments.Current);
 
     internal static string? ParseGapDiagnosticsPath(ReadOnlySpan<string> arguments)
     {

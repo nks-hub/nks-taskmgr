@@ -4,20 +4,13 @@ namespace NksTaskMgr.WinUI;
 
 public partial class App : Application
 {
-    internal static string? SmokePath { get; } = Environment.GetCommandLineArgs()
-        .FirstOrDefault(arg => arg.StartsWith("--smoke=", StringComparison.Ordinal))?[8..];
-    internal static string? SortBenchmarkPath { get; } = Environment.GetCommandLineArgs()
-        .FirstOrDefault(arg => arg.StartsWith("--bench-sort=", StringComparison.Ordinal))?[13..];
-    internal static string? EventsCheckPath { get; } = Environment.GetCommandLineArgs()
-        .FirstOrDefault(arg => arg.StartsWith("--check-events=", StringComparison.Ordinal))?[15..];
-    internal static string? ActionsCheckPath { get; } = Environment.GetCommandLineArgs()
-        .FirstOrDefault(arg => arg.StartsWith("--check-actions=", StringComparison.Ordinal))?[16..];
-    internal static string? DumpCheckPath { get; } = Environment.GetCommandLineArgs()
-        .FirstOrDefault(arg => arg.StartsWith("--check-dump=", StringComparison.Ordinal))?[13..];
-    internal static string? ApplicationGroupsCheckPath { get; } = Environment.GetCommandLineArgs()
-        .FirstOrDefault(arg => arg.StartsWith("--check-applications=", StringComparison.Ordinal))?[21..];
-    internal static string? ProcessDetailsCheckPath { get; } = Environment.GetCommandLineArgs()
-        .FirstOrDefault(arg => arg.StartsWith("--check-details=", StringComparison.Ordinal))?[16..];
+    internal static string? SmokePath { get; } = LaunchArguments.Value(LaunchArguments.Current, "--smoke=");
+    internal static string? SortBenchmarkPath { get; } = LaunchArguments.Value(LaunchArguments.Current, "--bench-sort=");
+    internal static string? EventsCheckPath { get; } = LaunchArguments.Value(LaunchArguments.Current, "--check-events=");
+    internal static string? ActionsCheckPath { get; } = LaunchArguments.Value(LaunchArguments.Current, "--check-actions=");
+    internal static string? DumpCheckPath { get; } = LaunchArguments.Value(LaunchArguments.Current, "--check-dump=");
+    internal static string? ApplicationGroupsCheckPath { get; } = LaunchArguments.Value(LaunchArguments.Current, "--check-applications=");
+    internal static string? ProcessDetailsCheckPath { get; } = LaunchArguments.Value(LaunchArguments.Current, "--check-details=");
     internal static bool ProcessDetailsUnhandledError { get; private set; }
     internal static bool ApplicationGroupsUnhandledError { get; private set; }
     internal static void Trace(string stage) { if ((SmokePath ?? EventsCheckPath ?? ActionsCheckPath ?? DumpCheckPath ?? ApplicationGroupsCheckPath ?? ProcessDetailsCheckPath) is { } path) File.AppendAllText(path, stage + Environment.NewLine); }
@@ -66,7 +59,7 @@ public partial class App : Application
 
     private void LaunchApplication()
     {
-        bool shared = !LaunchArguments.Parse(Environment.GetCommandLineArgs()).Independent;
+        bool shared = !LaunchArguments.Parse(LaunchArguments.Current).Independent;
         if (shared && !SingleInstance.TryBecomePrimary()) Environment.Exit(0);
         if (EventsCheckPath is { } path) {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);

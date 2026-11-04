@@ -166,7 +166,7 @@ public sealed partial class MainWindow : Window
         AppWindow.Changed += (_, _) => { Resize(); PaceTimer(); };
         smokePath = App.SmokePath;
         ConfigureGapDiagnostics();
-        ShowView(LaunchArguments.Parse(Environment.GetCommandLineArgs()).View ?? DesktopView.Performance);
+        ShowView(LaunchArguments.Parse(LaunchArguments.Current).View ?? DesktopView.Performance);
         App.Trace("Window initialized");
     }
 

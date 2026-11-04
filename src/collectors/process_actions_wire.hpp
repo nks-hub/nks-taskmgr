@@ -36,6 +36,7 @@ inline bool headerValid(const Header& value)
 {
     auto command = read(value, 6, 2); auto count = read32(value, 12);
     if (read32(value, 0) != magic || read(value, 4, 2) != version || command > static_cast<unsigned>(Command::taskManager)
+        || command == 10 // reserved for closeHandle
         || !count || count > maximumTargets || !read64(value, 16) || (!read64(value, 24) && !read64(value, 32))
         || read32(value, 52) || read64(value, 56)) return false;
     if (command == static_cast<unsigned>(Command::queryCpuSets))

@@ -36,7 +36,7 @@ public sealed partial class MainWindow
         internal static TickCpuProfile? FromArguments()
         {
             const string prefix = "--profile-ticks=";
-            foreach (var arg in Environment.GetCommandLineArgs())
+            foreach (var arg in LaunchArguments.Current)
                 if (arg.StartsWith(prefix, StringComparison.Ordinal)) return new TickCpuProfile(arg[prefix.Length..]);
             return null;
         }

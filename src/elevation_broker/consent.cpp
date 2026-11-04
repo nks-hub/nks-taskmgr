@@ -41,15 +41,18 @@ bool duplicate(HANDLE source, Handle& output)
     if (!DuplicateHandle(GetCurrentProcess(), source, GetCurrentProcess(), &raw, 0, FALSE, DUPLICATE_SAME_ACCESS)) return false;
     output.reset(raw); return true;
 }
+std::wstring safeText(std::wstring text)
+{
+    for (auto& character : text) if (character < L' ' || (character >= 0x202a && character <= 0x202e)
+        || (character >= 0x2066 && character <= 0x2069)) character = L' ';
+    if (text.size() > 1024) text = text.substr(0, 1024) + L" (zkráceno)";
+    return text;
+}
 std::wstring safePath(HANDLE process)
 {
     std::wstring path(32768, L'\0'); DWORD size = static_cast<DWORD>(path.size());
     if (!QueryFullProcessImageNameW(process, 0, path.data(), &size)) return L"(cestu nelze přečíst)";
-    path.resize(size);
-    for (auto& character : path) if (character < L' ' || (character >= 0x202a && character <= 0x202e)
-        || (character >= 0x2066 && character <= 0x2069)) character = L' ';
-    if (path.size() > 1024) path = path.substr(0, 1024) + L" (cesta zkrácena)";
-    return path;
+    path.resize(size); return safeText(std::move(path));
 }
 }
 
@@ -108,16 +111,44 @@ DWORD Consent::prepareReplacement(const actions::Result& target, bool enabled, s
     if (!size || size >= path.size()) return trustRejected;
     path.resize(size);
     if (path.starts_with(L"\\\\?\\")) path.erase(0, 4);
-    if (replacement::debuggerCommand(path).empty()) return replacementLocation;
+    const auto command = replacement::debuggerCommand(path);
+    if (command.empty()) return replacementLocation;
     if (enabled) {
-        // Every user's Task Manager would start this file, so it must sit in the admin-only machine install.
+        // Every user's Task Manager would start this file, so only administrators may be able to change it.
         PWSTR programFiles = nullptr;
-        const bool inside = SUCCEEDED(SHGetKnownFolderPath(FOLDERID_ProgramFiles, KF_FLAG_DEFAULT, nullptr, &programFiles))
-            && replacement::insideDirectory(path, programFiles);
+        auto location = replacement::Location::outside;
+        if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_ProgramFiles, KF_FLAG_DEFAULT, nullptr, &programFiles)))
+            location = replacement::machineLocation(path, programFiles);
         CoTaskMemFree(programFiles);
-        if (!inside) return replacementLocation;
+        if (location == replacement::Location::outside) return replacementLocation;
+        if (location != replacement::Location::safe) return replacementAccess;
     }
-    description_ = L"Klíč: HKLM\\" + std::wstring(replacement::systemKey) + L", hodnota Debugger\nNKS: " + safePath(gui_.process.get()) + L"\n";
+    const auto plan = replacement::systemPlan(path);
+    if (plan.error) return static_cast<DWORD>(plan.error);
+    using replacement::Status;
+    description_ = L"Trvalá změna celého počítače pro všechny uživatele, platí i po restartu.\n";
+    if (enabled) {
+        description_ += L"Vstupy spouštějící taskmgr.exe (Ctrl+Shift+Esc, Ctrl+Alt+Del, hlavní panel, Win+X, Win+R) otevřou NKS Task Manager.\n"
+            L"Kdykoli se Správce úloh spustí se zvýšenými právy, poběží NKS Task Manager s právy správce.\n";
+    }
+    description_ += L"\nKlíč: HKLM\\" + std::wstring(replacement::systemKey) + L"\nHodnota: Debugger\n";
+    const auto current = safeText(plan.debugger);
+    if (enabled) {
+        description_ += L"Zapíše se (REG_SZ): " + safeText(command) + L"\n";
+        if (plan.status == Status::notRegistered) description_ += L"Současná hodnota: žádná.\n";
+        else if (plan.status == Status::registered) description_ += L"Současná hodnota už patří tomuto NKS: " + current + L"\n";
+        else if (plan.status == Status::otherNks) description_ += L"Přepíše se starší registrace NKS (nezálohuje se): " + current + L"\n";
+        else description_ += L"Přepíše se cizí hodnota: " + current + L"\nUloží se do hodnoty " + std::wstring(replacement::backupValue) + L" pro obnovení.\n";
+    } else {
+        description_ += L"Současná hodnota: " + (plan.status == Status::notRegistered ? std::wstring(L"žádná") : current) + L"\n";
+        if (plan.status == Status::notRegistered) description_ += L"Nic se nezmění.\n";
+        else if (plan.status == Status::foreign) description_ += L"Registrace už nepatří NKS, nic se nezmění.\n";
+        else if (!plan.hasBackup) description_ += L"Debugger se smaže, taskmgr.exe se bude spouštět jako dřív.\n";
+        else if (plan.backupSafe) description_ += L"Obnoví se: " + safeText(plan.backup) + L"\n";
+        else description_ += L"Uložená hodnota se neobnoví, protože její program chybí nebo ho mohou měnit i jiní uživatelé než správci: "
+            + safeText(plan.backup) + L"\nDebugger se smaže.\n";
+    }
+    description_ += L"\nNKS: " + safePath(gui_.process.get()) + L"\n";
     guiPath = std::move(path); return ERROR_SUCCESS;
 }
 
@@ -125,13 +156,11 @@ bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uin
 {
     TokenIdentity own;
     if (!readToken(GetCurrentProcess(), own) || !own.elevated || own.integrity < SECURITY_MANDATORY_HIGH_RID) return false;
-    std::wstring content = L"Povolujete jeden konkrétní požadavek se zvýšenými právy. Nejde o trvalé povolení.\n"
+    const bool replacing = command == actions::Command::taskManager;
+    std::wstring content = replacing ? std::wstring() : L"Povolujete jeden konkrétní požadavek se zvýšenými právy. Nejde o trvalé povolení.\n"
         L"Zakázané, systémové, kritické a chráněné procesy se nemění. Zrušení čekání nevrací zásah.\n";
     if (command == actions::Command::priority) content += L"Priorita: " + std::to_wstring(argument) + L"\n";
     if (command == actions::Command::affinity) content += L"Skupina: " + std::to_wstring(group) + L", maska: " + std::to_wstring(argument) + L"\n";
-    if (command == actions::Command::taskManager) content += argument == 1
-        ? L"Zapnout: vstupy spouštějící taskmgr.exe otevřou NKS Task Manager pro všechny uživatele. Předchozí registrace se uloží pro obnovení.\n"
-        : L"Vypnout: obnoví se předchozí registrace taskmgr.exe, jen pokud registrace stále patří NKS.\n";
     if (command == actions::Command::terminateTree) content += L"Rozsah: tento kořen a nově ověření potomci, nejvýše 256 cílů / 3 průchody / 5 s. Strom není atomický.\n";
     std::wstring cpuDetails;
     if (command == actions::Command::cpuSets) {
@@ -143,11 +172,12 @@ bool Consent::confirm(actions::Command command, std::uint64_t argument, std::uin
             for (const auto id : selected) { if (cpuDetails.back() != L'\n') cpuDetails += L", "; cpuDetails += std::to_wstring(id); }
         }
     }
-    content += L"\nBoot: " + std::to_wstring(gui_.key.boot.high) + L":" + std::to_wstring(gui_.key.boot.low) + L"\n" + description_;
+    content += replacing ? description_
+        : L"\nBoot: " + std::to_wstring(gui_.key.boot.high) + L":" + std::to_wstring(gui_.key.boot.low) + L"\n" + description_;
     TASKDIALOG_BUTTON button{IDYES, L"Povolit tento požadavek"}; Prompt prompt{gui_, bridge_};
     TASKDIALOGCONFIG dialog{}; dialog.cbSize = sizeof(dialog); dialog.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_CALLBACK_TIMER;
     dialog.dwCommonButtons = TDCBF_CANCEL_BUTTON; dialog.pszWindowTitle = L"NKS Task Manager · správce";
-    dialog.pszMainInstruction = actionName(command); dialog.pszContent = content.c_str(); dialog.pszMainIcon = TD_SHIELD_ICON;
+    dialog.pszMainInstruction = replacing ? (argument == 1 ? L"Nahradit Správce úloh Windows" : L"Obnovit předchozí Správce úloh Windows") : actionName(command); dialog.pszContent = content.c_str(); dialog.pszMainIcon = TD_SHIELD_ICON;
     if (!cpuDetails.empty()) { dialog.pszExpandedInformation = cpuDetails.c_str(); dialog.dwFlags |= TDF_EXPANDED_BY_DEFAULT; }
     dialog.cButtons = 1; dialog.pButtons = &button; dialog.nDefaultButton = IDCANCEL;
     dialog.pfCallback = promptEvent; dialog.lpCallbackData = reinterpret_cast<LONG_PTR>(&prompt);

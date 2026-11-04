@@ -57,6 +57,8 @@ int serve(const std::wstring& name, DWORD expectedClient)
             result.outcome = change.error ? Outcome::error : change.changed ? Outcome::applied
                 : change.before == replacement::Status::foreign ? Outcome::refused : Outcome::inspected;
             if (!change.error && !change.changed) result.reason = change.before == replacement::Status::foreign ? Reason::ownerMismatch : Reason::alreadySame;
+            // The previous registration was deleted instead of restored: its program is missing or not admin-only.
+            if (change.backupDropped) result.reason = Reason::protectionUnverifiable;
             result.flags = change.changed ? (change.error ? mayHaveApplied : effectConfirmed) : 0;
             std::vector<std::byte> bytes(resultBytes); rowBytes(result, bytes);
             return send(response(header, FrameKind::results, 1)) && send(bytes) ? 0 : 4;

@@ -67,7 +67,7 @@ public sealed partial class MainWindow
     private async void RunSortBenchmark()
     {
         sortBenchmarkRunning = true;
-        bool iconsEnabled = !Environment.GetCommandLineArgs().Contains("--bench-sort-no-icons", StringComparer.Ordinal);
+        bool iconsEnabled = !LaunchArguments.Current.Contains("--bench-sort-no-icons", StringComparer.Ordinal);
         ProcessIconView.SuppressForBenchmark = !iconsEnabled;
         string path = App.SortBenchmarkPath!;
         try {

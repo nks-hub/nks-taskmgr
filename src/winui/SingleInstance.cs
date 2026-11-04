@@ -13,6 +13,35 @@ internal static class LaunchArguments
     // Keep in sync with the QA and diagnostic switches read in App and MainWindow.
     private static readonly string[] IndependentPrefixes = ["--smoke=", "--bench-sort", "--check-", "--profile-ticks=", "--diagnose-gaps"];
 
+    /// <summary>The command line this process honors; every reader of switches uses this instead of the raw arguments.</summary>
+    internal static string[] Current { get; } = Filter(Environment.GetCommandLineArgs(), IsElevated());
+
+    /// <summary>
+    /// Drops everything from a taskmgr.exe path onward, because Image File Execution Options passes the arguments of
+    /// whoever started Task Manager. In an elevated process it also drops every QA and diagnostic switch: taskmgr.exe
+    /// auto-elevates, so a standard user could otherwise choose the files an administrator instance writes.
+    /// </summary>
+    internal static string[] Filter(string[] args, bool elevated)
+    {
+        var kept = new List<string>(args.Length);
+        for (int i = 0; i < args.Length; ++i) {
+            if (i > 0 && string.Equals(Path.GetFileName(args[i]), "taskmgr.exe", StringComparison.OrdinalIgnoreCase)) break;
+            if (i > 0 && elevated && IndependentPrefixes.Any(prefix => args[i].StartsWith(prefix, StringComparison.Ordinal))) continue;
+            kept.Add(args[i]);
+        }
+        return [.. kept];
+    }
+
+    /// <summary>The value of the first <paramref name="prefix"/> switch, or null.</summary>
+    internal static string? Value(string[] args, string prefix) =>
+        args.FirstOrDefault(arg => arg.StartsWith(prefix, StringComparison.Ordinal))?[prefix.Length..];
+
+    internal static bool IsElevated()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
     /// <summary>
     /// Parses the process command line (element 0 is the image). When Image File Execution Options starts the app,
     /// element 1 is the original Task Manager path and everything after it belongs to Task Manager and is ignored.
@@ -48,6 +77,12 @@ internal static class LaunchArguments
         foreach (string qa in new[] { "--smoke=a", "--bench-sort=a", "--bench-sort-no-icons", "--check-events=a", "--check-actions=a", "--check-dump=a",
             "--check-applications=a", "--check-details=a", "--profile-ticks=a", "--diagnose-gaps=a" })
             Require(Parse(["gui", qa]).Independent && Parse(["gui", "--view=Services", qa]).Independent, "A QA switch joined the single instance: " + qa);
+        Require(Value(Filter(["gui", taskmgr, "--check-dump=x"], false), "--check-dump=") is null, "A switch after the Task Manager path was honored.");
+        Require(Filter(["gui", "--view=services", "taskmgr.exe", "--view=processes"], false) is ["gui", "--view=services"], "Arguments after a later taskmgr.exe were kept.");
+        Require(Value(Filter(["gui", "--check-dump=x"], false), "--check-dump=") == "x", "A standard QA launch lost its switch.");
+        Require(Filter(["gui", "--check-dump=x", "--smoke=y", "--bench-sort-no-icons", "--profile-ticks=z", "--diagnose-gaps=w", "--view=services"], true)
+            is ["gui", "--view=services"], "An elevated process kept a QA or diagnostic switch.");
+        Require(!Parse(Filter(["gui", "--check-dump=x"], true)).Independent, "An elevated QA launch stayed independent.");
     }
 }
 
@@ -62,7 +97,7 @@ internal static partial class SingleInstance
     {
         try {
             using var identity = WindowsIdentity.GetCurrent();
-            bool elevated = new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+            bool elevated = LaunchArguments.IsElevated();
             var handle = new EventWaitHandle(false, EventResetMode.AutoReset, $@"Local\NksTaskMgr.Gui.{identity.User?.Value}.{(elevated ? "admin" : "user")}", out bool created);
             if (created) { signal = handle; return true; }
             using (handle) {
