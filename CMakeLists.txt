@@ -158,6 +158,7 @@ add_executable(nks-update-worker
     src/update_worker/app.rc
     src/core/update_image.cpp
     src/core/broker_trust.cpp
+    src/core/taskmgr_replacement.cpp
     src/collectors/process_identity.cpp
     src/collectors/boot_identity.cpp
 )

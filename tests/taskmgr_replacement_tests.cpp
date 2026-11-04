@@ -253,12 +253,66 @@ void unsafeBackups()
     require(ok(enable(key, gui), Status::foreign, true), "Enable over a user-owned value failed");
     require(ok(disable(key, gui), Status::registered, true, true), "User-owned previous program passed the default rule");
 }
+
+// Setup upkeep: the box root stands in for Program Files, "NKS Task Manager" for the installation directory.
+void setup()
+{
+    Sandbox box; const HKEY key = box.key; const auto above = trustedAbove(std::filesystem::temp_directory_path()); const Trusted trusted = above;
+    const auto root = box.root.wstring();
+    for (const auto* directory : {L"NKS Task Manager", L"Old", L"Elsewhere"}) {
+        create(box.at(directory), protectedAcl, true);
+        create(box.at(directory) + L"\\NksTaskMgr.WinUI.exe", protectedAcl, false);
+    }
+    create(box.at(L"Open"), protectedAcl + L"(A;;0x1301bf;;;BG)", true);
+    create(box.at(L"Open\\NksTaskMgr.WinUI.exe"), protectedAcl, false);
+    create(box.at(L"procexp64.exe"), protectedAcl, false);
+    const auto installed = box.at(L"NKS Task Manager\\NksTaskMgr.WinUI.exe"), mine = L"\"" + installed + L"\"";
+    const auto old = box.at(L"Old\\NksTaskMgr.WinUI.exe"), elsewhere = L"\"" + box.at(L"Elsewhere\\NksTaskMgr.WinUI.exe") + L"\"";
+    const auto foreign = L"\"" + box.at(L"procexp64.exe") + L"\"";
+    auto keep = [&](std::wstring_view previous = {}) { return settle(key, installed, previous, root, trusted); };
+    auto release = [&] { return settle(key, installed, {}, {}, trusted); };
+
+    require(ok(settle(nullptr, installed, {}, root, trusted), Status::notRegistered, false), "Setup without IFEO key changed something");
+    require(ok(keep(), Status::notRegistered, false) && !value(key, debuggerValue), "Setup enabled the replacement");
+    require(settle(key, L"relative\\NksTaskMgr.WinUI.exe", {}, root, trusted).error == ERROR_INVALID_PARAMETER, "Setup accepted a relative GUI path");
+
+    // A foreign registration is never touched, with or without an NKS backup below it.
+    set(key, debuggerValue, foreign);
+    require(ok(keep(), Status::foreign, false) && ok(release(), Status::foreign, false) && value(key, debuggerValue) == foreign, "Setup changed a foreign registration");
+
+    // Upgrade in place keeps the registration and its backup; uninstall restores the backup.
+    require(ok(enable(key, installed), Status::foreign, true), "Enable over the foreign value failed");
+    require(ok(keep(), Status::registered, false) && value(key, debuggerValue) == mine && value(key, backupValue) == foreign, "Upgrade in place changed the registration");
+    require(ok(release(), Status::registered, true) && value(key, debuggerValue) == foreign && !value(key, backupValue), "Uninstall did not restore the backup");
+
+    // Upgrade into a new directory follows the previous installation and keeps the original backup.
+    require(ok(enable(key, old), Status::foreign, true), "Enable from the previous directory failed");
+    require(ok(keep(box.at(L"Old\\")), Status::otherNks, true) && value(key, debuggerValue) == mine && value(key, backupValue) == foreign, "Upgrade did not move the registration");
+
+    // Another NKS copy that still exists belongs to someone else.
+    set(key, debuggerValue, elsewhere);
+    require(ok(keep(box.at(L"Old")), Status::otherNks, false) && ok(release(), Status::otherNks, false) && value(key, debuggerValue) == elsewhere, "Setup took over another NKS copy");
+
+    // A stale NKS path is repaired on upgrade and released on uninstall.
+    set(key, debuggerValue, L"\"" + box.at(L"Gone\\NksTaskMgr.WinUI.exe") + L"\"");
+    require(ok(keep(), Status::otherNks, true) && value(key, debuggerValue) == mine && value(key, backupValue) == foreign, "Stale NKS path was not repaired");
+    set(key, debuggerValue, L"\"" + box.at(L"Gone\\NksTaskMgr.WinUI.exe") + L"\"");
+    require(ok(release(), Status::otherNks, true) && value(key, debuggerValue) == foreign && !value(key, backupValue), "Stale NKS path was not released");
+
+    // A new directory that standard users can change gets no registration; the previous one is released.
+    require(ok(enable(key, old), Status::foreign, true), "Enable from the previous directory failed");
+    require(ok(settle(key, box.at(L"Open\\NksTaskMgr.WinUI.exe"), box.at(L"Old"), root, trusted), Status::otherNks, true)
+        && value(key, debuggerValue) == foreign && !value(key, backupValue), "Setup registered a writable directory");
+    // Outside the machine root the registration is released too.
+    require(ok(enable(key, installed), Status::foreign, true), "Re-enable failed");
+    require(ok(settle(key, installed, {}, box.at(L"Elsewhere"), trusted), Status::registered, true) && value(key, debuggerValue) == foreign, "Setup kept a path outside the machine root");
+}
 }
 
 int main()
 {
     try {
-        paths(); locations(); lifecycle(); unsafeBackups();
+        paths(); locations(); lifecycle(); unsafeBackups(); setup();
         std::cout << "taskmgr replacement: " << cases << " checks passed\n";
         return 0;
     } catch (const std::exception& error) {

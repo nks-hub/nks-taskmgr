@@ -11,10 +11,12 @@ VersionInfoDescription=NKS Task Manager Setup
 VersionInfoOriginalFileName=NksTaskMgrSetup.exe
 AppPublisher=NKS Hub
 AppComments=Build {#SourceRevision}
-DefaultDirName={localappdata}\Programs\NKS Task Manager
+; Per-user by default ({autopf} is {localappdata}\Programs there); /ALLUSERS or the start dialog installs into Program Files.
+DefaultDirName={autopf}\NKS Task Manager
 DefaultGroupName=NKS Task Manager
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog commandline
 SetupArchitecture=x64
 ArchitecturesAllowed=x64os
 ArchitecturesInstallIn64BitMode=x64os
@@ -49,6 +51,10 @@ english.InvalidPortableMarker=The portable marker in this directory is invalid o
 czech.InvalidPortableMarker=Označení přenosné kopie v této složce je neplatné nebo je nelze přečíst. Nebyly nainstalovány žádné soubory.
 english.PortableMarkerWriteFailed=The application files were installed, but the portable marker could not be saved. Do not use this copy for automatic updates.
 czech.PortableMarkerWriteFailed=Soubory aplikace byly nainstalovány, ale označení přenosné kopie se nepodařilo uložit. Tuto kopii nepoužívejte k automatickým aktualizacím.
+english.TaskManagerKeepFailed=Setup could not update the Windows Task Manager replacement (code %1). In NKS Task Manager settings, turn the replacement off and on again.
+czech.TaskManagerKeepFailed=Instalátor nemohl upravit náhradu Správce úloh Windows (kód %1). V nastavení NKS Task Manager náhradu vypněte a znovu zapněte.
+english.TaskManagerReleaseFailed=Setup could not restore the Windows Task Manager registration (code %1). If Task Manager does not start, delete the value Debugger in HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe.
+czech.TaskManagerReleaseFailed=Odinstalace nemohla obnovit registraci Správce úloh Windows (kód %1). Pokud se Správce úloh nespustí, smažte hodnotu Debugger v klíči HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; Check: not IsPortableMode
@@ -192,6 +198,43 @@ begin
     RaiseException(CustomMessage('PortableMarkerWriteFailed'));
 end;
 
+{ The update worker owns the IFEO taskmgr.exe rules (src/core/taskmgr_replacement.cpp); it never enables the replacement. }
+function SettleTaskManager(const Arguments: String): Integer;
+begin
+  if Exec(ExpandConstant('{app}\nks-update-worker.exe'), Arguments, ExpandConstant('{app}'),
+      SW_HIDE, ewWaitUntilTerminated, Result) then
+    Log('Task Manager replacement upkeep ' + Arguments + ' exited with ' + IntToStr(Result) + '.')
+  else
+    Log('Task Manager replacement helper could not start: ' + SysErrorMessage(Result));
+end;
+
+procedure KeepTaskManagerReplacement;
+var
+  Arguments: String;
+  ResultCode: Integer;
+begin
+  Arguments := '--keep-taskmgr';
+  { A trailing backslash before the closing quote would escape it. }
+  if WizardForm.PrevAppDir <> '' then
+    Arguments := Arguments + ' "' + RemoveBackslash(WizardForm.PrevAppDir) + '"';
+  ResultCode := SettleTaskManager(Arguments);
+  if ResultCode <> 0 then
+    SuppressibleMsgBox(FmtMessage(CustomMessage('TaskManagerKeepFailed'), [IntToStr(ResultCode)]), mbError, MB_OK, IDOK);
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ResultCode: Integer;
+begin
+  { Runs before the files are removed, so the helper is still present. }
+  if (CurUninstallStep = usUninstall) and IsAdminInstallMode then
+  begin
+    ResultCode := SettleTaskManager('--release-taskmgr');
+    if ResultCode <> 0 then
+      SuppressibleMsgBox(FmtMessage(CustomMessage('TaskManagerReleaseFailed'), [IntToStr(ResultCode)]), mbError, MB_OK, IDOK);
+  end;
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
@@ -199,7 +242,9 @@ begin
   if CurStep = ssPostInstall then
   begin
     if IsPortableMode then
-      SavePortableMarker;
+      SavePortableMarker
+    else if IsAdminInstallMode then
+      KeepTaskManagerReplacement;
     try
       if Exec(ExpandConstant('{app}\nks-update-worker.exe'),
           '--cache-installer "' + ExpandConstant('{srcexe}') + '"',

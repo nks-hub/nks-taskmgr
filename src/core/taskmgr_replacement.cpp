@@ -242,6 +242,32 @@ Result disable(HKEY key, std::wstring_view guiPath, Trusted trusted)
     result.changed = true; result.error = remove(key, backupValue); return result;
 }
 
+Result settle(HKEY key, std::wstring_view guiPath, std::wstring_view previousDirectory, std::wstring_view machineRoot, Trusted trusted)
+{
+    Result result;
+    if (debuggerCommand(guiPath).empty()) { result.error = ERROR_INVALID_PARAMETER; return result; }
+    std::optional<Value> current;
+    if ((result.error = read(key, debuggerValue, current))) return result;
+    result.before = classify(current, guiPath);
+    if (result.before == Status::otherNks) {
+        const std::wstring image(executable(text(*current)));
+        const auto missing = absolute(image) && GetFileAttributesW(image.c_str()) == INVALID_FILE_ATTRIBUTES
+            && (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND);
+        if (!missing && !insideDirectory(image, guiPath.substr(0, guiPath.rfind(L'\\'))) && !insideDirectory(image, previousDirectory)) return result;
+    } else if (result.before != Status::registered) return result;
+    // Pointing elevated Task Manager starts at a path standard users can change would hand them administrator rights.
+    return machineLocation(guiPath, machineRoot, trusted) == Location::safe ? enable(key, guiPath) : disable(key, guiPath, trusted);
+}
+
+Result settleSystem(std::wstring_view guiPath, std::wstring_view previousDirectory, std::wstring_view machineRoot)
+{
+    HKEY key = nullptr; Result result;
+    if ((result.error = openSystem(KEY_QUERY_VALUE | KEY_SET_VALUE, false, key)) || !key) return result;
+    result = settle(key, guiPath, previousDirectory, machineRoot);
+    RegCloseKey(key);
+    return result;
+}
+
 Status systemStatus(std::wstring_view guiPath, LSTATUS* error)
 {
     HKEY key = nullptr;

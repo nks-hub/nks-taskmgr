@@ -46,6 +46,13 @@ Result enable(HKEY key, std::wstring_view guiPath);
 /// Only while Debugger still starts NksTaskMgr.WinUI.exe: restores the backup when its program is present and protected,
 /// otherwise deletes Debugger.
 Result disable(HKEY key, std::wstring_view guiPath, Trusted trusted = {});
+/// Setup upkeep for the installation whose GUI is guiPath. A registration it owns, i.e. Debugger starting
+/// NksTaskMgr.WinUI.exe from guiPath's directory, from previousDirectory or from an absolute path that no longer exists,
+/// is pointed at guiPath when guiPath is a protected path inside machineRoot (see machineLocation) and otherwise released
+/// exactly like disable(). An empty machineRoot therefore always releases (uninstall). Any other value stays untouched.
+Result settle(HKEY key, std::wstring_view guiPath, std::wstring_view previousDirectory, std::wstring_view machineRoot, Trusted trusted = {});
+/// settle() against the real HKLM key; needs an elevated caller and never creates the key.
+Result settleSystem(std::wstring_view guiPath, std::wstring_view previousDirectory, std::wstring_view machineRoot);
 /// Reads the real HKLM registration; needs no elevation.
 Status systemStatus(std::wstring_view guiPath, LSTATUS* error = nullptr);
 Plan systemPlan(std::wstring_view guiPath);
