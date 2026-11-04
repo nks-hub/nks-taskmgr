@@ -50,6 +50,17 @@ typedef enum NksMetricSource {
     NKS_SOURCE_PERFORMANCE_COUNTER = 3, NKS_SOURCE_NETWORK_INTERFACE = 4, NKS_SOURCE_DXGI = 5, NKS_SOURCE_GPU_ADAPTER = 6
 } NksMetricSource;
 
+// Values match WTS_CONNECTSTATE_CLASS. UNKNOWN marks a session known only from its processes.
+typedef enum NksSessionState {
+    NKS_SESSION_ACTIVE = 0, NKS_SESSION_CONNECTED = 1, NKS_SESSION_CONNECT_QUERY = 2, NKS_SESSION_SHADOW = 3,
+    NKS_SESSION_DISCONNECTED = 4, NKS_SESSION_IDLE = 5, NKS_SESSION_LISTEN = 6, NKS_SESSION_RESET = 7,
+    NKS_SESSION_DOWN = 8, NKS_SESSION_INIT = 9, NKS_SESSION_UNKNOWN = 10
+} NksSessionState;
+
+typedef enum NksSessionProtocol {
+    NKS_SESSION_CONSOLE = 0, NKS_SESSION_ICA = 1, NKS_SESSION_RDP = 2, NKS_SESSION_PROTOCOL_UNKNOWN = 3
+} NksSessionProtocol;
+
 #pragma pack(push, 8)
 typedef struct NksString16 {
     const wchar_t* data;
@@ -185,6 +196,28 @@ typedef struct NksProcessIdentityData {
     uint64_t generation;
     uint32_t state, reserved;
 } NksProcessIdentityData;
+
+// Sum over a session's processes. known counts members with a current sample; known < process_count is a lower bound.
+typedef struct NksSessionSum {
+    double value;
+    uint32_t known, overflow;
+} NksSessionSum;
+
+// info_state covers user, domain and protocol (first failure wins); ACCESS_DENIED means the caller may not query that session.
+typedef struct NksSession {
+    uint32_t session_id, state, protocol, info_state;
+    NksString16 user, domain, station;
+    uint32_t process_count, reserved;
+    NksSessionSum cpu_percent, working_set_bytes, private_bytes, io_bytes_per_second;
+} NksSession;
+
+// process_sessions is parallel to NksProcessData.processes. state reports the WTS enumeration itself.
+typedef struct NksSessionData {
+    const NksSession* sessions;
+    const uint32_t* process_sessions;
+    uint32_t session_count, process_count;
+    uint32_t state, reserved;
+} NksSessionData;
 #pragma pack(pop)
 
 // String lengths count UTF-16 code units. Arrays and strings live until the final frame release.
@@ -203,6 +236,8 @@ NKS_MONITOR_API NksResult __cdecl nks_frame_get_network_transfer_data(const NksF
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_boot_data(const NksFrame* frame, uint32_t data_size, NksBootData* result) NKS_NOEXCEPT;
 // Creation times are independent of generation_kind. A missing time has state UNAVAILABLE and value zero.
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_process_creation_data(const NksFrame* frame, uint32_t data_size, NksProcessCreationData* result) NKS_NOEXCEPT;
+// Queries WTS on the first call for a frame; the idle process (PID 0) is not part of any session sum.
+NKS_MONITOR_API NksResult __cdecl nks_frame_get_session_data(const NksFrame* frame, uint32_t data_size, NksSessionData* result) NKS_NOEXCEPT;
 // The caller retains ownership of the process HANDLE. VALID verifies that held object, not action permissions or continued liveness.
 NKS_MONITOR_API NksResult __cdecl nks_process_query_identity(void* process_handle, uint32_t generation_kind, uint32_t data_size, NksProcessIdentityData* result) NKS_NOEXCEPT;
 NKS_MONITOR_API void __cdecl nks_frame_retain(NksFrame* frame) NKS_NOEXCEPT;

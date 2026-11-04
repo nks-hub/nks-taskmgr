@@ -4,7 +4,9 @@
 #include "core/process_delta.hpp"
 #include "monitor_handle.hpp"
 #include "collectors/process_identity.hpp"
+#include "collectors/session_query.hpp"
 #include <limits>
+#include <mutex>
 #include <stdexcept>
 
 struct NksFrame {
@@ -26,7 +28,13 @@ struct NksFrame {
     std::uint64_t processRevision{}, processBaseRevision{}, processDropped{};
     std::uint32_t processChangeFlags{};
     NksFrameView view{};
+    std::once_flag sessionsBuilt;
+    std::vector<nks::SessionRecord> sessionRecords;
+    std::vector<NksSession> sessions;
+    std::vector<uint32_t> processSessions;
+    NksSessionData sessionData{};
     void build();
+    void buildSessions();
 };
 
 namespace {
@@ -64,6 +72,9 @@ static_assert(sizeof(NksResource) == 128 && sizeof(NksResourceData) == 32 && siz
 static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGpuData) == 16);
 static_assert(sizeof(NksHardwareFact) == 48 && sizeof(NksHardwareData) == 16);
 static_assert(sizeof(NksNetworkTransfer) == 56 && sizeof(NksNetworkTransferData) == 16);
+static_assert(sizeof(NksSessionSum) == 16 && sizeof(NksSession) == 136 && sizeof(NksSessionData) == 32);
+static_assert(static_cast<unsigned>(nks::SessionState::init) == NKS_SESSION_INIT && static_cast<unsigned>(nks::SessionState::unknown) == NKS_SESSION_UNKNOWN);
+static_assert(static_cast<unsigned>(nks::SessionProtocol::rdp) == NKS_SESSION_RDP && static_cast<unsigned>(nks::SessionProtocol::unknown) == NKS_SESSION_PROTOCOL_UNKNOWN);
 static_assert(sizeof(NksProcessCreation) == 32 && sizeof(NksProcessCreationData) == 16 && sizeof(NksProcessIdentityData) == 40);
 static_assert(sizeof(NksMeasurementMetadata) == 32 && offsetof(NksMeasurementMetadata, observed_at_ns) == 8);
 static_assert(sizeof(NksProcessChange) == 24 && sizeof(NksProcessChangesData) == 40 && sizeof(NksProcessLossData) == 8);
@@ -148,6 +159,24 @@ void NksFrame::build()
         view.resources = {nanos(source.measuredAt), source.diskCountersAvailable ? 1u : 0u, source.gpuCountersAvailable ? 1u : 0u,
             resources.data(), count(resources.size()), 0};
     }
+}
+
+void NksFrame::buildSessions()
+{
+    const auto& processRecords = processSnapshot->processes;
+    nks::SampleState state{};
+    sessionRecords = nks::querySessions(state);
+    nks::aggregateSessions(sessionRecords, processRecords);
+    const auto sum = [](const nks::SessionSum& value) { return NksSessionSum{value.value, value.known, value.overflow ? 1u : 0u}; };
+    sessions.clear(); processSessions.clear();
+    sessions.reserve(sessionRecords.size());
+    for (const auto& item : sessionRecords)
+        sessions.push_back({item.id, static_cast<uint32_t>(item.state), static_cast<uint32_t>(item.protocol), static_cast<uint32_t>(item.infoState),
+            string(item.user), string(item.domain), string(item.station), item.processes, 0,
+            sum(item.cpuPercent), sum(item.workingSetBytes), sum(item.privateBytes), sum(item.ioBytesPerSecond)});
+    processSessions.reserve(processRecords.size());
+    for (const auto& item : processRecords) processSessions.push_back(item.sessionId);
+    sessionData = {sessions.data(), processSessions.data(), count(sessions.size()), count(processSessions.size()), static_cast<uint32_t>(state), 0};
 }
 
 NksResult __cdecl nks_monitor_create(uint32_t abiVersion, uint32_t interval, int32_t paused, NksMonitor** result) noexcept
@@ -329,3 +358,17 @@ NksResult __cdecl nks_process_query_identity(void* process, uint32_t kind, uint3
     });
 }
 int64_t __cdecl nks_monotonic_now_ns() noexcept { return nanos(std::chrono::steady_clock::now()); }
+NksResult __cdecl nks_frame_get_session_data(const NksFrame* frame, uint32_t size, NksSessionData* result) noexcept
+{
+    if (!frame || !result) return NKS_INVALID_ARGUMENT;
+    if (size != sizeof(NksSessionData)) return NKS_ABI_MISMATCH;
+    *result = {};
+    if (!frame->processSnapshot) return NKS_NO_DATA;
+    return invoke([&] {
+        // Frames are shared read-only; the lazily built session view is their only mutable part.
+        auto& owned = const_cast<NksFrame&>(*frame);
+        std::call_once(owned.sessionsBuilt, [&] { owned.buildSessions(); });
+        *result = frame->sessionData;
+        return NKS_OK;
+    });
+}

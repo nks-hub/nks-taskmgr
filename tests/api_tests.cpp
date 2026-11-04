@@ -126,6 +126,35 @@ void verify()
     }
     require((processes.flags & NKS_RESOURCE_DATA) || nks_frame_get_network_transfer_data(processFrame.get(), sizeof(transfers), &transfers) == NKS_NO_DATA,
         "A process-only frame reported network transfers");
+    NksSessionData sessions{};
+    require(nks_frame_get_session_data(nullptr, sizeof(sessions), &sessions) == NKS_INVALID_ARGUMENT, "Null session frame was accepted");
+    require(nks_frame_get_session_data(processFrame.get(), sizeof(sessions) - 1, &sessions) == NKS_ABI_MISMATCH, "Wrong session layout was accepted");
+    require((processes.flags & NKS_RESOURCE_DATA) || nks_frame_get_session_data(resourceFrame.get(), sizeof(sessions), &sessions) == NKS_NO_DATA,
+        "A resource-only frame reported sessions");
+    require(nks_frame_get_session_data(processFrame.get(), sizeof(sessions), &sessions) == NKS_OK && sessions.state == NKS_SAMPLE_VALID
+        && sessions.process_count == p.process_count, "Session data depended on the destroyed monitor");
+    DWORD currentSession{};
+    require(ProcessIdToSessionId(GetCurrentProcessId(), &currentSession) != FALSE
+        && sessions.process_sessions[own - p.processes] == currentSession, "The process session did not survive the collector");
+    const NksSession* ownSession{};
+    uint32_t members{};
+    for (uint32_t i = 0; i < sessions.session_count; ++i) {
+        const auto& session = sessions.sessions[i];
+        require(session.state <= NKS_SESSION_UNKNOWN && session.protocol <= NKS_SESSION_PROTOCOL_UNKNOWN
+            && session.cpu_percent.known <= session.process_count && session.working_set_bytes.known <= session.process_count, "Session fields are outside their contract");
+        members += session.process_count;
+        if (session.session_id == currentSession) ownSession = &session;
+    }
+    uint32_t idle{};
+    for (uint32_t i = 0; i < p.process_count; ++i) idle += p.processes[i].pid == 0;
+    require(members + idle == p.process_count, "A process was not counted in exactly one session");
+    wchar_t user[257]{};
+    DWORD userLength = static_cast<DWORD>(std::size(user));
+    require(ownSession && ownSession->info_state == NKS_SAMPLE_VALID && GetUserNameW(user, &userLength)
+        && _wcsicmp(std::wstring(ownSession->user.data, ownSession->user.length).c_str(), user) == 0, "The current session lost its user");
+    NksSessionData again{};
+    require(nks_frame_get_session_data(processFrame.get(), sizeof(again), &again) == NKS_OK && again.sessions == sessions.sessions,
+        "Session data was rebuilt for the same frame");
     require(own->generation == generation && std::wstring(own->name.data, own->name.length) == name, "A frame depended on a destroyed monitor");
     NksFrameView retained{};
     require(nks_frame_get_view(processFrame.get(), sizeof(retained), &retained) == NKS_OK && retained.processes.process_count == p.process_count, "A retained frame was invalidated");

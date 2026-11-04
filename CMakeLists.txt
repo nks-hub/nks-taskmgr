@@ -53,6 +53,7 @@ endforeach()
 add_library(nks_native STATIC
     src/collectors/process_query.c
     src/collectors/process_parser.cpp
+    src/collectors/session_query.cpp
     src/collectors/process_collector.cpp
     src/collectors/process_identity.cpp
     src/collectors/process_details.cpp
@@ -91,7 +92,7 @@ add_library(nks_native STATIC
 target_include_directories(nks_native PUBLIC src)
 target_include_directories(nks_native SYSTEM PRIVATE third_party/phnt/include)
 target_compile_definitions(nks_native PRIVATE PHNT_VERSION=117)
-target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32 gdi32 wintrust crypt32 bcrypt tdh ole32 winhttp rasapi32)
+target_link_libraries(nks_native PUBLIC ntdll psapi pdh iphlpapi setupapi dxgi dxguid uuid advapi32 gdi32 wintrust crypt32 bcrypt tdh ole32 winhttp rasapi32 wtsapi32)
 target_compile_options(nks_native PRIVATE /W4 /WX /utf-8 $<$<COMPILE_LANGUAGE:CXX>:/permissive->)
 
 add_library(nks-monitor SHARED src/interop/monitor_api.cpp src/interop/services_api.cpp src/interop/history_api.cpp src/interop/events_api.cpp)
@@ -295,6 +296,10 @@ if(BUILD_TESTING)
     target_link_libraries(nks-network-transfer-tests PRIVATE nks_native)
     target_compile_options(nks-network-transfer-tests PRIVATE /W4 /WX /utf-8 /permissive-)
     add_test(NAME network-transfer-totals COMMAND nks-network-transfer-tests)
+    add_executable(nks-session-tests tests/session_tests.cpp)
+    target_link_libraries(nks-session-tests PRIVATE nks_native)
+    target_compile_options(nks-session-tests PRIVATE /W4 /WX /utf-8 /permissive-)
+    add_test(NAME sessions COMMAND nks-session-tests)
     add_executable(nks-resource-perf-tests tests/resource_perf_tests.cpp)
     target_link_libraries(nks-resource-perf-tests PRIVATE nks_native)
     target_compile_options(nks-resource-perf-tests PRIVATE /W4 /WX /utf-8 /permissive-)

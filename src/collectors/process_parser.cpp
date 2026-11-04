@@ -53,6 +53,7 @@ std::vector<ProcessRecord> parseProcesses(std::span<const std::byte> buffer, Boo
             raw.CreateTime.QuadPart ? GenerationKind::creationTime : GenerationKind::missing,
             static_cast<std::uint64_t>(raw.CreateTime.QuadPart)};
         record.parentPid = static_cast<std::uint32_t>(parent);
+        record.sessionId = raw.SessionId;
         if (raw.ImageName.Length) {
             record.name.resize(raw.ImageName.Length / sizeof(wchar_t));
             std::memcpy(record.name.data(), raw.ImageName.Buffer, raw.ImageName.Length);

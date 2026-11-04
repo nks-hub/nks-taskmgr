@@ -56,7 +56,7 @@ internal static class LaunchArguments
             if (i == 1 && string.Equals(Path.GetFileName(arg), "taskmgr.exe", StringComparison.OrdinalIgnoreCase)) break;
             if (arg.StartsWith("--view=", StringComparison.OrdinalIgnoreCase))
                 view ??= arg[7..].ToLowerInvariant() switch {
-                    "services" => DesktopView.Services, "applications" => DesktopView.Applications, "processes" => DesktopView.Processes, _ => null };
+                    "services" => DesktopView.Services, "applications" => DesktopView.Applications, "processes" => DesktopView.Processes, "users" => DesktopView.Users, _ => null };
             else if (IndependentPrefixes.Any(prefix => arg.StartsWith(prefix, StringComparison.Ordinal))) independent = true;
         }
         return new LaunchRequest(independent, view);
@@ -71,6 +71,7 @@ internal static class LaunchArguments
         Require(Parse(["gui", taskmgr, "/0", "/startup", "/7"]) == new LaunchRequest(false, null), "Task Manager arguments were not ignored.");
         Require(Parse(["gui", "taskmgr.EXE", "--smoke=a", "--view=Services"]) == new LaunchRequest(false, null), "Arguments after the Task Manager path were honored.");
         Require(Parse(["gui", "--view=services"]) == new LaunchRequest(false, DesktopView.Services), "The Services view was not parsed.");
+        Require(Parse(["gui", "--view=users"]) == new LaunchRequest(false, DesktopView.Users), "The Users view was not parsed.");
         Require(Parse(["gui", "--view=APPLICATIONS", "--view=Processes"]) == new LaunchRequest(false, DesktopView.Applications), "The first view did not win.");
         Require(Parse(["gui", "--view=Processes"]).View == DesktopView.Processes, "The Processes view was not parsed.");
         Require(Parse(["gui", "--view=Bogus", "--view=", "--view=1", "/7", "--unknown", "--unknown=x", ""]) == new LaunchRequest(false, null), "Unknown arguments changed behavior.");

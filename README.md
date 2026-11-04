@@ -227,6 +227,8 @@ Process identity uses the full 128-bit Windows boot identifier with the PID and 
 
 `nks_frame_get_network_transfer_data` returns bytes received and sent per network adapter since the monitor first observed it, with the start time. Totals add only non-negative deltas of the 64-bit interface octet counters; a counter decrease, an unavailable sample or a missing adapter restarts the baseline without adding traffic.
 
+`nks_frame_get_session_data` lists the local WTS sessions (user, domain, window station, connection state and protocol) with CPU, working set, private memory and I/O totals over each session's processes, plus a session ID per process in frame order. WTS is queried only on the first call for a frame. A sum marks how many members had a current sample; the idle process is excluded. A session that only processes reveal is reported with unknown state, and a denied user query reports `ACCESS_DENIED` instead of an empty name. The WinUI Users view (Uživatelé) shows these totals and expands a session into its processes; per-process network traffic is not attributed yet, so the network column stays unavailable.
+
 Run the collection benchmark:
 
 ```powershell

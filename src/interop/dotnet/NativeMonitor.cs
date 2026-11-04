@@ -187,6 +187,34 @@ public struct NetworkTransferInfo
     public uint Reserved;
 }
 
+public enum SessionConnectState : uint { Active, Connected, ConnectQuery, Shadow, Disconnected, Idle, Listen, Reset, Down, Init, Unknown }
+public enum SessionProtocol : uint { Console, Ica, Rdp, Unknown }
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct SessionSum { public double Value; public uint Known, Overflow; }
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public struct SessionInfo
+{
+    public uint SessionId;
+    public SessionConnectState State;
+    public SessionProtocol Protocol;
+    public SampleState InfoState;
+    public String16 User, Domain, Station;
+    public uint ProcessCount, Reserved;
+    public SessionSum CpuPercent, WorkingSetBytes, PrivateBytes, IoBytesPerSecond;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public unsafe struct SessionData
+{
+    public SessionInfo* Sessions;
+    public uint* ProcessSessions;
+    public uint SessionCount, ProcessCount;
+    public SampleState State;
+    public uint Reserved;
+}
+
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
 public unsafe struct NetworkTransferData { public NetworkTransferInfo* Adapters; public uint AdapterCount, Reserved; }
 
@@ -298,6 +326,17 @@ public sealed partial class NativeFrame : SafeHandleZeroOrMinusOneIsInvalid
         return identity;
     }
 
+    public unsafe void ReadSessions(Action<SessionData> visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+        Use(pointer => {
+            var status = NativeMethods.GetSessionData(pointer, (uint)sizeof(SessionData), out var data);
+            if (status == NativeResult.NoData) return;
+            NativeMonitor.Check(status);
+            visitor(data);
+        });
+    }
+
     public unsafe void ReadProcessCreationTimes(Action<ProcessCreationData> visitor)
     {
         ArgumentNullException.ThrowIfNull(visitor);
@@ -351,6 +390,8 @@ internal static partial class NativeMethods
     internal static partial NativeResult GetBootData(nint frame, uint dataSize, out BootIdentityInfo data);
     [LibraryImport(Library, EntryPoint = "nks_frame_get_process_creation_data")]
     internal static partial NativeResult GetProcessCreationData(nint frame, uint dataSize, out ProcessCreationData data);
+    [LibraryImport(Library, EntryPoint = "nks_frame_get_session_data")]
+    internal static partial NativeResult GetSessionData(nint frame, uint dataSize, out SessionData data);
     [LibraryImport(Library, EntryPoint = "nks_process_query_identity")]
     internal static partial NativeResult QueryProcessIdentity(SafeProcessHandle process, GenerationKind kind, uint dataSize, out ProcessIdentityInfo data);
     [LibraryImport(Library, EntryPoint = "nks_frame_retain")]

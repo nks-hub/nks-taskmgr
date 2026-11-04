@@ -125,7 +125,7 @@ std::vector<std::byte> encode(const ProcessSnapshot& value)
     for (const auto& process : value.processes) {
         identity(out, process.identity); out.number(process.parentPid); out.text(process.name); counters(out, process.counters);
         metric(out, process.cpuPercent); metric(out, process.readIoBytesPerSecond); metric(out, process.writeIoBytesPerSecond);
-        out.number(process.created100ns);
+        out.number(process.created100ns); out.number(process.sessionId);
     }
     processMetadata(out, value.measurements); return std::move(out.bytes);
 }
@@ -149,12 +149,12 @@ ProcessSnapshot decodeProcesses(std::span<const std::byte> payload)
     value.systemKernel100ns = in.number<std::uint64_t>(); value.systemUser100ns = in.number<std::uint64_t>();
     value.systemIdle100ns = in.number<std::uint64_t>(); value.processorState = in.enumeration<SampleState>(7);
     value.systemCpuPercent = metric(in); value.memory = memory(in);
-    const auto count = in.count(131072, 152); value.processes.reserve(count);
+    const auto count = in.count(131072, 156); value.processes.reserve(count);
     for (std::uint32_t i = 0; i < count; ++i) {
         ProcessRecord process;
         process.identity = identity(in); process.parentPid = in.number<std::uint32_t>(); process.name = in.text(); process.counters = counters(in);
         process.cpuPercent = metric(in); process.readIoBytesPerSecond = metric(in); process.writeIoBytesPerSecond = metric(in);
-        process.created100ns = in.number<std::uint64_t>(); value.processes.push_back(std::move(process));
+        process.created100ns = in.number<std::uint64_t>(); process.sessionId = in.number<std::uint32_t>(); value.processes.push_back(std::move(process));
     }
     value.measurements = processMetadata(in); in.finished(); return value;
 }

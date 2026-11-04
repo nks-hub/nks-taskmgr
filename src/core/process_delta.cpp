@@ -11,7 +11,7 @@ bool metricEqual(const Metric<double>& left, const Metric<double>& right) {
 bool equal(const ProcessRecord& left, const ProcessRecord& right) {
     const auto& a = left.counters; const auto& b = right.counters;
     return left.identity == right.identity && left.parentPid == right.parentPid && left.name == right.name
-        && left.created100ns == right.created100ns && a.kernel100ns == b.kernel100ns && a.user100ns == b.user100ns
+        && left.created100ns == right.created100ns && left.sessionId == right.sessionId && a.kernel100ns == b.kernel100ns && a.user100ns == b.user100ns
         && a.readIoBytes == b.readIoBytes && a.writeIoBytes == b.writeIoBytes && a.workingSetBytes == b.workingSetBytes
         && a.privateBytes == b.privateBytes && a.threads == b.threads && a.handles == b.handles
         && metricEqual(left.cpuPercent, right.cpuPercent) && metricEqual(left.readIoBytesPerSecond, right.readIoBytesPerSecond)

@@ -100,11 +100,12 @@ int main() {
             NativeEntry entry;
             entry.named(L"example.exe");
             entry.set([](auto& raw) { raw.UniqueProcessId = reinterpret_cast<HANDLE>(42); raw.CreateTime.QuadPart = 123;
-                raw.WorkingSetSize = 4096; raw.PrivatePageCount = 8192; });
+                raw.WorkingSetSize = 4096; raw.PrivatePageCount = 8192; raw.SessionId = 3; });
             const auto records = nks::parseProcesses(entry.bytes, {99, 199});
             require(records.size() == 1 && records[0].name == L"example.exe", "Name or entry count is wrong");
             require(records[0].identity == nks::ProcessIdentity{{99, 199}, 42, nks::GenerationKind::creationTime, 123}, "Wrong process identity");
             require(records[0].counters.workingSetBytes == 4096 && records[0].counters.privateBytes == 8192, "Working set and private memory were confused");
+            require(records[0].sessionId == 3, "Session identifier was lost");
         }},
         {"truncated fixed header", [] { try { (void)nks::parseProcesses({}, {}); } catch (const std::runtime_error&) { return; } throw std::runtime_error("Empty buffer accepted"); }},
         {"next offset inside header", [] { rejected([](auto& e) { e.set([](auto& r) { r.NextEntryOffset = 8; }); }); }},

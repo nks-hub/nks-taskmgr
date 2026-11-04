@@ -14,7 +14,7 @@ using WinRT;
 using System.Runtime.InteropServices;
 
 namespace NksTaskMgr.WinUI;
-internal enum DesktopView { Processes, Performance, Services, Hardware, Applications }
+internal enum DesktopView { Processes, Performance, Services, Hardware, Applications, Users }
 
 public sealed partial class MainWindow : Window
 {
@@ -107,7 +107,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
-        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureProcessActions(); ConfigureProcessDump(); ConfigureProcessEvents(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); ConfigureUpdates(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware(); InitializeContextMenus();
+        ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureProcessActions(); ConfigureProcessDump(); ConfigureProcessEvents(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); ConfigureUpdates(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware(); BuildUsers(); InitializeContextMenus();
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");
@@ -225,13 +225,13 @@ public sealed partial class MainWindow : Window
         titleText.Margin = new Thickness(42, 0, 0, 0); title.Children.Add(titleText);
         Grid.SetColumnSpan(title, 2); root.Children.Add(title); SetTitleBar(title);
         var nav = new StackPanel { Spacing = 4, Margin = new Thickness(6, 8, 6, 0) };
-        foreach (var button in new[] { processesNav, applicationNav, performanceNav, servicesNav, hardwareNav }) {
+        foreach (var button in new[] { processesNav, applicationNav, performanceNav, servicesNav, usersNav, hardwareNav }) {
             button.Height = 44; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 11; button.BorderThickness = new Thickness(0);
             button.Padding = new Thickness(4, 0, 4, 0);
             var content = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Center };
-            string name = button == applicationNav ? "Aplikace" : button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : button == hardwareNav ? "Sestava" : "Procesy";
+            string name = button == usersNav ? "Uživatelé" : button == applicationNav ? "Aplikace" : button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : button == hardwareNav ? "Sestava" : "Procesy";
             AutomationProperties.SetName(button, name);
-            content.Children.Add(button == applicationNav ? new SymbolIcon(Symbol.AllApps) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
+            content.Children.Add(button == applicationNav || button == usersNav ? new SymbolIcon(button == usersNav ? Symbol.People : Symbol.AllApps) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
                 : UiIcon.Create(button == performanceNav ? "performance" : button == servicesNav ? "services" : button == hardwareNav ? "hardware" : "processes", 0x95a4ad));
             content.Children.Add(Label(name, 9, 0x95a4ad));
             button.Content = content;
@@ -338,6 +338,7 @@ public sealed partial class MainWindow : Window
         applicationNav.Background = Display.Brush(applications ? 0x28343bu : 0x12181cu);
         servicesNav.Background = Display.Brush(services ? 0x28343bu : 0x12181cu);
         hardwareNav.Background = Display.Brush(hardware ? 0x28343bu : 0x12181cu);
+        ShowUsers(next == DesktopView.Users);
         servicesModel?.SetActivity(services && !IsIconic(windowHandle), model.Paused);
         if (services && serviceList.ItemsSource is null) serviceList.ItemsSource = servicesModel!.Visible;
         Resize();
@@ -397,7 +398,7 @@ public sealed partial class MainWindow : Window
             TickServices(!minimized && view == DesktopView.Services);
             if (changed && !minimized) {
                 if (selectedResource is null || !model.Resources.Contains(selectedResource)) resourceList.SelectedItem = model.Resources.FirstOrDefault();
-                if (performance) RefreshPerformance(); else if (view is DesktopView.Processes or DesktopView.Applications) RefreshProcesses(); else if (view == DesktopView.Hardware) RefreshHardware();
+                if (performance) RefreshPerformance(); else if (view is DesktopView.Processes or DesktopView.Applications) RefreshProcesses(); else if (view == DesktopView.Hardware) RefreshHardware(); else if (view == DesktopView.Users) RefreshUsers();
             }
             if (++ticks % 10 == 0 && !minimized) {
                 footer.Text = view == DesktopView.Services ? ServicesFooter() : (model.Paused ? "Pozastaveno" : "Živá data") + $" · {model.Processes.Count} procesů · stáří "

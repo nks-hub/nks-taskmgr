@@ -109,6 +109,7 @@ public sealed partial class MonitorModel : IDisposable
                 if ((view.Flags & FrameFlags.ProcessData) != 0)
                     BootIdentity = frame.ReadBootIdentity() ?? new BootIdentityInfo { State = SampleState.Unavailable };
                 ApplyFrame(frame, view);
+                ReadSessions(frame, view);
                 if ((view.Flags & FrameFlags.ResourceData) != 0) {
                     frame.ReadGpu(data => ApplyGpu(data, false));
                     frame.ReadNetworkTransfers(ApplyNetworkTransfers);

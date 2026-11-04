@@ -8,6 +8,7 @@ _Static_assert(sizeof(NksBootData) == 24, "C boot identity layout changed");
 _Static_assert(sizeof(NksProcessLossData) == 8, "C process loss layout changed");
 _Static_assert(sizeof(NksGpuEngine) == 48 && sizeof(NksGpu) == 56 && sizeof(NksGpuData) == 16, "C GPU layout changed");
 _Static_assert(sizeof(NksNetworkTransfer) == 56 && sizeof(NksNetworkTransferData) == 16, "C network transfer layout changed");
+_Static_assert(sizeof(NksSessionSum) == 16 && sizeof(NksSession) == 136 && sizeof(NksSessionData) == 32, "C session layout changed");
 _Static_assert(offsetof(NksProcess, name) == 136, "C UTF-16 name offset changed");
 _Static_assert(sizeof(NksServiceConfig) == 80 && sizeof(NksService) == 128, "C service layout changed");
 _Static_assert(sizeof(NksServiceDetail) == 168 && sizeof(NksServiceFrameView) == 248, "C service detail layout changed");

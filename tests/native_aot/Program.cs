@@ -17,6 +17,7 @@ internal static class Program
         Require(sizeof(GpuEngineInfo) == 48 && sizeof(GpuInfo) == 56 && sizeof(GpuData) == 16, "Managed GPU layout mismatch.");
         Require(sizeof(BootIdentityInfo) == 24, "Managed boot identity layout mismatch.");
         Require(sizeof(NetworkTransferInfo) == 56 && sizeof(NetworkTransferData) == 16, "Managed network transfer layout mismatch.");
+        Require(sizeof(SessionSum) == 16 && sizeof(SessionInfo) == 136 && sizeof(SessionData) == 32, "Managed session layout mismatch.");
         using var monitor = NativeMonitor.Open(250, paused: true);
         Thread.Sleep(300);
         using var pausedFrame = monitor.Read();
@@ -91,7 +92,16 @@ internal static class Program
                 }
             });
             Require(survived, "A retained AOT frame depended on the monitor or garbage collector.");
-            Console.WriteLine($"NativeAOT=True; processes={processCount}; logical={logicalCount}; disks={disks}; gpus={gpus}; networks={networks}; retained=True");
+            uint sessions = 0;
+            retained.ReadSessions(data => {
+                Require(data.State == SampleState.Valid && data.ProcessCount == processCount, "AOT session data was incomplete.");
+                for (uint i = 0; i < data.SessionCount; ++i)
+                    if (data.Sessions[i].SessionId == (uint)Process.GetCurrentProcess().SessionId)
+                        Require(data.Sessions[i].User.Copy().Equals(Environment.UserName, StringComparison.OrdinalIgnoreCase), "AOT session user was lost.");
+                sessions = data.SessionCount;
+            });
+            Require(sessions > 0, "AOT session data was missing.");
+            Console.WriteLine($"NativeAOT=True; processes={processCount}; logical={logicalCount}; disks={disks}; gpus={gpus}; networks={networks}; sessions={sessions}; retained=True");
         } finally { retained?.Dispose(); }
     }
 
