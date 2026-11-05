@@ -76,17 +76,17 @@ public sealed partial class MainWindow
     private Expander cpuSensorDetails = null!;
     private readonly HardwareFactRows cpuSensorDetailsRows = new();
 
-    private void AddCpuSensorChoice(StackPanel body)
+    private void AddCpuSensorChoice(Grid heading)
     {
-        cpuSensorChoice = new CheckBox { Content = new TextBlock { Text = "Číst teplotu CPU z externího monitoru čidel", TextWrapping = TextWrapping.Wrap }, IsChecked = false };
-        var help = Label("Vyžaduje již spuštěný program kompatibilní s LibreHardwareMonitor. Tato aplikace jej neinstaluje ani nespouští. Identita externího zdroje není ověřena.", 12, 0x95a4ad);
-        help.TextWrapping = TextWrapping.Wrap;
+        cpuSensorChoice = new CheckBox { Content = "Teplota z čidel", IsChecked = false, MinWidth = 0, FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
+        ToolTipService.SetToolTip(cpuSensorChoice, "Číst teplotu CPU z již spuštěného programu kompatibilního s LibreHardwareMonitor (127.0.0.1:8085)."
+            + " Tato aplikace jej neinstaluje ani nespouští a identitu externího zdroje neověřuje.");
         cpuSensorChoice.Click += (_, _) => {
             model.SetCpuSensors(cpuSensorChoice.IsChecked == true);
             cpuSensorChoice.IsChecked = model.CpuSensorsEnabled;
             RefreshHardware();
         };
-        body.Children.Add(cpuSensorChoice); body.Children.Add(help);
+        Grid.SetColumn(cpuSensorChoice, 1); heading.Children.Add(cpuSensorChoice);
     }
 
     private void AddCpuSensorDetails(StackPanel body)
@@ -95,7 +95,7 @@ public sealed partial class MainWindow
         var help = Label("Čte se místní HTTP API kompatibilní s LibreHardwareMonitor na 127.0.0.1:8085, GET /metrics. Poskytovatel a jeho čidla musí být již spuštěné samostatně. Aplikace nic neinstaluje ani nespouští. Identita poskytovatele není ověřena; jiný port nebo staré API nejsou podporované.", 12, 0x95a4ad);
         help.TextWrapping = TextWrapping.Wrap;
         content.Children.Add(help); content.Children.Add(cpuSensorDetailsRows.Panel);
-        cpuSensorDetails = new Expander { Header = "Podrobnosti externích čidel", Content = content, IsExpanded = false, HorizontalAlignment = HorizontalAlignment.Stretch };
+        cpuSensorDetails = new Expander { Header = "Podrobnosti čidel", Content = content, IsExpanded = false, HorizontalAlignment = HorizontalAlignment.Stretch, Visibility = Visibility.Collapsed };
         body.Children.Add(cpuSensorDetails);
     }
 }
