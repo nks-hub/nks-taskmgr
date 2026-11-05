@@ -14,18 +14,21 @@ internal static class Appearance
 {
     private static readonly string preferencePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NksTaskMgr", "appearance.txt");
     private static readonly UISettings system = new();
+    private static readonly AccessibilitySettings accessibility = new();
     private static DispatcherQueue? dispatcher;
     internal static AppAppearance Preference { get; private set; } = ReadPreference();
     internal static bool IsDark { get; private set; } = ResolveDark();
+    internal static bool IsHighContrast { get; private set; } = accessibility.HighContrast;
     internal static ElementTheme Theme => IsDark ? ElementTheme.Dark : ElementTheme.Light;
     internal static event Action? Changed;
 
     static Appearance()
     {
-        system.ColorValuesChanged += (_, _) => dispatcher?.TryEnqueue(() => {
-            if (Preference == AppAppearance.System) Apply();
-        });
+        // Windows raises this for theme and high contrast changes alike; Apply ignores unchanged states.
+        system.ColorValuesChanged += (_, _) => dispatcher?.TryEnqueue(Apply);
     }
+
+    internal static Windows.UI.Color SystemColor(UIElementType type) => system.UIElementColor(type);
 
     private static bool ResolveDark()
     {
@@ -36,9 +39,9 @@ internal static class Appearance
 
     private static void Apply()
     {
-        bool dark = ResolveDark();
-        if (IsDark == dark) return;
-        IsDark = dark; ThemePalette.Refresh(); Changed?.Invoke();
+        bool dark = ResolveDark(), contrast = accessibility.HighContrast;
+        if (IsDark == dark && IsHighContrast == contrast) return;
+        IsDark = dark; IsHighContrast = contrast; ThemePalette.Refresh(); Changed?.Invoke();
     }
 
     internal static bool Select(AppAppearance preference)

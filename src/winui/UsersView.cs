@@ -101,7 +101,7 @@ public sealed partial class MainWindow
     private void ShowUsers(bool visible)
     {
         usersPage.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        usersNav.Background = Display.Brush(visible ? 0x28343bu : 0x12181cu);
+        MarkNavigation(usersNav, visible);
         model.SetSessionViewVisible(visible);
         if (!visible) return;
         heading.Text = "Uživatelé"; heading.Visibility = Visibility.Visible;

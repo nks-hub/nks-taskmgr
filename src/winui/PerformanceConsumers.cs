@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 
 namespace NksTaskMgr.WinUI;
@@ -15,12 +16,14 @@ public sealed partial class MainWindow
         internal readonly Button Button = MainWindow.Button("");
         internal readonly TextBlock Title = Label("", 11, 0xe9eef0), Pid = Label("", 9, 0x95a4ad), Value = Label("", 12, 0xe9eef0);
         private readonly Border icon = new() { Width = 20, Height = 20, VerticalAlignment = VerticalAlignment.Center };
+        private readonly int index;
         private uint? color;
         private ProcessRow? boundRow;
         internal ProcessKey? Key { get; private set; }
 
         internal PerformanceConsumerCard(int index, Action<PerformanceConsumerCard> clicked)
         {
+            this.index = index;
             var content = new Grid { ColumnSpacing = 7 };
             foreach (var width in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
                 content.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
@@ -45,6 +48,8 @@ public sealed partial class MainWindow
             if (row is null) return;
             SetConsumerText(Title, row.Name); SetConsumerText(Pid, "PID " + row.PidText);
             SetConsumerText(Value, memory ? row.WorkingText : row.CpuText);
+            string label = $"{index + 1}. {row.Name}, PID {row.PidText}, {Value.Text}";
+            if (AutomationProperties.GetName(Button) != label) AutomationProperties.SetName(Button, label);
             if (color != nextColor) { icon.Child = UiIcon.Create(false, nextColor, 18); color = nextColor; }
         }
 

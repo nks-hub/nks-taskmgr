@@ -80,7 +80,7 @@ public sealed partial class MainWindow
     private void ShowStartupPage(bool visible)
     {
         startupPage.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        startupNav.Background = Display.Brush(visible ? 0x28343bu : 0x12181cu);
+        MarkNavigation(startupNav, visible);
         if (visible && !startupLoaded) { startupLoaded = true; _ = LoadStartupAsync(); }
     }
 

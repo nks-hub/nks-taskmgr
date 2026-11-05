@@ -16,8 +16,20 @@ internal static class ThemePalette
         return brush;
     }
 
+    /// <summary>Label on a selected (0x28343b) fill: secondary text normally, HighlightText in high contrast.</summary>
+    internal const uint SelectedLabel = 0x0195a4ad;
+
     internal static Windows.UI.Color Color(uint color, byte alpha = 255)
     {
+        if (color == SelectedLabel) {
+            if (!Appearance.IsHighContrast) return Color(0x95a4ad, alpha);
+            var text = Appearance.SystemColor(Windows.UI.ViewManagement.UIElementType.HighlightText);
+            return Windows.UI.Color.FromArgb(alpha, text.R, text.G, text.B);
+        }
+        if (Appearance.IsHighContrast) {
+            var system = Appearance.SystemColor(HighContrastRole(color));
+            return Windows.UI.Color.FromArgb(alpha, system.R, system.G, system.B);
+        }
         uint value = Appearance.IsDark ? color switch {
             0x12181c => 0x14171a, 0x171d21 => 0x181b1e, 0x1d252a => 0x202428,
             0x222d34 => 0x242a2f, 0x232d34 => 0x252c32, 0x253039 => 0x29323a,
@@ -36,6 +48,16 @@ internal static class ThemePalette
         };
         return Windows.UI.Color.FromArgb(alpha, (byte)(value >> 16), (byte)(value >> 8), (byte)value);
     }
+
+    /// <summary>Maps a dark-palette color to the Windows high contrast role: surfaces to Window, the selected
+    /// navigation fill to Highlight, data series to Hotlight and every text or line to WindowText.</summary>
+    internal static Windows.UI.ViewManagement.UIElementType HighContrastRole(uint color) => color switch {
+        0x28343b => Windows.UI.ViewManagement.UIElementType.Highlight,
+        0x2c363d or 0x22282d or 0x3b4851 or 0x52616a => Windows.UI.ViewManagement.UIElementType.WindowText,
+        0xedc08b or 0xef835f or 0x80c5c0 or 0x83bca0 or 0xabb0f1 or 0xcc9bb6 or 0xdfaf76 => Windows.UI.ViewManagement.UIElementType.Hotlight,
+        _ => 0.2126 * (color >> 16 & 0xff) + 0.7152 * (color >> 8 & 0xff) + 0.0722 * (color & 0xff) < 100
+            ? Windows.UI.ViewManagement.UIElementType.Window : Windows.UI.ViewManagement.UIElementType.WindowText
+    };
 
     internal static void Refresh()
     {

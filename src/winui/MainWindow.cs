@@ -171,6 +171,19 @@ public sealed partial class MainWindow : Window
         App.Trace("Window initialized");
     }
 
+    // Selected labels use HighlightText in high contrast so they stay readable on the Highlight fill.
+    private static void MarkNavigation(Button button, bool selected)
+    {
+        button.Background = Display.Brush(selected ? 0x28343bu : 0x12181cu);
+        var brush = Display.Brush(selected ? ThemePalette.SelectedLabel : 0x95a4adu);
+        if (button.Content is not Panel content) return;
+        foreach (var child in content.Children) {
+            if (child is TextBlock text) text.Foreground = brush;
+            else if (child is IconElement icon) icon.Foreground = brush;
+            else if (child is Viewbox { Child: Panel canvas }) foreach (var path in canvas.Children.OfType<Microsoft.UI.Xaml.Shapes.Path>()) path.Stroke = brush;
+        }
+    }
+
     private static TextBlock Label(string text, double size, uint color) => new() {
         Text = text, FontSize = Math.Max(11, size), Foreground = Display.Brush(color), FontFamily = UiTypography.Font,
         FontWeight = size >= 14 && size != 42 ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
@@ -336,11 +349,11 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetName(search, search.PlaceholderText);
         SetNavigationSearchText(services ? servicesModel!.Query : processQuery);
         if (!services) model.SetQuery(processQuery);
-        performanceNav.Background = Display.Brush(performance ? 0x28343bu : 0x12181cu);
-        processesNav.Background = Display.Brush(next == DesktopView.Processes ? 0x28343bu : 0x12181cu);
-        applicationNav.Background = Display.Brush(applications ? 0x28343bu : 0x12181cu);
-        servicesNav.Background = Display.Brush(services ? 0x28343bu : 0x12181cu);
-        hardwareNav.Background = Display.Brush(hardware ? 0x28343bu : 0x12181cu);
+        MarkNavigation(performanceNav, performance);
+        MarkNavigation(processesNav, next == DesktopView.Processes);
+        MarkNavigation(applicationNav, applications);
+        MarkNavigation(servicesNav, services);
+        MarkNavigation(hardwareNav, hardware);
         ShowUsers(next == DesktopView.Users);
         ShowStartupPage(startup);
         servicesModel?.SetActivity(services && !IsIconic(windowHandle), model.Paused);
@@ -591,7 +604,7 @@ public sealed partial class MainWindow : Window
             if (smokeCompactShell is null) { smokeCompactShell = CheckCompactShellAsync(); return; }
             if (!smokeCompactShell.IsCompleted) return;
             smokeCompactShell.GetAwaiter().GetResult();
-            if (smokeKeyboard is null) { smokeKeyboard = CheckKeyboardTraversalAsync(); return; }
+            if (smokeKeyboard is null) { CheckHighContrast(); smokeKeyboard = CheckKeyboardTraversalAsync(); return; }
             if (!smokeKeyboard.IsCompleted) return;
             smokeKeyboard.GetAwaiter().GetResult();
             if (smokeSnapshotComparison is null) { smokeSnapshotComparison = SnapshotComparisonUiChecks.RunAsync(); return; }
