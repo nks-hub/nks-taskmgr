@@ -12,26 +12,27 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private static readonly double[] userColumns = [0, 104, 44, 104, 120, 80, 110, 100, 90];
-    private const int FirstMetricColumn = 5;
+    // Columns follow Task Manager (Uživatel, Stav, CPU, Paměť, Disk, Síť); ID, station and client stay in the row tooltip.
     private readonly Button usersNav = Button("Uživatelé");
     private readonly Grid usersPage = new() { Visibility = Visibility.Collapsed };
-    private readonly StackPanel userLines = new();
-    private readonly TextBlock usersStatus = Label("Načítám relace…", 10, 0x95a4ad);
-    private readonly Button disconnectUser = Button("Odpojit"), logoffUser = Button("Odhlásit se"), messageUser = Button("Odeslat zprávu…"),
-        manageAccounts = Button("Spravovat uživatelské účty"), usersOptions = Button("Zobrazit");
+    private readonly ListView usersList = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
+    private readonly GroupLines userItems = [];
+    private readonly GroupTemplates groupTemplates = new();
+    private Grid usersHeader = new();
+    private readonly List<(Button Button, TextBlock Text)> userHeaders = [];
+    private readonly TextBlock usersStatus = Label("Načítám relace…", 11, 0x95a4ad);
+    private readonly Button disconnectUser = Button("Odpojit"), logoffUser = Button("Odhlásit"), messageUser = Button("Zpráva…"),
+        usersOptions = Button("⋯");
     private readonly ToggleMenuFlyoutItem fullAccountName = new() { Text = "Zobrazit celý název účtu" };
     private readonly HashSet<uint> expandedSessions = [];
-    private readonly Dictionary<uint, SessionLine> sessionLines = [];
-    private readonly List<ProcessLine> processLines = [];
-    private readonly Dictionary<uint, (ProcessBranchMetric Sum, int Count)> sessionNetwork = [];
+    private readonly Dictionary<uint, GroupLine> sessionItems = [];
+    private readonly Dictionary<ProcessKey, GroupLine> userProcessItems = [];
     private readonly Dictionary<string, string> fullNames = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> fullNamesPending = new(StringComparer.OrdinalIgnoreCase);
     private uint? selectedSession;
-    private bool userActionBusy;
-
-    private sealed record SessionLine(Button Button, TextBlock[] Cells);
-    private sealed record ProcessLine(Grid Line, TextBlock[] Cells);
+    private bool userActionBusy, updatingUserSelection, userNetworkShown = true;
+    private int userSortColumn;
+    private bool userSortDescending;
 
     private void BuildUsers()
     {
@@ -39,63 +40,68 @@ public sealed partial class MainWindow
         usersPage.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         usersPage.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         usersPage.RowDefinitions.Add(new RowDefinition());
-        var toolbar = new Grid { MinHeight = 34, Margin = new Thickness(0, 0, 0, 6) };
+        var toolbar = new Grid { MinHeight = 34, Margin = new Thickness(0, 0, 0, 6), ColumnSpacing = 8 };
         toolbar.ColumnDefinitions.Add(new ColumnDefinition()); toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        usersStatus.VerticalAlignment = VerticalAlignment.Center; toolbar.Children.Add(usersStatus);
+        usersStatus.VerticalAlignment = VerticalAlignment.Center; usersStatus.TextTrimming = TextTrimming.CharacterEllipsis; toolbar.Children.Add(usersStatus);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
         disconnectUser.Click += async (_, _) => await RunUserActionAsync(UserSessionAction.Disconnect);
         logoffUser.Click += async (_, _) => await RunUserActionAsync(UserSessionAction.Logoff);
         messageUser.Click += async (_, _) => await RunUserActionAsync(UserSessionAction.Message);
-        manageAccounts.Click += (_, _) => OpenUserAccounts();
         ToolTipService.SetToolTip(disconnectUser, "Odpojit vybraného uživatele. Jeho relace a programy dál běží.");
         ToolTipService.SetToolTip(logoffUser, "Odhlásit vybraného uživatele. Neuložená data jeho programů se mohou ztratit.");
         ToolTipService.SetToolTip(messageUser, "Zobrazit zprávu na ploše vybraného uživatele.");
-        ToolTipService.SetToolTip(manageAccounts, "Otevřít Uživatelské účty v Ovládacích panelech");
+        AutomationProperties.SetName(usersOptions, "Další možnosti uživatelů");
         var options = new MenuFlyout();
         options.Items.Add(ContextItem("Rozbalit vše", "users-expand-all", true, () => { foreach (var session in model.Sessions) expandedSessions.Add(session.Id); RefreshUsers(); }));
         options.Items.Add(ContextItem("Sbalit vše", "users-collapse-all", true, () => { expandedSessions.Clear(); RefreshUsers(); }));
         options.Items.Add(new MenuFlyoutSeparator());
         fullAccountName.Click += (_, _) => RefreshUsers();
         options.Items.Add(fullAccountName);
+        options.Items.Add(ContextItem("Spravovat uživatelské účty", "users-accounts", true, OpenUserAccounts));
         usersOptions.Flyout = options;
-        foreach (var button in new[] { disconnectUser, logoffUser, messageUser, manageAccounts, usersOptions }) { button.Height = 28; actions.Children.Add(button); }
+        foreach (var button in new[] { disconnectUser, logoffUser, messageUser, usersOptions }) { button.Height = 28; actions.Children.Add(button); }
         Grid.SetColumn(actions, 1); toolbar.Children.Add(actions);
         usersPage.Children.Add(toolbar);
-        var header = UserColumns(out var titles, 0x95a4ad, 11);
-        header.Padding = new Thickness(8, 0, 8, 0); header.MinHeight = 30;
-        header.BorderBrush = Display.Brush(0x2c363d); header.BorderThickness = new Thickness(0, 0, 0, 1);
-        string[] names = ["Uživatel", "Stav", "ID", "Relace", "Název klienta", "CPU", "Paměť", "Disk", "Síť"];
+
         string[] tips = [
-            "Přihlášený uživatel a počet procesů relace. Kliknutí rozbalí nebo sbalí procesy relace.", "Stav relace Windows.", "Číslo relace.",
-            "Název stanice relace, například Console nebo RDP-Tcp#2.", "Název počítače, ze kterého je relace připojena vzdáleně.",
-            "Součet CPU procesů relace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.",
-            "Součet pracovních sad procesů relace. Sdílené stránky RAM mohou být započteny opakovaně; privátní paměť je v popisku řádku.",
-            "Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory), nejen fyzického disku.",
-            "Součet odeslaných a přijatých bajtů TCP/UDP procesů relace. Měří se jen během vlastního záznamu ETW v okně Události procesů,"
-                + " který vyžaduje správce; jinak „—“. ≥ označuje známou část, když provoz nebo některý proces nešlo přiřadit."];
-        for (int i = 0; i < titles.Length; ++i) { titles[i].Text = names[i]; ToolTipService.SetToolTip(titles[i], tips[i]); }
-        Grid.SetRow(header, 1); usersPage.Children.Add(header);
-        var scroll = new ScrollViewer { Content = userLines, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        AutomationProperties.SetName(userLines, "Relace uživatelů");
-        Grid.SetRow(scroll, 2); usersPage.Children.Add(scroll);
+            "Přihlášený uživatel a počet jeho procesů. Šipka nebo dvojklik rozbalí procesy.", "Stav relace Windows.",
+            "Součet CPU procesů. ≥ označuje známou část, když některý proces nemá aktuální vzorek.",
+            "Součet pracovních sad procesů. Přesné hodnoty v MB jsou v popisku buňky.",
+            "Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory).",
+            "Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem."];
+        usersHeader = GroupHeader("Uživatel", tips, userHeaders, column => {
+            userSortDescending = userSortColumn == column ? !userSortDescending : column >= 2; userSortColumn = column; RefreshUsers();
+        });
+        Grid.SetRow(usersHeader, 1); usersPage.Children.Add(usersHeader);
+
+        ConfigureGroupList(usersList, userItems, () => userNetworkShown);
+        usersList.SelectionChanged += (_, _) => {
+            if (updatingUserSelection || usersList.SelectedItem is not GroupLine line) return;
+            selectedSession = line.Group is uint id ? id : null; RefreshUserActions();
+        };
+        usersList.DoubleTapped += (_, args) => { if (LineFrom(args.OriginalSource) is { IsGroup: true } line) ToggleUserGroup(line); };
+        usersList.PreviewKeyDown += (_, args) => {
+            if (args.Key is not (VirtualKey.Left or VirtualKey.Right) || usersList.SelectedItem is not GroupLine { Group: uint id }) return;
+            SetSessionExpanded(id, args.Key == VirtualKey.Right); args.Handled = true;
+        };
+        usersList.ContextRequested += (_, args) => {
+            if (LineFrom(args.OriginalSource) is not { Group: uint id } line || usersList.ContainerFromItem(line) is not FrameworkElement owner) return;
+            UserContextRequested(id, owner, args);
+        };
+        AutomationProperties.SetName(usersList, "Uživatelé a jejich procesy"); AutomationProperties.SetAutomationId(usersList, "users-list");
+        Grid.SetRow(usersList, 2); usersPage.Children.Add(usersList);
         page.Children.Add(usersPage);
         model.SessionNotifications = UserSessionApi.Watch(windowHandle);
         Closed += (_, _) => { if (model.SessionNotifications) UserSessionApi.Unwatch(windowHandle); };
         RefreshUserActions();
     }
 
-    private static Grid UserColumns(out TextBlock[] cells, uint color, double size)
+    private static GroupLine? LineFrom(object source) => (source as FrameworkElement)?.DataContext as GroupLine;
+
+    private void ToggleUserGroup(GroupLine line)
     {
-        var line = new Grid { ColumnSpacing = 8 };
-        cells = new TextBlock[userColumns.Length];
-        for (int i = 0; i < userColumns.Length; ++i) {
-            line.ColumnDefinitions.Add(new ColumnDefinition { Width = i == 0 ? new GridLength(1, GridUnitType.Star) : new GridLength(userColumns[i]) });
-            var cell = Label("", size, color);
-            cell.VerticalAlignment = VerticalAlignment.Center;
-            if (i >= FirstMetricColumn || i == 2) cell.TextAlignment = TextAlignment.Right;
-            Grid.SetColumn(cell, i); line.Children.Add(cell); cells[i] = cell;
-        }
-        return line;
+        if (line.Group is not uint id) return;
+        selectedSession = id; SetSessionExpanded(id, !expandedSessions.Contains(id));
     }
 
     private void ShowUsers(bool visible)
@@ -119,18 +125,31 @@ public sealed partial class MainWindow
         messageUser.IsEnabled = !userActionBusy && session is not null && UserSessionText.CanRun(UserSessionAction.Message, session.State);
     }
 
+    private static string Plural(int count, string one, string few, string many) => count + " " + (count == 1 ? one : count is >= 2 and <= 4 ? few : many);
+
+    internal static string MemoryTip(string label, ulong working, ulong privateBytes)
+        => $"{label}: {Display.Number(working / 1_000_000d, " MB")} ({Display.Bytes(working)})\nPrivátní paměť: {Display.Number(privateBytes / 1_000_000d, " MB")} ({Display.Bytes(privateBytes)})";
+
     private void RefreshUsers()
     {
         var sessions = model.Sessions;
         int processes = sessions.Sum(session => session.Members);
         usersStatus.Text = model.SessionState switch {
             SampleState.First => "Načítám relace…",
-            SampleState.Valid => $"{sessions.Count} relací · {processes} procesů",
+            SampleState.Valid => Plural(sessions.Count, "relace", "relace", "relací") + " · " + Plural(processes, "proces", "procesy", "procesů"),
             SampleState.AccessDenied => "Seznam relací Windows vyžaduje oprávnění; relace jsou odvozené jen z procesů.",
             _ => "Seznam relací Windows je nedostupný; relace jsou odvozené jen z procesů."
         } + (model.Stale ? " · údaje jsou zastaralé" : "");
+        // Without a running ETW capture there is no per-process network figure, so the column is hidden instead of showing dashes.
+        bool network = model.NetworkAvailable;
+        if (network != userNetworkShown) {
+            userNetworkShown = network;
+            usersHeader.ColumnDefinitions[^1].Width = new GridLength(network ? GroupColumns[^1] : 0);
+            userItems.Sync([]);
+        }
+        UpdateGroupHeader(userHeaders, "Uživatel", userSortColumn, userSortDescending);
         var members = new Dictionary<uint, List<ProcessRow>>();
-        sessionNetwork.Clear();
+        var sessionNetwork = new Dictionary<uint, (ProcessBranchMetric Sum, int Count)>();
         foreach (var row in model.Processes) {
             if (row.Key.Pid == 0 || !model.ProcessSessions.TryGetValue(row.Key, out uint id)) continue;
             var (sum, count) = sessionNetwork.GetValueOrDefault(id);
@@ -139,25 +158,30 @@ public sealed partial class MainWindow
             if (!members.TryGetValue(id, out var list)) members.Add(id, list = []);
             list.Add(row);
         }
-        var wanted = new List<UIElement>();
-        int used = 0;
-        foreach (var session in sessions) {
-            var line = SessionRow(session);
-            wanted.Add(line.Button);
-            if (!expandedSessions.Contains(session.Id) || !members.TryGetValue(session.Id, out var rows)) continue;
-            rows.Sort((a, b) => {
-                int order = StringComparer.CurrentCultureIgnoreCase.Compare(a.Name, b.Name);
-                return order != 0 ? order : a.Key.Pid.CompareTo(b.Key.Pid);
-            });
-            foreach (var row in rows) wanted.Add(ProcessRowLine(used++, row));
+        var groups = new List<GroupLine>();
+        foreach (var session in sessions) groups.Add(SessionLine(session, sessionNetwork.GetValueOrDefault(session.Id)));
+        groups.Sort((a, b) => GroupLine.Compare(a, b, userSortColumn, userSortDescending));
+        var wanted = new List<GroupLine>();
+        var liveProcesses = new HashSet<ProcessKey>();
+        foreach (var group in groups) {
+            wanted.Add(group);
+            uint id = (uint)group.Group;
+            if (!members.TryGetValue(id, out var rows)) continue;
+            var lines = rows.Select(row => { liveProcesses.Add(row.Key); return UserProcessLine(id, row); }).ToList();
+            lines.Sort((a, b) => GroupLine.Compare(a, b, userSortColumn, userSortDescending));
+            wanted.AddRange(lines);
         }
-        foreach (var id in sessionLines.Keys.Where(id => !sessions.Any(session => session.Id == id)).ToArray()) sessionLines.Remove(id);
-        expandedSessions.RemoveWhere(id => !sessionLines.ContainsKey(id));
-        if (selectedSession is { } selected && !sessionLines.ContainsKey(selected)) selectedSession = null;
-        if (!userLines.Children.SequenceEqual(wanted)) {
-            userLines.Children.Clear();
-            foreach (var element in wanted) userLines.Children.Add(element);
-        }
+        foreach (var id in sessionItems.Keys.Where(id => !sessions.Any(session => session.Id == id)).ToArray()) sessionItems.Remove(id);
+        foreach (var key in userProcessItems.Keys.Where(key => !liveProcesses.Contains(key)).ToArray()) userProcessItems.Remove(key);
+        expandedSessions.RemoveWhere(id => !sessionItems.ContainsKey(id));
+        if (selectedSession is { } selected && !sessionItems.ContainsKey(selected)) selectedSession = null;
+        updatingUserSelection = true;
+        try {
+            userItems.Sync(wanted);
+            object? selection = selectedSession is { } current ? sessionItems.GetValueOrDefault(current) : null;
+            if (usersList.SelectedItem is GroupLine { Group: uint group } && group == selectedSession) selection = usersList.SelectedItem;
+            if (!ReferenceEquals(usersList.SelectedItem, selection)) usersList.SelectedItem = selection;
+        } finally { updatingUserSelection = false; }
         RefreshUserActions();
     }
 
@@ -173,26 +197,12 @@ public sealed partial class MainWindow
         RefreshUsers();
     }
 
-    private SessionLine SessionRow(UserSession session)
+    private GroupLine SessionLine(UserSession session, (ProcessBranchMetric Sum, int Count) network)
     {
-        if (!sessionLines.TryGetValue(session.Id, out var line)) {
-            var grid = UserColumns(out var cells, 0xe9eef0, 12);
-            var button = new Button {
-                Content = grid, MinHeight = 0, Height = 34, Padding = new Thickness(8, 0, 8, 0), FontFamily = UiTypography.Font,
-                HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                Background = Display.Brush(0x171d21), BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(0)
-            };
-            uint id = session.Id;
-            // The row shows an expander chevron, so one click selects and toggles it like a tree row.
-            button.Click += (_, _) => { selectedSession = id; SetSessionExpanded(id, !expandedSessions.Contains(id)); };
-            button.KeyDown += (_, args) => {
-                if (args.Key is not (VirtualKey.Left or VirtualKey.Right)) return;
-                selectedSession = id; SetSessionExpanded(id, args.Key == VirtualKey.Right); args.Handled = true;
-            };
-            button.ContextRequested += (_, args) => UserContextRequested(id, button, args);
-            sessionLines.Add(id, line = new SessionLine(button, cells));
+        if (!sessionItems.TryGetValue(session.Id, out var line)) {
+            sessionItems.Add(session.Id, line = new GroupLine(session.Id, null, null) { Toggle = ToggleUserGroup });
         }
-        bool expanded = expandedSessions.Contains(session.Id), selected = selectedSession == session.Id;
+        bool expanded = expandedSessions.Contains(session.Id);
         bool showFull = fullAccountName.IsChecked;
         string name = session.User.Length > 0 ? UserSessionText.Name(session.User, session.Domain, showFull ? FullName(session) : "", showFull)
             : session.InfoState == SampleState.AccessDenied ? "Nedostupné bez správce"
@@ -202,47 +212,37 @@ public sealed partial class MainWindow
             _ => session.InfoState == SampleState.AccessDenied ? "nedostupné" : "neznámé"
         };
         string state = UserSessionText.State(session.State);
-        var (network, networkMembers) = sessionNetwork.GetValueOrDefault(session.Id);
-        string[] texts = [
-            (expanded ? "⌄ " : "› ") + UserSessionText.Title(name, session.Members), state, session.Id.ToString(), session.Station, session.Client,
-            session.Cpu.Text(session.Members, false, " %"),
-            session.Working.Text(session.Members, false), session.Io.Text(session.Members, false, " MiB/s", 1048576),
-            network.NetworkText(networkMembers, networkMembers != session.Members)];
-        for (int i = 0; i < texts.Length; ++i) if (line.Cells[i].Text != texts[i]) line.Cells[i].Text = texts[i];
-        line.Cells[^1].Foreground = Display.Brush(network.Known == 0 ? 0x95a4adu : 0xe9eef0u);
-        line.Button.Background = Display.Brush(selected ? 0x28343bu : 0x171d21u);
+        var (traffic, trafficMembers) = network;
         string account = session.User.Length == 0 ? name : UserSessionText.Account(session.User, session.Domain);
         string tip = $"{account} · relace {session.Id} · {protocol}" + (session.Station.Length > 0 ? $" · stanice {session.Station}" : "")
-            + (session.Client.Length > 0 ? $" · klient {session.Client}" : "") + "\n"
-            + (session.InfoState == SampleState.AccessDenied ? "Údaje o uživateli této relace vyžadují oprávnění správce.\n" : "")
-            + $"Známé aktuální vzorky: CPU {session.Cpu.Known}/{session.Members}, paměť {session.Working.Known}/{session.Members}, I/O {session.Io.Known}/{session.Members}, "
-            + (model.NetworkAvailable ? $"síť {network.Known}/{session.Members}.\n" : "síť jen během záznamu ETW se správcem.\n")
-            + $"Privátní paměť: {session.Private.Text(session.Members, false)}.\n"
-            + "≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.";
-        if (ToolTipService.GetToolTip(line.Button) as string != tip) ToolTipService.SetToolTip(line.Button, tip);
-        AutomationProperties.SetName(line.Button, $"{name}, {state}, relace {session.Id}, {session.Members} procesů, {(expanded ? "rozbaleno" : "sbaleno")}"
-            + (selected ? ", vybráno" : ""));
+            + (session.Client.Length > 0 ? $" · klient {session.Client}" : "")
+            + (session.InfoState == SampleState.AccessDenied ? "\nÚdaje o uživateli této relace vyžadují oprávnění správce." : "")
+            + $"\nZnámé aktuální vzorky: CPU {session.Cpu.Known}/{session.Members}, paměť {session.Working.Known}/{session.Members}, I/O {session.Io.Known}/{session.Members}."
+            + "\n≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.";
+        line.Set(expanded ? "⌄" : "›", UserSessionText.Title(name, session.Members), state,
+            session.Cpu.Text(session.Members, false, " %"),
+            session.Working.Known == 0 ? "Měření nedostupné" : (session.Working.Known != session.Members ? "≥ " : "") + Display.Bytes(session.Working.Value),
+            MemoryTip("Pracovní sada", session.Working.Value, session.Private.Value),
+            session.Io.Text(session.Members, false, " MiB/s", 1048576), traffic.NetworkText(trafficMembers, trafficMembers != session.Members), tip,
+            $"{name}, {state}, relace {session.Id}, {Plural(session.Members, "proces", "procesy", "procesů")}, {(expanded ? "rozbaleno" : "sbaleno")}");
+        line.SetSort(name, session.Cpu.SortValue, session.Working.SortValue, session.Io.SortValue, traffic.SortValue);
         return line;
     }
 
-    private UIElement ProcessRowLine(int index, ProcessRow row)
+    private GroupLine UserProcessLine(uint session, ProcessRow row)
     {
-        if (index == processLines.Count) {
-            var grid = UserColumns(out var cells, 0xd7dfe3, 11);
-            grid.Padding = new Thickness(34, 0, 8, 0); grid.MinHeight = 26;
-            processLines.Add(new ProcessLine(grid, cells));
+        if (!userProcessItems.TryGetValue(row.Key, out var line) || !ReferenceEquals(line.Process, row)) {
+            userProcessItems[row.Key] = line = new GroupLine(session, row, row);
         }
-        var line = processLines[index];
-        string disk = row.Ended || row.Stale ? row.ReadText
-            : row.ReadIo.State == SampleState.Valid && row.WriteIo.State == SampleState.Valid
-                ? Display.Number((row.ReadIo.Value + row.WriteIo.Value) / 1048576, " MiB/s")
-                : Display.Metric(row.ReadIo.State != SampleState.Valid ? row.ReadIo : row.WriteIo, " MiB/s", 1048576);
-        string[] texts = [row.Name, "", "", "PID " + row.PidText, "", row.CpuText, row.WorkingText, disk, row.NetworkText];
-        for (int i = 0; i < texts.Length; ++i) if (line.Cells[i].Text != texts[i]) line.Cells[i].Text = texts[i];
-        return line.Line;
+        string disk = DiskText(row, out double diskValue);
+        line.Set("", row.Name, "", row.CpuText, Display.Bytes(row.WorkingBytes), MemoryTip("Pracovní sada", row.WorkingBytes, row.PrivateBytes),
+            disk, row.NetworkText, $"{row.Name} · PID {row.PidText}", $"{row.Name}, PID {row.PidText}");
+        line.SetSort(row.Name, row.Cpu.State == SampleState.Valid ? row.Cpu.Value : -1, row.WorkingBytes,
+            diskValue, row.Network.SortValue);
+        return line;
     }
 
-    private void UserContextRequested(uint id, Button owner, ContextRequestedEventArgs args)
+    private void UserContextRequested(uint id, FrameworkElement owner, ContextRequestedEventArgs args)
     {
         if (args.Handled || view != DesktopView.Users) return;
         SelectSession(id);

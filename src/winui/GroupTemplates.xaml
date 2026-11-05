@@ -1,0 +1,36 @@
+<ResourceDictionary
+    x:Class="NksTaskMgr.WinUI.GroupTemplates"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:NksTaskMgr.WinUI">
+  <DataTemplate x:Key="GroupLine" x:DataType="local:GroupLine">
+    <Grid Height="30" Padding="8,0" ColumnSpacing="8" Background="Transparent" ToolTipService.ToolTip="{x:Bind Tip, Mode=OneWay}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" /><ColumnDefinition Width="96" /><ColumnDefinition Width="64" />
+        <ColumnDefinition Width="96" /><ColumnDefinition Width="88" /><ColumnDefinition Width="88" />
+      </Grid.ColumnDefinitions>
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{x:Bind Indent}" VerticalAlignment="Center">
+        <Button Content="{x:Bind Chevron, Mode=OneWay}" Width="20" Height="22" MinWidth="0" MinHeight="0" Padding="0" FontSize="12"
+                Background="Transparent" BorderThickness="0" VerticalAlignment="Center" Visibility="{x:Bind ChevronVisibility}"
+                Foreground="{ThemeResource NksSecondaryTextBrush}" Click="{x:Bind ChevronClick}" AutomationProperties.Name="{x:Bind ChevronName, Mode=OneWay}" />
+        <Border Width="20" Visibility="{x:Bind ChevronSpacerVisibility}" />
+        <Grid Width="16" Height="16" VerticalAlignment="Center">
+          <local:ProcessIconView Row="{x:Bind IconRow}" Width="16" Height="16" Visibility="{x:Bind ProcessIconVisibility}" />
+          <FontIcon Glyph="&#xE77B;" FontSize="14" Visibility="{x:Bind UserIconVisibility}" Foreground="{ThemeResource NksSecondaryTextBrush}" />
+        </Grid>
+        <TextBlock FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Title, Mode=OneWay}" FontSize="12"
+                   FontWeight="{x:Bind TitleWeight}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      </StackPanel>
+      <TextBlock Grid.Column="1" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind State, Mode=OneWay}" FontSize="12"
+                 Foreground="{ThemeResource NksSecondaryTextBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      <TextBlock Grid.Column="2" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Cpu, Mode=OneWay}" FontSize="12"
+                 HorizontalAlignment="Right" VerticalAlignment="Center" />
+      <TextBlock Grid.Column="3" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Memory, Mode=OneWay}" FontSize="12"
+                 HorizontalAlignment="Right" VerticalAlignment="Center" ToolTipService.ToolTip="{x:Bind MemoryTip, Mode=OneWay}" />
+      <TextBlock Grid.Column="4" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Disk, Mode=OneWay}" FontSize="12"
+                 HorizontalAlignment="Right" VerticalAlignment="Center" />
+      <TextBlock Grid.Column="5" FontFamily="{ThemeResource ContentControlThemeFontFamily}" Text="{x:Bind Network, Mode=OneWay}" FontSize="12"
+                 HorizontalAlignment="Right" VerticalAlignment="Center" />
+    </Grid>
+  </DataTemplate>
+</ResourceDictionary>
