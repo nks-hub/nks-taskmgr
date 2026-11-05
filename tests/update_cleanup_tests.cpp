@@ -2,6 +2,7 @@
 #include <phnt.h>
 #include "update_worker/cleanup.hpp"
 #include "update_worker/cache_delete.hpp"
+#include "update_worker/cache.hpp"
 #include <algorithm>
 #include <atomic>
 #include <filesystem>
@@ -177,9 +178,33 @@ void realDeletion()
     std::cout << "PASS real cache deletion: verified, absent, busy, changed content and size, hard link, " << deleted
         << " concurrent rounds with one winner (" << other << " losers absent/busy/changed), partial stage kept then removed\n";
 }
+// The cache addresses its records by volume GUID path; publishing one must work through that path form.
+void volumeRecord()
+{
+    Fixture fixture;
+    Directory root(fixture.root);
+    std::wstring canonical(32768, L'\0');
+    const DWORD length = GetFinalPathNameByHandleW(root.value, canonical.data(), static_cast<DWORD>(canonical.size()), VOLUME_NAME_GUID | FILE_NAME_NORMALIZED);
+    require(length > 0 && length < canonical.size(), "Fixture volume path unavailable");
+    canonical.resize(length);
+    // Hold the destination exactly as Cache pins its partitions while it publishes records.
+    const HANDLE pinned = CreateFileW(canonical.c_str(), FILE_READ_ATTRIBUTES | FILE_TRAVERSE | READ_CONTROL | SYNCHRONIZE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+        nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
+    require(pinned != INVALID_HANDLE_VALUE, "Fixture directory pin unavailable");
+    struct Close { HANDLE value; ~Close() { CloseHandle(value); } } close{pinned};
+    const std::byte payload[]{std::byte{1}, std::byte{2}, std::byte{3}};
+    try { writeNew(canonical + L"\\record.bin", payload); }
+    catch (const Error& error) { std::cout << "DIAG writeNew windows=" << error.windows << ' ' << error.what() << '\n'; throw; }
+    require(readData(canonical + L"\\record.bin").size() == 3 && std::filesystem::exists(fixture.root / L"record.bin"),
+        "A record published through the volume GUID path is missing");
+    bool duplicate = false;
+    try { writeNew(canonical + L"\\record.bin", payload); } catch (const Error&) { duplicate = true; }
+    require(duplicate, "An existing immutable record was replaced");
+    std::cout << "PASS volume GUID record: published, read back, duplicate refused\n";
+}
 }
 int main()
 {
-    try { verify(); realDeletion(); std::cout << "Update cleanup retention checks passed\n"; return 0; }
+    try { verify(); realDeletion(); volumeRecord(); std::cout << "Update cleanup retention checks passed\n"; return 0; }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

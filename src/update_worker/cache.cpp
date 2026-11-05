@@ -20,7 +20,9 @@ bool isPlanName(const std::wstring& name)
 }
 broker::Handle directory(const std::wstring& path)
 {
-    broker::Handle result(CreateFileW(path.c_str(), FILE_READ_ATTRIBUTES | FILE_TRAVERSE | READ_CONTROL | SYNCHRONIZE, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+    // No FILE_SHARE_DELETE pins the directory against rename or replacement; FILE_SHARE_WRITE lets records be
+    // published into it (a rename opens the target directory for writing and would otherwise fail with 32).
+    broker::Handle result(CreateFileW(path.c_str(), FILE_READ_ATTRIBUTES | FILE_TRAVERSE | READ_CONTROL | SYNCHRONIZE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
     FILE_ATTRIBUTE_TAG_INFO attributes{};
     if (!result || result.get() == INVALID_HANDLE_VALUE || !GetFileInformationByHandleEx(result.get(), FileAttributeTagInfo, &attributes, sizeof(attributes))
@@ -237,11 +239,22 @@ void writeNew(const std::wstring& path, std::span<const std::byte> bytes)
     DWORD count = 0;
     if (!WriteFile(file.get(), bytes.data(), static_cast<DWORD>(bytes.size()), &count, nullptr) || count != bytes.size() || !FlushFileBuffers(file.get()))
         throw Error(Status::unknown, "Update journal write is incomplete", GetLastError());
-    const auto length = path.size() * sizeof(wchar_t);
-    std::vector<std::byte> renameBytes(offsetof(FILE_RENAME_INFO, FileName) + length);
+    // A volume GUID rename target fails with ERROR_INVALID_NAME; the same directory named by its NT device path
+    // (from the open temporary record, so it is the verified location) is accepted with or without a drive letter.
+    const auto slash = path.find_last_of(L'\\');
+    if (slash == std::wstring::npos || slash + 1 >= path.size()) throw Error(Status::invalidRequest, "Update record path has no file name");
+    std::wstring device(32768, L'\0');
+    const DWORD deviceLength = GetFinalPathNameByHandleW(file.get(), device.data(), static_cast<DWORD>(device.size()), VOLUME_NAME_NT | FILE_NAME_NORMALIZED);
+    if (!deviceLength || deviceLength >= device.size()) throw Error(Status::unknown, "Update record location is unavailable", GetLastError());
+    device.resize(deviceLength);
+    const auto deviceSlash = device.find_last_of(L'\\');
+    if (deviceSlash == std::wstring::npos) throw Error(Status::unknown, "Update record location is invalid");
+    const std::wstring target = L"\\\\?\\GLOBALROOT" + device.substr(0, deviceSlash + 1) + path.substr(slash + 1);
+    const auto length = target.size() * sizeof(wchar_t);
+    std::vector<std::byte> renameBytes(sizeof(FILE_RENAME_INFO) + length);
     auto& rename = *reinterpret_cast<FILE_RENAME_INFO*>(renameBytes.data());
     rename.ReplaceIfExists = FALSE; rename.RootDirectory = nullptr; rename.FileNameLength = static_cast<DWORD>(length);
-    std::copy(path.begin(), path.end(), rename.FileName);
+    std::copy(target.begin(), target.end(), rename.FileName);
     if (!SetFileInformationByHandle(file.get(), FileRenameInfo, &rename, static_cast<DWORD>(renameBytes.size())) || !FlushFileBuffers(file.get()))
         throw Error(Status::unknown, "Atomic update record publication did not complete", GetLastError());
 }
