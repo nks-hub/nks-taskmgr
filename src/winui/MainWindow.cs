@@ -175,6 +175,8 @@ public sealed partial class MainWindow : Window
     private static void MarkNavigation(Button button, bool selected)
     {
         button.Background = Display.Brush(selected ? 0x28343bu : 0x12181cu);
+        // A view switch can leave the previously clicked button in its PointerOver/Pressed look; reset it so only the active view stands out.
+        VisualStateManager.GoToState(button, "Normal", false);
         var brush = Display.Brush(selected ? ThemePalette.SelectedLabel : 0x95a4adu);
         if (button.Content is not Panel content) return;
         foreach (var child in content.Children) {
