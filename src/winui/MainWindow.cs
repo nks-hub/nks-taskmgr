@@ -588,6 +588,9 @@ public sealed partial class MainWindow : Window
             App.Trace($"Services passed: count={servicesModel.All.Count};detail={servicesModel.Detail?.Name};resumed=True");
         }
         if (smokeServicesChecked && smokeSnapshotExport is { IsCompletedSuccessfully: true }) {
+            if (smokeCompactShell is null) { smokeCompactShell = CheckCompactShellAsync(); return; }
+            if (!smokeCompactShell.IsCompleted) return;
+            smokeCompactShell.GetAwaiter().GetResult();
             if (smokeSnapshotComparison is null) { smokeSnapshotComparison = SnapshotComparisonUiChecks.RunAsync(); return; }
             if (!smokeSnapshotComparison.IsCompleted) return;
             smokeSnapshotComparison.GetAwaiter().GetResult();
