@@ -88,7 +88,7 @@ public sealed partial class MainWindow
                         throw new InvalidOperationException($"{next}: a {button.GetType().Name} with {button.Content?.GetType().Name} content has no accessible name.");
                 ++views;
             }
-            App.Trace($"Compact shell passed: {views} views at {root.ActualWidth:F0}×{root.ActualHeight:F0} DIP, scale={scale:F2}, {labels} sidebar labels unclipped, header parts disjoint");
+            App.Trace($"Compact shell passed: {views} views at {root.ActualWidth:F0}×{root.ActualHeight:F0} DIP, scale={scale:F2}, theme={(Appearance.IsDark ? "dark" : "light")}, {labels} sidebar labels unclipped, header parts disjoint");
         } finally {
             AppWindow.Resize(original); ShowView(originalView);
         }
