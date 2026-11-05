@@ -131,8 +131,11 @@ void inventory(const fs::path& temp, const fs::path& tool)
             && nks::parseStartupApproved(rawValue(user, approvedFolder, L"Tool.lnk")).disabled, "Startup folder item was not disabled");
         items = nks::readStartupItems(locations);
         require(find(items, L"Tool.lnk").state == nks::StartupState::disabled, "Disabled shortcut read back as enabled");
-        require(nks::setStartupItemEnabled(locations, nks::StartupSource::machineRun32, L"Legacy", true) == ERROR_NOT_SUPPORTED
-            && rawValue(machine, approvedRun32, L"Legacy") == disabled, "A machine-wide item was written");
+        require(nks::setStartupItemEnabled(locations, nks::StartupSource::machineRun32, L"Legacy", true) == ERROR_SUCCESS
+            && rawValue(machine, approvedRun32, L"Legacy") == Bytes{2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+            && rawValue(user, approvedRun32, L"Legacy").empty(), "A machine-wide item was not enabled in the machine key");
+        require(nks::setStartupItemEnabled(locations, nks::StartupSource::machineRunOnce32, L"Legacy", false) == ERROR_NOT_SUPPORTED,
+            "A machine RunOnce item was toggled");
         require(nks::setStartupItemEnabled(locations, nks::StartupSource::userRunOnce, L"Once", false) == ERROR_NOT_SUPPORTED, "RunOnce was toggled");
         require(nks::setStartupItemEnabled(locations, nks::StartupSource::userRun, L"Missing", false) == ERROR_FILE_NOT_FOUND
             && rawValue(user, approvedRun, L"Missing").empty(), "A missing Run value received an approval");

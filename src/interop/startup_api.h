@@ -35,7 +35,8 @@ NKS_MONITOR_API NksResult __cdecl nks_startup_read(uint32_t abi_version, NksStar
 // Strings and items remain valid until the list is released.
 NKS_MONITOR_API NksResult __cdecl nks_startup_get_view(const NksStartupList* list, uint32_t view_size, NksStartupView* result) NKS_STARTUP_NOEXCEPT;
 NKS_MONITOR_API void __cdecl nks_startup_release(NksStartupList* list) NKS_STARTUP_NOEXCEPT;
-// Only NKS_STARTUP_USER_RUN and NKS_STARTUP_USER_FOLDER are writable; the Windows error is stored on NKS_FAILED.
+// Run, Run32 and Startup folder items are writable (machine-wide ones need an elevated caller, else ERROR_ACCESS_DENIED);
+// RunOnce items are not. The Windows error is stored on NKS_FAILED.
 NKS_MONITOR_API NksResult __cdecl nks_startup_set_enabled(uint32_t source, const wchar_t* name, uint32_t length, int32_t enabled,
     uint32_t* win32_error) NKS_STARTUP_NOEXCEPT;
 

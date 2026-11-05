@@ -49,7 +49,8 @@ NksResult __cdecl nks_startup_set_enabled(uint32_t source, const wchar_t* name, 
     if (!win32Error) return NKS_INVALID_ARGUMENT;
     *win32Error = 0;
     if (!name || !length || length > 16383
-        || (source != NKS_STARTUP_USER_RUN && source != NKS_STARTUP_USER_FOLDER)) return NKS_INVALID_ARGUMENT;
+        || (source != NKS_STARTUP_USER_RUN && source != NKS_STARTUP_USER_FOLDER && source != NKS_STARTUP_MACHINE_RUN
+            && source != NKS_STARTUP_MACHINE_RUN32 && source != NKS_STARTUP_COMMON_FOLDER)) return NKS_INVALID_ARGUMENT;
     try {
         *win32Error = nks::setStartupItemEnabled(nks::defaultStartupLocations(), static_cast<nks::StartupSource>(source),
             std::wstring_view(name, length), enabled != 0);

@@ -13,8 +13,11 @@ internal sealed class StartupRow(StartupEntry entry)
 {
     internal StartupEntry Entry { get; } = entry;
     internal TextBlock? PublisherLabel { get; set; }
-    /// <summary>Only per-user items are switched without elevation, through the user's StartupApproved key.</summary>
-    internal bool Switchable => Entry.Source is StartupSource.UserRun or StartupSource.UserFolder;
+    /// <summary>Run, Run32 and Startup folder items switch through StartupApproved like Windows; RunOnce items cannot be switched.</summary>
+    internal bool Switchable => Entry.Source is StartupSource.UserRun or StartupSource.UserFolder or StartupSource.MachineRun
+        or StartupSource.MachineRun32 or StartupSource.CommonFolder;
+    /// <summary>Machine-wide items need an administrator; a standard user is offered a restart through UAC.</summary>
+    internal bool NeedsAdministrator => Entry.Source is StartupSource.MachineRun or StartupSource.MachineRun32 or StartupSource.CommonFolder;
     internal string Title => Entry.Name.Length == 0 ? "(výchozí hodnota)"
         : Entry.Name.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ? Entry.Name[..^4] : Entry.Name;
     internal string StateText => Entry.State switch {
@@ -189,8 +192,9 @@ public sealed partial class MainWindow
         startupDetailIcon.Source = null; _ = SetStartupIconAsync(row, startupDetailIcon);
         startupToggle.Content = row.Entry.State == StartupState.Enabled ? "Vypnout" : "Zapnout";
         startupToggle.IsEnabled = row.Switchable && row.Entry.State != StartupState.RunOnce;
-        ToolTipService.SetToolTip(startupToggle, row.Switchable ? "Změní jen značku Windows (StartupApproved); položka se nemaže."
-            : row.Entry.State == StartupState.RunOnce ? "Jednorázovou položku nelze vypnout." : "Položku pro celý počítač mění jen správce.");
+        if (row.NeedsAdministrator && !RunningElevated) startupToggle.Content += " (správce)";
+        ToolTipService.SetToolTip(startupToggle, !row.Switchable ? "Jednorázovou položku nelze vypnout."
+            : "Změní jen značku Windows (StartupApproved); položka se nemaže." + (row.NeedsAdministrator && !RunningElevated ? " Položka pro celý počítač vyžaduje správce, nabídne se výzva UAC." : ""));
         startupOpen.IsEnabled = row.Entry.Target.Length > 0;
         startupFacts.Children.Clear();
         void Fact(string label, string value) {
@@ -285,8 +289,7 @@ public sealed partial class MainWindow
         }
         if (!row.Switchable) {
             menu.Items.Add(new MenuFlyoutSeparator());
-            menu.Items.Add(new MenuFlyoutItem { Text = row.Entry.State == StartupState.RunOnce ? "Jednorázovou položku nelze vypnout"
-                : "Položku pro celý počítač mění jen správce", IsEnabled = false });
+            menu.Items.Add(new MenuFlyoutItem { Text = "Jednorázovou položku nelze vypnout", IsEnabled = false });
         }
         ShowContextMenu(menu, startupList, args);
     }
@@ -294,6 +297,10 @@ public sealed partial class MainWindow
     private async Task SetStartupEnabledAsync(StartupRow row, bool enabled)
     {
         if (view != DesktopView.Startup || !startupRows.Contains(row) || !row.Switchable) return;
+        if (row.NeedsAdministrator && !RunningElevated) {
+            await OfferRestartElevatedAsync("Položku „" + row.Title + "“ spouští Windows pro všechny uživatele, takže ji může změnit jen správce.");
+            return;
+        }
         uint error;
         try { error = await Task.Run(() => NativeStartup.SetEnabled(row.Entry.Source, row.Entry.Name, enabled)); }
         catch (NativeMonitorException failure) { startupStatus.Text = "Změnu nelze provést: " + failure.Message; await LoadStartupAsync(); return; }

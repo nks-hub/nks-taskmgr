@@ -14,7 +14,9 @@ internal sealed partial class ProcessEventsWindow : Window
     private const int MaximumRows = 10000;
     private const int MaximumEstimatedBytes = 3 * 1024 * 1024;
     private readonly Grid layout = new() { Padding = new Thickness(16), RowSpacing = 8, Background = Display.Brush(0x171d21) };
-    private readonly Button start = Command("Spustit nový záznam"), stop = Command("Zastavit"), clear = Command("Vymazat seznam");
+    private readonly Button start = Command("Spustit nový záznam"), stop = Command("Zastavit"), clear = Command("Vymazat seznam"), elevate = Command("Spustit jako správce");
+    /// <summary>Set by the main window: restarts the application elevated so ETW capture can start.</summary>
+    internal Action? RequestElevation { get; set; }
     private readonly TextBlock status = Text("Záznam není spuštěný."), counters = Text(""), notice = Text("ETW sleduje vznik a ukončení procesů až od spuštění záznamu. Historické řádky jsou pouze pro čtení.");
     private readonly TextBox search = new() { PlaceholderText = "Filtrovat název nebo PID", MinWidth = 180, MinHeight = 32 };
     private readonly ComboBox kinds = new() { Width = 175, MinHeight = 32 };
@@ -69,7 +71,13 @@ internal sealed partial class ProcessEventsWindow : Window
         status.TextTrimming = TextTrimming.CharacterEllipsis; status.VerticalAlignment = VerticalAlignment.Center; status.IsTextSelectionEnabled = true;
         var messages = new Grid { ColumnSpacing = 6 };
         messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        elevate.Height = 28; elevate.Visibility = Visibility.Collapsed;
+        ToolTipService.SetToolTip(elevate, "Záznam ETW vyžaduje správce. NKS se spustí znovu jako správce po potvrzení výzvy UAC.");
+        AutomationProperties.SetAutomationId(elevate, "events-elevate");
+        elevate.Click += (_, _) => RequestElevation?.Invoke();
         messages.Children.Add(status); messages.Children.Add(details); Grid.SetColumn(details, 1);
+        messages.Children.Add(elevate); Grid.SetColumn(elevate, 2);
         Grid.SetRow(messages, 1); layout.Children.Add(messages);
         var filters = new Grid { ColumnSpacing = 8 };
         filters.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -149,6 +157,8 @@ internal sealed partial class ProcessEventsWindow : Window
             int trafficCount = ReadTraffic(frame, info);
             PruneHeldRows();
             status.Text = StateText(state) + (info.Win32Error != 0 ? " · chyba Windows " + info.Win32Error : "");
+            var elevation = state == ProcessEventMonitorState.AccessDenied && !MainWindow.RunningElevated && RequestElevation is not null ? Visibility.Visible : Visibility.Collapsed;
+            if (elevate.Visibility != elevation) elevate.Visibility = elevation;
             counters.Text = "Události " + retained.Count + "/" + MaximumRows + " · vytěsněno v okně " + trimmed
                 + " · ztracené události ETW " + info.ProviderEventsLost + " · ztracené buffery " + info.ProviderBuffersLost
                 + " · přeplnění fronty " + info.QueueDropped + " · chyby dekódování " + info.DecodeErrors + " · nejasné záznamy " + info.Ambiguous;

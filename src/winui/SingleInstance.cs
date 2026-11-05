@@ -57,7 +57,7 @@ internal static class LaunchArguments
             if (arg.StartsWith("--view=", StringComparison.OrdinalIgnoreCase))
                 view ??= arg[7..].ToLowerInvariant() switch {
                     "services" => DesktopView.Services, "applications" => DesktopView.Applications, "processes" => DesktopView.Processes, "users" => DesktopView.Users,
-                    "startup" => DesktopView.Startup, _ => null };
+                    "startup" => DesktopView.Startup, "hardware" => DesktopView.Hardware, "performance" => DesktopView.Performance, _ => null };
             else if (IndependentPrefixes.Any(prefix => arg.StartsWith(prefix, StringComparison.Ordinal))) independent = true;
         }
         return new LaunchRequest(independent, view);
@@ -76,6 +76,8 @@ internal static class LaunchArguments
         Require(Parse(["gui", "--view=APPLICATIONS", "--view=Processes"]) == new LaunchRequest(false, DesktopView.Applications), "The first view did not win.");
         Require(Parse(["gui", "--view=Processes"]).View == DesktopView.Processes, "The Processes view was not parsed.");
         Require(Parse(["gui", "--view=Startup"]).View == DesktopView.Startup, "The Startup view was not parsed.");
+        Require(Parse(["gui", "--view=hardware"]).View == DesktopView.Hardware && Parse(["gui", "--view=performance"]).View == DesktopView.Performance,
+            "The Hardware or Performance view was not parsed.");
         Require(Parse(["gui", "--view=Bogus", "--view=", "--view=1", "/7", "--unknown", "--unknown=x", ""]) == new LaunchRequest(false, null), "Unknown arguments changed behavior.");
         foreach (string qa in new[] { "--smoke=a", "--bench-sort=a", "--bench-sort-no-icons", "--check-events=a", "--check-actions=a", "--check-dump=a",
             "--check-applications=a", "--check-details=a", "--profile-ticks=a", "--diagnose-gaps=a" })

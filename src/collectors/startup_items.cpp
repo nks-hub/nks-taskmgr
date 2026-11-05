@@ -222,20 +222,28 @@ DWORD setStartupItemEnabled(const StartupLocations& locations, StartupSource sou
     if (name.empty() || name.size() > 16383 || name.find(L'\0') != std::wstring_view::npos) return ERROR_INVALID_PARAMETER;
     const std::wstring value(name);
     const wchar_t* subkey{};
-    if (source == StartupSource::userRun) {
+    // Machine-wide items use the same StartupApproved values under HKLM; writing them needs an elevated token,
+    // so a standard user gets ERROR_ACCESS_DENIED and the UI offers to restart as administrator.
+    HKEY root = locations.user;
+    const RegistrySource* registry = source == StartupSource::userRun ? &registrySources[0]
+        : source == StartupSource::machineRun ? &registrySources[2] : source == StartupSource::machineRun32 ? &registrySources[4] : nullptr;
+    if (registry) {
+        root = registry->machine ? locations.machine : locations.user;
         Key run;
-        if (const auto error = RegOpenKeyExW(locations.user, registrySources[0].path, 0, KEY_QUERY_VALUE, &run.value)) return error;
+        if (const auto error = RegOpenKeyExW(root, registry->path, 0, KEY_QUERY_VALUE, &run.value)) return error;
         DWORD type{};
         if (const auto error = RegQueryValueExW(run.value, value.c_str(), nullptr, &type, nullptr, nullptr)) return error;
         if (type != REG_SZ && type != REG_EXPAND_SZ) return ERROR_INVALID_DATA;
-        subkey = L"Run";
-    } else if (source == StartupSource::userFolder) {
+        subkey = registry->approved;
+    } else if (source == StartupSource::userFolder || source == StartupSource::commonFolder) {
+        const auto& folder = source == StartupSource::userFolder ? locations.userFolder : locations.commonFolder;
         if (value.find_first_of(L"\\/:") != std::wstring::npos || value == L"." || value == L".."
-            || locations.userFolder.empty() || !isFile(locations.userFolder + L"\\" + value)) return ERROR_FILE_NOT_FOUND;
+            || folder.empty() || !isFile(folder + L"\\" + value)) return ERROR_FILE_NOT_FOUND;
+        root = source == StartupSource::userFolder ? locations.user : locations.machine;
         subkey = L"StartupFolder";
     } else return ERROR_NOT_SUPPORTED;
     Key approved;
-    if (const auto error = RegCreateKeyExW(locations.user, (std::wstring(approvedPath) + subkey).c_str(), 0, nullptr, 0,
+    if (const auto error = RegCreateKeyExW(root, (std::wstring(approvedPath) + subkey).c_str(), 0, nullptr, 0,
         KEY_QUERY_VALUE | KEY_SET_VALUE, nullptr, &approved.value, nullptr)) return error;
     std::array<std::uint8_t, 64> previous{};
     DWORD size = static_cast<DWORD>(previous.size()), type{};

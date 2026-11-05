@@ -23,6 +23,7 @@ public sealed partial class MainWindow
             if (processEventsWindow is null) {
                 var window = new ProcessEventsWindow(() => (model.ProcessTime, model.BootIdentity.Identifier, model.BootIdentity.State));
                 processEventsWindow = window;
+                window.RequestElevation = () => _ = OfferRestartElevatedAsync("Záznam událostí a síťového provozu (ETW) vyžaduje práva správce.");
                 window.Closed += (_, _) => { if (ReferenceEquals(processEventsWindow, window)) processEventsWindow = null; };
             }
             processEventsWindow.Activate();
