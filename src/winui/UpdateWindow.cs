@@ -221,8 +221,16 @@ internal sealed partial class UpdateWindow : Window
     private async Task PrepareAsync(string? packageSha256, CancellationToken token, string? recoveryCandidateId = null)
     {
         status.Text = "Připravuji ověřený plán…";
-        using var session = recoveryCandidateId is null ? await client.PrepareAsync(packageSha256, token)
-            : await client.PrepareRecoveryAsync(recoveryCandidateId, token);
+        UpdateSession session;
+        // A missing prerequisite (for example the current version's installer) is a plan refusal, not a lost inventory.
+        try { session = recoveryCandidateId is null ? await client.PrepareAsync(packageSha256, token) : await client.PrepareRecoveryAsync(recoveryCandidateId, token); }
+        catch (UpdateException error) when (error.Status is UpdateStatus.NotFound or UpdateStatus.Rejected or UpdateStatus.Conflict) {
+            if (closed) return;
+            status.Text = "Plán nebyl připraven.";
+            result.Text = StatusText(error.Status);
+            return;
+        }
+        using var preparedSession = session;
         prepared = session;
         if (closed || token.IsCancellationRequested) return;
         var plan = session.Plan;
