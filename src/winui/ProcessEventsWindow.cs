@@ -17,7 +17,7 @@ internal sealed partial class ProcessEventsWindow : Window
     private readonly Button start = Command("Spustit nový záznam"), stop = Command("Zastavit"), clear = Command("Vymazat seznam");
     private readonly TextBlock status = Text("Záznam není spuštěný."), counters = Text(""), notice = Text("ETW sleduje vznik a ukončení procesů až od spuštění záznamu. Historické řádky jsou pouze pro čtení.");
     private readonly TextBox search = new() { PlaceholderText = "Filtrovat název nebo PID", MinWidth = 180, MinHeight = 32 };
-    private readonly ComboBox kinds = new() { Width = 145, MinHeight = 32 };
+    private readonly ComboBox kinds = new() { Width = 175, MinHeight = 32 };
     private readonly ComboBox modes = new() { Width = 205, MinHeight = 32 };
     private readonly CheckBox hold = new() { Content = "Podržet seznam" }, follow = new() { Content = "Sledovat konec", IsChecked = true };
     private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
@@ -59,9 +59,17 @@ internal sealed partial class ProcessEventsWindow : Window
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         commands.Children.Add(start); commands.Children.Add(stop); commands.Children.Add(clear); commands.Children.Add(hold); commands.Children.Add(follow);
         layout.Children.Add(new ScrollViewer { Content = commands, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled });
-        var information = new StackPanel { Spacing = 4 };
-        foreach (var text in new[] { status, counters, notice }) { text.TextWrapping = TextWrapping.Wrap; text.IsTextSelectionEnabled = true; information.Children.Add(text); }
-        var messages = new ScrollViewer { Content = information, MaxHeight = 140, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        // One status line; the counters and the explanation stay one click away instead of pushing the list down.
+        var information = new StackPanel { Spacing = 8, MaxWidth = 520 };
+        foreach (var text in new[] { counters, notice }) { text.TextWrapping = TextWrapping.Wrap; text.IsTextSelectionEnabled = true; information.Children.Add(text); }
+        var details = new Button { Content = "ⓘ", Width = 32, Height = 28, MinHeight = 0, Padding = new Thickness(0), FontSize = 14, Background = Display.Brush(0x1d252a),
+            Flyout = new Flyout { Content = new ScrollViewer { Content = information, MaxHeight = 360, Padding = new Thickness(0, 0, 16, 0) } } };
+        AutomationProperties.SetName(details, "Čítače a vysvětlení záznamu"); AutomationProperties.SetAutomationId(details, "events-info");
+        ToolTipService.SetToolTip(details, "Čítače záznamu, vytěsnění, rozpočet paměti a vysvětlení.");
+        status.TextTrimming = TextTrimming.CharacterEllipsis; status.VerticalAlignment = VerticalAlignment.Center; status.IsTextSelectionEnabled = true;
+        var messages = new Grid { ColumnSpacing = 6 };
+        messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        messages.Children.Add(status); messages.Children.Add(details); Grid.SetColumn(details, 1);
         Grid.SetRow(messages, 1); layout.Children.Add(messages);
         var filters = new Grid { ColumnSpacing = 8 };
         filters.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -140,7 +148,7 @@ internal sealed partial class ProcessEventsWindow : Window
             dirty |= lifetimes.ObserveBatch(info, events, originQpc);
             int trafficCount = ReadTraffic(frame, info);
             PruneHeldRows();
-            status.Text = StateText(state) + (info.Win32Error != 0 ? " · Windows " + info.Win32Error : "");
+            status.Text = StateText(state) + (info.Win32Error != 0 ? " · chyba Windows " + info.Win32Error : "");
             counters.Text = "Události " + retained.Count + "/" + MaximumRows + " · vytěsněno v okně " + trimmed
                 + " · ztracené události ETW " + info.ProviderEventsLost + " · ztracené buffery " + info.ProviderBuffersLost
                 + " · přeplnění fronty " + info.QueueDropped + " · chyby dekódování " + info.DecodeErrors + " · nejasné záznamy " + info.Ambiguous;
