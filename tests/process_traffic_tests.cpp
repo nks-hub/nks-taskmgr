@@ -304,6 +304,24 @@ void networkPidReuse()
     require(ownerOf(batch, 11) == 1000 && !ownerOf(batch, 12) && ownerOf(batch, 13) == 2000 && !ownerOf(batch, 14),
         "PID reuse moved traffic across generations or attributed the gap");
 }
+void networkBurstCoalesced()
+{
+    EventIdentityIndex identities; ProcessTrafficStore traffic; traffic.initialize(100);
+    identities.process(10, 1000, 50, true);
+    const auto epoch = traffic.info.attributionEpoch;
+    constexpr std::uint32_t sends = 3 * ProcessTrafficStore::maximumPending;
+    for (std::uint32_t i = 0; i < sends; ++i) traffic.observe(tcp(10, 100 + std::int64_t{i} * 99 / sends, 1200, arrival + i), identities);
+    const auto batch = traffic.read(arrival + sends + delay + 1, identities);
+    const auto sample = single(batch);
+    require(traffic.info.attributionEpoch == epoch && !traffic.info.pendingDropped && !traffic.info.unknownEvents && !traffic.info.lateEvents,
+        "A one-process burst over the pending limit reset attribution or dropped events");
+    require(ownerOf(batch, std::uint64_t{sends} * 1200) == 1000 && sample.operations == sends,
+        "Coalesced sends lost bytes, operations or their owner");
+    identities.process(10, 1000, 250, false); identities.process(10, 2000, 260, true);
+    traffic.observe(tcp(10, 240, 7, arrival + sends + 10), identities); traffic.observe(tcp(10, 270, 9, arrival + sends + 11), identities);
+    const auto reuse = traffic.read(arrival + sends + delay + 20, identities);
+    require(ownerOf(reuse, 7) == 1000 && ownerOf(reuse, 9) == 2000, "Sends on both sides of a known PID reuse were merged");
+}
 void networkMissingBaseline()
 {
     EventIdentityIndex identities; ProcessTrafficStore traffic; traffic.initialize(100);
@@ -483,6 +501,7 @@ int main(int argc, char** argv)
         run("completed stream", completedStream); run("evidence cap", evidenceLimit); run("identity eviction", identityEviction);
         run("sample eviction", sampleEviction); run("allocation failure", allocationFailure);
         run("network PID reuse", networkPidReuse); run("network missing baseline", networkMissingBaseline);
+        run("network burst coalesced", networkBurstCoalesced);
         run("network before start", networkBeforeStart); run("network reset floor", networkResetFloor);
         run("network loss gap", networkLossGap); run("network out-of-order", networkOutOfOrder);
         run("network settled eviction", networkSettledEviction); run("identity churn", identityChurn);

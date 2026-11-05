@@ -46,6 +46,9 @@ struct ProcessTrafficObservation {
     ProcessTrafficDirection direction{};
     bool ipv6{};
     std::uint64_t irp{};
+    // A pending network entry can hold several consecutive sends of one PID within one window: firstQpc..qpc.
+    std::int64_t firstQpc{-1};
+    std::uint32_t operations{1};
 };
 struct ProcessDiskInitiation {
     std::int64_t qpc{}, observedAtNs{};

@@ -30,7 +30,7 @@ void ProcessTrafficStore::providers(SampleState disk, SampleState network, Sampl
 }
 void ProcessTrafficStore::dropped(const ProcessTrafficObservation& observation)
 {
-    add(info.pendingDropped); add(info.unknownEvents); add(info.unknownBytes, observation.bytes);
+    add(info.pendingDropped, observation.operations); add(info.unknownEvents, observation.operations); add(info.unknownBytes, observation.bytes);
 }
 void ProcessTrafficStore::observe(ProcessTrafficObservation observation, const EventIdentityIndex& identities)
 {
@@ -42,6 +42,20 @@ void ProcessTrafficStore::observe(ProcessTrafficObservation observation, const E
     const auto epoch = info.attributionEpoch;
     drain(observation.observedAtNs, identities);
     if (epoch != info.attributionEpoch) { dropped(observation); return; }
+    observation.firstQpc = observation.qpc; observation.operations = 1;
+    // Consecutive sends of one PID in one window share an entry, so a burst does not overflow the queue and reset attribution.
+    // shortcut: only the newest entry merges; interleaved bursts of several PIDs still use one entry per event.
+    if (observation.source != ProcessTrafficSource::physicalDisk && !pending.empty()) {
+        auto& back = pending.back();
+        if (back.source == observation.source && back.direction == observation.direction && back.pidOrTid == observation.pidOrTid
+            && back.ipv6 == observation.ipv6 && back.qpc <= observation.qpc && back.firstQpc / frequency == observation.qpc / frequency
+            && back.bytes <= UINT32_MAX - observation.bytes && back.operations < UINT32_MAX
+            && identities.processOwnerAt(back.pidOrTid, back.firstQpc).creationTime == identities.processOwnerAt(observation.pidOrTid, observation.qpc).creationTime) {
+            back.bytes += observation.bytes; back.qpc = observation.qpc; ++back.operations;
+            back.observedAtNs = (std::max)(back.observedAtNs, observation.observedAtNs);
+            return;
+        }
+    }
     if (pending.size() == maximumPending) { invalidate(false); dropped(observation); return; }
     try { pending.push_back(observation); }
     catch (const std::bad_alloc&) { invalidate(false); dropped(observation); }
@@ -148,6 +162,9 @@ void ProcessTrafficStore::drain(std::int64_t nowNs, const EventIdentityIndex& id
         else {
             // The TCP/UDP payload PID names the endpoint owner; the ledger proves which generation held that PID.
             candidate = identities.processOwnerAt(observation.pidOrTid, observation.qpc);
+            // Generations never overlap, so one owner at both ends of a merged entry owned all of it.
+            if (observation.firstQpc >= 0 && observation.firstQpc != observation.qpc
+                && identities.processOwnerAt(observation.pidOrTid, observation.firstQpc).creationTime != candidate.creationTime) candidate = {};
             attribution = ProcessTrafficAttribution::direct;
         }
         bool committed = false;
@@ -199,13 +216,13 @@ bool ProcessTrafficStore::commit(const ProcessTrafficObservation& observation, E
         found = history.emplace(key, Stored{sample}).first;
     }
     auto& stored = found->second; auto& sample = stored.sample;
-    if (add(sample.observedBytes, observation.bytes) | add(sample.operations)) sample.flags |= trafficCounterOverflow;
+    if (add(sample.observedBytes, observation.bytes) | add(sample.operations, observation.operations)) sample.flags |= trafficCounterOverflow;
     sample.observedAtNs = (std::max)(sample.observedAtNs, observation.observedAtNs);
     sample.measurement.observedAtNs = sample.observedAtNs;
     sample.observedBytesPerSecond = static_cast<double>(sample.observedBytes);
-    if (observation.qpc < newestQpc) { sample.flags |= trafficLate; add(info.lateEvents); }
+    if ((observation.firstQpc >= 0 ? observation.firstQpc : observation.qpc) < newestQpc) { sample.flags |= trafficLate; add(info.lateEvents); }
     newestQpc = (std::max)(newestQpc, observation.qpc); stored.dirty = true;
-    if (unknown) { add(info.unknownEvents); add(info.unknownBytes, observation.bytes); }
+    if (unknown) { add(info.unknownEvents, observation.operations); add(info.unknownBytes, observation.bytes); }
     return true;
 }
 void ProcessTrafficStore::invalidate(bool conflict)

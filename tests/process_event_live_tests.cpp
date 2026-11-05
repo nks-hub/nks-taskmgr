@@ -1,3 +1,5 @@
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include "interop/events_api.h"
 #include <windows.h>
 #include <algorithm>
@@ -8,6 +10,7 @@
 #include <cwchar>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -17,6 +20,7 @@ namespace {
 using Clock = std::chrono::steady_clock;
 using namespace std::chrono_literals;
 constexpr DWORD childExit = 42;
+constexpr std::uint64_t diskLoad = 32ull << 20, udpLoad = 16ull << 20;
 
 void require(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
 
@@ -28,6 +32,38 @@ struct Handle {
     Handle(const Handle&) = delete;
     Handle& operator=(const Handle&) = delete;
 };
+
+constexpr std::uint64_t udpDatagram = 1200, udpSent = (udpLoad + udpDatagram - 1) / udpDatagram * udpDatagram;
+
+// The child's known load: unbuffered write-through to its own temporary file, then UDP to TEST-NET-1, which is never answered.
+DWORD childLoad()
+{
+    std::array<wchar_t, MAX_PATH + 1> directory{}, file{};
+    if (!GetTempPathW(static_cast<DWORD>(directory.size()), directory.data()) || !GetTempFileNameW(directory.data(), L"nks", 0, file.data())) return 3;
+    const HANDLE out = CreateFileW(file.data(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+        FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
+    if (out == INVALID_HANDLE_VALUE) return 4;
+    constexpr DWORD block = 1 << 20;
+    void* buffer = VirtualAlloc(nullptr, block, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    bool written = buffer != nullptr;
+    for (std::uint64_t at = 0; written && at < diskLoad; at += block) { DWORD done{}; written = WriteFile(out, buffer, block, &done, nullptr) && done == block; }
+    CloseHandle(out);
+    if (buffer) VirtualFree(buffer, 0, MEM_RELEASE);
+    if (!written) return 5;
+    WSADATA data{};
+    if (WSAStartup(MAKEWORD(2, 2), &data) != 0) return 6;
+    const SOCKET socket = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    sockaddr_in target{}; target.sin_family = AF_INET; target.sin_port = htons(9);
+    bool sent = socket != INVALID_SOCKET && inet_pton(AF_INET, "192.0.2.1", &target.sin_addr) == 1;
+    char payload[udpDatagram]{};
+    for (std::uint64_t at = 0; sent && at < udpLoad; at += udpDatagram) {
+        sent = sendto(socket, payload, static_cast<int>(udpDatagram), 0, reinterpret_cast<const sockaddr*>(&target), sizeof(target)) == static_cast<int>(udpDatagram);
+        if (at % (256 * udpDatagram) == 0) Sleep(15);
+    }
+    if (socket != INVALID_SOCKET) closesocket(socket);
+    WSACleanup();
+    return sent ? childExit : 7;
+}
 
 bool elevated()
 {
@@ -77,7 +113,7 @@ public:
     }
     void resumeAndWait() {
         require(ResumeThread(thread.value) == 1, "Own child was not suspended exactly once");
-        require(WaitForSingleObject(process.value, 3000) == WAIT_OBJECT_0, "Own short child did not exit within three seconds");
+        require(WaitForSingleObject(process.value, 20000) == WAIT_OBJECT_0, "Own load child did not exit within 20 seconds");
         DWORD code{};
         require(GetExitCodeProcess(process.value, &code) && code == childExit, "Own child exit code differed from the fixture");
     }
@@ -116,6 +152,42 @@ struct Capture {
     std::uint64_t starts{}, stops{}, wrongIdentity{};
     std::int64_t frequency{};
     bool conflict{};
+    // (source, direction) -> sample id -> (bytes, window still open); a republished window replaces its earlier value.
+    std::map<std::pair<std::uint32_t, std::uint32_t>, std::map<std::uint64_t, std::pair<std::uint64_t, bool>>> traffic;
+
+    NksProcessTrafficView last{};
+    void observeTraffic(const NksProcessTrafficView& view) {
+        last = view;
+        if (!target.pid) return;
+        for (std::uint32_t i = 0; i < view.sample_count; ++i) {
+            const auto& sample = view.samples[i];
+            if (sample.pid != target.pid || sample.generation_kind != NKS_GENERATION_CREATION_TIME
+                || sample.generation != target.generation || sample.identity_state != NKS_SAMPLE_VALID) continue;
+            traffic[{sample.source, sample.direction}][sample.sample_id] = {sample.observed_bytes, (sample.flags & NKS_TRAFFIC_WINDOW_OPEN) != 0};
+        }
+    }
+    std::uint64_t bytes(std::uint32_t source, std::uint32_t direction, bool& open) const {
+        std::uint64_t total{};
+        if (const auto found = traffic.find({source, direction}); found != traffic.end())
+            for (const auto& [id, value] : found->second) { total += value.first; open |= value.second; }
+        return total;
+    }
+    bool trafficSettled() const {
+        bool open{};
+        const auto disk = bytes(NKS_TRAFFIC_PHYSICAL_DISK, NKS_TRAFFIC_WRITE, open), udp = bytes(NKS_TRAFFIC_UDP, NKS_TRAFFIC_SENT, open);
+        return !open && disk >= diskLoad * 95 / 100 && udp >= udpSent * 95 / 100;
+    }
+    void verifyTraffic() const {
+        bool open{};
+        const auto disk = bytes(NKS_TRAFFIC_PHYSICAL_DISK, NKS_TRAFFIC_WRITE, open), udp = bytes(NKS_TRAFFIC_UDP, NKS_TRAFFIC_SENT, open);
+        std::cout << "Own child traffic diskWrite=" << disk << " (load " << diskLoad << ") udpSent=" << udp << " (load " << udpSent << ") open=" << open << '\n';
+        std::cout << "Traffic epoch=" << last.attribution_epoch << " unknownEvents=" << last.unknown_events << " unknownBytes=" << last.unknown_bytes
+            << " evicted=" << last.evicted_samples << " pendingDropped=" << last.pending_dropped << " late=" << last.late_events
+            << " identityConflicts=" << last.identity_conflicts << " disk=" << last.disk_state << " net=" << last.network_state << std::endl;
+        require(!open, "The own child's traffic windows did not close");
+        require(disk >= diskLoad * 95 / 100 && disk <= diskLoad * 125 / 100 + (1ull << 20), "Physical disk writes attributed to the child differ from its known load");
+        require(udp >= udpSent * 95 / 100 && udp <= udpSent * 110 / 100, "UDP bytes attributed to the child differ from its known load");
+    }
 
     void observe(const NksEventFrameView& frame) {
         if (!target.pid) return;
@@ -193,7 +265,10 @@ public:
     Session& operator=(const Session&) = delete;
     void start() { require(nks_events_start(monitor) == NKS_OK, "Public event monitor start failed"); }
     unsigned read() {
-        Frame frame(monitor); statistics.observe(frame); capture.observe(*frame.view);
+        Frame frame(monitor); statistics.observe(frame); capture.observe(*frame.view); capture.observeTraffic(frame.traffic);
+        // The baseline is this test's own fixture: everything it measures starts after the acknowledgement.
+        if ((frame.view->flags & NKS_EVENTS_RESYNC_REQUIRED) && frame.view->boot_state == NKS_SAMPLE_VALID)
+            nks_events_ack_resync(monitor, frame.view->resync_version);
         return frame.view->event_count + frame.traffic.sample_count;
     }
     bool stopAndDrain() noexcept {
@@ -232,6 +307,9 @@ bool run(Session& session, bool requireCapture)
         require(Clock::now() < deadline, "Event monitor did not reach a definitive state within five seconds");
         std::this_thread::sleep_for(25ms);
     }
+    const auto synced = Clock::now() + 3s;
+    while ((session.statistics.flags & NKS_EVENTS_RESYNC_REQUIRED) && Clock::now() < synced) { session.read(); std::this_thread::sleep_for(25ms); }
+    require(!(session.statistics.flags & NKS_EVENTS_RESYNC_REQUIRED), "The event monitor did not accept the resync acknowledgement");
     session.child = std::make_unique<Child>();
     session.capture.target = session.child->identity;
     session.child->resumeAndWait();
@@ -242,13 +320,18 @@ bool run(Session& session, bool requireCapture)
         if (session.statistics.state != NKS_EVENTS_RUNNING) break;
         std::this_thread::sleep_for(25ms);
     } while (Clock::now() < end);
+    const auto settle = Clock::now() + 15s;
+    while (!session.capture.trafficSettled() && session.statistics.state == NKS_EVENTS_RUNNING && Clock::now() < settle) {
+        session.read();
+        std::this_thread::sleep_for(25ms);
+    }
     return true;
 }
 }
 
 int wmain(int argc, wchar_t** argv)
 {
-    if (argc == 2 && !wcscmp(argv[1], L"--child")) { Sleep(100); return static_cast<int>(childExit); }
+    if (argc == 2 && !wcscmp(argv[1], L"--child")) return static_cast<int>(childLoad());
     const bool requireCapture = argc == 2 && !wcscmp(argv[1], L"--require-capture");
     if (argc != 1 && !requireCapture) {
         std::cerr << "Usage: nks-process-event-live-tests [--require-capture]\n"; return 2;
@@ -267,7 +350,7 @@ int wmain(int argc, wchar_t** argv)
         if (failed) return 1;
         if (captured) {
             require(session.statistics.state == NKS_EVENTS_STOPPED, "The captured session ended with an error instead of a confirmed Stop");
-            session.capture.verify(); session.statistics.verifyNoLoss();
+            session.capture.verify(); session.statistics.verifyNoLoss(); session.capture.verifyTraffic();
             const auto& own = session.capture;
             std::cout << "PASS own lifetime boot=" << std::hex << std::setfill('0') << std::setw(16) << own.target.boot_high
                 << std::setw(16) << own.target.boot_low << std::dec << " pid=" << own.target.pid
