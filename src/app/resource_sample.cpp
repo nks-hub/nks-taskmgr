@@ -31,12 +31,14 @@ int main(int argc, char** argv)
 {
     try {
         const bool details = argc == 2 && std::string(argv[1]) == "--disk-details";
-        if (argc > 1 && !details) throw std::runtime_error("Usage: nks-resource-sample [--disk-details]");
+        const bool sensors = argc == 2 && std::string(argv[1]) == "--cpu-sensors";
+        if (argc > 1 && !details && !sensors) throw std::runtime_error("Usage: nks-resource-sample [--disk-details|--cpu-sensors]");
         nks::ResourceCollector collector;
-        auto before = collector.collect();
+        auto before = collector.collect(sensors);
         std::this_thread::sleep_for(std::chrono::seconds(1));
         const auto began = std::chrono::steady_clock::now();
-        auto after = collector.collect();
+        auto after = collector.collect(sensors);
+        if (sensors) for (const auto& fact : after.cpuSensorFacts) std::cout << utf8(fact.name + L"\t" + fact.value + L"\n");
         std::set<std::wstring> identities;
         unsigned disks = 0, gpus = 0, networks = 0, validDisks = 0, validGpus = 0, disconnected = 0;
         unsigned gpuEngines = 0, validGpuMemory = 0;
