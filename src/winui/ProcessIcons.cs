@@ -45,6 +45,20 @@ internal static partial class ProcessIcons
         return bytes;
     }
 
+    /// <summary>Image path of the exact process generation, or null when it ended, was reused or is not readable.</summary>
+    internal static unsafe string? ImagePath(ProcessKey key)
+    {
+        if (key.Kind is not (GenerationKind.CreationTime or GenerationKind.SequenceNumber) || key.Generation == 0 || key.Boot.IsEmpty) return null;
+        using var process = OpenProcess(0x1000, false, key.Pid);
+        if (process.IsInvalid) return null;
+        var identity = NativeMonitor.QueryProcessIdentity(process, key.Kind);
+        if (identity.State != SampleState.Valid || identity.Boot != key.Boot || identity.Pid != key.Pid
+            || identity.Kind != key.Kind || identity.Generation != key.Generation) return null;
+        char[] buffer = new char[32768]; uint length = (uint)buffer.Length;
+        fixed (char* pathBuffer = buffer) if (!QueryFullProcessImageName(process, 0, pathBuffer, ref length)) return null;
+        return new string(buffer, 0, (int)length);
+    }
+
     [LibraryImport("kernel32.dll", EntryPoint = "OpenProcess")]
     private static partial SafeProcessHandle OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint pid);
     [LibraryImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW")]

@@ -64,6 +64,8 @@ public sealed partial class MainWindow
         AutomationProperties.SetAutomationId(applicationHeader, "application-header");
         pane.Children.Add(applicationHeader); pane.Children.Add(table); Grid.SetRow(table, 1);
         applicationWorkspace.Children.Add(pane); Grid.SetColumn(pane, 1);
+        BuildApplicationTable();
+        applicationWorkspace.Children.Add(appsPane); Grid.SetColumnSpan(appsPane, 2);
         var information = new StackPanel { Spacing = 8, MaxWidth = 420 };
         information.Children.Add(applicationStatus); information.Children.Add(applicationFacts);
         var info = new Flyout { Content = new ScrollViewer { Content = information, MaxHeight = 320, Padding = new Thickness(0, 0, 20, 0),
@@ -304,6 +306,7 @@ public sealed partial class MainWindow
         if (model.Applications.Selected is { } chosen && chosen.Key != autoSelectedApplication)
             DispatcherQueue.TryEnqueue(() => { if (model.Mode == ProcessMode.Applications && model.Applications.Selected == chosen) SelectApplicationRoot(chosen); });
         ResizeApplicationGroups();
+        RefreshAppTable();
     }
 
     /// <summary>Selects the group's root process so the process commands apply to the chosen application at once.</summary>
@@ -369,11 +372,12 @@ public sealed partial class MainWindow
     private void ResizeApplicationGroups()
     {
         if (applicationWorkspace.ColumnDefinitions.Count == 0) return;
-        bool apps = model.Mode == ProcessMode.Applications, wide = root.ActualWidth >= 1200;
+        bool apps = model.Mode == ProcessMode.Applications;
         var column = applicationWorkspace.ColumnDefinitions[0];
-        double groupWidth = apps && wide ? 290 : 0;
-        if (column.Width.GridUnitType != GridUnitType.Pixel || column.Width.Value != groupWidth) column.Width = new GridLength(groupWidth);
-        SetVisible(applicationWorkspace.Children[0], apps && wide); SetVisible(applicationToolbar, apps); SetVisible(applicationChoice, apps && !wide);
+        // Applications use the single grouped table (F133); the old group list, its sort button and the process table stay for the Processes view only.
+        if (column.Width.GridUnitType != GridUnitType.Pixel || column.Width.Value != 0) column.Width = new GridLength(0);
+        SetVisible(applicationWorkspace.Children[0], false); SetVisible(applicationWorkspace.Children[1], !apps); SetVisible(appsPane, apps);
+        SetVisible(applicationToolbar, apps); SetVisible(applicationChoice, false); SetVisible(applicationSort, false);
     }
 
     private static void SetVisible(UIElement element, bool visible)
