@@ -607,6 +607,9 @@ public sealed partial class MainWindow : Window
             if (smokeKeyboard is null) { CheckHighContrast(); smokeKeyboard = CheckKeyboardTraversalAsync(); return; }
             if (!smokeKeyboard.IsCompleted) return;
             smokeKeyboard.GetAwaiter().GetResult();
+            if (smokeSnapshotLoss is null) { smokeSnapshotLoss = CheckProcessSnapshotLossAsync(); return; }
+            if (!smokeSnapshotLoss.IsCompleted) return;
+            smokeSnapshotLoss.GetAwaiter().GetResult();
             if (smokeSnapshotComparison is null) { smokeSnapshotComparison = SnapshotComparisonUiChecks.RunAsync(); return; }
             if (!smokeSnapshotComparison.IsCompleted) return;
             smokeSnapshotComparison.GetAwaiter().GetResult();
