@@ -149,7 +149,12 @@ public sealed partial class MainWindow
     {
         bool stacked = root.ActualWidth <= 1100;
         serviceWorkspace.ColumnDefinitions[1].Width = new GridLength(stacked ? 0 : 330);
-        serviceWorkspace.RowDefinitions[1].Height = stacked ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        // Stacked, the list keeps two thirds; with nothing selected the list gets the whole height (the hint adds nothing there).
+        bool selected = servicesModel?.Selected is not null;
+        var detailHeight = stacked && selected ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        var listHeight = new GridLength(stacked ? 2 : 1, GridUnitType.Star);
+        if (serviceWorkspace.RowDefinitions[1].Height != detailHeight) serviceWorkspace.RowDefinitions[1].Height = detailHeight;
+        if (serviceWorkspace.RowDefinitions[0].Height != listHeight) serviceWorkspace.RowDefinitions[0].Height = listHeight;
         Grid.SetColumn(serviceDetailScroll, stacked ? 0 : 1); Grid.SetRow(serviceDetailScroll, stacked ? 1 : 0);
         serviceDetailScroll.BorderThickness = stacked ? new Thickness(0, 1, 0, 0) : new Thickness(1, 0, 0, 0);
     }

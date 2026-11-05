@@ -76,6 +76,7 @@ public sealed partial class MainWindow
     {
         var row = servicesModel?.Selected; var detail = servicesModel?.Detail;
         if (row is null) detail = null;
+        ResizeServices();
         serviceTitle.Text = row?.Title ?? "Vyberte službu"; serviceName.Text = row?.Name ?? "";
         serviceDescription.Text = row is null ? "Výběr v seznamu otevře konfiguraci a závislosti služby." : detail is null
             ? servicesModel!.DetailError.Length > 0 ? servicesModel.DetailError : model.Paused ? "Obnovte sběr pro načtení detailu." : "Načítám detail…"
