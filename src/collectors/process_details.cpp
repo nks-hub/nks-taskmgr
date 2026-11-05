@@ -137,7 +137,9 @@ bool copyText(const wchar_t (&text)[Size], std::wstring& result)
 void readModules(std::uint32_t pid, ProcessDetailsResult& result)
 {
     DWORD error = 0;
-    const DWORD flags = result.architecture == details::Architecture::x86 ? TH32CS_SNAPMODULE32 : TH32CS_SNAPMODULE;
+    // From a 64-bit caller TH32CS_SNAPMODULE32 alone lists nothing (ERROR_NO_MORE_FILES); together with TH32CS_SNAPMODULE a WOW64
+    // target reports its 32-bit modules plus the 64-bit WOW64 layer (ntdll, wow64*.dll) mapped above 4 GiB.
+    const DWORD flags = result.architecture == details::Architecture::x86 ? TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32 : TH32CS_SNAPMODULE;
     auto list = snapshot(flags, pid, error);
     if (!list) { fail(result, error); return; }
     MODULEENTRY32W entry{}; entry.dwSize = sizeof(entry);
@@ -147,13 +149,12 @@ void readModules(std::uint32_t pid, ProcessDetailsResult& result)
         if (result.modules.size() == details::maximumModules) { result.state = details::ResultState::limitExceeded; return; }
         ProcessModuleDetail module;
         module.base = reinterpret_cast<std::uintptr_t>(entry.modBaseAddr); module.imageSize = entry.modBaseSize;
+        // The combined WOW64 snapshot lists the process image in both its 64-bit and 32-bit parts.
+        if (flags != TH32CS_SNAPMODULE && module.base && bases.contains(module.base)) continue;
         if (entry.th32ProcessID != pid || !module.base || !module.imageSize || module.imageSize > std::numeric_limits<std::uint64_t>::max() - module.base
             || !bases.insert(module.base).second || !copyText(entry.szModule, module.name) || !copyText(entry.szExePath, module.path)
             || module.name.empty() || module.path.empty()) { fail(result, ERROR_INVALID_DATA); return; }
         if (module.path.size() == std::size(entry.szExePath) - 1) { fail(result, ERROR_INSUFFICIENT_BUFFER); return; }
-        if (result.architecture == details::Architecture::x86 && module.base + module.imageSize > (std::uint64_t{1} << 32)) {
-            fail(result, ERROR_INVALID_DATA); return;
-        }
         result.modules.push_back(std::move(module));
     } while (Module32NextW(list.get(), &entry));
     error = GetLastError();

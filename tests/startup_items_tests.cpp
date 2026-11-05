@@ -1,5 +1,6 @@
 #include "collectors/startup_items.hpp"
 #include "collectors/process_details.hpp"
+#include "collectors/process_identity.hpp"
 #include <objbase.h>
 #include <shobjidl.h>
 #include <wrl/client.h>
@@ -161,6 +162,30 @@ void fileSignature()
     request.target.pid = 4;
     require(nks::readProcessDetails(request).state == nks::details::ResultState::invalidRequest, "A process target was accepted for a file signature");
 }
+
+// A real 32-bit (WOW64) process must list its 32-bit modules; a TH32CS_SNAPMODULE32-only snapshot listed none (error 18).
+void wow64Modules()
+{
+    wchar_t wow[MAX_PATH]{};
+    if (GetSystemWow64DirectoryW(wow, MAX_PATH) == 0) { std::cout << "WOW64 is not installed; module test skipped\n"; return; }
+    std::wstring command = L"\"" + std::wstring(wow) + L"\\cmd.exe\" /c ping -n 30 127.0.0.1";
+    STARTUPINFOW startup{}; startup.cb = sizeof(startup); PROCESS_INFORMATION process{};
+    require(CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startup, &process) != 0, "32-bit cmd.exe did not start");
+    nks::DetailHandle child(process.hProcess), thread(process.hThread);
+    struct Stop { HANDLE handle; ~Stop() { TerminateProcess(handle, 0); WaitForSingleObject(handle, 5000); } } stop{process.hProcess};
+    Sleep(1500);
+    const auto identity = nks::queryProcessIdentity(process.hProcess, nks::GenerationKind::creationTime);
+    require(identity.state == nks::SampleState::valid, "No identity for the 32-bit process");
+    nks::ProcessDetailsRequest request; request.command = nks::details::Command::modules; request.target = identity.identity;
+    const auto result = nks::readProcessDetails(request);
+    require(result.state == nks::details::ResultState::ok && result.architecture == nks::details::Architecture::x86,
+        ("WOW64 modules were not read, error " + std::to_string(result.win32Error)).c_str());
+    const std::wstring kernel = std::wstring(wow) + L"\\kernel32.dll";
+    require(std::any_of(result.modules.begin(), result.modules.end(), [&](const nks::ProcessModuleDetail& module) {
+        return _wcsicmp(module.path.c_str(), kernel.c_str()) == 0 && module.base + module.imageSize <= (std::uint64_t{1} << 32); }),
+        "The 32-bit kernel32.dll is missing from the WOW64 module list");
+    std::cout << "WOW64 modules passed: " << result.modules.size() << " modules\n";
+}
 }
 
 int main()
@@ -177,6 +202,7 @@ int main()
         targets(tool);
         inventory(temp, tool);
         fileSignature();
+        wow64Modules();
         std::cout << "Startup inventory tests passed\n";
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
