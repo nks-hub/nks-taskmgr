@@ -75,7 +75,7 @@ void liveMonitor()
     require(!monitor.takeProcesses(processError) && !monitor.takeResources(resourceError), "A stopped monitor continued publishing samples");
 }
 
-// In the background the full process list arrives about every 3 s while processor history keeps the 1 s cadence;
+// In the background the full process list arrives about every Monitor::backgroundProcessInterval while processor history keeps the 1 s cadence;
 // returning to the foreground delivers a full list at once.
 void backgroundMonitor()
 {
@@ -91,7 +91,8 @@ void backgroundMonitor()
     const auto started = Clock::now();
     unsigned full{}; std::size_t ownRows{};
     std::vector<std::int64_t> cpuTimes;
-    while (Clock::now() - started < 9500ms) {
+    const auto window = 2 * nks::Monitor::backgroundProcessInterval + 1500ms;
+    while (Clock::now() - started < window) {
         if (auto sample = monitor.takeProcesses(processError)) {
             ++full; ownRows = sample->processes.size();
             require(sample->systemCpuPercent.valid(), "A background full snapshot lost system CPU");
@@ -106,8 +107,8 @@ void backgroundMonitor()
         require(processError.empty(), "Background collection reported an error");
         std::this_thread::sleep_for(20ms);
     }
-    require(full >= 2 && full <= 4 && ownRows > 10, "Background mode did not slow full process reads to about every 3 s");
-    require(cpuTimes.size() >= 8, "Background mode thinned the 1 s CPU history");
+    require(full >= 2 && full <= 3 && ownRows > 10, "Background mode did not slow full process reads to the background interval");
+    require(cpuTimes.size() >= 10, "Background mode thinned the 1 s CPU history");
     for (std::size_t i = 1; i < cpuTimes.size(); ++i)
         require(cpuTimes[i] - cpuTimes[i - 1] < 1'600'000'000, "Background CPU history has a gap longer than 1.6 s");
     monitor.setBackground(false);
@@ -116,7 +117,7 @@ void backgroundMonitor()
     while (!(fresh = monitor.takeProcesses(processError))) { require(Clock::now() - restored < 900ms, "Foreground did not deliver a full list at once"); std::this_thread::sleep_for(5ms); }
     const auto latency = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - restored).count();
     require(!fresh->processes.empty(), "The foreground snapshot had no processes");
-    std::cout << "PASS background: " << full << " full process reads in 9.5 s, " << cpuTimes.size() << " CPU history points, foreground list after " << latency << " ms\n";
+    std::cout << "PASS background: " << full << " full process reads in " << std::chrono::duration_cast<std::chrono::milliseconds>(window).count() << " ms, " << cpuTimes.size() << " CPU history points, foreground list after " << latency << " ms\n";
     monitor.stop();
 }
 }

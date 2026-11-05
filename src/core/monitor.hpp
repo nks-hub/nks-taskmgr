@@ -54,11 +54,11 @@ public:
     void setInterval(unsigned milliseconds);
     unsigned interval() const { return intervalMilliseconds.load(); }
     void setCpuSensors(bool value) noexcept { cpuSensorsState.store(value); }
-    /// While the window is in the background the full process list is read about every 3 s; processor
+    /// While the window is in the background the full process list is read about every 5 s; processor
     /// times and memory keep the regular interval, so the shared CPU and memory history stays continuous.
     void setBackground(bool value);
     bool background() const { return backgroundState.load(); }
-    static constexpr std::chrono::milliseconds backgroundProcessInterval{3000};
+    static constexpr std::chrono::milliseconds backgroundProcessInterval{5000};
     std::shared_ptr<const ProcessSnapshot> takeProcesses(std::wstring& error, std::uint64_t* dropped = nullptr) { return processSlot.take(error, dropped); }
     std::shared_ptr<const ResourceSnapshot> takeResources(std::wstring& error) { return resourceSlot.take(error); }
     std::unique_ptr<HistoryBatch> takeHistory() { return history.take(); }
