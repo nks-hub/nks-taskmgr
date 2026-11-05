@@ -165,6 +165,9 @@ void ProcessSampler::apply(ProcessSnapshot& snapshot)
     }
     if (snapshot.systemCpuPercent.valid() && invalidLogicalDelta)
         snapshot.systemCpuPercent.state = SampleState::gap;
+    // A processor-time ratio covers exactly the span between the two reads that produced it.
+    if (snapshot.systemCpuPercent.valid()) setMeasurementInterval(metadata.systemCpu, metadata.systemCpu.cadenceNs, true);
+    if (!invalidLogicalDelta && !snapshot.processors.empty()) setMeasurementInterval(metadata.logicalCpu, metadata.logicalCpu.cadenceNs, true);
     remember(snapshot);
 }
 

@@ -21,7 +21,7 @@ MeasurementMetadata measurementMetadata(MeasurementUnit unit, MeasurementNormali
 
 void setMeasurementInterval(MeasurementMetadata& metadata, std::int64_t intervalNs, bool usable) noexcept
 {
-    if (metadata.basis != MeasurementBasis::elapsedDelta) return;
+    if (metadata.basis != MeasurementBasis::elapsedDelta && metadata.basis != MeasurementBasis::counterRatio) return;
     metadata.intervalState = usable && intervalNs > 0 ? MeasurementIntervalState::measured : MeasurementIntervalState::unavailable;
     metadata.intervalNs = metadata.intervalState == MeasurementIntervalState::measured ? intervalNs : 0;
 }

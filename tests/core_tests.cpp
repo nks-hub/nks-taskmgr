@@ -245,6 +245,9 @@ int main() {
                 && metadata.processCpu.normalizationDivisor == 4 && metadata.systemCpu.cadenceNs == 270000000
                 && metadata.logicalCpu.cadenceNs == 290000000 && metadata.systemMemory.cadenceNs == 340000000,
                 "Independent observation times or actual process interval changed");
+            require(metadata.systemCpu.intervalState == nks::MeasurementIntervalState::measured && metadata.systemCpu.intervalNs == 270000000
+                && metadata.logicalCpu.intervalState == nks::MeasurementIntervalState::measured && metadata.logicalCpu.intervalNs == 290000000,
+                "Processor ratios did not report the span between their two reads");
             require(after.processes[0].name.size() == 4096 && after.memoryFacts[0].value == L"6000",
                 "Sampler consumed the current snapshot text");
         }},
