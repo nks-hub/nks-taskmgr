@@ -55,11 +55,11 @@ public sealed partial class MainWindow
             long began = Stopwatch.GetTimestamp();
             processList.SelectedItems.Clear();
             processSlots.BeginBulk(source.VisibleProcesses.Count);
-            while (processSlots.Count > source.VisibleProcesses.Count) processSlots.RemoveAt(processSlots.Count - 1);
+            processSlots.TrimTo(source.VisibleProcesses.Count);
             slotsByRow.Clear();
             for (int i = 0; i < source.VisibleProcesses.Count; ++i) {
                 var row = source.VisibleProcesses[i];
-                if (i == processSlots.Count) processSlots.Add(new ProcessSlot(row) { Columns = processTable.Columns, ToggleBranch = ToggleProcessBranch });
+                if (i == processSlots.Count) processSlots.Append(row, value => new ProcessSlot(value) { Columns = processTable.Columns, ToggleBranch = ToggleProcessBranch });
                 else processSlots[i].Assign(row);
                 slotsByRow.Add(row, processSlots[i]);
             }

@@ -77,7 +77,7 @@ public sealed partial class MainWindow
             using var output = new StreamWriter(path, false);
             using var interaction = new StreamWriter(path + ".interaction.csv", false);
             using var interactionSummary = new StreamWriter(path + ".interaction-summary.csv", false);
-            await interaction.WriteLineAsync("scenario,rows,case,iteration,handler_ms,layout_ms,two_frames_ms");
+            await interaction.WriteLineAsync("scenario,rows,case,iteration,handler_ms,layout_ms,two_frames_ms,query_ms,refresh_ms,slots_assign_ms,slots_restore_ms,slots_focus_ms,visible_rows");
             await interactionSummary.WriteLineAsync("scenario,rows,case,samples,p95_handler_ms,max_handler_ms,p95_two_frames_ms,max_two_frames_ms,target_ms,target_met");
             await output.WriteLineAsync("scenario,rows,column,descending,handler_ms,layout_ms,two_frames_ms,icon_decodes_started,ui_cpu_ms,ui_alloc_bytes,gen0_gc,gen1_gc,gen2_gc,sort_model_ms,sort_header_ms,sort_overview_ms,slots_assign_ms,slots_restore_ms,slots_focus_ms,icons_enabled,icon_apply_ms,icon_apply_max_ms,icon_start_ms,icon_start_max_ms");
             foreach (string scenario in new[] { "live", "replay" }) {
@@ -152,6 +152,7 @@ public sealed partial class MainWindow
         const double searchTargetMs = 100, selectionTargetMs = 50;
         static string F(double value) => value.ToString("F3", CultureInfo.InvariantCulture);
         var results = new Dictionary<string, (List<double> Handler, List<double> Total, double Target)>();
+        double queryMs = 0, refreshMs = 0;
         int rows = model.VisibleProcesses.Count;
         if (rows < 2 || processSlots.Count != rows) throw new InvalidOperationException("Interaction benchmark requires a bound process list with at least two rows.");
         async Task Measure(string name, double target, int iteration, Action action, Action verify)
@@ -160,13 +161,18 @@ public sealed partial class MainWindow
             verify();
             if (!results.TryGetValue(name, out var list)) results[name] = list = (new List<double>(), new List<double>(), target);
             list.Handler.Add(handler); list.Total.Add(total);
-            await samples.WriteLineAsync(string.Join(',', scenario, rows, name, iteration, F(handler), F(layout), F(total)));
+            await samples.WriteLineAsync(string.Join(',', scenario, rows, name, iteration, F(handler), F(layout), F(total), F(queryMs), F(refreshMs),
+                F(slotsAssignMs), F(slotsRestoreMs), F(slotsFocusMs), model.VisibleProcesses.Count));
             await samples.FlushAsync();
         }
         var middle = model.VisibleProcesses[rows / 2];
         (string Case, string Query)[] queries = [("prefix", middle.Name.Length > 1 ? middle.Name[..^1] : middle.Name), ("pid", middle.PidText), ("no_match", "no-such-process-zz"), ("clear", "")];
         for (int i = 0; i < iterations; ++i) foreach (var (name, query) in queries)
-            await Measure("search_" + name, searchTargetMs, i, () => { processQuery = query; model.SetQuery(query); RefreshProcesses(); }, () => {
+            await Measure("search_" + name, searchTargetMs, i, () => {
+                long began = Stopwatch.GetTimestamp(); processQuery = query; model.SetQuery(query);
+                long queried = Stopwatch.GetTimestamp(); RefreshProcesses();
+                queryMs = Stopwatch.GetElapsedTime(began, queried).TotalMilliseconds; refreshMs = Stopwatch.GetElapsedTime(queried).TotalMilliseconds;
+            }, () => {
                 int count = model.VisibleProcesses.Count;
                 bool applied = processSlots.Count == count && name switch {
                     "no_match" => count == 0, "clear" => count == rows, _ => count > 0 && model.VisibleProcesses.Contains(middle)

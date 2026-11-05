@@ -21,6 +21,29 @@ public sealed partial class ProcessSlots : ObservableCollection<ProcessSlot>
         OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
         OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        if (spare.Count > 4096) spare.RemoveRange(4096, spare.Count - 4096);
+    }
+
+    private readonly List<ProcessSlot> spare = [];
+
+    /// <summary>Drops slots past <paramref name="count"/>; inside a bulk update they are cut in one step and kept for <see cref="Append"/>.</summary>
+    internal void TrimTo(int count)
+    {
+        if (count >= Count) return;
+        if (!bulk) { while (Count > count) RemoveAt(Count - 1); return; }
+        var items = (List<ProcessSlot>)Items;
+        spare.AddRange(items.GetRange(count, items.Count - count));
+        items.RemoveRange(count, items.Count - count);
+    }
+
+    /// <summary>Appends a slot for <paramref name="row"/>, reusing one trimmed during a bulk update when available.</summary>
+    internal ProcessSlot Append(ProcessRow row, Func<ProcessRow, ProcessSlot> create)
+    {
+        ProcessSlot slot;
+        if (bulk && spare.Count > 0) { slot = spare[^1]; spare.RemoveAt(spare.Count - 1); slot.Assign(row); }
+        else slot = create(row);
+        Add(slot);
+        return slot;
     }
 
     protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e) { if (!bulk) base.OnCollectionChanged(e); }
