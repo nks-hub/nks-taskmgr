@@ -20,14 +20,16 @@ public sealed partial class ApplicationGroupRow
         var known = live.Where(row => row.Cpu.State == SampleState.Valid && double.IsFinite(row.Cpu.Value) && row.Cpu.Value >= 0).ToArray();
         CpuValue = known.Sum(row => row.Cpu.Value); HasCpu = known.Length > 0 && double.IsFinite(CpuValue);
         MemoryValue = live.Sum(row => (double)row.WorkingBytes); HasMemory = live.Length > 0;
-        string counts = Members.Length + (Members.Length == 1 ? " proces" : Members.Length is >= 2 and <= 4 ? " procesy" : " procesů")
-            + " · " + Windows.Length + (Windows.Length == 1 ? " okno" : Windows.Length is >= 2 and <= 4 ? " okna" : " oken");
-        string cpu = !HasCpu ? "CPU —" : "CPU " + Display.Number(CpuValue, " %", 1) + (partial || known.Length != Members.Length ? " *" : "");
-        string tooltip = HasCpu ? "Součet dostupného CPU z " + known.Length + " / " + Members.Length + " procesů."
-            : "Aktuální CPU této skupiny není dostupné.";
+        string windows = Windows.Length + (Windows.Length == 1 ? " okno" : Windows.Length is >= 2 and <= 4 ? " okna" : " oken");
+        string counts = Members.Length + (Members.Length == 1 ? " proces" : Members.Length is >= 2 and <= 4 ? " procesy" : " procesů");
+        // ≥ marks a known part of an incomplete sum, as in the process tree and Users.
+        string cpu = (!HasCpu ? "—" : (partial || known.Length != Members.Length ? "≥ " : "") + Display.Number(CpuValue, " %", 1))
+            + (HasMemory ? " · " + Display.Bytes((ulong)MemoryValue) : "");
+        string tooltip = windows + ". " + (HasCpu ? "CPU je součet z " + known.Length + " / " + Members.Length + " procesů." : "Aktuální CPU této skupiny není dostupné.")
+            + (HasMemory ? " Paměť je součet pracovních sad." : "");
         if (partial) tooltip += " Přehled aplikací je částečný nebo zastaralý.";
         else if (known.Length != Members.Length) tooltip += " U ostatních procesů chybí aktuální měření.";
-        string summary = counts + " · " + cpu;
+        string summary = counts + " · " + windows + " · CPU " + cpu;
         bool changed = CountText != counts || CpuText != cpu || CpuTooltip != tooltip || Summary != summary;
         CountText = counts; CpuText = cpu; CpuTooltip = tooltip; Summary = summary;
         return changed;

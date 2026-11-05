@@ -15,11 +15,11 @@
                  VerticalAlignment="Center" TextWrapping="NoWrap" MaxLines="1" TextTrimming="CharacterEllipsis" />
       <Grid Grid.Row="1" Grid.Column="1" ColumnSpacing="4">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-        <TextBlock Text="{x:Bind CountText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind CountText, Mode=OneWay}"
+        <TextBlock Text="{x:Bind CountText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind CpuTooltip, Mode=OneWay}"
                    FontSize="10" VerticalAlignment="Center" FontFamily="{ThemeResource ContentControlThemeFontFamily}"
                    Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis" />
         <TextBlock Grid.Column="1" Text="{x:Bind CpuText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind CpuTooltip, Mode=OneWay}"
-                   Width="84" FontSize="11" VerticalAlignment="Center" FontFamily="{ThemeResource ContentControlThemeFontFamily}"
+                   FontSize="11" VerticalAlignment="Center" FontFamily="{ThemeResource ContentControlThemeFontFamily}"
                    TextAlignment="Right" Foreground="{ThemeResource NksSecondaryTextBrush}" />
       </Grid>
     </Grid>

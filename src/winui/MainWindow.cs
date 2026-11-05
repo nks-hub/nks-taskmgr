@@ -387,11 +387,12 @@ public sealed partial class MainWindow : Window
     }
 
     // Minimized ticks only drain the newest-frame mailbox and history; half the sampling interval still reads
-    // every frame, and a frame overwritten before it is read is reported as a gap (F127).
+    // every frame, and a frame overwritten before it is read is reported as a gap (F127). In the background full process
+    // frames arrive about every 3 s and history has its own bounded stream, so half of that period still reads every frame.
     private bool PaceTimer(bool minimized)
     {
         model.SetBackground(minimized);
-        var wanted = TimeSpan.FromMilliseconds(minimized ? Math.Max(100u, model.Interval / 2) : 100u);
+        var wanted = TimeSpan.FromMilliseconds(minimized ? Math.Max(100u, model.Background ? 1500u : model.Interval / 2) : 100u);
         if (timer.Interval == wanted) return false;
         timer.Interval = wanted;
         return !minimized;
@@ -461,7 +462,8 @@ public sealed partial class MainWindow : Window
             if (!ReferenceEquals(item.Button.Foreground, foreground)) item.Button.Foreground = foreground;
         }
         RefreshApplicationGroups();
-        string countText = model.VisibleProcesses.Count + (model.Held ? " položek · pořadí přidrženo" : " položek");
+        int visible = model.VisibleProcesses.Count;
+        string countText = visible + (visible == 1 ? " proces" : visible is >= 2 and <= 4 ? " procesy" : " procesů") + (model.Held ? " · pořadí přidrženo" : "");
         if (processCount.Text != countText) processCount.Text = countText;
         RefreshProcessOverview();
         RefreshSelection();

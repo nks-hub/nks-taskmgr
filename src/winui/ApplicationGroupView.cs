@@ -17,6 +17,10 @@ public sealed partial class MainWindow
     private readonly DropDownButton applicationSort = new() { MinHeight = 28, Height = 28, FontSize = 11, FontFamily = UiTypography.Font, Padding = new Thickness(6, 0, 6, 0) };
     private readonly Button applicationInfo = Button("Info");
     private readonly TextBlock applicationStatus = new() { FontSize = 11, FontFamily = UiTypography.Font, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock applicationTitle = new() { FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, FontFamily = UiTypography.Font,
+        TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap };
+    private readonly TextBlock applicationSummary = new() { FontSize = 12, FontFamily = UiTypography.Font, Foreground = Display.Brush(0x95a4ad), TextTrimming = TextTrimming.CharacterEllipsis };
+    private readonly StackPanel applicationHeader = new() { Spacing = 2, Padding = new Thickness(4, 0, 0, 6), Visibility = Visibility.Collapsed };
     private readonly TextBlock applicationFacts = new() { FontSize = 12, FontFamily = UiTypography.Font, TextWrapping = TextWrapping.Wrap, MaxWidth = 420 };
     private readonly CancellationTokenSource applicationLifetime = new();
     private CancellationTokenSource? applicationRequest;
@@ -47,12 +51,18 @@ public sealed partial class MainWindow
         applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         applicationToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         applicationToolbar.Children.Add(applicationChoice); applicationToolbar.Children.Add(applicationSort); Grid.SetColumn(applicationSort, 1);
-        applicationInfo.Height = applicationInfo.MinHeight = 28; applicationInfo.FontSize = 11; applicationInfo.Padding = new Thickness(6, 0, 6, 0);
+        applicationInfo.Height = applicationInfo.MinHeight = 28; applicationInfo.Width = 32; applicationInfo.FontSize = 14; applicationInfo.Padding = new Thickness(0);
+        applicationInfo.Content = "ⓘ";
         applicationToolbar.Children.Add(applicationInfo); Grid.SetColumn(applicationInfo, 2);
         applicationSort.Flyout = ApplicationSortMenu();
         AutomationProperties.SetName(applicationSort, "Řadit skupiny aplikací podle"); AutomationProperties.SetAutomationId(applicationSort, "application-sort");
         ToolTipService.SetToolTip(applicationSort, "Řazení skupin aplikací; paměť je součet pracovních sad dostupných procesů.");
-        applicationWorkspace.Children.Add(table); Grid.SetColumn(table, 1);
+        var pane = new Grid();
+        pane.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); pane.RowDefinitions.Add(new RowDefinition());
+        applicationHeader.Children.Add(applicationTitle); applicationHeader.Children.Add(applicationSummary);
+        AutomationProperties.SetAutomationId(applicationHeader, "application-header");
+        pane.Children.Add(applicationHeader); pane.Children.Add(table); Grid.SetRow(table, 1);
+        applicationWorkspace.Children.Add(pane); Grid.SetColumn(pane, 1);
         var information = new StackPanel { Spacing = 8, MaxWidth = 420 };
         information.Children.Add(applicationStatus); information.Children.Add(applicationFacts);
         var info = new Flyout { Content = new ScrollViewer { Content = information, MaxHeight = 320, Padding = new Thickness(0, 0, 20, 0),
@@ -66,6 +76,11 @@ public sealed partial class MainWindow
             if (updatingApplicationChoice || model.Applications.Updating || model.Mode != ProcessMode.Applications || value is not ApplicationGroupRow group) return;
             if (!model.Processes.Any(row => row.Key == group.Key && model.IsCurrent(row))) return;
             model.SelectApplication(group.Key); pendingApplicationSelection = null; RefreshProcesses();
+            // Select the group's root process so the process actions apply to the chosen application at once.
+            if (SelectedProcess is not { } current || !model.VisibleProcesses.Contains(current)) {
+                var root = model.VisibleProcesses.FirstOrDefault(row => row.Key == group.Key) ?? model.VisibleProcesses.FirstOrDefault();
+                if (root is not null) SelectProcess(root, false);
+            }
         }
         applicationGroups.SelectionChanged += (_, _) => Select(applicationGroups.SelectedItem);
         applicationChoice.SelectionChanged += (_, _) => Select(applicationChoice.SelectedItem);
@@ -264,7 +279,7 @@ public sealed partial class MainWindow
     private void RefreshApplicationGroups()
     {
         bool apps = model.Mode == ProcessMode.Applications;
-        if (!apps) { ResizeApplicationGroups(); return; }
+        if (!apps) { SetVisible(applicationHeader, false); ResizeApplicationGroups(); return; }
         updatingApplicationChoice = true;
         try { applicationGroups.SelectedItem = applicationChoice.SelectedItem = model.Applications.Selected; }
         finally { updatingApplicationChoice = false; }
@@ -276,11 +291,18 @@ public sealed partial class MainWindow
         if (model.Held) { model.Applications.RefreshMetrics(true); applicationStatus.Text += " · pořadí a skupiny přidrženy"; }
         string sortCaption = ApplicationSortTitle(model.Applications.Sort) + (model.Applications.SortDescending ? " ↓" : " ↑");
         if (applicationSort.Content as string != sortCaption) applicationSort.Content = sortCaption;
-        string infoCaption = !model.Applications.HasInventory ? model.Applications.Error.Length > 0 ? "Info !" : "Info…"
-            : model.Applications.Partial || model.Held ? "Info *" : "Info";
-        if (applicationInfo.Content as string != infoCaption) applicationInfo.Content = infoCaption;
+        // One icon; colour instead of "*" or "!" tells that the inventory is partial, held or unavailable.
+        bool warning = model.Applications.Error.Length > 0 || (model.Applications.HasInventory && (model.Applications.Partial || model.Held));
+        if (applicationInfo.Content as string != "ⓘ") applicationInfo.Content = "ⓘ";
+        applicationInfo.Foreground = Display.Brush(warning ? 0xe0b04au : 0x95a4adu);
         ToolTipService.SetToolTip(applicationInfo, applicationStatus.Text + "\n" + inventoryDetail);
         if (applicationInfoOpen) applicationFacts.Text = ApplicationFacts();
+        if (model.Applications.Selected is { } group) {
+            if (applicationTitle.Text != group.Title) applicationTitle.Text = group.Title;
+            if (applicationSummary.Text != group.Summary) applicationSummary.Text = group.Summary;
+            ToolTipService.SetToolTip(applicationTitle, group.TitleTooltip);
+        }
+        SetVisible(applicationHeader, model.Applications.Selected is not null);
         ResizeApplicationGroups();
     }
 
@@ -318,7 +340,7 @@ public sealed partial class MainWindow
     }
 
     private string ApplicationInventoryDetail() => model.Applications.Error.Length > 0 ? model.Applications.Error
-        : model.Applications.Partial ? "Některá okna, vazby procesů nebo údaje nemusí být dostupné. * u CPU označuje částečný součet."
+        : model.Applications.Partial ? "Některá okna, vazby procesů nebo údaje nemusí být dostupné. ≥ u CPU označuje částečný součet."
             : "Skupiny vycházejí z ověřených vlastníků viditelných oken a jejich potomků.";
 
     private string ApplicationFacts()
@@ -340,7 +362,7 @@ public sealed partial class MainWindow
         if (applicationWorkspace.ColumnDefinitions.Count == 0) return;
         bool apps = model.Mode == ProcessMode.Applications, wide = root.ActualWidth >= 1200;
         var column = applicationWorkspace.ColumnDefinitions[0];
-        double groupWidth = apps && wide ? 250 : 0;
+        double groupWidth = apps && wide ? 290 : 0;
         if (column.Width.GridUnitType != GridUnitType.Pixel || column.Width.Value != groupWidth) column.Width = new GridLength(groupWidth);
         SetVisible(applicationWorkspace.Children[0], apps && wide); SetVisible(applicationToolbar, apps); SetVisible(applicationChoice, apps && !wide);
     }
