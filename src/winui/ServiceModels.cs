@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using NksTaskMgr.Native;
 
@@ -55,6 +56,8 @@ public sealed partial class ServiceRow(string name) : INotifyPropertyChanged
     public override string ToString() => Title + " (" + Name + "), " + StateText;
     public string PidText => Pid == 0 ? "—" : Pid.ToString(System.Globalization.CultureInfo.InvariantCulture);
     public string HostCountText => ReportedHostCount > 1 ? ServiceText.Count(ReportedHostCount) : "";
+    // An empty second line would still take its height and push the PID above the row centre.
+    public Visibility HostCountVisibility => ReportedHostCount > 1 ? Visibility.Visible : Visibility.Collapsed;
     public string HostSummary => Pid == 0 ? "PID není hlášen." : "Hlášený PID " + PidText + " · " + ServiceText.Count(ReportedHostCount);
     public string HostPeerDescription => StateText + " · " + Account;
     public string Startup => Config.Startup;
@@ -77,6 +80,7 @@ public sealed partial class ServiceRow(string name) : INotifyPropertyChanged
         ReportedHostCount = count;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ReportedHostCount)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HostCountText)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HostCountVisibility)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HostSummary)));
     }
     public bool Matches(ServiceFilter filter, string query) => (filter switch {
