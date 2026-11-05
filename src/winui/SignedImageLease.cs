@@ -16,6 +16,9 @@ internal sealed unsafe partial class SignedImageLease : IDisposable
     internal FileId Identity => id;
     internal SafeFileHandle Handle => image ?? throw new ObjectDisposedException(nameof(SignedImageLease));
     internal string Path { get; private set; } = "";
+    /// <summary>The same held file as a drive-letter path. CreateProcess rejects volume GUID image names with
+    /// ERROR_INVALID_PARAMETER; callers still verify the started process against this lease.</summary>
+    internal string LaunchPath { get; private set; } = "";
     internal string ParentDirectoryPath => System.IO.Path.GetDirectoryName(Path) ?? throw new IOException("Chybí ověřený kořen souboru.");
     internal FileId ParentDirectoryId {
         get {
@@ -69,6 +72,9 @@ internal sealed unsafe partial class SignedImageLease : IDisposable
             fixed (char* name = buffer) length = GetFinalPath(lease.image, name, (uint)buffer.Length, 1);
             if (length == 0 || length >= buffer.Length) throw new Win32Exception(Marshal.GetLastPInvokeError());
             lease.Path = new string(buffer, 0, checked((int)length));
+            fixed (char* name = buffer) length = GetFinalPath(lease.image, name, (uint)buffer.Length, 0);
+            string dos = length == 0 || length >= buffer.Length ? "" : new string(buffer, 0, checked((int)length));
+            lease.LaunchPath = dos.StartsWith(@"\\?\", StringComparison.Ordinal) && dos.Length > 6 && dos[5] == ':' && dos.Length - 4 < 260 ? dos[4..] : lease.Path;
             int rootEnd = lease.Path.IndexOf("}\\", StringComparison.Ordinal) + 1;
             if (!lease.Path.StartsWith("\\\\?\\Volume{", StringComparison.Ordinal) || rootEnd < 1 || GetDriveType(lease.Path[..(rootEnd + 1)]) != 3)
                 throw new IOException("Podepsaný soubor musí být na ověřeném místním pevném svazku.");

@@ -13,7 +13,7 @@ internal sealed class ElevationBrokerTrust : IDisposable
 {
     private readonly SignedImageLease image;
     private ElevationBrokerTrust(SignedImageLease image) => this.image = image;
-    internal string Path => image.Path;
+    internal string Path => image.LaunchPath;
 
     internal static ElevationBrokerTrust Open()
     {

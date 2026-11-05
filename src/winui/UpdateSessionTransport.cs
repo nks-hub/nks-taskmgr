@@ -34,8 +34,9 @@ internal sealed partial class UpdateWorkerProcess
                 if (!SetInformationJobObject(job, 9, in limits, (uint)Marshal.SizeOf<JobLimits>())) throw new Win32Exception(Marshal.GetLastPInvokeError());
             }
             cancellation.ThrowIfCancellationRequested();
-            var start = new ProcessStartInfo(image.Path) {
-                WorkingDirectory = System.IO.Path.GetDirectoryName(image.Path)!, UseShellExecute = false, CreateNoWindow = true,
+            var start = new ProcessStartInfo(image.LaunchPath) {
+                // CreateProcess rejects a \\?\Volume{GUID} current directory (ERROR_INVALID_PARAMETER); the worker uses only absolute paths.
+                WorkingDirectory = Environment.SystemDirectory, UseShellExecute = false, CreateNoWindow = true,
                 RedirectStandardInput = true, RedirectStandardOutput = true
             };
             start.ArgumentList.Add("--stdio");
