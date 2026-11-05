@@ -96,6 +96,10 @@ public sealed partial class ChartView
 
     private void HideCursor() => cursor.Visibility = readout.Visibility = Visibility.Collapsed;
 
+    // Chart times are monotonic; the readout shows the matching local clock time.
+    private static string Clock(long monotonicNs)
+        => DateTime.Now.AddTicks(-(NativeMonitor.MonotonicNowNs - monotonicNs) / 100).ToString("HH:mm:ss.fff");
+
     private void UpdateCursor()
     {
         if (cursorTime is not { } time) {
@@ -104,7 +108,7 @@ public sealed partial class ChartView
         if (canvas.ActualWidth <= 0) { HideCursor(); return; }
         double fraction = (time - (double)renderedAt + seconds * 1_000_000_000d) / (seconds * 1_000_000_000d);
         if (fraction < 0 || fraction > 1) {
-            HideCursor(); AutomationProperties.SetHelpText(this, "Vybraný čas " + time + " ns je mimo zobrazenou historii tohoto grafu."); return;
+            HideCursor(); AutomationProperties.SetHelpText(this, "Vybraný čas " + Clock(time) + " je mimo zobrazenou historii tohoto grafu."); return;
         }
         var sample = series?.At(time);
         string Value((long Time, Metric Value)? item) => item is null ? "Bez vzorku" : item.Value.Value.State == SampleState.Valid ? Format(item.Value.Value.Value) : Display.Metric(item.Value.Value, "");
@@ -118,12 +122,11 @@ public sealed partial class ChartView
         }
         text += "\n" + Display.Number(Math.Max(0, (now - (sample?.Time ?? time)) / 1_000_000_000d), " s zpět") + (pinned ? " · připnuto" : " · kliknutím připnout");
         if (sample is { } observed) text += "\nZdroj primárního vzorku: " + MeasurementText.Source(observed.Value.Source);
-        text += "\nKurzor: " + time + " ns" + (sample is { } point ? " · vzorek: " + point.Time + " ns" : "");
+        text += "\nČas: " + Clock(sample?.Time ?? time);
         if (EffectiveTimeline.Interval is { } range)
-            text += "\nInterval [" + range.StartNs + ", " + range.EndNs + "] ns · " + Display.Number(range.DurationNs / 1_000_000_000d, " s");
+            text += "\nÚsek: " + Clock(range.StartNs) + " – " + Clock(range.EndNs) + " · " + Display.Number(range.DurationNs / 1_000_000_000d, " s");
         else if (EffectiveTimeline.State.RangeAnchorNs is { } anchor)
-            text += "\nPrvní konec: " + anchor + " ns · Shift+klik nebo Shift+Enter vybere druhý.";
-        text += "\nČasové okno tohoto bodu není v historii uložené.";
+            text += "\nPrvní konec: " + Clock(anchor) + " · Shift+klik nebo Shift+Enter vybere druhý.";
         AutomationProperties.SetHelpText(this, text);
         double x = fraction * canvas.ActualWidth;
         cursor.X1 = cursor.X2 = x; cursor.Y1 = 0; cursor.Y2 = canvas.ActualHeight;
