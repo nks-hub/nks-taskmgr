@@ -10,6 +10,7 @@ public sealed partial class MainWindow
     private async Task CheckResourceContextAndPreviewAsync()
     {
         await CheckResourceContextMenuAsync();
+        CheckLiveNetworkFilters();
         const long time = 10_000_000_000;
         var receive = new Metric { Value = 1_000_000, State = SampleState.Valid };
         var send = new Metric { Value = 2_000_000, State = SampleState.Valid };

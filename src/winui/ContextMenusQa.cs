@@ -102,4 +102,45 @@ public sealed partial class MainWindow
             RefreshPerformance();
         }
     }
+
+    // Toggles both live network filters through the real menu items and restores the user's choice.
+    internal void CheckLiveNetworkFilters()
+    {
+        static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
+        var original = model.NetworkFilters;
+        var network = model.AllResources.Where(row => row.Kind == ResourceKind.Network).ToArray();
+        string Names(IEnumerable<ResourceRow> rows) => string.Join(", ", rows.Select(row => row.Description.Length > 0 ? row.Description : row.Title));
+        void Expect(NetworkFilterOptions options)
+        {
+            Require(model.NetworkFilters == options, $"The network menu set {model.NetworkFilters} instead of {options}.");
+            var expected = network.Where(row => NetworkResourceFilter.Includes(row, options)).ToHashSet();
+            var shown = model.Resources.Where(row => row.Kind == ResourceKind.Network).ToHashSet();
+            Require(shown.SetEquals(expected), $"Visible network rows differ from the filter {options}: {Names(shown)}.");
+            Require(resourceList.SelectedItem is ResourceRow selected && model.Resources.Contains(selected), "Network filtering left a hidden or empty selection.");
+        }
+        void Toggle(string id)
+        {
+            var menu = new MenuFlyout(); AddNetworkItems(menu);
+            var item = menu.Items.OfType<ToggleMenuFlyoutItem>().Single(item => Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(item) == id);
+            new Microsoft.UI.Xaml.Automation.Peers.ToggleMenuFlyoutItemAutomationPeer(item).Toggle();
+        }
+        try {
+            if (original != default) ChangeNetworkFilters(default);
+            Expect(default);
+            Require(model.Resources.Where(row => row.Kind == ResourceKind.Network).All(row => row.IsNetworkConnected && !row.IsVirtualNetwork),
+                "The default network view showed a disconnected or auxiliary interface.");
+            Require(network.Where(row => row.IsNetworkConnected && row.HardwareFacts.TryGetValue("Druh rozhraní", out var type) && type is "VPN" or "PPP")
+                .All(model.Resources.Contains), "A connected VPN or PPP interface was hidden by default.");
+            App.Trace("Live network default: " + Names(model.Resources.Where(row => row.Kind == ResourceKind.Network)));
+            Toggle("context-network-auxiliary"); Expect(new(false, true));
+            Toggle("context-network-disconnected"); Expect(new(true, true));
+            Require(model.Resources.Count(row => row.Kind == ResourceKind.Network) == network.Length, "Both network options hid an inventory row.");
+            Toggle("context-network-auxiliary"); Expect(new(true, false));
+            Toggle("context-network-disconnected"); Expect(default);
+            Require(NetworkViewPreference.Read() == default, "The last network menu choice was not saved.");
+            App.Trace($"Live network filters passed: {network.Length} interfaces, hidden by default: " + Names(network.Where(row => !model.Resources.Contains(row))));
+        } finally {
+            ChangeNetworkFilters(original);
+        }
+    }
 }
