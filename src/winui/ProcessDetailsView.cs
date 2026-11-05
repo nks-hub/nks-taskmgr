@@ -32,6 +32,7 @@ public sealed partial class MainWindow
                     var window = new ProcessDetailsView(processDetailsClient, row.Key, row.Name, () => model.IsCurrent(row),
                         row.Created100ns, ExecuteActionRequestAsync, () => model.IsCurrent(row) ? row : null,
                         pid => model.Processes.FirstOrDefault(process => process.Key.Pid == pid)?.Name);
+                    window.RequestElevation = () => _ = OfferRestartElevatedAsync("Podrobnosti procesů jiných uživatelů a systému vyžadují práva správce.");
                     processDetailsWindow = window;
                     window.Closed += (_, _) => { if (ReferenceEquals(processDetailsWindow, window)) processDetailsWindow = null; };
                 }
@@ -99,7 +100,7 @@ internal sealed partial class ProcessDetailsView : Window
         var modes = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 }; modes.Children.Add(threads); modes.Children.Add(modules);
         ConfigureObjects(modes);
         ConfigureOverview(modes, liveRow, nameOf);
-        var control = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 }; control.Children.Add(refresh); control.Children.Add(cancel);
+        var control = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 }; control.Children.Add(elevate); control.Children.Add(refresh); control.Children.Add(cancel);
         commands.Children.Add(modes); commands.Children.Add(control); Grid.SetColumn(control, 1); Grid.SetRow(commands, 1); layout.Children.Add(commands);
         state.TextWrapping = TextWrapping.Wrap; Grid.SetRow(state, 2); layout.Children.Add(state);
         body.ColumnDefinitions.Add(new ColumnDefinition()); body.ColumnDefinitions.Add(new ColumnDefinition());
@@ -213,6 +214,7 @@ internal sealed partial class ProcessDetailsView : Window
             if (!isCurrent() || snapshot.State == ProcessDetailsState.TargetChanged) {
                 targetChanged = true; UpdateAvailability(); return;
             }
+            ShowAccessDenied(snapshot.State == ProcessDetailsState.AccessDenied);
             if (snapshot.State != ProcessDetailsState.Ok) { state.Text = ErrorText(snapshot); return; }
             if (command == ProcessDetailsCommand.Signature) { signature = snapshot.Signature; signatureTime = snapshot.ReceivedAt; UpdateDetail(); }
             else if (command == ProcessDetailsCommand.HandleInfo) {

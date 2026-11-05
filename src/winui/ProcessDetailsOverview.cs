@@ -28,6 +28,15 @@ internal sealed partial class ProcessDetailsView
     private readonly Button openLocation = Command("Otevřít umístění");
     private DispatcherQueueTimer? overviewTimer;
     private Grid? filtersPanel;
+    private readonly Button elevate = Command("Spustit jako správce");
+    /// <summary>Set by the main window: restarts the application elevated after an access-denied read.</summary>
+    internal Action? RequestElevation { get; set; }
+
+    private void ShowAccessDenied(bool denied)
+    {
+        elevate.Visibility = denied && !MainWindow.RunningElevated && RequestElevation is not null ? Visibility.Visible : Visibility.Collapsed;
+        if (denied) detail.Text = "Tento proces patří jinému uživateli nebo systému. Bez práv správce ho Windows nedovolí číst.";
+    }
     private Func<ProcessRow?>? liveRow;
     private Func<uint, string?>? processNameOf;
     private string? imagePath;
@@ -36,6 +45,10 @@ internal sealed partial class ProcessDetailsView
     private void ConfigureOverview(StackPanel modes, Func<ProcessRow?>? live, Func<uint, string?>? nameOf)
     {
         liveRow = live; processNameOf = nameOf;
+        elevate.Visibility = Visibility.Collapsed;
+        Identify(elevate, "process-details-elevate", "Spustit NKS znovu jako správce");
+        ToolTipService.SetToolTip(elevate, "NKS se spustí znovu jako správce po potvrzení výzvy UAC.");
+        elevate.Click += (_, _) => RequestElevation?.Invoke();
         if (live?.Invoke() is { } iconRow) {
             layout.Children.Remove(title);
             var head = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
@@ -138,8 +151,9 @@ internal sealed partial class ProcessDetailsView
             overviewFacts.Children.Add(block);
         }
         Fact("Soubor", facts.Path ?? "", facts.Path is null ? null : openLocation);
-        Fact("Příkazový řádek", facts.CommandLine);
-        Fact("Uživatel", facts.User);
+        string hidden = MainWindow.RunningElevated ? "Nedostupné" : "Nedostupné bez práv správce";
+        Fact("Příkazový řádek", facts.CommandLine.Length > 0 ? facts.CommandLine : hidden);
+        Fact("Uživatel", facts.User.Length > 0 ? facts.User : hidden);
         uint parent = row?.ParentPid ?? 0;
         Fact("Nadřazený proces", parent == 0 ? "" : (processNameOf?.Invoke(parent) is { Length: > 0 } name ? name + " · " : "") + "PID " + parent.ToString(Czech));
         Fact("Spuštěno", created100ns is > 0 and <= long.MaxValue ? StartedText(DateTime.FromFileTimeUtc((long)created100ns).ToLocalTime()) : "");
@@ -176,7 +190,8 @@ internal static partial class ProcessFacts
 
     internal static Facts Read(ProcessKey key)
     {
-        string? path = ProcessIcons.ImagePath(key);
+        // shortcut: the fallback names the PID without opening it, so a reuse right after the snapshot is not detected; display only.
+        string? path = ProcessIcons.ImagePath(key) ?? ImageNameById(key.Pid);
         string description = "", company = "", version = "";
         if (path is not null) {
             try {
@@ -194,6 +209,28 @@ internal static partial class ProcessFacts
             }
         } catch (NativeMonitorException) { }
         return new Facts(path, description, company, version, commandLine, user);
+    }
+
+    /// <summary>Win32 image path from SystemProcessIdInformation (88), which needs no process handle.</summary>
+    private static unsafe string? ImageNameById(uint pid)
+    {
+        var name = new char[32768];
+        fixed (char* buffer = name) {
+            byte* info = stackalloc byte[24];
+            *(ulong*)info = pid; *(ushort*)(info + 8) = 0; *(ushort*)(info + 10) = (ushort)(name.Length * 2 - 2); *(char**)(info + 16) = buffer;
+            if (NtQuerySystemInformation(88, info, 24, out _) != 0) return null;
+            string device = new(buffer, 0, *(ushort*)(info + 8) / 2);
+            var target = new char[1024];
+            for (char drive = 'A'; drive <= 'Z'; ++drive) {
+                fixed (char* dos = target) {
+                    uint length = QueryDosDevice(drive + ":", dos, (uint)target.Length);
+                    if (length == 0) continue;
+                    string prefix = new(dos);
+                    if (device.StartsWith(prefix + "\\", StringComparison.OrdinalIgnoreCase)) return drive + ":" + device[prefix.Length..];
+                }
+            }
+            return null;
+        }
     }
 
     private static Dictionary<uint, string>? objectTypes;
@@ -263,6 +300,10 @@ internal static partial class ProcessFacts
 
     [LibraryImport("kernel32.dll", EntryPoint = "OpenProcess")]
     private static partial SafeProcessHandle OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint pid);
+    [LibraryImport("ntdll.dll")]
+    private static unsafe partial int NtQuerySystemInformation(int informationClass, byte* information, int length, out int returned);
+    [LibraryImport("kernel32.dll", EntryPoint = "QueryDosDeviceW", StringMarshalling = StringMarshalling.Utf16)]
+    private static unsafe partial uint QueryDosDevice(string device, char* target, uint length);
     [LibraryImport("ntdll.dll")]
     private static unsafe partial int NtQueryObject(IntPtr handle, int informationClass, byte* information, int length, out int returned);
     [LibraryImport("ntdll.dll")]
