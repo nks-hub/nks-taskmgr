@@ -95,7 +95,8 @@ internal static class PublisherTrust
             if (group.Type != 1 || group.ValueBytes != 0) throw Invalid();
             foreach (var language in Children(bytes, group)) {
                 if (++tables > 16 || language.Type != 1 || language.ValueBytes != 0 || language.Key.Length != 8 || !language.Key.All(Uri.IsHexDigit)) throw Invalid();
-                var values = new Dictionary<string, string>(StringComparer.Ordinal);
+                // Version string keys are case-insensitive (VerQueryValue); Inno Setup writes OriginalFileName.
+                var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var field in Children(bytes, language)) {
                     if (field.Type != 1 || field.ValueBytes is < 2 or > 4096 || field.ValueBytes % 2 != 0) throw Invalid();
                     string text = Utf16.GetString(bytes.AsSpan(field.Value, field.ValueBytes));
