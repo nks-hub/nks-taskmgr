@@ -136,6 +136,9 @@ public static partial class WinUiChecks
         PublisherTrustChecks.Run();
         ReplacementTextChecks.Run();
         UserSessionText.Check();
+        Require(UpdateWindow.DisplayPath(@"C:\Apps\NKS") == @"C:\Apps\NKS" && UpdateWindow.DisplayPath(@"\\?\Volume{bad") == @"\\?\Volume{bad"
+            && UpdateWindow.DisplayPath(@"\\?\Volume{00000000-0000-0000-0000-000000000000}\Apps") == @"\\?\Volume{00000000-0000-0000-0000-000000000000}\Apps",
+            "An install path without a known volume was rewritten.");
         DeepTree();
         Graphs();
         GraphRefresh();

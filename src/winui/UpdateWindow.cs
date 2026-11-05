@@ -209,7 +209,7 @@ internal sealed partial class UpdateWindow : Window
             : StatusText(value.Status);
         manualUpdate.Visibility = value.Status == UpdateStatus.Ok ? Visibility.Collapsed : Visibility.Visible;
         location.Text = (value.Mode switch { UpdateInstallMode.Installed => "Registrovaná instalace", UpdateInstallMode.Portable => "Přenosná kopie", _ => "Režim složky není ověřený" })
-            + (value.InstallDirectory.Length == 0 ? "" : " · " + value.InstallDirectory);
+            + (value.InstallDirectory.Length == 0 ? "" : " · " + DisplayPath(value.InstallDirectory));
         if (value.CompatibilityDetail.Length > 0) location.Text += "\n" + Bound(value.CompatibilityDetail);
         recoveryChoices.ItemsSource = value.RecoveryCandidates.Select(candidate => new ComboBoxItem { Tag = candidate,
             Content = VersionLabel(candidate.OriginalVersion) + " · " + (candidate.CanRepair ? "lze připravit obnovu" : "obnova zatím není ověřená") }).ToArray();
@@ -238,7 +238,7 @@ internal sealed partial class UpdateWindow : Window
         content.Children.Add(Text("Současná verze: " + VersionLabel(plan.CurrentVersion)));
         content.Children.Add(Text("Vybraná verze: " + VersionLabel(plan.SelectedVersion)));
         if (!plan.IsRecovery) content.Children.Add(Text("Uložený návrat po změně: " + VersionLabel(plan.PreviousVersion)));
-        content.Children.Add(Text("Cílová instalace: " + plan.InstallDirectory));
+        content.Children.Add(Text("Cílová instalace: " + DisplayPath(plan.InstallDirectory)));
         content.Children.Add(Text(plan.Mode == UpdateInstallMode.Portable
             ? "Zůstane přenosná kopie. Nevytváří se registrace odinstalátoru ani zástupci aplikace."
             : "Zůstane instalace pro aktuálního uživatele."));
@@ -331,6 +331,18 @@ internal sealed partial class UpdateWindow : Window
         try { return VersionLabel(FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion ?? "Neznámá verze"); }
         catch (Exception error) when (error is IOException or Win32Exception) { return "Neznámá verze"; }
     }
+    /// <summary>Shows a volume GUID path (how the helper reports verified folders) under its drive letter when the volume has one.</summary>
+    internal static string DisplayPath(string path)
+    {
+        int end = path.IndexOf("}\\", StringComparison.Ordinal);
+        if (!path.StartsWith(@"\\?\Volume{", StringComparison.Ordinal) || end < 0) return path;
+        var names = new char[1024];
+        if (!GetVolumePathNames(path[..(end + 2)], names, (uint)names.Length, out _) || names[0] == '\0') return path;
+        return new string(names, 0, Array.IndexOf(names, '\0')) + path[(end + 2)..];
+    }
+    [LibraryImport("kernel32.dll", EntryPoint = "GetVolumePathNamesForVolumeNameW", StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetVolumePathNames(string volume, [Out] char[] names, uint length, out uint needed);
     private static string Bound(string value) => value.Length <= 600 ? value : value[..(char.IsHighSurrogate(value[599]) ? 599 : 600)] + "…";
     private static TextBlock Text(string value, double size = 13) => new() { Text = value, FontSize = size, FontFamily = UiTypography.Font,
         Foreground = Display.Brush(0x95a4ad), TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
