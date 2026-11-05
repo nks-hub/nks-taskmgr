@@ -8,6 +8,9 @@ using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
+/// <summary>The file itself was refused (signature, trust chain, publisher pin or location), as opposed to an I/O failure.</summary>
+internal sealed class SignatureRejectedException(string message) : IOException(message);
+
 internal sealed unsafe partial class SignedImageLease : IDisposable
 {
     private readonly List<SafeFileHandle> directories = [];
@@ -77,7 +80,7 @@ internal sealed unsafe partial class SignedImageLease : IDisposable
             lease.LaunchPath = dos.StartsWith(@"\\?\", StringComparison.Ordinal) && dos.Length > 6 && dos[5] == ':' && dos.Length - 4 < 260 ? dos[4..] : lease.Path;
             int rootEnd = lease.Path.IndexOf("}\\", StringComparison.Ordinal) + 1;
             if (!lease.Path.StartsWith("\\\\?\\Volume{", StringComparison.Ordinal) || rootEnd < 1 || GetDriveType(lease.Path[..(rootEnd + 1)]) != 3)
-                throw new IOException("Podepsaný soubor musí být na ověřeném místním pevném svazku.");
+                throw new SignatureRejectedException("Podepsaný soubor musí být na ověřeném místním pevném svazku.");
             for (int slash = rootEnd; slash >= 0; slash = lease.Path.IndexOf('\\', slash + 1)) {
                 string directory = lease.Path[..(slash == rootEnd ? slash + 1 : slash)];
                 var handle = CreateFile(directory, 0xa0, 1, 0, 3, 0x02200000, 0);
@@ -112,21 +115,21 @@ internal sealed unsafe partial class SignedImageLease : IDisposable
         var data = new TrustData { Size = (uint)sizeof(TrustData), Ui = 2, Revocation = 1, Choice = 1, File = (nint)(&file), Action = 1, Flags = 0x1080 };
         var policy = new Guid("00AAC56B-CD44-11d0-8CC2-00C04FC295EE");
         try {
-            if (WinVerifyTrust(0, ref policy, ref data) != 0) throw new IOException("Podpis souboru nebo řetězec důvěry není platný.");
+            if (WinVerifyTrust(0, ref policy, ref data) != 0) throw new SignatureRejectedException("Podpis souboru nebo řetězec důvěry není platný.");
             nint provider = WTHelperProvDataFromStateData(data.State);
             nint signerPointer = provider == 0 ? 0 : WTHelperGetProvSignerFromChain(provider, 0, 0, 0);
-            if (signerPointer == 0) throw new IOException("Podpis nemá ověřeného vydavatele.");
+            if (signerPointer == 0) throw new SignatureRejectedException("Podpis nemá ověřeného vydavatele.");
             var signer = Marshal.PtrToStructure<ProviderSigner>(signerPointer);
-            if (signer.Count == 0 || signer.Certificates == 0) throw new IOException("Chybí certifikát podepisujícího.");
+            if (signer.Count == 0 || signer.Certificates == 0) throw new SignatureRejectedException("Chybí certifikát podepisujícího.");
             // CRYPT_PROVIDER_CERT starts with cbStruct followed by the aligned PCCERT_CONTEXT.
             nint certificatePointer = Marshal.ReadIntPtr(signer.Certificates, 8);
-            if (certificatePointer == 0) throw new IOException("Chybí podepisující certifikát.");
+            if (certificatePointer == 0) throw new SignatureRejectedException("Chybí podepisující certifikát.");
             var certificate = Marshal.PtrToStructure<CertificateContext>(certificatePointer);
-            if (certificate.Length is 0 or > 65536 || certificate.Encoded == 0) throw new IOException("Neplatný podepisující certifikát.");
+            if (certificate.Length is 0 or > 65536 || certificate.Encoded == 0) throw new SignatureRejectedException("Neplatný podepisující certifikát.");
             var encoded = new byte[certificate.Length]; Marshal.Copy(certificate.Encoded, encoded, 0, encoded.Length);
             using var parsed = X509CertificateLoader.LoadCertificate(encoded);
             if (!CryptographicOperations.FixedTimeEquals(SHA256.HashData(parsed.PublicKey.ExportSubjectPublicKeyInfo()), pin))
-                throw new IOException("Vydavatel souboru neodpovídá připnutému veřejnému klíči.");
+                throw new SignatureRejectedException("Vydavatel souboru neodpovídá připnutému veřejnému klíči.");
         } finally {
             data.Action = 2; WinVerifyTrust(0, ref policy, ref data); Marshal.FreeCoTaskMem(name);
         }

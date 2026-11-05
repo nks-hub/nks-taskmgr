@@ -179,7 +179,15 @@ internal sealed partial class UpdateWindow : Window
         var file = await picker.PickSingleFileAsync();
         if (file is null || closed || token.IsCancellationRequested) return;
         status.Text = "Ověřuji a ukládám vybraný instalátor…";
-        var value = await client.CacheAsync(file.Path, token);
+        UpdateInventory value;
+        // A rejected file (bad signature, foreign publisher, wrong role) leaves the verified inventory as it is.
+        try { value = await client.CacheAsync(file.Path, token); }
+        catch (Exception error) when (error is SignatureRejectedException or CryptographicException or InvalidDataException or Win32Exception or UpdateException { Status: UpdateStatus.Rejected }) {
+            if (closed) return;
+            status.Text = "Instalátor nebyl přidán.";
+            result.Text = Bound(error.Message);
+            return;
+        }
         if (closed) return;
         ShowInventory(value);
         status.Text = StatusText(value.Status) + "\n" + JournalText(value.JournalState);
