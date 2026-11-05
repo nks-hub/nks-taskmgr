@@ -38,6 +38,18 @@ public static partial class Display
         uint dpi = GetDpiForWindow(Win32Interop.GetWindowFromWindowId(window.Id));
         double scale = (dpi == 0 ? 96 : dpi) / 96d;
         var area = DisplayArea.GetFromWindowId(window.Id, DisplayAreaFallback.Nearest).WorkArea;
-        window.Resize(new SizeInt32(Math.Min((int)Math.Round(width * scale), area.Width), Math.Min((int)Math.Round(height * scale), area.Height)));
+        int w = Math.Min((int)Math.Round(width * scale), area.Width), h = Math.Min((int)Math.Round(height * scale), area.Height);
+        // The default cascade position can push a clamped window past the right or bottom edge.
+        var at = window.Position;
+        window.MoveAndResize(new RectInt32(Math.Clamp(at.X, area.X, area.X + area.Width - w), Math.Clamp(at.Y, area.Y, area.Y + area.Height - h), w, h));
+    }
+
+    /// <summary>True when the window lies inside its monitor work area, allowing the invisible resize border.</summary>
+    internal static bool InsideWorkArea(this AppWindow window)
+    {
+        var area = DisplayArea.GetFromWindowId(window.Id, DisplayAreaFallback.Nearest).WorkArea;
+        const int border = 12;
+        return window.Position.X >= area.X - border && window.Position.Y >= area.Y - border
+            && window.Position.X + window.Size.Width <= area.X + area.Width + border && window.Position.Y + window.Size.Height <= area.Y + area.Height + border;
     }
 }

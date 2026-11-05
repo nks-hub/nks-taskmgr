@@ -38,6 +38,8 @@ public sealed partial class MainWindow
     /// <summary>Lays out every main view in a 1000×700 DIP window and rejects clipped sidebar labels or overlapping header parts.</summary>
     private async Task CheckCompactShellAsync()
     {
+        if (!AppWindow.InsideWorkArea())
+            throw new InvalidOperationException($"The initial window {AppWindow.Position.X},{AppWindow.Position.Y} {AppWindow.Size.Width}×{AppWindow.Size.Height} leaves the monitor work area.");
         var original = AppWindow.Size; var originalView = view;
         double scale = root.XamlRoot?.RasterizationScale ?? 1;
         Rect Bounds(FrameworkElement element) => element.TransformToVisual(root).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
