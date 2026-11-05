@@ -6,8 +6,13 @@
 #include "core/process_sampler.hpp"
 
 #include <psapi.h>
+#include <d3d11.h>
+#include <d3dcompiler.h>
+#include <dxgi1_4.h>
+#include <wrl/client.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -22,6 +27,7 @@
 #include <string_view>
 #include <thread>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -357,6 +363,142 @@ bool adapterReconnectTotals()
     return true;
 }
 
+// Saturates one engine of the hardware adapter with the most dedicated memory and commits 512 MiB on it. The GPU's own
+// timestamps and DXGI's per-process budget are the references; other applications may only add to the adapter totals.
+bool knownGpuLoad()
+{
+    char enabled[8]{}; size_t length = 0;
+    if (getenv_s(&length, enabled, sizeof(enabled), "NKS_LIVE_GPU") != 0 || std::string_view(enabled) != "1") {
+        std::printf("SKIP GPU load: set NKS_LIVE_GPU=1 to load the hardware adapter with the most dedicated memory\n");
+        return false;
+    }
+    using Microsoft::WRL::ComPtr;
+    ComPtr<IDXGIFactory1> factory;
+    require(SUCCEEDED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))), "DXGI factory unavailable");
+    ComPtr<IDXGIAdapter1> adapter; DXGI_ADAPTER_DESC1 chosen{};
+    for (UINT index = 0;; ++index) {
+        ComPtr<IDXGIAdapter1> candidate;
+        if (factory->EnumAdapters1(index, &candidate) != S_OK) break;
+        DXGI_ADAPTER_DESC1 description{};
+        if (FAILED(candidate->GetDesc1(&description)) || (description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) continue;
+        if (!adapter || description.DedicatedVideoMemory > chosen.DedicatedVideoMemory) { adapter = candidate; chosen = description; }
+    }
+    if (!adapter || chosen.DedicatedVideoMemory < static_cast<SIZE_T>(1024 * mib)) {
+        std::printf("SKIP GPU load: no hardware adapter with at least 1 GiB of dedicated memory\n");
+        return false;
+    }
+    ComPtr<ID3D11Device> device; ComPtr<ID3D11DeviceContext> context; ComPtr<IDXGIAdapter3> budget;
+    require(SUCCEEDED(D3D11CreateDevice(adapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, nullptr, 0, D3D11_SDK_VERSION, &device, nullptr, &context)),
+        "D3D11 device unavailable on the chosen adapter");
+    require(SUCCEEDED(adapter.As(&budget)), "DXGI video memory budget unavailable");
+    wchar_t luid[48]{};
+    swprintf_s(luid, L"luid_0x%08x_0x%08x", static_cast<unsigned>(chosen.AdapterLuid.HighPart), chosen.AdapterLuid.LowPart);
+    const auto record = [&](const ResourceSnapshot& snapshot) {
+        const auto found = std::find_if(snapshot.devices.begin(), snapshot.devices.end(),
+            [&](const auto& row) { return row.kind == ResourceKind::gpu && row.id == luid; });
+        require(found != snapshot.devices.end(), "Collector did not report the loaded adapter");
+        return *found;
+    };
+    const auto ownLocal = [&] {
+        DXGI_QUERY_VIDEO_MEMORY_INFO info{};
+        require(SUCCEEDED(budget->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &info)), "Own video memory usage unavailable");
+        return static_cast<double>(info.CurrentUsage);
+    };
+    const auto query = [&](D3D11_QUERY type) {
+        const D3D11_QUERY_DESC description{type, 0}; ComPtr<ID3D11Query> result;
+        require(SUCCEEDED(device->CreateQuery(&description, &result)), "GPU query unavailable");
+        return result;
+    };
+    const auto finish = [&] {
+        const auto done = query(D3D11_QUERY_EVENT); context->End(done.Get()); BOOL value{};
+        while (context->GetData(done.Get(), &value, sizeof(value), 0) != S_OK) std::this_thread::yield();
+    };
+
+    constexpr char source[] = "RWByteAddressBuffer o : register(u0);\n"
+        "[numthreads(256, 1, 1)] void main(uint3 id : SV_DispatchThreadID) {\n"
+        "  uint v = id.x; [loop] for (uint i = 0; i < 2048; ++i) v = v * 1664525u + 1013904223u;\n"
+        "  o.Store((id.x & 0xFFFFFu) * 4, v); }\n";
+    ComPtr<ID3DBlob> code, errors; ComPtr<ID3D11ComputeShader> shader;
+    require(SUCCEEDED(D3DCompile(source, sizeof(source) - 1, "load", nullptr, nullptr, "main", "cs_5_0", 0, 0, &code, &errors)), "Load shader did not compile");
+    require(SUCCEEDED(device->CreateComputeShader(code->GetBufferPointer(), code->GetBufferSize(), nullptr, &shader)), "Load shader unavailable");
+
+    ResourceCollector resources;
+    (void)resources.collect();
+    const auto idle = record(resources.collect());
+    require(idle.secondary.valid(), "Dedicated GPU memory is unavailable before the load");
+    const double ownBefore = ownLocal();
+    constexpr UINT blockBytes = 128 * mib; constexpr int blocks = 4;
+    std::vector<ComPtr<ID3D11Buffer>> buffers; std::vector<ComPtr<ID3D11UnorderedAccessView>> views;
+    for (UINT block = 0; block < blocks; ++block) {
+        const D3D11_BUFFER_DESC description{blockBytes, D3D11_USAGE_DEFAULT, D3D11_BIND_UNORDERED_ACCESS, 0, D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS, 0};
+        ComPtr<ID3D11Buffer> buffer; ComPtr<ID3D11UnorderedAccessView> view;
+        require(SUCCEEDED(device->CreateBuffer(&description, nullptr, &buffer)), "Known GPU buffer allocation failed");
+        D3D11_UNORDERED_ACCESS_VIEW_DESC access{}; access.Format = DXGI_FORMAT_R32_TYPELESS; access.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+        access.Buffer.NumElements = blockBytes / 4; access.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+        require(SUCCEEDED(device->CreateUnorderedAccessView(buffer.Get(), &access, &view)), "Known GPU buffer view unavailable");
+        const UINT fill[4]{block + 1, 0, 0, 0};
+        context->ClearUnorderedAccessViewUint(view.Get(), fill);
+        buffers.push_back(buffer); views.push_back(view);
+    }
+    finish();
+    const double ownDelta = ownLocal() - ownBefore;
+
+    context->CSSetShader(shader.Get(), nullptr, 0);
+    ID3D11UnorderedAccessView* target = views.front().Get();
+    context->CSSetUnorderedAccessViews(0, 1, &target, nullptr);
+    struct Batch { ComPtr<ID3D11Query> disjoint, start, end; };
+    const auto submit = [&](UINT groups) {
+        Batch batch{query(D3D11_QUERY_TIMESTAMP_DISJOINT), query(D3D11_QUERY_TIMESTAMP), query(D3D11_QUERY_TIMESTAMP)};
+        context->Begin(batch.disjoint.Get()); context->End(batch.start.Get());
+        context->Dispatch(groups, 1, 1);
+        context->End(batch.end.Get()); context->End(batch.disjoint.Get());
+        return batch;
+    };
+    const auto seconds = [&](const Batch& batch) {
+        D3D11_QUERY_DATA_TIMESTAMP_DISJOINT clock{}; UINT64 start{}, end{};
+        while (context->GetData(batch.disjoint.Get(), &clock, sizeof(clock), 0) != S_OK) std::this_thread::yield();
+        require(context->GetData(batch.start.Get(), &start, sizeof(start), 0) == S_OK && context->GetData(batch.end.Get(), &end, sizeof(end), 0) == S_OK
+            && !clock.Disjoint && clock.Frequency && end >= start, "GPU timestamps are unavailable or disjoint");
+        return double(end - start) / double(clock.Frequency);
+    };
+    UINT groups = 4096;
+    const double probe = seconds(submit(groups));
+    groups = static_cast<UINT>(std::clamp(groups * 0.008 / (std::max)(probe, 1e-6), 64.0, 65535.0));
+
+    std::atomic<bool> stop{};
+    double busy{}, wall{};
+    std::thread load([&] {
+        std::vector<Batch> flight;
+        const auto started = Clock::now();
+        while (!stop) {
+            flight.push_back(submit(groups));
+            if (flight.size() >= 4) { busy += seconds(flight.front()); flight.erase(flight.begin()); }
+        }
+        for (const auto& batch : flight) busy += seconds(batch);
+        wall = std::chrono::duration<double>(Clock::now() - started).count();
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(700));
+    (void)resources.collect();
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    const auto loaded = record(resources.collect());
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    stop = true; load.join();
+
+    const double ownBusy = 100 * busy / wall;
+    require(ownBusy >= 85, "The load did not keep its GPU engine busy enough to be a known reference");
+    require(loaded.primary.valid(), "Busiest GPU engine utilization is unavailable under load");
+    std::wstring engine;
+    for (const auto& item : loaded.engines) if (item.utilization.valid() && item.utilization.value == loaded.primary.value) engine = item.name;
+    require(loaded.primary.value >= ownBusy - 15 && loaded.primary.value <= 100.5, "Busiest GPU engine utilization differs from the timed load");
+    require(ownDelta >= blocks * blockBytes * .9, "DXGI did not account the known allocation to this process");
+    require(loaded.secondary.valid(), "Dedicated GPU memory is unavailable under load");
+    const double adapterDelta = loaded.secondary.value - idle.secondary.value;
+    require(std::abs(adapterDelta - ownDelta) <= 96 * mib, "Adapter dedicated memory change differs from this process's known allocation");
+    std::printf("PASS GPU load: %ls; own busy %.1f %% (%u groups/batch), busiest engine %.1f %% (%ls); dedicated memory own +%.1f MiB, adapter +%.1f MiB\n",
+        chosen.Description, ownBusy, groups, loaded.primary.value, engine.c_str(), ownDelta / mib, adapterDelta / mib);
+    return true;
+}
+
 }
 
 int main()
@@ -365,7 +507,7 @@ int main()
         processorGroupsAndRealInterval();
         knownPrivateAllocation();
         knownProcessAndDiskIo();
-        const int network = knownNetworkSend() + adapterReconnectTotals();
+        const int network = knownNetworkSend() + adapterReconnectTotals() + knownGpuLoad();
         std::cout << 3 + network << '/' << 3 + network << " live collector checks passed\n";
         return 0;
     } catch (const std::exception& error) {

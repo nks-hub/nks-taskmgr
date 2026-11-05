@@ -383,6 +383,57 @@ void monitorRecovery(HANDLE job, const fs::path& worker, const std::string& dige
     }
 }
 
+std::wstring commandLine(HANDLE process)
+{
+    std::vector<std::byte> buffer(65536); ULONG used{};
+    require(NT_SUCCESS(NtQueryInformationProcess(process, ProcessCommandLineInformation, buffer.data(), static_cast<ULONG>(buffer.size()), &used)),
+        "Worker command line unavailable");
+    const auto text = reinterpret_cast<const UNICODE_STRING*>(buffer.data());
+    return {text->Buffer, text->Length / sizeof(wchar_t)};
+}
+
+// A hung process provider must not stall the resource stream, and the process stream must recover by itself.
+void monitorSlowProvider(HANDLE job, const fs::path& worker, std::vector<Lifetime>& known, std::ostream& log)
+{
+    nks::Monitor monitor;
+    monitor.start(); Samples samples;
+    try {
+        waitFor([&] { samples.read(monitor); return samples.cpuValid && samples.resourceTime != Clock::time_point{}
+            && samples.processError.empty() && samples.resourceError.empty(); }, 12s, "Initial monitor streams did not become fresh");
+        auto handles = ownWorkers(job, worker, known);
+        const auto frozen = std::find_if(handles.begin(), handles.end(),
+            [](const auto& item) { return commandLine(item.process.value).ends_with(L" --processes"); });
+        require(frozen != handles.end(), "No live process worker to suspend");
+        Handle suspend(OpenProcess(PROCESS_SUSPEND_RESUME | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, frozen->pid));
+        require(suspend.value && createdAt(suspend.value) == frozen->created, "Held process worker suspend handle unavailable");
+        require(NT_SUCCESS(NtSuspendProcess(suspend.value)), "Process worker could not be suspended");
+        const auto suspended = Clock::now();
+        std::this_thread::sleep_for(300ms);
+        samples.read(monitor);
+        const auto stalled = samples.processTime;
+        auto resourceTime = samples.resourceTime; unsigned resourceSamples{};
+        while (Clock::now() - suspended < 4s) {
+            samples.read(monitor);
+            require(samples.processTime == stalled, "A suspended process worker published a fresh snapshot");
+            if (samples.resourceTime > resourceTime) { resourceTime = samples.resourceTime; ++resourceSamples; }
+            std::this_thread::sleep_for(25ms);
+        }
+        require(resourceSamples >= 2, "The resource stream stalled while only the process provider was hung");
+        waitFor([&] { samples.read(monitor); return samples.processTime > stalled && samples.cpuValid && samples.processError.empty(); }, 8s,
+            "The process stream did not recover after its hung worker timed out");
+        const auto recoveredAfter = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - suspended);
+        require(WaitForSingleObject(frozen->process.value, 5000) == WAIT_OBJECT_0, "The hung process worker was not terminated");
+        remember(known, frozen->lifetime());
+        auto recovered = ownWorkers(job, worker, known);
+        replacements({frozen->lifetime()}, recovered);
+        log << "slow provider resourceSamplesIn4s=" << resourceSamples << ";processStalled=True;processRecoveredMs=" << recoveredAfter.count()
+            << ";hungWorkerTerminated=True\n" << std::flush;
+        monitor.stop();
+        waitExited(recovered, known);
+        waitFor([&] { return ownedProcesses(job, worker, known).workers.empty(); }, 5s, "Slow provider monitor stop left live owned workers");
+    } catch (const std::exception&) { monitor.stop(); throw; }
+}
+
 int child(HANDLE job, const std::string& digest)
 {
     const auto self = imagePath(GetCurrentProcess());
@@ -400,6 +451,7 @@ int child(HANDLE job, const std::string& digest)
         log << "workerSha256=" << digest << ";verifiedBaselineConsoleHosts=" << baseline.consoleHosts << '\n' << std::flush;
         directRecovery(job, worker, known, log);
         hungRecovery(job, worker, known, log);
+        monitorSlowProvider(job, worker, known, log);
         monitorRecovery(job, worker, digest, known, log);
         log << "Collector recovery passed\n";
         return 0;
