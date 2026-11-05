@@ -23,6 +23,7 @@ public sealed partial class MainWindow
     private readonly StackPanel applicationHeader = new() { Spacing = 2, Padding = new Thickness(4, 0, 0, 6), Visibility = Visibility.Collapsed };
     private readonly TextBlock applicationFacts = new() { FontSize = 12, FontFamily = UiTypography.Font, TextWrapping = TextWrapping.Wrap, MaxWidth = 420 };
     private readonly CancellationTokenSource applicationLifetime = new();
+    private ProcessKey? autoSelectedApplication;
     private CancellationTokenSource? applicationRequest;
     private bool updatingApplicationChoice, applicationsClosed, applicationInfoOpen;
     private long nextApplicationRead;
@@ -76,11 +77,7 @@ public sealed partial class MainWindow
             if (updatingApplicationChoice || model.Applications.Updating || model.Mode != ProcessMode.Applications || value is not ApplicationGroupRow group) return;
             if (!model.Processes.Any(row => row.Key == group.Key && model.IsCurrent(row))) return;
             model.SelectApplication(group.Key); pendingApplicationSelection = null; RefreshProcesses();
-            // Select the group's root process so the process actions apply to the chosen application at once.
-            if (SelectedProcess is not { } current || !model.VisibleProcesses.Contains(current)) {
-                var root = model.VisibleProcesses.FirstOrDefault(row => row.Key == group.Key) ?? model.VisibleProcesses.FirstOrDefault();
-                if (root is not null) SelectProcess(root, false);
-            }
+            SelectApplicationRoot(group);
         }
         applicationGroups.SelectionChanged += (_, _) => Select(applicationGroups.SelectedItem);
         applicationChoice.SelectionChanged += (_, _) => Select(applicationChoice.SelectedItem);
@@ -303,7 +300,19 @@ public sealed partial class MainWindow
             ToolTipService.SetToolTip(applicationTitle, group.TitleTooltip);
         }
         SetVisible(applicationHeader, model.Applications.Selected is not null);
+        // A group chosen automatically (first start, restored view) gets its root process selected too, once per group.
+        if (model.Applications.Selected is { } chosen && chosen.Key != autoSelectedApplication)
+            DispatcherQueue.TryEnqueue(() => { if (model.Mode == ProcessMode.Applications && model.Applications.Selected == chosen) SelectApplicationRoot(chosen); });
         ResizeApplicationGroups();
+    }
+
+    /// <summary>Selects the group's root process so the process commands apply to the chosen application at once.</summary>
+    private void SelectApplicationRoot(ApplicationGroupRow group)
+    {
+        autoSelectedApplication = group.Key;
+        if (SelectedProcess is { } current && model.VisibleProcesses.Contains(current)) return;
+        var root = model.VisibleProcesses.FirstOrDefault(row => row.Key == group.Key) ?? model.VisibleProcesses.FirstOrDefault();
+        if (root is not null) SelectProcess(root, false);
     }
 
     private void RefreshApplicationInventory()
