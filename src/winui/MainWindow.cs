@@ -171,6 +171,21 @@ public sealed partial class MainWindow : Window
         smokePath = App.SmokePath;
         ConfigureGapDiagnostics();
         ShowView(LaunchArguments.Parse(LaunchArguments.Current).View ?? DesktopView.Performance);
+        // Initial focus lands on the first navigation button with a keyboard focus rectangle even when another view is open;
+        // it moves to the active view without the rectangle, which returns with the first Tab.
+        RoutedEventHandler? initialFocus = null;
+        initialFocus = (_, _) => {
+            processesNav.GotFocus -= initialFocus;
+            var current = view switch {
+                DesktopView.Performance => performanceNav, DesktopView.Applications => applicationNav, DesktopView.Services => servicesNav,
+                DesktopView.Users => usersNav, DesktopView.Hardware => hardwareNav, DesktopView.Startup => startupNav, _ => processesNav
+            };
+            DispatcherQueue.TryEnqueue(() => current.Focus(FocusState.Pointer));
+        };
+        processesNav.GotFocus += initialFocus;
+        // Only the startup focus is redirected; a later Tab or click onto Procesy must keep its focus.
+        var focusWindow = DispatcherQueue.CreateTimer(); focusWindow.Interval = TimeSpan.FromSeconds(3); focusWindow.IsRepeating = false;
+        focusWindow.Tick += (_, _) => processesNav.GotFocus -= initialFocus; focusWindow.Start();
         App.Trace("Window initialized");
     }
 
