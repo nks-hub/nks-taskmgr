@@ -1,4 +1,8 @@
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
 #include "collectors/process_collector.hpp"
+#include "collectors/resource_collector.hpp"
 #include "core/process_sampler.hpp"
 
 #include <psapi.h>
@@ -13,6 +17,8 @@
 #include <iostream>
 #include <set>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 
@@ -150,6 +156,114 @@ void knownPrivateAllocation()
         memory.commitLimitBytes / double(mib), memory.physicalBytes / double(mib));
 }
 
+// Unbuffered, write-through I/O so both the process counters and the physical disk see every byte.
+struct TempFile {
+    std::wstring path;
+    HANDLE handle{INVALID_HANDLE_VALUE};
+    TempFile()
+    {
+        wchar_t directory[MAX_PATH]{}, name[MAX_PATH]{};
+        require(GetTempPathW(MAX_PATH, directory) != 0 && GetTempFileNameW(directory, L"nks", 0, name) != 0, "Cannot create a temporary file name");
+        path = name;
+        handle = CreateFileW(name, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+            FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
+        require(handle != INVALID_HANDLE_VALUE, "Cannot open the unbuffered test file");
+    }
+    ~TempFile() { if (handle != INVALID_HANDLE_VALUE) CloseHandle(handle); }
+    void transfer(std::byte* buffer, DWORD chunk, std::int64_t total, bool write)
+    {
+        LARGE_INTEGER start{}; require(SetFilePointerEx(handle, start, nullptr, FILE_BEGIN) != FALSE, "Cannot rewind the test file");
+        for (std::int64_t done = 0; done < total; done += chunk) {
+            DWORD moved = 0;
+            require((write ? WriteFile(handle, buffer, chunk, &moved, nullptr) : ReadFile(handle, buffer, chunk, &moved, nullptr)) != FALSE
+                && moved == chunk, "Unbuffered test I/O failed");
+        }
+    }
+};
+
+void knownProcessAndDiskIo()
+{
+    constexpr std::int64_t size = 64 * mib;
+    constexpr DWORD chunk = 1 * mib;
+    auto* buffer = static_cast<std::byte*>(VirtualAlloc(nullptr, chunk, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE));
+    require(buffer != nullptr, "Cannot allocate the aligned I/O buffer");
+    std::memset(buffer, 0x3c, chunk);
+    TempFile file;
+    ProcessCollector processes; ProcessSampler sampler; ResourceCollector resources;
+    (void)processes.collect(); (void)resources.collect();
+    auto before = processes.collect(); sampler.apply(before);
+    const auto disksBefore = resources.collect();
+    file.transfer(buffer, chunk, size, true);
+    auto written = processes.collect(); sampler.apply(written);
+    const auto disksAfter = resources.collect();
+    file.transfer(buffer, chunk, size, false);
+    auto read = processes.collect(); sampler.apply(read);
+    VirtualFree(buffer, 0, MEM_RELEASE);
+
+    const auto bytes = [](const ProcessSnapshot& snapshot, const Metric<double>& rate) {
+        return rate.value * (snapshot.measurements.processCpu.intervalNs / 1e9);
+    };
+    const auto& writer = self(written);
+    const auto& reader = self(read);
+    const double processWritten = bytes(written, writer.writeIoBytesPerSecond), processRead = bytes(read, reader.readIoBytesPerSecond);
+    const auto matchesSize = [](double value, double target) { return value >= target * .98 && value <= target * 1.05 + 2 * mib; };
+    require(writer.writeIoBytesPerSecond.valid() && matchesSize(processWritten, size), "Process write rate does not match the bytes written");
+    require(reader.readIoBytesPerSecond.valid() && matchesSize(processRead, size), "Process read rate does not match the bytes read");
+
+    const double seconds = std::chrono::duration<double>(disksAfter.measuredAt - disksBefore.measuredAt).count();
+    double diskWritten = 0;
+    for (const auto& device : disksAfter.devices)
+        if (device.kind == ResourceKind::disk && device.tertiary.valid()) diskWritten = std::max(diskWritten, device.tertiary.value * seconds);
+    require(disksAfter.diskCountersAvailable && diskWritten >= size * .95 && diskWritten <= size * 4 + 256 * mib,
+        "No physical disk reported the unbuffered write");
+    std::printf("PASS 64 MiB unbuffered I/O: process write %.1f MiB, read %.1f MiB; busiest disk write %.1f MiB over %.2f s\n",
+        processWritten / mib, processRead / mib, diskWritten / mib, seconds);
+}
+
+// Sends UDP to the TEST-NET-1 documentation address, which leaves through the default route and is never answered.
+bool knownNetworkSend()
+{
+    char enabled[8]{}; size_t length = 0;
+    if (getenv_s(&length, enabled, sizeof(enabled), "NKS_LIVE_NETWORK") != 0 || std::string_view(enabled) != "1") {
+        std::printf("SKIP network send: set NKS_LIVE_NETWORK=1 to send 16 MiB of UDP to 192.0.2.1\n");
+        return false;
+    }
+    constexpr std::int64_t size = 16 * mib;
+    constexpr int datagram = 1200;
+    WSADATA data{};
+    require(WSAStartup(MAKEWORD(2, 2), &data) == 0, "WSAStartup failed");
+    const SOCKET socket = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    require(socket != INVALID_SOCKET, "Cannot open a UDP socket");
+    sockaddr_in target{}; target.sin_family = AF_INET; target.sin_port = htons(9);
+    require(inet_pton(AF_INET, "192.0.2.1", &target.sin_addr) == 1, "Cannot parse the documentation address");
+    ResourceCollector resources;
+    (void)resources.collect();
+    const auto before = resources.collect();
+    std::byte payload[datagram]{};
+    for (std::int64_t sent = 0; sent < size; sent += datagram) {
+        require(sendto(socket, reinterpret_cast<const char*>(payload), datagram, 0, reinterpret_cast<const sockaddr*>(&target), sizeof(target)) == datagram,
+            "UDP send failed");
+        if (sent % (256 * datagram) == 0) std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    const auto after = resources.collect();
+    closesocket(socket); WSACleanup();
+
+    const double seconds = std::chrono::duration<double>(after.measuredAt - before.measuredAt).count();
+    double best = 0, reported = 0;
+    for (const auto& device : after.devices) {
+        if (device.kind != ResourceKind::network || !device.octetsValid || !device.secondary.valid()) continue;
+        const auto previous = std::find_if(before.devices.begin(), before.devices.end(), [&](const auto& row) { return row.id == device.id; });
+        if (previous == before.devices.end() || !previous->octetsValid) continue;
+        const double delta = static_cast<double>(device.sentOctets - previous->sentOctets);
+        if (delta > best) { best = delta; reported = device.secondary.value / 8 * seconds; }
+    }
+    require(best >= size * .95 && best <= size * 1.5 + 64 * mib, "No network adapter counted the UDP payload");
+    require(std::abs(reported - best) <= best * .05 + 64 * 1024, "Adapter send rate disagrees with its octet counter over the interval");
+    std::printf("PASS 16 MiB UDP: busiest adapter sent %.1f MiB (rate x interval %.1f MiB) over %.2f s\n", best / mib, reported / mib, seconds);
+    return true;
+}
+
 }
 
 int main()
@@ -157,7 +271,9 @@ int main()
     try {
         processorGroupsAndRealInterval();
         knownPrivateAllocation();
-        std::cout << "2/2 live collector checks passed\n";
+        knownProcessAndDiskIo();
+        const bool network = knownNetworkSend();
+        std::cout << (network ? "4/4" : "3/3") << " live collector checks passed\n";
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "FAIL live collector: " << error.what() << '\n';
