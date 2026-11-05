@@ -1,5 +1,13 @@
+#include <phnt_windows.h>
+#include <phnt.h>
 #include "update_worker/cleanup.hpp"
+#include "update_worker/cache_delete.hpp"
 #include <algorithm>
+#include <atomic>
+#include <filesystem>
+#include <fstream>
+#include <thread>
+#include <vector>
 #include <iostream>
 #include <stdexcept>
 
@@ -48,9 +56,130 @@ void verify()
     require(rollbackJournalAnchor(entries, installed.version, L"", root) == PlanId{}, "A missing previous version invented a rollback anchor");
     require(rollbackJournalAnchor({repair}, installed.version, previous, root) == PlanId{}, "Repair-only history invented a rollback predecessor");
 }
+
+// Real files in a private cache tree: deletion must remove exactly the verified file and nothing that changed,
+// is in use, has a second name or was already taken by a concurrent cleanup.
+struct Directory {
+    HANDLE value{INVALID_HANDLE_VALUE};
+    FILE_ID_INFO id{};
+    explicit Directory(const std::filesystem::path& path) {
+        value = CreateFileW(path.c_str(), FILE_READ_ATTRIBUTES | FILE_TRAVERSE | READ_CONTROL | SYNCHRONIZE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
+        require(value != INVALID_HANDLE_VALUE && GetFileInformationByHandleEx(value, FileIdInfo, &id, sizeof(id)), "Fixture directory unavailable");
+    }
+    ~Directory() { close(); }
+    void close() { if (value != INVALID_HANDLE_VALUE) CloseHandle(value); value = INVALID_HANDLE_VALUE; }
+};
+struct Fixture {
+    std::filesystem::path root;
+    Fixture() {
+        wchar_t temporary[MAX_PATH + 1]{};
+        require(GetTempPathW(MAX_PATH, temporary) != 0, "Temporary directory unavailable");
+        root = std::filesystem::path(temporary) / (L"nks-cache-delete-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(GetTickCount64()));
+        std::filesystem::create_directories(root / L"Packages");
+    }
+    ~Fixture() { std::error_code ignored; std::filesystem::remove_all(root, ignored); }
+    CacheDeleteTarget package(const Directory& cache, const Directory& parent, const std::string& bytes, std::filesystem::path& file) {
+        const auto temporary = root / L"Packages" / L"incoming.tmp";
+        { std::ofstream out(temporary, std::ios::binary); out << bytes; }
+        HANDLE handle = CreateFileW(temporary.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+        require(handle != INVALID_HANDLE_VALUE, "Fixture package unavailable");
+        CacheDeleteTarget target; target.cacheRoot = cache.value; target.parent = parent.value;
+        target.rootId = cache.id; target.parentId = parent.id; target.parentRelative = L"Packages"; target.size = bytes.size();
+        target.hash = hashFile(handle, bytes.size());
+        require(GetFileInformationByHandleEx(handle, FileIdInfo, &target.id, sizeof(target.id)), "Fixture package identity unavailable");
+        CloseHandle(handle);
+        target.leaf = hex(target.hash) + L".exe"; file = root / L"Packages" / target.leaf;
+        std::filesystem::rename(temporary, file);
+        return target;
+    }
+};
+void realDeletion()
+{
+    Fixture fixture;
+    Directory cache(fixture.root), packages(fixture.root / L"Packages");
+    std::filesystem::path file;
+
+    auto target = fixture.package(cache, packages, std::string(4096, 'a'), file);
+    auto result = deleteCacheFile(target);
+    require(result.state == CacheDeleteState::deleted && result.files == 1 && result.bytes == 4096 && !std::filesystem::exists(file),
+        "A verified package was not deleted exactly once");
+    require(deleteCacheFile(target).state == CacheDeleteState::absent, "A missing package was not reported as absent");
+
+    target = fixture.package(cache, packages, std::string(4096, 'b'), file);
+    HANDLE user = CreateFileW(file.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+    require(user != INVALID_HANDLE_VALUE, "Fixture user handle unavailable");
+    result = deleteCacheFile(target);
+    CloseHandle(user);
+    require(result.state == CacheDeleteState::busy && std::filesystem::exists(file), "A package in use was deleted or not reported busy");
+    require(deleteCacheFile(target).state == CacheDeleteState::deleted, "A package released by its user could not be deleted");
+
+    target = fixture.package(cache, packages, std::string(4096, 'c'), file);
+    { std::fstream out(file, std::ios::binary | std::ios::in | std::ios::out); out.seekp(100); out.put('X'); }
+    require(deleteCacheFile(target).state == CacheDeleteState::changed && std::filesystem::exists(file), "Changed package content was deleted");
+    std::filesystem::remove(file);
+
+    target = fixture.package(cache, packages, std::string(4096, 'd'), file);
+    { std::ofstream out(file, std::ios::binary | std::ios::app); out << 'e'; }
+    require(deleteCacheFile(target).state == CacheDeleteState::changed && std::filesystem::exists(file), "A package of a different size was deleted");
+    std::filesystem::remove(file);
+
+    target = fixture.package(cache, packages, std::string(4096, 'f'), file);
+    const auto alias = fixture.root / L"alias.exe";
+    require(CreateHardLinkW(alias.c_str(), file.c_str(), nullptr) != FALSE, "Fixture hard link unavailable");
+    require(deleteCacheFile(target).state == CacheDeleteState::changed && std::filesystem::exists(file) && std::filesystem::exists(alias),
+        "A package with a second name was deleted");
+    std::filesystem::remove(alias); std::filesystem::remove(file);
+
+    unsigned deleted{}, other{};
+    for (int round = 0; round < 50; ++round) {
+        target = fixture.package(cache, packages, std::string(65536, static_cast<char>('g' + round % 10)), file);
+        std::atomic<int> ready{};
+        CacheDeleteResult results[2];
+        std::vector<std::thread> threads;
+        for (int i = 0; i < 2; ++i) threads.emplace_back([&, i] { ++ready; while (ready < 2) {} results[i] = deleteCacheFile(target); });
+        for (auto& thread : threads) thread.join();
+        const int removed = (results[0].state == CacheDeleteState::deleted) + (results[1].state == CacheDeleteState::deleted);
+        require(removed == 1 && !std::filesystem::exists(file), "Concurrent cleanups deleted a package twice or not at all");
+        for (const auto& item : results)
+            if (item.state != CacheDeleteState::deleted) {
+                require(item.state == CacheDeleteState::absent || item.state == CacheDeleteState::busy || item.state == CacheDeleteState::changed,
+                    "The losing concurrent cleanup reported an unexplained state");
+                ++other;
+            }
+        deleted += removed;
+    }
+
+    const std::wstring stage = L"0123456789abcdef0123456789abcdef";
+    std::filesystem::create_directories(fixture.root / L"Stages" / stage);
+    Directory stages(fixture.root / L"Stages"), stageDirectory(fixture.root / L"Stages" / stage);
+    const auto worker = fixture.root / L"Stages" / stage / L"nks-update-worker.exe";
+    { std::ofstream out(worker, std::ios::binary); out << std::string(8192, 'w'); }
+    HANDLE handle = CreateFileW(worker.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+    CacheDeleteTarget staged; staged.cacheRoot = cache.value; staged.parent = stageDirectory.value; staged.rootId = cache.id;
+    staged.parentId = stageDirectory.id; staged.parentRelative = L"Stages\\" + stage; staged.leaf = L"nks-update-worker.exe";
+    staged.size = 8192; staged.hash = hashFile(handle, 8192);
+    require(GetFileInformationByHandleEx(handle, FileIdInfo, &staged.id, sizeof(staged.id)), "Fixture stage identity unavailable");
+    CloseHandle(handle);
+    const auto extra = fixture.root / L"Stages" / stage / L"left.txt";
+    { std::ofstream out(extra); out << "x"; }
+    const auto removedWorker = deleteCacheFile(staged);
+    require(removedWorker.state == CacheDeleteState::deleted, "The staged worker was not deleted");
+    CacheDeleteTarget directory; directory.cacheRoot = cache.value; directory.parent = stages.value; directory.rootId = cache.id;
+    directory.parentId = stages.id; directory.id = stageDirectory.id; directory.parentRelative = L"Stages"; directory.leaf = stage;
+    require(deleteEmptyCacheStage(directory, removedWorker).state == CacheDeleteState::busy && std::filesystem::exists(extra),
+        "A stage with an unexpected file was removed");
+    std::filesystem::remove(extra);
+    stageDirectory.close();
+    const auto removedStage = deleteEmptyCacheStage(directory, removedWorker);
+    require(removedStage.state == CacheDeleteState::deleted && removedStage.directories == 1 && !std::filesystem::exists(fixture.root / L"Stages" / stage),
+        "The emptied stage was not removed");
+    std::cout << "PASS real cache deletion: verified, absent, busy, changed content and size, hard link, " << deleted
+        << " concurrent rounds with one winner (" << other << " losers absent/busy/changed), partial stage kept then removed\n";
+}
 }
 int main()
 {
-    try { verify(); std::cout << "Update cleanup retention checks passed\n"; return 0; }
+    try { verify(); realDeletion(); std::cout << "Update cleanup retention checks passed\n"; return 0; }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

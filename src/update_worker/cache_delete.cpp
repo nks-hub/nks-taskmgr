@@ -96,8 +96,9 @@ broker::Handle openRelative(HANDLE parent, std::wstring_view leaf, ACCESS_MASK a
     IO_STATUS_BLOCK io{}; HANDLE raw = nullptr;
     const ULONG sharing = (access & DELETE) ? 0 : FILE_SHARE_READ;
     const auto status = NtCreateFile(&raw, access | SYNCHRONIZE, &attributes, &io, nullptr, 0, sharing,
-        FILE_OPEN, (directory ? FILE_DIRECTORY_FILE : FILE_NON_DIRECTORY_FILE) | FILE_OPEN_REPARSE_POINT
-        | FILE_SYNCHRONOUS_IO_NONALERT | FILE_OPEN_NO_RECALL, nullptr, 0);
+        // NtCreateFile rejects FILE_OPEN_NO_RECALL together with FILE_DIRECTORY_FILE (STATUS_INVALID_PARAMETER).
+        FILE_OPEN, (directory ? FILE_DIRECTORY_FILE : FILE_NON_DIRECTORY_FILE | FILE_OPEN_NO_RECALL) | FILE_OPEN_REPARSE_POINT
+        | FILE_SYNCHRONOUS_IO_NONALERT, nullptr, 0);
     if (status == STATUS_OBJECT_NAME_NOT_FOUND || status == STATUS_NO_SUCH_FILE) { absent = true; return {}; }
     if (!NT_SUCCESS(status)) fail(RtlNtStatusToDosError(status), status);
     return broker::Handle(raw);
@@ -110,9 +111,11 @@ ParentLease parentLease(const CacheDeleteTarget& target)
     if (!broker::readToken(GetCurrentProcess(), held.user)) fail(GetLastError());
     if (held.user.user.empty() || !IsValidSid(held.user.user.data()) || held.user.elevated
         || held.user.integrity >= SECURITY_MANDATORY_HIGH_RID) fail(ERROR_ACCESS_DENIED);
-    held.root.reset(ReOpenFile(target.cacheRoot, FILE_READ_ATTRIBUTES | READ_CONTROL, FILE_SHARE_READ,
-        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT));
-    if (!held.root || held.root.get() == INVALID_HANDLE_VALUE) fail(GetLastError());
+    // ReOpenFile refuses directory handles with ERROR_ACCESS_DENIED; a duplicate names the same verified directory object.
+    HANDLE root = nullptr;
+    if (!DuplicateHandle(GetCurrentProcess(), target.cacheRoot, GetCurrentProcess(), &root,
+        FILE_READ_ATTRIBUTES | FILE_TRAVERSE | READ_CONTROL | SYNCHRONIZE, FALSE, 0)) fail(GetLastError());
+    held.root.reset(root);
     directoryIdentity(held.root.get(), &target.rootId, held.user);
     directoryIdentity(target.parent, &target.parentId, held.user);
     HANDLE current = held.root.get(); std::size_t at = 0;
