@@ -102,7 +102,7 @@ public sealed partial class MainWindow : Window
         if (App.SmokePath is not null) App.Trace("Presenter=" + AppWindow.Presenter.GetType().FullName + ";overlapped=" + (AppWindow.Presenter is OverlappedPresenter));
         Title = "NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
-        AppWindow.Resize(new SizeInt32(1440, 920));
+        AppWindow.ResizeDip(1440, 920);
         ExtendsContentIntoTitleBar = true;
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;

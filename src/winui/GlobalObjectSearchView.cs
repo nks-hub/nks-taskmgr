@@ -77,7 +77,7 @@ internal sealed class GlobalObjectSearchView : Window
     {
         ui = DispatcherQueue; coordinator = new(client); this.getBoot = getBoot; this.isCurrent = isCurrent; this.openOwner = openOwner;
         Title = "Hledat otevřené objekty · NKS Task Manager";
-        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.Resize(new SizeInt32(1100, 780));
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.ResizeDip(1100, 780);
         Appearance.Attach(this, layout);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
             layout.RowDefinitions.Add(new RowDefinition { Height = height });

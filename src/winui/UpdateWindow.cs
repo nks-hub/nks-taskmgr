@@ -38,7 +38,7 @@ internal sealed partial class UpdateWindow : Window
         this.requestShutdown = requestShutdown;
         Title = "Aktualizace · NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
-        AppWindow.Resize(UpdateWorkerClient.IsConfigured ? new SizeInt32(920, 690) : new SizeInt32(640, 440));
+        if (UpdateWorkerClient.IsConfigured) AppWindow.ResizeDip(920, 690); else AppWindow.ResizeDip(640, 440);
         Appearance.Attach(this, root);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto })
             root.RowDefinitions.Add(new RowDefinition { Height = height });

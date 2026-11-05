@@ -31,7 +31,7 @@ internal sealed partial class ProcessActionsUiChecks : Window
     internal ProcessActionsUiChecks(string path)
     {
         this.path = Path.GetFullPath(path); Title = "NKS Task Manager · ověření procesových akcí";
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(760, 400));
+        AppWindow.ResizeDip(760, 400);
         string icon = Path.Combine(AppContext.BaseDirectory, "app.ico"); if (File.Exists(icon)) AppWindow.SetIcon(icon);
         Content = new ScrollViewer { Content = status };
         status.Loaded += async (_, _) => { if (!started) { started = true; await RunAsync(); } };

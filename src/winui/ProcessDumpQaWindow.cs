@@ -21,7 +21,7 @@ internal sealed class ProcessDumpQaWindow : Window
         dispatcher = DispatcherQueue;
         this.path = Path.GetFullPath(path);
         Title = "NKS Task Manager · ověření dumpů";
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(760, 400));
+        AppWindow.ResizeDip(760, 400);
         string icon = Path.Combine(AppContext.BaseDirectory, "app.ico");
         if (File.Exists(icon)) AppWindow.SetIcon(icon);
         Content = status;

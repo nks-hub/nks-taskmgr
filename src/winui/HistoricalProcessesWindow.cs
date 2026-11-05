@@ -21,7 +21,7 @@ internal sealed class HistoricalProcessesWindow : Window
     internal HistoricalProcessesWindow(ProcessHistorySelection selection)
     {
         this.selection = selection;
-        Title = "Historické procesy · NKS Task Manager"; AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.Resize(new SizeInt32(1120, 840));
+        Title = "Historické procesy · NKS Task Manager"; AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.ResizeDip(1120, 840);
         Appearance.Attach(this, root);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto })
             root.RowDefinitions.Add(new RowDefinition { Height = height });

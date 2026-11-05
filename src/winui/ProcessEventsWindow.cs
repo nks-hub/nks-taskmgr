@@ -53,7 +53,7 @@ internal sealed partial class ProcessEventsWindow : Window
         this.currentProcesses = currentProcesses;
         Title = "Události procesů · NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
-        AppWindow.Resize(new SizeInt32(1120, 780)); Appearance.Attach(this, layout);
+        AppWindow.ResizeDip(1120, 780); Appearance.Attach(this, layout);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), new GridLength(155) })
             layout.RowDefinitions.Add(new RowDefinition { Height = height });
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };

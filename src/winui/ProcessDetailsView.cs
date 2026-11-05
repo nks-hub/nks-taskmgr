@@ -84,7 +84,7 @@ internal sealed partial class ProcessDetailsView : Window
         this.client = client; Key = key; this.isCurrent = isCurrent;
         this.created100ns = created100ns; this.executeAction = executeAction; processName = Flat(name);
         Title = "Podrobnosti procesu · NKS Task Manager";
-        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.Resize(new SizeInt32(1100, 780));
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.ResizeDip(1100, 780);
         Appearance.Attach(this, layout);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
             layout.RowDefinitions.Add(new RowDefinition { Height = height });

@@ -65,7 +65,7 @@ internal static class SnapshotComparisonUiChecks
             window.StatusFilter.SelectedIndex = 3;
             Require(window.ResultsList.Items.Count == 0 && window.DetailText == "Vyberte proces ze seznamu.", "An empty filter kept the previous detail.");
             window.StatusFilter.SelectedIndex = 0;
-            window.AppWindow.Resize(new SizeInt32(720, 500)); await ComparisonRendered(); window.Root.UpdateLayout();
+            window.AppWindow.ResizeDip(720, 500); await ComparisonRendered(); window.Root.UpdateLayout();
             foreach (var button in window.Commands) {
                 var bounds = button.TransformToVisual(window.Root).TransformBounds(new Windows.Foundation.Rect(0, 0, button.ActualWidth, button.ActualHeight));
                 Require(bounds.Left >= 0 && bounds.Top >= 0 && bounds.Right <= window.Root.ActualWidth + 1 && bounds.Bottom <= window.Root.ActualHeight + 1,

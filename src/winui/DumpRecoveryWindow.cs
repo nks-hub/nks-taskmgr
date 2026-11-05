@@ -22,7 +22,7 @@ internal sealed class DumpRecoveryWindow : Window
 
     internal DumpRecoveryWindow()
     {
-        Title = "Nedokončené dumpy · NKS Task Manager"; AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.Resize(new SizeInt32(1040, 820));
+        Title = "Nedokončené dumpy · NKS Task Manager"; AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.ResizeDip(1040, 820);
         Appearance.Attach(this, root);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, new GridLength(2, GridUnitType.Star), new GridLength(3, GridUnitType.Star), GridLength.Auto })
             root.RowDefinitions.Add(new RowDefinition { Height = height });
