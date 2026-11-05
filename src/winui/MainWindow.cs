@@ -303,6 +303,22 @@ public sealed partial class MainWindow : Window
         foreach (var action in new[] { columns, exportSnapshot, compareSnapshots, processDetailsButton, globalObjectSearchButton, processEventsButton, processDumpButton, processActionsButton }) {
             action.Height = 28; action.MinHeight = 0; actions.Children.Add(action);
         }
+        // Icon-only commands get a visible word when the window is wide enough; narrow windows keep the icons alone.
+        var labels = new List<TextBlock>();
+        foreach (var (button, label) in new[] { (exportSnapshot, "Export"), (compareSnapshots, "Porovnat"), (processDetailsButton, "Podrobnosti"),
+                     (globalObjectSearchButton, "Hledat objekty"), (processEventsButton, "Události") }) {
+            var text = new TextBlock { Text = label, FontSize = 12, FontFamily = UiTypography.Font, VerticalAlignment = VerticalAlignment.Center };
+            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+            content.Children.Add((UIElement)button.Content); content.Children.Add(text);
+            button.Content = content; button.Width = double.NaN; button.MinWidth = 35; labels.Add(text);
+        }
+        void LabelActions() {
+            bool wide = root.ActualWidth >= 1280;
+            foreach (var label in labels) label.Visibility = wide ? Visibility.Visible : Visibility.Collapsed;
+            foreach (var button in new[] { exportSnapshot, compareSnapshots, processDetailsButton, globalObjectSearchButton, processEventsButton })
+                button.Padding = wide ? new Thickness(8, 0, 10, 0) : new Thickness(0);
+        }
+        root.SizeChanged += (_, _) => LabelActions(); LabelActions();
         toolbar.Children.Add(actions);
         Grid.SetColumn(actions, 1);
         processPage.Children.Add(toolbar);
