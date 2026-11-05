@@ -54,6 +54,28 @@ std::vector<HardwareFact> processorHardware()
     feature((info[2] & (1 << 25)) != 0, L"AES"); feature((info[2] & (1 << 28)) != 0, L"AVX");
     if (maximumLeaf >= 7) { __cpuidex(info, 7, 0); feature((info[1] & (1 << 5)) != 0, L"AVX2"); }
     if (!features.empty()) result.push_back({L"Instrukce CPU (CPUID)", features});
+    VirtualizationProbe probe;
+    __cpuid(info, 1);
+    probe.hypervisor = (static_cast<unsigned>(info[2]) >> 31) != 0;
+    const bool vmx = (info[2] & (1 << 5)) != 0;
+    __cpuid(info, 0);
+    const bool intel = info[1] == 0x756e6547 && info[3] == 0x49656e69 && info[2] == 0x6c65746e;
+    const bool amd = info[1] == 0x68747541 && info[3] == 0x69746e65 && info[2] == 0x444d4163;
+    __cpuid(info, static_cast<int>(0x80000000));
+    const bool extended = static_cast<unsigned>(info[0]) >= 0x80000001;
+    bool svm = false;
+    if (extended) { __cpuid(info, static_cast<int>(0x80000001)); svm = (info[2] & (1 << 2)) != 0; }
+    probe.hardwareSupport = (intel && vmx) || (amd && svm);
+    if (probe.hypervisor) {
+        __cpuid(info, 0x40000000);
+        char vendor[13]{}; std::memcpy(vendor, &info[1], 4); std::memcpy(vendor + 4, &info[2], 4); std::memcpy(vendor + 8, &info[3], 4);
+        probe.microsoftHypervisor = std::strcmp(vendor, "Microsoft Hv") == 0 && static_cast<unsigned>(info[0]) >= 0x40000003;
+        if (probe.microsoftHypervisor) { __cpuid(info, 0x40000003); probe.rootPartition = (info[1] & 1) != 0; }
+    }
+    probe.firmwareEnabled = IsProcessorFeaturePresent(PF_VIRT_FIRMWARE_ENABLED) != FALSE;
+    probe.slat = IsProcessorFeaturePresent(PF_SECOND_LEVEL_ADDRESS_TRANSLATION) != FALSE;
+    probe.nx = IsProcessorFeaturePresent(PF_NX_ENABLED) != FALSE;
+    result.push_back({L"Virtualizace", virtualizationState(probe)});
     if (maximumLeaf >= 0x16) {
         __cpuid(info, 0x16);
         if ((info[0] & 65535) > 0) result.push_back({L"Základní takt (CPUID)", std::to_wstring(info[0] & 65535) + L" MHz"});

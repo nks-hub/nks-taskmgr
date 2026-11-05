@@ -51,6 +51,19 @@ int main()
         try { (void)nks::parseMemoryHardware(table); } catch (const std::runtime_error&) { rejected = true; }
         require(rejected, "Truncated firmware table was accepted");
         require(!nks::memoryHardware().empty() && !nks::processorHardware().empty(), "Live hardware metadata could not be read");
+        using nks::VirtualizationProbe; using nks::virtualizationState;
+        require(virtualizationState({true, true, true}) == L"Povoleno (Hyper-V)" && virtualizationState({true, true, false}) == L"Virtuální počítač"
+            && virtualizationState({true, false, false, true, true}) == L"Virtuální počítač", "A hypervisor partition was misclassified");
+        require(virtualizationState({false, false, false, true, true}) == L"Povoleno"
+            && virtualizationState({false, false, false, true, false, true, true}) == L"Zakázáno ve firmwaru"
+            && virtualizationState({false, false, false, true, false, false, true}) == L"Nepodporováno"
+            && virtualizationState({false, false, false, false, true, true, true}) == L"Nepodporováno", "Bare-metal virtualization state differs from Task Manager's order");
+        const auto live = nks::processorHardware();
+        const auto state = std::find_if(live.begin(), live.end(), [](const auto& fact) { return fact.name == L"Virtualizace"; });
+        require(state != live.end(), "Live processor facts have no virtualization state");
+        std::string utf8(static_cast<std::size_t>(WideCharToMultiByte(CP_UTF8, 0, state->value.c_str(), -1, nullptr, 0, nullptr, nullptr)), '\0');
+        WideCharToMultiByte(CP_UTF8, 0, state->value.c_str(), -1, utf8.data(), static_cast<int>(utf8.size()), nullptr, nullptr);
+        std::cout << "Virtualization: " << utf8.c_str() << '\n';
         std::array<std::byte, sizeof(STORAGE_PROTOCOL_DATA_DESCRIPTOR) + sizeof(NVME_HEALTH_INFO_LOG)> health{};
         STORAGE_PROTOCOL_DATA_DESCRIPTOR header{};
         header.Version = header.Size = sizeof(header);

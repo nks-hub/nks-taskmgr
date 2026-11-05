@@ -16,6 +16,15 @@ std::uint32_t number(std::span<const std::byte> data, std::size_t at, std::size_
 }
 }
 
+std::wstring virtualizationState(const VirtualizationProbe& probe)
+{
+    // A hypervisor hides VMX/SVM from its guests; only the Hyper-V root partition owns the hardware support.
+    if (probe.hypervisor) return probe.microsoftHypervisor && probe.rootPartition ? L"Povoleno (Hyper-V)" : L"Virtuální počítač";
+    if (!probe.hardwareSupport) return L"Nepodporováno";
+    if (probe.firmwareEnabled) return L"Povoleno";
+    return probe.slat && probe.nx ? L"Zakázáno ve firmwaru" : L"Nepodporováno";
+}
+
 std::vector<HardwareFact> parseMemoryHardware(std::span<const std::byte> table)
 {
     std::vector<std::span<const std::byte>> records;
