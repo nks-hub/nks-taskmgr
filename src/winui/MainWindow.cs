@@ -250,7 +250,7 @@ public sealed partial class MainWindow : Window
             content.Children.Add(button == startupNav ? new SymbolIcon(Symbol.Play) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
                 : button == applicationNav || button == usersNav ? new SymbolIcon(button == usersNav ? Symbol.People : Symbol.AllApps) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
                 : UiIcon.Create(button == performanceNav ? "performance" : button == servicesNav ? "services" : button == hardwareNav ? "hardware" : "processes", 0x95a4ad));
-            content.Children.Add(Label(name, 9, 0x95a4ad));
+            content.Children.Add(Label(button == startupNav ? "Spuštění" : name, 9, 0x95a4ad));
             button.Content = content;
             nav.Children.Add(button);
         }
