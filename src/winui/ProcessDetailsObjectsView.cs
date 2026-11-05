@@ -34,7 +34,7 @@ internal sealed partial class ProcessDetailsView
         } else if (SelectedHandle is { } handle) {
             text.Append("Hodnota handle: 0x").Append(handle.Value.ToString("X")).AppendLine();
             text.Append("Přístup ve snímku: 0x").Append(handle.GrantedAccess.ToString("X8")).AppendLine();
-            text.Append("Index typu ve snímku: ").Append(handle.TypeIndex.ToString(Czech)).AppendLine();
+            text.Append("Typ objektu: ").Append(ProcessFacts.ObjectTypeName(handle.TypeIndex)).Append(" (index ").Append(handle.TypeIndex.ToString(Czech)).Append(")").AppendLine();
             text.Append("Atributy ve snímku: 0x").Append(handle.Attributes.ToString("X8")).AppendLine().AppendLine();
             if (observation is not null && ReferenceEquals(observationHandle, handle)) {
                 text.Append("Aktuálně zachycený typ: ").Append(ObjectText(observation.Type, observation.TypeState, observation.TypeNtStatus, false)).AppendLine();

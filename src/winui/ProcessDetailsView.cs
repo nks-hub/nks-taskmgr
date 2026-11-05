@@ -30,7 +30,8 @@ public sealed partial class MainWindow
                 if (processDetailsWindow is { } previous && previous.Key != row.Key) { processDetailsWindow = null; previous.Close(); }
                 if (processDetailsWindow is null) {
                     var window = new ProcessDetailsView(processDetailsClient, row.Key, row.Name, () => model.IsCurrent(row),
-                        row.Created100ns, ExecuteActionRequestAsync);
+                        row.Created100ns, ExecuteActionRequestAsync, () => model.IsCurrent(row) ? row : null,
+                        pid => model.Processes.FirstOrDefault(process => process.Key.Pid == pid)?.Name);
                     processDetailsWindow = window;
                     window.Closed += (_, _) => { if (ReferenceEquals(processDetailsWindow, window)) processDetailsWindow = null; };
                 }
@@ -64,8 +65,8 @@ internal sealed partial class ProcessDetailsView : Window
     private readonly Grid body = new() { ColumnSpacing = 12, RowSpacing = 8 };
     private readonly Button threads = Command("Vlákna"), modules = Command("Moduly"), refresh = Command("Obnovit"), cancel = Command("Zrušit"), verify = Command("Ověřit podpis souboru");
     private readonly TextBlock title = Label("", 18), state = Label("Podrobnosti se načítají na vyžádání.", 12), count = Label("", 12);
-    private readonly TextBox detail = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
-        FontFamily = new FontFamily("Consolas"), FontSize = 12, MinHeight = 0, Text = "Vyberte řádek ze seznamu." };
+    private readonly TextBox detail = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
+        FontFamily = UiTypography.Font, FontSize = 12, MinHeight = 0, Text = "Vyberte řádek ze seznamu." };
     private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
     private readonly ProcessDetailsTemplates templates = new();
     private readonly Grid inspector = new() { RowSpacing = 8 };
@@ -79,7 +80,8 @@ internal sealed partial class ProcessDetailsView : Window
     internal ProcessKey Key { get; }
 
     internal ProcessDetailsView(ProcessDetailsClient client, ProcessKey key, string name, Func<bool> isCurrent,
-        ulong created100ns = 0, Func<ProcessActionsRequest, bool, CancellationToken, Task<ProcessActionsBatch>>? executeAction = null)
+        ulong created100ns = 0, Func<ProcessActionsRequest, bool, CancellationToken, Task<ProcessActionsBatch>>? executeAction = null,
+        Func<ProcessRow?>? liveRow = null, Func<uint, string?>? nameOf = null)
     {
         this.client = client; Key = key; this.isCurrent = isCurrent;
         this.created100ns = created100ns; this.executeAction = executeAction; processName = Flat(name);
@@ -96,6 +98,7 @@ internal sealed partial class ProcessDetailsView : Window
         commands.ColumnDefinitions.Add(new ColumnDefinition()); commands.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var modes = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 }; modes.Children.Add(threads); modes.Children.Add(modules);
         ConfigureObjects(modes);
+        ConfigureOverview(modes, liveRow, nameOf);
         var control = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 }; control.Children.Add(refresh); control.Children.Add(cancel);
         commands.Children.Add(modes); commands.Children.Add(control); Grid.SetColumn(control, 1); Grid.SetRow(commands, 1); layout.Children.Add(commands);
         state.TextWrapping = TextWrapping.Wrap; Grid.SetRow(state, 2); layout.Children.Add(state);
@@ -103,14 +106,19 @@ internal sealed partial class ProcessDetailsView : Window
         body.RowDefinitions.Add(new RowDefinition()); body.RowDefinitions.Add(new RowDefinition());
         var listStyle = new Style { TargetType = typeof(ListViewItem) };
         listStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 34d));
+        listStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
         listStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(10, 4, 10, 4)));
         list.ItemContainerStyle = listStyle; ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
         list.ItemTemplate = (DataTemplate)templates["ProcessDetailsRow"];
-        body.Children.Add(list);
+        var listPane = new Grid();
+        listPane.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); listPane.RowDefinitions.Add(new RowDefinition());
+        listPane.Children.Add(listHeader); listPane.Children.Add(list); Grid.SetRow(list, 1);
+        body.Children.Add(listPane);
         inspector.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); inspector.RowDefinitions.Add(new RowDefinition()); inspector.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         inspector.Children.Add(verify); inspector.Children.Add(detail); Grid.SetRow(detail, 1);
         signatureNote.TextWrapping = TextWrapping.Wrap; inspector.Children.Add(signatureNote); Grid.SetRow(signatureNote, 2); body.Children.Add(inspector);
         Grid.SetRow(body, 4); layout.Children.Add(body); Grid.SetRow(count, 5); layout.Children.Add(count);
+        Grid.SetRow(overview, 3); Grid.SetRowSpan(overview, 2); layout.Children.Add(overview);
         Identify(list, "process-details-list", "Vlákna nebo moduly vybraného procesu");
         Identify(detail, "process-details-selection", "Údaje vybraného vlákna nebo modulu pouze pro čtení");
         Identify(state, "process-details-status", "Stav načítání podrobností");
@@ -125,7 +133,7 @@ internal sealed partial class ProcessDetailsView : Window
         verify.Click += async (_, _) => { if (SelectedModule is { } module) await ReadAsync(ProcessDetailsCommand.Signature, module); };
         list.SelectionChanged += (_, _) => SelectionUpdated();
         layout.SizeChanged += (_, _) => Resize();
-        Activated += async (_, _) => { if (!activated) { activated = true; await ReadAsync(ProcessDetailsCommand.Threads); } };
+        Activated += async (_, _) => { if (!activated) { activated = true; ShowOverview(true); await ReadAsync(ProcessDetailsCommand.Threads); } };
         Closed += (_, _) => { closed = true; operation?.Cancel(); filterOperation?.Cancel(); searchTimer.Stop(); };
         Content = layout; UpdateAvailability(); Resize();
     }
@@ -166,20 +174,22 @@ internal sealed partial class ProcessDetailsView : Window
         handles.IsEnabled = !busy && (current || handlesSnapshot is not null);
         refresh.IsEnabled = current && !busy;
         cancel.IsEnabled = busy;
+        overviewTab.IsEnabled = !busy;
         verify.Visibility = signatureNote.Visibility = mode == ProcessDetailsCommand.Modules ? Visibility.Visible : Visibility.Collapsed;
         verify.IsEnabled = current && !busy && SelectedModule is { Path.Length: > 0 };
         observeObject.IsEnabled = current && !busy && SelectedHandle is not null;
         observeObject.Visibility = mode == ProcessDetailsCommand.Handles ? Visibility.Visible : Visibility.Collapsed;
         if (!current) { operation?.Cancel(); state.Text = "Proces skončil nebo jeho identita už neodpovídá. Zobrazené údaje jsou poslední načtený snímek."; }
-        threads.Background = Display.Brush(mode == ProcessDetailsCommand.Threads ? 0x28343bu : 0x1d252au);
-        modules.Background = Display.Brush(mode == ProcessDetailsCommand.Modules ? 0x28343bu : 0x1d252au);
-        memory.Background = Display.Brush(mode == ProcessDetailsCommand.Memory ? 0x28343bu : 0x1d252au);
-        handles.Background = Display.Brush(mode == ProcessDetailsCommand.Handles ? 0x28343bu : 0x1d252au);
+        threads.Background = Display.Brush(!showingOverview && mode == ProcessDetailsCommand.Threads ? 0x28343bu : 0x1d252au);
+        modules.Background = Display.Brush(!showingOverview && mode == ProcessDetailsCommand.Modules ? 0x28343bu : 0x1d252au);
+        memory.Background = Display.Brush(!showingOverview && mode == ProcessDetailsCommand.Memory ? 0x28343bu : 0x1d252au);
+        handles.Background = Display.Brush(!showingOverview && mode == ProcessDetailsCommand.Handles ? 0x28343bu : 0x1d252au);
     }
 
     private async Task SelectModeAsync(ProcessDetailsCommand selected)
     {
         if (operation is not null || closed) return;
+        ShowOverview(false);
         mode = selected; signature = null; signatureTime = null; ShowRows(); UpdateAvailability();
         if (SnapshotFor(selected) is null) await ReadAsync(selected);
     }
@@ -229,7 +239,7 @@ internal sealed partial class ProcessDetailsView : Window
     {
         ClearObservation(); applyingRows = true;
         try { list.ItemsSource = null; } finally { applyingRows = false; }
-        ConfigureFilters(); QueueFilter(true); UpdateDetail();
+        ConfigureFilters(); QueueFilter(true); UpdateDetail(); UpdateListHeader();
     }
 
     private void UpdateDetail()

@@ -4,7 +4,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:NksTaskMgr.WinUI">
   <DataTemplate x:Key="ProcessDetailsRow" x:DataType="local:ProcessDetailsRow">
-    <TextBlock Text="{x:Bind Text}" FontSize="12" FontFamily="{ThemeResource ContentControlThemeFontFamily}"
-               TextTrimming="CharacterEllipsis" />
+    <Grid ColumnSpacing="12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="2*" />
+      </Grid.ColumnDefinitions>
+      <TextBlock Text="{x:Bind First}" FontSize="12" FontFamily="{ThemeResource ContentControlThemeFontFamily}" TextTrimming="CharacterEllipsis" />
+      <TextBlock Grid.Column="1" Text="{x:Bind Second}" FontSize="12" FontFamily="{ThemeResource ContentControlThemeFontFamily}" TextTrimming="CharacterEllipsis"
+                 Foreground="{ThemeResource NksSecondaryTextBrush}" />
+      <TextBlock Grid.Column="2" Text="{x:Bind Third}" FontSize="12" FontFamily="{ThemeResource ContentControlThemeFontFamily}" TextTrimming="CharacterEllipsis"
+                 Foreground="{ThemeResource NksSecondaryTextBrush}" />
+      <TextBlock Grid.Column="3" Text="{x:Bind Fourth}" FontSize="12" FontFamily="{ThemeResource ContentControlThemeFontFamily}" TextTrimming="CharacterEllipsis"
+                 Foreground="{ThemeResource NksSecondaryTextBrush}" />
+    </Grid>
   </DataTemplate>
 </ResourceDictionary>

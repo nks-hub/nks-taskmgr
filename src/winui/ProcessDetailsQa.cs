@@ -77,11 +77,13 @@ internal sealed partial class ProcessDetailsView
             list.UpdateLayout();
             var first = list.Items[0] as ProcessDetailsRow;
             var container = list.ContainerFromIndex(0) as ListViewItem;
-            if (first is null || container is null || !DetailsText(container).Any(text => text.Text == first.Text && text.ActualWidth > 0 && text.ActualHeight > 0))
+            if (first is null || container is null || !DetailsText(container).Any(text => text.Text == first.First && text.ActualWidth > 0 && text.ActualHeight > 0))
                 throw new InvalidOperationException("Actual process details text was blank after GC.");
             if (!ReferenceEquals(SelectedRow, first.Source) || detail.Text.Length == 0 || detail.Text == "Vyberte řádek ze seznamu.")
                 throw new InvalidOperationException("Selected details row did not reach the inspector.");
-            log($"process-details mode={selectedMode};generation={Key.Kind};nativeRows={expected};visibleText=True;inspector=True;gc=True");
+            if (first.Source is ProcessHandleInfo typed && first.Second.StartsWith("typ ", StringComparison.Ordinal))
+                throw new InvalidOperationException("Handle object type index " + typed.TypeIndex + " has no type name.");
+            log($"process-details mode={selectedMode};generation={Key.Kind};nativeRows={expected};visibleText=True;inspector=True;gc=True;second={first.Second}");
             string query = selectedMode switch {
                 ProcessDetailsCommand.Threads => ((ProcessThreadInfo)first.Source).Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ProcessDetailsCommand.Modules => ((ProcessModuleInfo)first.Source).Path,
