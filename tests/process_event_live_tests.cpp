@@ -2,6 +2,7 @@
 #include <ws2tcpip.h>
 #include "interop/events_api.h"
 #include <windows.h>
+#include <evntrace.h>
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -15,6 +16,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace {
 using Clock = std::chrono::steady_clock;
@@ -267,7 +269,8 @@ public:
     unsigned read() {
         Frame frame(monitor); statistics.observe(frame); capture.observe(*frame.view); capture.observeTraffic(frame.traffic);
         // The baseline is this test's own fixture: everything it measures starts after the acknowledgement.
-        if ((frame.view->flags & NKS_EVENTS_RESYNC_REQUIRED) && frame.view->boot_state == NKS_SAMPLE_VALID)
+        if (frame.view->flags & NKS_EVENTS_RESYNC_REQUIRED) resyncVersions = (std::max)(resyncVersions, frame.view->resync_version);
+        if ((frame.view->flags & NKS_EVENTS_RESYNC_REQUIRED) && frame.view->boot_state == NKS_SAMPLE_VALID && !holdResync)
             nks_events_ack_resync(monitor, frame.view->resync_version);
         return frame.view->event_count + frame.traffic.sample_count;
     }
@@ -285,6 +288,8 @@ public:
     }
     Capture capture;
     Statistics statistics;
+    std::uint64_t resyncVersions{};
+    bool holdResync{};
     std::unique_ptr<Child> child;
 private:
     NksEventMonitor* monitor{};
@@ -329,12 +334,69 @@ bool run(Session& session, bool requireCapture)
 }
 }
 
+// Stops this test's own kernel session from outside, as another tool or an administrator could, and requires the
+// monitor to report a definite error with a resync request instead of continuing to look like a live capture.
+void externalStop(Session& session)
+{
+    session.start();
+    const auto deadline = Clock::now() + 5s;
+    while (session.read(), session.statistics.state != NKS_EVENTS_RUNNING) {
+        require(session.statistics.state == NKS_EVENTS_STARTING || session.statistics.state == NKS_EVENTS_IDLE, "Capture did not start; run elevated");
+        require(Clock::now() < deadline, "Event monitor did not reach Running within five seconds");
+        std::this_thread::sleep_for(25ms);
+    }
+    constexpr ULONG names = 1024, slots = 64, size = sizeof(EVENT_TRACE_PROPERTIES) + 2 * names * sizeof(wchar_t);
+    std::vector<std::byte> storage(slots * size);
+    std::array<EVENT_TRACE_PROPERTIES*, slots> list{};
+    for (ULONG i = 0; i < slots; ++i) {
+        auto* item = reinterpret_cast<EVENT_TRACE_PROPERTIES*>(storage.data() + i * size);
+        item->Wnode.BufferSize = size; item->LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
+        item->LogFileNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + names * sizeof(wchar_t); list[i] = item;
+    }
+    ULONG count{};
+    require(QueryAllTracesW(list.data(), slots, &count) == ERROR_SUCCESS, "ETW sessions could not be listed");
+    std::vector<std::wstring> own;
+    for (ULONG i = 0; i < count; ++i) {
+        const std::wstring name(reinterpret_cast<const wchar_t*>(reinterpret_cast<const std::byte*>(list[i]) + list[i]->LoggerNameOffset));
+        if (name.starts_with(L"NksTaskMgr-Processes-")) own.push_back(name);
+    }
+    require(own.size() == 1, "Expected exactly one NKS process session; another instance is recording");
+    std::vector<std::byte> stopBuffer(size);
+    auto* stop = reinterpret_cast<EVENT_TRACE_PROPERTIES*>(stopBuffer.data());
+    stop->Wnode.BufferSize = size; stop->LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
+    stop->LogFileNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + names * sizeof(wchar_t);
+    session.holdResync = true;
+    const auto before = session.resyncVersions;
+    require(ControlTraceW(0, own.front().c_str(), stop, EVENT_TRACE_CONTROL_STOP) == ERROR_SUCCESS, "The own session could not be stopped externally");
+    const auto stopped = Clock::now();
+    while (session.read(), session.statistics.state == NKS_EVENTS_RUNNING || session.statistics.state == NKS_EVENTS_STOPPING) {
+        require(Clock::now() - stopped < 5s, "The monitor still looked live five seconds after its session was stopped externally");
+        std::this_thread::sleep_for(25ms);
+    }
+    const auto detected = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - stopped);
+    require(session.statistics.state == NKS_EVENTS_ERROR && session.statistics.error != 0, "External stop did not end in an explained error");
+    require(session.resyncVersions > before, "External stop did not request a new baseline");
+    std::cout << "PASS external stop: own session stopped outside; state=Error win32=" << session.statistics.error
+        << " after " << detected.count() << " ms, resync requested\n";
+}
+
 int wmain(int argc, wchar_t** argv)
 {
     if (argc == 2 && !wcscmp(argv[1], L"--child")) return static_cast<int>(childLoad());
     const bool requireCapture = argc == 2 && !wcscmp(argv[1], L"--require-capture");
-    if (argc != 1 && !requireCapture) {
-        std::cerr << "Usage: nks-process-event-live-tests [--require-capture]\n"; return 2;
+    const bool external = argc == 2 && !wcscmp(argv[1], L"--external-stop");
+    if (argc != 1 && !requireCapture && !external) {
+        std::cerr << "Usage: nks-process-event-live-tests [--require-capture|--external-stop]\n"; return 2;
+    }
+    if (external) {
+        try {
+            Session session;
+            externalStop(session);
+            const bool cleaned = session.stopAndDrain();
+            session.statistics.print();
+            if (!cleaned) { std::cerr << "FAIL own ETW cleanup/drain was not confirmed within five seconds\n"; return 1; }
+            return 0;
+        } catch (const std::exception& error) { std::cerr << "FAIL external stop: " << error.what() << '\n'; return 1; }
     }
     try {
         std::cout << "Own token elevated=" << elevated() << " requireCapture=" << requireCapture << '\n';
