@@ -218,6 +218,7 @@ public static partial class WinUiChecks
                 object? cacheValue = rawPanel!.GetValue(ItemsStackPanel.CacheLengthProperty);
                 if (cacheValue is not double cacheLength || !double.IsFinite(cacheLength) || cacheLength < 0)
                     throw new InvalidOperationException($"The actual ItemsStackPanel cache is invalid: type={cacheValue?.GetType().AssemblyQualifiedName};value={cacheValue}.");
+                Require(cacheLength == 1, $"Process table cache was not reduced to one viewport: cache={cacheLength}.");
                 int viewportRows = Math.Max(1, (int)Math.Ceiling(list.ActualHeight / ProcessTable.RowHeight));
                 // The panel keeps a viewport-sized cache, so a fixed row-count limit fails on larger windows.
                 int realizationLimit = (int)Math.Ceiling(viewportRows * (1 + cacheLength)) + 8;

@@ -113,6 +113,9 @@ public sealed partial class MainWindow : Window
         App.Trace("Content assigned");
         resourceList.ItemsSource = model.Resources;
         App.Trace("Resource source assigned");
+        // The default cache realizes four extra viewports of rows; every per-second text change in them costs layout.
+        // NativeAOT exposes the panel through its base projection, so the value is set without a cast.
+        processList.Loaded += (_, _) => processList.ItemsPanelRoot?.SetValue(ItemsStackPanel.CacheLengthProperty, 1d);
         processList.ItemsSource = processSlots;
         processList.ItemContainerTransitions = new Microsoft.UI.Xaml.Media.Animation.TransitionCollection();
         PreserveProcessView(model);
