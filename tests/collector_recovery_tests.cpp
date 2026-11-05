@@ -289,6 +289,42 @@ void directRecovery(HANDLE job, const fs::path& worker, std::vector<Lifetime>& k
     waitFor([&] { return ownedProcesses(job, worker, known).workers.empty(); }, 5s, "Direct client destruction left live owned workers");
 }
 
+void hungRecovery(HANDLE job, const fs::path& worker, std::vector<Lifetime>& known, std::ostream& log)
+{
+    std::vector<Worker> recovered;
+    {
+        nks::CollectorClient processes(nks::collector::Kind::processes);
+        const auto first = processes.processes({}).measuredAt;
+        auto owned = ownedProcesses(job, worker, known);
+        require(owned.workers.size() == 1, "Expected exactly one live process worker before the hang");
+        const auto& frozen = owned.workers.front();
+        Handle suspend(OpenProcess(PROCESS_SUSPEND_RESUME | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, frozen.pid));
+        require(suspend.value && createdAt(suspend.value) == frozen.created, "Held worker suspend handle unavailable");
+        require(NT_SUCCESS(NtSuspendProcess(suspend.value)), "Owned worker could not be suspended");
+        const auto started = Clock::now();
+        std::string error;
+        try { (void)processes.processes({}); } catch (const std::exception& failure) { error = failure.what(); }
+        const auto waited = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - started);
+        require(error == "Collector operation timed out", "A suspended worker did not end the request with a timeout");
+        require(waited >= 4900ms && waited < 6500ms, "The hung worker request did not end at its 5 s deadline");
+        require(WaitForSingleObject(frozen.process.value, 5000) == WAIT_OBJECT_0, "The timed out worker was not terminated");
+        remember(known, frozen.lifetime());
+        const auto retryStarted = Clock::now();
+        Clock::time_point fresh{};
+        waitFor([&] { try { fresh = processes.processes({}).measuredAt; return true; } catch (const std::exception&) { return false; } },
+            5s, "No fresh process snapshot after the hung worker was replaced");
+        const auto retry = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - retryStarted);
+        require(fresh > first, "The replacement worker returned a stale snapshot");
+        auto after = ownedProcesses(job, worker, known);
+        require(after.workers.size() == 1 && (after.workers.front().pid != frozen.pid || after.workers.front().created != frozen.created),
+            "The hung worker was not replaced by a new lifetime");
+        recovered = std::move(after.workers);
+        log << "hung timeoutMs=" << waited.count() << ";terminated=True;retryMs=" << retry.count() << ";fresh=True\n" << std::flush;
+    }
+    waitExited(recovered, known);
+    waitFor([&] { return ownedProcesses(job, worker, known).workers.empty(); }, 5s, "Hung recovery client destruction left live owned workers");
+}
+
 struct Samples {
     Clock::time_point processTime{}, resourceTime{};
     std::wstring processError, resourceError;
@@ -363,6 +399,7 @@ int child(HANDLE job, const std::string& digest)
         require(baseline.workers.empty(), "Collector workers were running before the recovery test started");
         log << "workerSha256=" << digest << ";verifiedBaselineConsoleHosts=" << baseline.consoleHosts << '\n' << std::flush;
         directRecovery(job, worker, known, log);
+        hungRecovery(job, worker, known, log);
         monitorRecovery(job, worker, digest, known, log);
         log << "Collector recovery passed\n";
         return 0;
