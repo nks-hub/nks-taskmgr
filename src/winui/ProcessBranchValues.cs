@@ -19,7 +19,7 @@ internal readonly record struct ProcessBranchMetric(double Value, int Known, boo
     internal string Text(int members, bool incomplete, string unit, double divisor = 1) => Overflow ? "Přetečení součtu"
         : Known == 0 ? "Měření nedostupné" : (Known != members || incomplete || Partial ? "≥ " : "") + Display.Number(Value / divisor, unit);
     /// <summary>TCP/UDP bytes per second in megabits like the native Task Manager; unavailable without a running ETW capture.</summary>
-    internal string NetworkText(int members, bool incomplete) => Known == 0 && !Overflow ? "Nedostupné" : Text(members, incomplete, " Mb/s", 125000);
+    internal string NetworkText(int members, bool incomplete) => Known == 0 && !Overflow ? "—" : Text(members, incomplete, " Mb/s", 125000);
 }
 
 internal readonly record struct ProcessBranchBytes(ulong Value, int Known, bool Overflow)

@@ -66,13 +66,13 @@ public sealed partial class MainWindow
         header.BorderBrush = Display.Brush(0x2c363d); header.BorderThickness = new Thickness(0, 0, 0, 1);
         string[] names = ["Uživatel", "Stav", "ID", "Relace", "Název klienta", "CPU", "Paměť", "Disk", "Síť"];
         string[] tips = [
-            "Přihlášený uživatel a počet procesů relace. Dvojklik nebo šipka vpravo rozbalí procesy relace.", "Stav relace Windows.", "Číslo relace.",
+            "Přihlášený uživatel a počet procesů relace. Kliknutí rozbalí nebo sbalí procesy relace.", "Stav relace Windows.", "Číslo relace.",
             "Název stanice relace, například Console nebo RDP-Tcp#2.", "Název počítače, ze kterého je relace připojena vzdáleně.",
             "Součet CPU procesů relace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.",
             "Součet pracovních sad procesů relace. Sdílené stránky RAM mohou být započteny opakovaně; privátní paměť je v popisku řádku.",
             "Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory), nejen fyzického disku.",
             "Součet odeslaných a přijatých bajtů TCP/UDP procesů relace. Měří se jen během vlastního záznamu ETW v okně Události procesů,"
-                + " který vyžaduje správce; jinak nedostupné. ≥ označuje známou část, když provoz nebo některý proces nešlo přiřadit."];
+                + " který vyžaduje správce; jinak „—“. ≥ označuje známou část, když provoz nebo některý proces nešlo přiřadit."];
         for (int i = 0; i < titles.Length; ++i) { titles[i].Text = names[i]; ToolTipService.SetToolTip(titles[i], tips[i]); }
         Grid.SetRow(header, 1); usersPage.Children.Add(header);
         var scroll = new ScrollViewer { Content = userLines, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
@@ -183,8 +183,8 @@ public sealed partial class MainWindow
                 Background = Display.Brush(0x171d21), BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(0)
             };
             uint id = session.Id;
-            button.Click += (_, _) => SelectSession(id);
-            button.AddHandler(UIElement.DoubleTappedEvent, new DoubleTappedEventHandler((_, _) => SetSessionExpanded(id, !expandedSessions.Contains(id))), true);
+            // The row shows an expander chevron, so one click selects and toggles it like a tree row.
+            button.Click += (_, _) => { selectedSession = id; SetSessionExpanded(id, !expandedSessions.Contains(id)); };
             button.KeyDown += (_, args) => {
                 if (args.Key is not (VirtualKey.Left or VirtualKey.Right)) return;
                 selectedSession = id; SetSessionExpanded(id, args.Key == VirtualKey.Right); args.Handled = true;

@@ -70,7 +70,7 @@ public static partial class WinUiChecks
             && row.TableMetricsDescription.Contains("≥ 2,4 KiB", StringComparison.Ordinal), "A revoked network sample stayed in the sum or the partial window was not marked.");
         ProcessNetwork.Observe(running with { State = ProcessEventMonitorState.Stopped }, null);
         row.SetNetwork(null, false, false, false);
-        Require(ProcessNetwork.Rates(out _, out _, later) is null && row.NetworkText == "Nedostupné", "Network rates survived the end of the ETW capture.");
+        Require(ProcessNetwork.Rates(out _, out _, later) is null && row.NetworkText == "—", "Network rates survived the end of the ETW capture.");
         App.Trace("Process network rates passed: per-generation window, revocation, partial window and capture end");
     }
 }
