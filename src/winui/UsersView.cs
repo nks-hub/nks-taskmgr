@@ -317,8 +317,8 @@ public sealed partial class MainWindow
 
     private void OpenUserAccounts()
     {
-        // shortcut: ms-settings:otherusers is a guess at the native target (it also references Microsoft.UserAccounts); verify against Taskmgr in the VM.
-        try { Process.Start(new ProcessStartInfo("ms-settings:otherusers") { UseShellExecute = true })?.Dispose(); }
+        // Taskmgr.exe references only the Control Panel canonical name Microsoft.UserAccounts, no ms-settings page.
+        try { Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "control.exe"), "/name Microsoft.UserAccounts") { UseShellExecute = false })?.Dispose(); }
         catch (Win32Exception error) { _ = ShowUserActionResultAsync("Nastavení uživatelských účtů se nepodařilo otevřít. " + error.Message); }
     }
 
