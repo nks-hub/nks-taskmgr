@@ -66,6 +66,8 @@ void liveMonitor()
     require((kind == nks::GenerationKind::creationTime || kind == nks::GenerationKind::sequenceNumber) && own->identity.generation != 0
         && expected.state == nks::SampleState::valid && expected.identity.generation == own->identity.generation,
         "The monitor did not retain the real process identity");
+    std::cout << "live monitor identity: " << (kind == nks::GenerationKind::sequenceNumber ? "sequence number" : "creation time")
+        << " generation " << own->identity.generation << '\n';
     rejected = false;
     try { monitor.start(); } catch (const std::logic_error&) { rejected = true; }
     require(rejected, "Starting the same monitor twice created duplicate workers");
