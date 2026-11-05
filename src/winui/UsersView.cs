@@ -50,7 +50,7 @@ public sealed partial class MainWindow
         ToolTipService.SetToolTip(disconnectUser, "Odpojit vybraného uživatele. Jeho relace a programy dál běží.");
         ToolTipService.SetToolTip(logoffUser, "Odhlásit vybraného uživatele. Neuložená data jeho programů se mohou ztratit.");
         ToolTipService.SetToolTip(messageUser, "Zobrazit zprávu na ploše vybraného uživatele.");
-        ToolTipService.SetToolTip(manageAccounts, "Otevřít stránku Nastavení pro správu uživatelských účtů");
+        ToolTipService.SetToolTip(manageAccounts, "Otevřít Uživatelské účty v Ovládacích panelech");
         var options = new MenuFlyout();
         options.Items.Add(ContextItem("Rozbalit vše", "users-expand-all", true, () => { foreach (var session in model.Sessions) expandedSessions.Add(session.Id); RefreshUsers(); }));
         options.Items.Add(ContextItem("Sbalit vše", "users-collapse-all", true, () => { expandedSessions.Clear(); RefreshUsers(); }));
