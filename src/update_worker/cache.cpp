@@ -236,6 +236,11 @@ void writeNew(const std::wstring& path, std::span<const std::byte> bytes)
     const auto temporary = path + L".tmp-" + hex(nonce);
     broker::Handle file(CreateFileW(temporary.c_str(), GENERIC_WRITE | DELETE, 0, nullptr, CREATE_NEW, FILE_FLAG_WRITE_THROUGH, nullptr));
     if (!file || file.get() == INVALID_HANDLE_VALUE) throw Error(Status::conflict, "Cannot reserve immutable update record", GetLastError());
+    // An unpublished temporary record would stay in the partition and count towards its entry limit.
+    struct Discard {
+        HANDLE file; bool published{};
+        ~Discard() { if (!published) { FILE_DISPOSITION_INFO remove{TRUE}; SetFileInformationByHandle(file, FileDispositionInfo, &remove, sizeof(remove)); } }
+    } discard{file.get()};
     DWORD count = 0;
     if (!WriteFile(file.get(), bytes.data(), static_cast<DWORD>(bytes.size()), &count, nullptr) || count != bytes.size() || !FlushFileBuffers(file.get()))
         throw Error(Status::unknown, "Update journal write is incomplete", GetLastError());
@@ -255,7 +260,9 @@ void writeNew(const std::wstring& path, std::span<const std::byte> bytes)
     auto& rename = *reinterpret_cast<FILE_RENAME_INFO*>(renameBytes.data());
     rename.ReplaceIfExists = FALSE; rename.RootDirectory = nullptr; rename.FileNameLength = static_cast<DWORD>(length);
     std::copy(target.begin(), target.end(), rename.FileName);
-    if (!SetFileInformationByHandle(file.get(), FileRenameInfo, &rename, static_cast<DWORD>(renameBytes.size())) || !FlushFileBuffers(file.get()))
+    if (!SetFileInformationByHandle(file.get(), FileRenameInfo, &rename, static_cast<DWORD>(renameBytes.size())))
         throw Error(Status::unknown, "Atomic update record publication did not complete", GetLastError());
+    discard.published = true;
+    if (!FlushFileBuffers(file.get())) throw Error(Status::unknown, "Published update record could not be flushed", GetLastError());
 }
 }

@@ -200,6 +200,8 @@ void volumeRecord()
     bool duplicate = false;
     try { writeNew(canonical + L"\\record.bin", payload); } catch (const Error&) { duplicate = true; }
     require(duplicate, "An existing immutable record was replaced");
+    for (const auto& entry : std::filesystem::directory_iterator(fixture.root))
+        require(entry.path().filename().wstring().find(L".tmp-") == std::wstring::npos, "A refused record left its temporary file behind");
     std::cout << "PASS volume GUID record: published, read back, duplicate refused\n";
 }
 }
