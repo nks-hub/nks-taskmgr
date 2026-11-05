@@ -591,6 +591,9 @@ public sealed partial class MainWindow : Window
             if (smokeCompactShell is null) { smokeCompactShell = CheckCompactShellAsync(); return; }
             if (!smokeCompactShell.IsCompleted) return;
             smokeCompactShell.GetAwaiter().GetResult();
+            if (smokeKeyboard is null) { smokeKeyboard = CheckKeyboardTraversalAsync(); return; }
+            if (!smokeKeyboard.IsCompleted) return;
+            smokeKeyboard.GetAwaiter().GetResult();
             if (smokeSnapshotComparison is null) { smokeSnapshotComparison = SnapshotComparisonUiChecks.RunAsync(); return; }
             if (!smokeSnapshotComparison.IsCompleted) return;
             smokeSnapshotComparison.GetAwaiter().GetResult();
