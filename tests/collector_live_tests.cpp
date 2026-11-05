@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <map>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -264,6 +265,98 @@ bool knownNetworkSend()
     return true;
 }
 
+// An operator disables and re-enables the adapter that reaches the given IPv4 target while this check runs; totals since start
+// must stay monotonic, keep their start time and grow by the known traffic only, not by the counter reset.
+bool adapterReconnectTotals()
+{
+    char address[16]{}; size_t length = 0;
+    if (getenv_s(&length, address, sizeof(address), "NKS_LIVE_ADAPTER_RESET") != 0 || length <= 1) {
+        std::printf("SKIP adapter reconnect: set NKS_LIVE_ADAPTER_RESET=<IPv4, e.g. a subnet broadcast> and disable/enable its adapter within 90 s\n");
+        return false;
+    }
+    constexpr std::int64_t burst = 4 * mib;
+    constexpr int datagram = 1200;
+    WSADATA data{};
+    require(WSAStartup(MAKEWORD(2, 2), &data) == 0, "WSAStartup failed");
+    const SOCKET socket = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    require(socket != INVALID_SOCKET, "Cannot open a UDP socket");
+    sockaddr_in target{}; target.sin_family = AF_INET; target.sin_port = htons(9);
+    require(inet_pton(AF_INET, address, &target.sin_addr) == 1, "Cannot parse NKS_LIVE_ADAPTER_RESET");
+    const BOOL broadcast = TRUE;
+    require(setsockopt(socket, SOL_SOCKET, SO_BROADCAST, reinterpret_cast<const char*>(&broadcast), sizeof(broadcast)) == 0, "Cannot allow broadcast");
+    const auto send = [&] {
+        std::byte payload[datagram]{};
+        for (std::int64_t sent = 0; sent < burst; sent += datagram) {
+            // The route can vanish while the adapter is disabled; a failed datagram is simply not counted.
+            (void)sendto(socket, reinterpret_cast<const char*>(payload), datagram, 0, reinterpret_cast<const sockaddr*>(&target), sizeof(target));
+            if (sent % (256 * datagram) == 0) std::this_thread::sleep_for(std::chrono::milliseconds(15));
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    };
+    ResourceCollector resources;
+    NetworkTransferTotals totals;
+    std::map<std::wstring, NetworkTransfer> last;
+    const auto sample = [&] {
+        auto snapshot = resources.collect();
+        totals.apply(snapshot, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        for (const auto& device : snapshot.devices) {
+            if (device.kind != ResourceKind::network) continue;
+            if (const auto previous = last.find(device.id); previous != last.end())
+                require(device.transfer.receivedBytes >= previous->second.receivedBytes && device.transfer.sentBytes >= previous->second.sentBytes
+                    && device.transfer.startedAtUnixNs == previous->second.startedAtUnixNs, "Adapter totals decreased or restarted");
+            last[device.id] = device.transfer;
+        }
+        return snapshot;
+    };
+    (void)sample();
+    const auto initial = last;
+    send();
+    const auto first = sample();
+    std::wstring id; std::uint64_t firstSent = 0;
+    for (const auto& device : first.devices) {
+        if (device.kind != ResourceKind::network || !initial.contains(device.id)) continue;
+        const auto grown = device.transfer.sentBytes - initial.at(device.id).sentBytes;
+        if (grown > firstSent) { firstSent = grown; id = device.id; }
+    }
+    require(firstSent >= burst * .95, "No adapter total counted the first UDP burst");
+    const auto findTarget = [&](const ResourceSnapshot& snapshot) -> const ResourceRecord* {
+        const auto found = std::find_if(snapshot.devices.begin(), snapshot.devices.end(), [&](const auto& row) { return row.id == id; });
+        return found == snapshot.devices.end() ? nullptr : &*found;
+    };
+    std::uint64_t raw = findTarget(first)->sentOctets;
+    std::printf("WAITING adapter reconnect: disable and re-enable the adapter now\n");
+    std::fflush(stdout);
+    bool outage = false; int stable = 0, samples = 0;
+    for (const auto deadline = Clock::now() + std::chrono::seconds(90); Clock::now() < deadline && stable < 3; ++samples) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        const auto snapshot = sample();
+        const auto* device = findTarget(snapshot);
+        const bool valid = device != nullptr && device->octetsValid;
+        if (!valid || device->sentOctets < raw) outage = true;
+        if (valid) raw = device->sentOctets;
+        stable = outage && valid && device->transfer.state == SampleState::valid ? stable + 1 : 0;
+    }
+    require(outage, "The adapter was not disabled and re-enabled within 90 s");
+    require(stable >= 3, "The adapter did not come back with valid counters");
+    // A re-enabled adapter reports counters before its address and route are back; retry until it transmits again.
+    std::uint64_t secondSent = 0; int attempts = 0;
+    for (const auto deadline = Clock::now() + std::chrono::seconds(30); Clock::now() < deadline && secondSent < burst * .95; ++attempts) {
+        const auto beforeSecond = last.at(id).sentBytes;
+        send();
+        (void)sample();
+        secondSent = last.at(id).sentBytes - beforeSecond;
+        require(secondSent <= burst * 1.5 + 4 * mib, "The reconnected adapter counted more than the second burst");
+        if (secondSent < burst * .95) std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    closesocket(socket); WSACleanup();
+    const auto whole = last.at(id).sentBytes - initial.at(id).sentBytes;
+    require(secondSent >= burst * .95, "The reconnected adapter did not count the second burst within 30 s");
+    require(whole <= (1 + attempts) * burst * 1.5 + 16 * mib, "The adapter total jumped across the reconnect");
+    std::printf("PASS adapter reconnect: %d samples, outage seen; first burst %.1f MiB, second %.1f MiB after %d attempts, whole %.1f MiB, totals monotonic with unchanged start\n",
+        samples, firstSent / double(mib), secondSent / double(mib), attempts, whole / double(mib));
+    return true;
+}
+
 }
 
 int main()
@@ -272,8 +365,8 @@ int main()
         processorGroupsAndRealInterval();
         knownPrivateAllocation();
         knownProcessAndDiskIo();
-        const bool network = knownNetworkSend();
-        std::cout << (network ? "4/4" : "3/3") << " live collector checks passed\n";
+        const int network = knownNetworkSend() + adapterReconnectTotals();
+        std::cout << 3 + network << '/' << 3 + network << " live collector checks passed\n";
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "FAIL live collector: " << error.what() << '\n';
