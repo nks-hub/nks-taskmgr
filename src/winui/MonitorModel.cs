@@ -84,6 +84,8 @@ public sealed partial class MonitorModel : IDisposable
         foreach (var row in VisibleProcesses) row.NotifyUpdated();
     }
     public void SetInterval(uint value) { monitor.SetInterval(value); Interval = value; }
+    public bool Background { get; private set; }
+    public void SetBackground(bool value) { if (Background == value) return; monitor.SetBackground(value); Background = value; }
     public void SetQuery(string value) { held = false; query = value; Rebuild(true); }
     public void SetMode(ProcessMode value) { held = false; Mode = value; Rebuild(true); }
     public void SetHeld(bool value) { if (held == value) return; held = value; if (!held) Rebuild(); }

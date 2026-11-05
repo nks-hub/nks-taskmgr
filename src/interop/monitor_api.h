@@ -228,6 +228,7 @@ NKS_MONITOR_API void __cdecl nks_monitor_destroy(NksMonitor* monitor) NKS_NOEXCE
 NKS_MONITOR_API NksResult __cdecl nks_monitor_set_paused(NksMonitor* monitor, int32_t paused) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_monitor_set_interval(NksMonitor* monitor, uint32_t interval_ms) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_monitor_set_cpu_sensors(NksMonitor* monitor, uint32_t enabled) NKS_NOEXCEPT;
+NKS_MONITOR_API NksResult __cdecl nks_monitor_set_background(NksMonitor* monitor, uint32_t background) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_monitor_read(NksMonitor* monitor, NksFrame** result) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_view(const NksFrame* frame, uint32_t view_size, NksFrameView* result) NKS_NOEXCEPT;
 NKS_MONITOR_API NksResult __cdecl nks_frame_get_gpu_data(const NksFrame* frame, uint32_t data_size, NksGpuData* result) NKS_NOEXCEPT;

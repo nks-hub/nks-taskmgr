@@ -217,6 +217,13 @@ NksResult __cdecl nks_monitor_set_cpu_sensors(NksMonitor* monitor, uint32_t enab
     return NKS_OK;
 }
 
+NksResult __cdecl nks_monitor_set_background(NksMonitor* monitor, uint32_t background) noexcept
+{
+    if (!monitor || background > 1) return NKS_INVALID_ARGUMENT;
+    try { monitor->monitor.setBackground(background != 0); } catch (...) { return NKS_FAILED; }
+    return NKS_OK;
+}
+
 NksResult __cdecl nks_monitor_read(NksMonitor* monitor, NksFrame** result) noexcept
 {
     if (!result) return NKS_INVALID_ARGUMENT;

@@ -253,10 +253,12 @@ std::vector<std::byte> CollectorClient::request(std::stop_token stop, collector:
     } catch (...) { if (connection) connection->stop(); throw; }
 }
 
-ProcessSnapshot CollectorClient::processes(std::stop_token stop)
+ProcessSnapshot CollectorClient::processes(std::stop_token stop, bool systemOnly)
 {
     if (kind != collector::Kind::processes) throw std::logic_error("Wrong collector kind");
-    try { return collector::decodeProcesses(request(stop, kind)); }
+    collector::Writer body;
+    if (systemOnly) body.number<std::uint32_t>(1);
+    try { return collector::decodeProcesses(request(stop, kind, body.bytes)); }
     catch (...) { if (connection) connection->stop(); throw; }
 }
 

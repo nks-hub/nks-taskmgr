@@ -12,7 +12,8 @@ public:
     ~ProcessCollector();
     ProcessCollector(const ProcessCollector&) = delete;
     ProcessCollector& operator=(const ProcessCollector&) = delete;
-    ProcessSnapshot collect();
+    /// Without processes only processor times and memory are read; the snapshot's process list stays empty.
+    ProcessSnapshot collect(bool includeProcesses = true);
 
 private:
     void* buffer{};

@@ -390,6 +390,7 @@ public sealed partial class MainWindow : Window
     // every frame, and a frame overwritten before it is read is reported as a gap (F127).
     private bool PaceTimer(bool minimized)
     {
+        model.SetBackground(minimized);
         var wanted = TimeSpan.FromMilliseconds(minimized ? Math.Max(100u, model.Interval / 2) : 100u);
         if (timer.Interval == wanted) return false;
         timer.Interval = wanted;

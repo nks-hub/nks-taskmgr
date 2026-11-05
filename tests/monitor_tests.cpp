@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 
 namespace {
 void require(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
@@ -73,12 +74,57 @@ void liveMonitor()
     std::this_thread::sleep_for(300ms);
     require(!monitor.takeProcesses(processError) && !monitor.takeResources(resourceError), "A stopped monitor continued publishing samples");
 }
+
+// In the background the full process list arrives about every 3 s while processor history keeps the 1 s cadence;
+// returning to the foreground delivers a full list at once.
+void backgroundMonitor()
+{
+    using namespace std::chrono_literals;
+    using Clock = std::chrono::steady_clock;
+    nks::Monitor monitor;
+    monitor.start();
+    std::wstring processError;
+    const auto ready = Clock::now() + 8s;
+    while (!monitor.takeProcesses(processError)) { require(Clock::now() < ready, "No initial process snapshot"); std::this_thread::sleep_for(20ms); }
+    monitor.setBackground(true);
+    while (monitor.takeHistory()) {}
+    const auto started = Clock::now();
+    unsigned full{}; std::size_t ownRows{};
+    std::vector<std::int64_t> cpuTimes;
+    while (Clock::now() - started < 9500ms) {
+        if (auto sample = monitor.takeProcesses(processError)) {
+            ++full; ownRows = sample->processes.size();
+            require(sample->systemCpuPercent.valid(), "A background full snapshot lost system CPU");
+        }
+        while (auto batch = monitor.takeHistory()) {
+            std::uint32_t cpuSeries{};
+            for (const auto& definition : batch->definitions)
+                if (definition.resourceId == L"cpu" && definition.channel == nks::HistoryChannel::primary) cpuSeries = definition.id;
+            for (const auto& point : batch->points)
+                if (point.series == cpuSeries) { require(point.metric.valid(), "Background CPU history point was not valid"); cpuTimes.push_back(point.timeNs); }
+        }
+        require(processError.empty(), "Background collection reported an error");
+        std::this_thread::sleep_for(20ms);
+    }
+    require(full >= 2 && full <= 4 && ownRows > 10, "Background mode did not slow full process reads to about every 3 s");
+    require(cpuTimes.size() >= 8, "Background mode thinned the 1 s CPU history");
+    for (std::size_t i = 1; i < cpuTimes.size(); ++i)
+        require(cpuTimes[i] - cpuTimes[i - 1] < 1'600'000'000, "Background CPU history has a gap longer than 1.6 s");
+    monitor.setBackground(false);
+    const auto restored = Clock::now();
+    std::shared_ptr<const nks::ProcessSnapshot> fresh;
+    while (!(fresh = monitor.takeProcesses(processError))) { require(Clock::now() - restored < 900ms, "Foreground did not deliver a full list at once"); std::this_thread::sleep_for(5ms); }
+    const auto latency = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - restored).count();
+    require(!fresh->processes.empty(), "The foreground snapshot had no processes");
+    std::cout << "PASS background: " << full << " full process reads in 9.5 s, " << cpuTimes.size() << " CPU history points, foreground list after " << latency << " ms\n";
+    monitor.stop();
+}
 }
 
 int main()
 {
     try {
-        latestSample(); liveMonitor();
+        latestSample(); liveMonitor(); backgroundMonitor();
         std::cout << "Mailbox coalescing, pause, resume, real process identity and shutdown passed\n";
         return 0;
     } catch (const std::exception& error) {

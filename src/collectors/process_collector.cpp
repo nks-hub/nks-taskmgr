@@ -114,13 +114,14 @@ std::vector<ProcessRecord> ProcessCollector::collectProcesses(std::chrono::stead
     return processes;
 }
 
-ProcessSnapshot ProcessCollector::collect()
+ProcessSnapshot ProcessCollector::collect(bool includeProcesses)
 {
     const auto began = std::chrono::steady_clock::now();
     ProcessSnapshot result;
     result.boot = boot;
     result.bootTime = bootTime;
-    result.processes = collectProcesses(result.measuredAt, result.wallTime);
+    if (includeProcesses) result.processes = collectProcesses(result.measuredAt, result.wallTime);
+    else { result.measuredAt = std::chrono::steady_clock::now(); result.wallTime = std::chrono::system_clock::now(); }
     result.measurements.processCpu = measurementMetadata(MeasurementUnit::percent, MeasurementNormalization::wholeMachine,
         MeasurementBasis::elapsedDelta, measurementTime(result.measuredAt));
     result.measurements.processIo = measurementMetadata(MeasurementUnit::bytesPerSecond, MeasurementNormalization::none,

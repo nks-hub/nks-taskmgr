@@ -13,7 +13,7 @@ public:
     ~CollectorClient();
     CollectorClient(const CollectorClient&) = delete;
     CollectorClient& operator=(const CollectorClient&) = delete;
-    ProcessSnapshot processes(std::stop_token stop);
+    ProcessSnapshot processes(std::stop_token stop, bool systemOnly = false);
     ResourceSnapshot resources(std::stop_token stop, bool cpuSensors = false);
     ServiceSnapshot services(std::stop_token stop);
     ServiceDetail detail(const std::wstring& name, std::stop_token stop);
