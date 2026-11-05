@@ -363,6 +363,70 @@ bool adapterReconnectTotals()
     return true;
 }
 
+// Moves the system clock back one hour for a few seconds (administrator only) and requires process identity and CPU
+// intervals to ignore the wall clock. The clock is restored by monotonic elapsed time even when a check fails.
+bool clockShiftIdentity()
+{
+    char enabled[8]{}; size_t length = 0;
+    if (getenv_s(&length, enabled, sizeof(enabled), "NKS_LIVE_CLOCK_SHIFT") != 0 || std::string_view(enabled) != "1") {
+        std::printf("SKIP clock shift: set NKS_LIVE_CLOCK_SHIFT=1 as administrator to move the system clock back one hour for a few seconds\n");
+        return false;
+    }
+    HANDLE token{};
+    require(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token) != FALSE, "Own token unavailable");
+    TOKEN_PRIVILEGES privilege{1, {{{}, SE_PRIVILEGE_ENABLED}}};
+    const bool adjusted = LookupPrivilegeValueW(nullptr, SE_SYSTEMTIME_NAME, &privilege.Privileges[0].Luid)
+        && AdjustTokenPrivileges(token, FALSE, &privilege, 0, nullptr, nullptr) && GetLastError() == ERROR_SUCCESS;
+    CloseHandle(token);
+    require(adjusted, "The system time privilege is not available to this process");
+    constexpr std::uint64_t hour = 3600ull * 10'000'000;
+    const auto set = [](std::uint64_t value) {
+        const FILETIME time{static_cast<DWORD>(value), static_cast<DWORD>(value >> 32)}; SYSTEMTIME system{};
+        require(FileTimeToSystemTime(&time, &system) && SetSystemTime(&system), "SetSystemTime failed");
+    };
+    const auto now = [] { FILETIME time{}; GetSystemTimeAsFileTime(&time); return (static_cast<std::uint64_t>(time.dwHighDateTime) << 32) | time.dwLowDateTime; };
+    const auto spin = [] { std::jthread([] { const auto end = Clock::now() + std::chrono::seconds(1); while (Clock::now() < end) { } }).join(); };
+
+    ProcessCollector collector; ProcessSampler sampler;
+    (void)collector.collect();
+    auto before = collector.collect(); sampler.apply(before);
+    const auto identity = self(before).identity;
+    const auto original = now(); const auto shiftedAt = Clock::now();
+    struct Restore {
+        std::uint64_t original; Clock::time_point at; decltype(set)& apply; bool active{true};
+        void operator()() { if (!active) return; active = false;
+            apply(original + static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - at).count() / 100)); }
+        ~Restore() { try { (*this)(); } catch (...) {} }
+    } restore{original, shiftedAt, set};
+    set(original - hour);
+    const auto shifted = now();
+    spin();
+    const auto cpuBefore = ownCpu100ns(); const auto began = Clock::now();
+    spin();
+    const auto cpuAfter = ownCpu100ns(); const auto ended = Clock::now();
+    auto during = collector.collect(); sampler.apply(during);
+    restore();
+    const auto restored = now();
+    auto after = collector.collect(); sampler.apply(after);
+
+    require(original - shifted > hour - 10'000'000 && original - shifted < hour + 10'000'000, "The system clock did not move back one hour");
+    require(restored >= original && restored - original < 60ull * 10'000'000, "The system clock was not restored to the elapsed time");
+    require(self(during).identity == identity && self(after).identity == identity, "Own process identity changed with the system clock");
+    require(during.measuredAt > before.measuredAt && after.measuredAt > during.measuredAt, "Measurement time followed the wall clock backwards");
+    const auto all = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+    const auto interval = std::chrono::duration<double>(during.measuredAt - before.measuredAt).count();
+    const auto expected = static_cast<double>(cpuAfter - cpuBefore) / 1e7 / std::chrono::duration<double>(ended - began).count() / all * 100;
+    const auto& row = self(during);
+    require(interval > 1.9 && interval < 3, "The CPU interval across the clock change is not the monotonic interval");
+    require(row.cpuPercent.valid() && row.cpuPercent.value > expected * .7 && row.cpuPercent.value < expected * 1.6 + .5,
+        "Own process CPU across the clock change differs from the busy reference");
+    require(self(after).cpuPercent.valid() && self(after).cpuPercent.value >= 0 && self(after).cpuPercent.value <= 100,
+        "Own process CPU after restoring the clock is invalid");
+    std::printf("PASS clock shift: wall clock -%.0f s and restored (+%.2f s elapsed); identity pid=%u generation kind %u unchanged; interval %.3f s; own CPU %.2f %% (busy reference %.2f %%)\n",
+        (original - shifted) / 1e7, (restored - original) / 1e7, identity.pid, static_cast<unsigned>(identity.generationKind), interval, row.cpuPercent.value, expected);
+    return true;
+}
+
 // Saturates one engine of the hardware adapter with the most dedicated memory and commits 512 MiB on it. The GPU's own
 // timestamps and DXGI's per-process budget are the references; other applications may only add to the adapter totals.
 bool knownGpuLoad()
@@ -507,7 +571,7 @@ int main()
         processorGroupsAndRealInterval();
         knownPrivateAllocation();
         knownProcessAndDiskIo();
-        const int network = knownNetworkSend() + adapterReconnectTotals() + knownGpuLoad();
+        const int network = knownNetworkSend() + adapterReconnectTotals() + knownGpuLoad() + clockShiftIdentity();
         std::cout << 3 + network << '/' << 3 + network << " live collector checks passed\n";
         return 0;
     } catch (const std::exception& error) {
