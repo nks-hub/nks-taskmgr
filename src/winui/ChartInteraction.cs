@@ -1,6 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
@@ -53,16 +55,34 @@ public sealed partial class ChartView
         KeyDown += OnChartKey;
     }
 
+    /// <summary>Pins (or unpins) the hovered time, or the newest sample when nothing is hovered; with range it marks one end of an interval.</summary>
+    private bool Activate(bool range)
+    {
+        long? time = cursorTime;
+        if (time is null && HistoryBounds(out _, out long end)) time = end;
+        if (time is null) return false;
+        if (range) EffectiveTimeline.SelectRangePoint(timelineOwner, time.Value);
+        else EffectiveTimeline.SelectCursor(timelineOwner, time.Value, !pinned);
+        return true;
+    }
+
+    // A Grid has no automation peer, so without this the chart and its name were invisible to screen readers and UI Automation.
+    protected override AutomationPeer OnCreateAutomationPeer() => new ChartAutomationPeer(this);
+
+    private sealed partial class ChartAutomationPeer(ChartView owner) : FrameworkElementAutomationPeer(owner), IInvokeProvider
+    {
+        protected override string GetClassNameCore() => nameof(ChartView);
+        protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Image;
+        protected override bool IsKeyboardFocusableCore() => owner.IsTabStop;
+        protected override object? GetPatternCore(PatternInterface pattern) => pattern == PatternInterface.Invoke && owner.IsTabStop ? this : base.GetPatternCore(pattern);
+        public void Invoke() { if (owner.IsTabStop) owner.Activate(false); }
+    }
+
     private void OnChartKey(object sender, KeyRoutedEventArgs args)
     {
         if (args.Key == VirtualKey.Escape) EffectiveTimeline.Clear();
         else if (args.Key == VirtualKey.Enter || args.Key == VirtualKey.Space) {
-            long? time = cursorTime;
-            if (time is null && HistoryBounds(out _, out long end)) time = end;
-            if (time is null) return;
-            if ((InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift) & CoreVirtualKeyStates.Down) != 0)
-                EffectiveTimeline.SelectRangePoint(timelineOwner, time.Value);
-            else EffectiveTimeline.SelectCursor(timelineOwner, time.Value, !pinned);
+            if (!Activate((InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift) & CoreVirtualKeyStates.Down) != 0)) return;
         }
         else if (args.Key is VirtualKey.Left or VirtualKey.Right or VirtualKey.Home or VirtualKey.End) {
             if (!HistoryBounds(out long start, out long end)) return;
