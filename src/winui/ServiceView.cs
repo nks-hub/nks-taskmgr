@@ -109,7 +109,7 @@ public sealed partial class MainWindow
         var restoreScroll = PreserveServiceScroll();
         updatingServices = true; bool changed;
         try { changed = servicesModel.Tick(); } finally { updatingServices = false; }
-        if (changed || ticks % 10 == 0) { RefreshServices(); restoreScroll(); }
+        if (changed || secondTick) { RefreshServices(); restoreScroll(); }
     }
     private void RefreshServices()
     {

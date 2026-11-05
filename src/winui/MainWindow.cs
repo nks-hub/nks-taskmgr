@@ -161,7 +161,7 @@ public sealed partial class MainWindow : Window
         AutomationProperties.SetAcceleratorKey(search, "Ctrl+F");
         ToolTipService.SetToolTip(search, "Hledat (Ctrl+F)");
         root.SizeChanged += (_, _) => Resize();
-        timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromMilliseconds(100);
+        timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromMilliseconds(VisibleTickMs);
         timer.Tick += (_, _) => Tick(); timer.Start();
         Closed += (_, _) => { timer.Stop(); IconWorkers.Stop(); servicesModel?.Dispose(); model.Dispose(); };
         AppWindow.Changed += (_, _) => { Resize(); PaceTimer(); };
@@ -405,10 +405,16 @@ public sealed partial class MainWindow : Window
     // Minimized ticks only drain the newest-frame mailbox and history; half the sampling interval still reads
     // every frame, and a frame overwritten before it is read is reported as a gap (F127). In the background full process
     // frames arrive about every 5 s and history has its own bounded stream, so half of that period still reads every frame.
+    // Visible, the poll also follows half the sampling interval (at most 250 ms): at 1 s the UI thread wakes 4 instead of
+    // 10 times a second, and every frame is still read.
+    private const uint VisibleTickMs = 250;
+    private long nextSecondTick;
+    private bool secondTick;
+
     private bool PaceTimer(bool minimized)
     {
         model.SetBackground(minimized);
-        var wanted = TimeSpan.FromMilliseconds(minimized ? Math.Max(100u, model.Background ? 2500u : model.Interval / 2) : 100u);
+        var wanted = TimeSpan.FromMilliseconds(minimized ? Math.Max(100u, model.Background ? 2500u : model.Interval / 2) : Math.Clamp(model.Interval / 2, 100u, VisibleTickMs));
         if (timer.Interval == wanted) return false;
         timer.Interval = wanted;
         return !minimized;
@@ -421,6 +427,9 @@ public sealed partial class MainWindow : Window
         try {
             bool minimized = IsIconic(windowHandle);
             PaceTimer(minimized);
+            // Once-a-second texts (footer, service ages) follow wall time, not a tick count, because the tick period varies.
+            long nowMs = Environment.TickCount64; secondTick = nowMs >= nextSecondTick;
+            if (secondTick) nextSecondTick = nowMs + 1000;
             SetLiveCpuState(cpuTick, minimized);
             MarkLiveCpuModel(cpuTick, true);
             bool changed = model.Tick(!minimized && view != DesktopView.Services);
@@ -435,7 +444,8 @@ public sealed partial class MainWindow : Window
                 if (selectedResource is null || !model.Resources.Contains(selectedResource)) resourceList.SelectedItem = model.Resources.FirstOrDefault();
                 if (performance) RefreshPerformance(); else if (view is DesktopView.Processes or DesktopView.Applications) RefreshProcesses(); else if (view == DesktopView.Hardware) RefreshHardware(); else if (view == DesktopView.Users) RefreshUsers();
             }
-            if (++ticks % 10 == 0 && !minimized) {
+            ++ticks;
+            if (secondTick && !minimized) {
                 footer.Text = view == DesktopView.Services ? ServicesFooter() : (model.Paused ? "Pozastaveno" : "Živá data") + $" · {model.Processes.Count} procesů · stáří "
                     + Display.Number((NativeMonitor.MonotonicNowNs - model.ProcessTime) / 1_000_000_000d, " s")
                     + (model.ProcessError.Length == 0 ? "" : " · " + model.ProcessError) + (model.ResourceError.Length == 0 ? "" : " · " + model.ResourceError);
