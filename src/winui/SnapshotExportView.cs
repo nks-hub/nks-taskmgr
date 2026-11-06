@@ -67,7 +67,7 @@ public sealed partial class MainWindow
                     HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, MaxHeight = Math.Max(60, Math.Min(520, root.ActualHeight - 280)) } });
             AutomationProperties.SetAutomationId(dialog, "snapshot-dialog");
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
-            var picker = new FileSavePicker(AppWindow.Id) { SuggestedFileName = "nks-snapshot-" + snapshot.CapturedAt.ToString("yyyyMMdd-HHmmss"), DefaultFileExtension = ".json" };
+            var picker = new FileSavePicker(AppWindow.Id) { SuggestedFileName = "nks-snapshot-" + snapshot.CapturedAt.LocalDateTime.ToString("yyyyMMdd-HHmmss"), DefaultFileExtension = ".json" };
             picker.FileTypeChoices.Add("JSON", new List<string> { ".json" });
             var file = await picker.PickSaveFileAsync();
             if (file is null) return;
