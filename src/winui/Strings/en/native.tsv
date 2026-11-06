@@ -42,3 +42,5 @@ Teplotní čidla typu CPU; °C, poslední publikovaný vzorek, nikoli ACPI therm
 Čtecí API překročilo bezpečný limit odpovědi	The read API exceeded the safe response limit
 Čtení nejvýše jednou za 5 s; stáří publikovaného UTC vzorku nejvýše 15 s. Změna hodin může vzorek zneplatnit.	Read at most once every 5 s; the published UTC sample is at most 15 s old. A clock change can invalidate the sample.
 Čtení čidel překročilo časový limit	Reading the sensors timed out
+Rychlost linky ↓	Link speed ↓
+Rychlost linky ↑	Link speed ↑
