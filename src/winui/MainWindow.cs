@@ -206,14 +206,7 @@ public sealed partial class MainWindow : Window
 
     /// <summary>Formats a count with the plural form the UI language uses for it; the forms are translated "{0} …" texts.</summary>
     internal static string CountText(int count, string one, string few, string many)
-    {
-        bool paucal = Loc.Language switch {
-            "en" or "de" => false,
-            "pl" => count % 10 is >= 2 and <= 4 && count % 100 is < 12 or > 14,
-            _ => count is >= 2 and <= 4
-        };
-        return string.Format(Loc.Culture, count == 1 ? one : paucal ? few : many, count);
-    }
+        => string.Format(Loc.Culture, PluralForm(count, one, few, many), count);
 
     private static TextBlock Label(string text, double size, uint color) => new() {
         Text = text, FontSize = Math.Max(11, size), Foreground = Display.Brush(color), FontFamily = UiTypography.Font,
