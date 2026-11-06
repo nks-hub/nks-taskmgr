@@ -55,7 +55,7 @@ public sealed partial class MainWindow
     private void RefreshDiskFacts(ResourceRow resource, Action<string, string> fact)
     {
         foreach (string name in DiskSummary)
-            fact(Loc.T(name), resource.Stale ? Loc.T("Zastaralé") : resource.HardwareFacts.TryGetValue(name, out string? value) ? Loc.T(value) : Loc.T("Měření nedostupné"));
+            fact(Loc.T(name), resource.Stale ? Loc.T("Zastaralé") : resource.HardwareFacts.TryGetValue(name, out string? value) ? Loc.Native(value) : Loc.T("Měření nedostupné"));
         if (diskDetails is null) {
             diskDetailValues.Clear();
             var content = new StackPanel { Spacing = 8 };
@@ -72,6 +72,6 @@ public sealed partial class MainWindow
             facts.Children.Add(diskDetails);
         }
         foreach (var detail in diskDetailValues)
-            if (resource.HardwareFacts.TryGetValue(detail.Key, out string? value)) detail.Value.Text = resource.Stale ? Loc.T("Zastaralé") : Loc.T(value);
+            if (resource.HardwareFacts.TryGetValue(detail.Key, out string? value)) detail.Value.Text = resource.Stale ? Loc.T("Zastaralé") : Loc.Native(value);
     }
 }

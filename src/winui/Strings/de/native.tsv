@@ -2,3 +2,43 @@
 Mezipaměť L1	L1-Cache
 Mezipaměť L2	L2-Cache
 Mezipaměť L3	L3-Cache
+ operací/s	 Vorgänge/s
+ požadavků	 Anforderungen
+ logických procesorů	 logische Prozessoren
+Druh rozhraní	Schnittstellenart
+LUID rozhraní	Schnittstellen-LUID
+Stav rozhraní Windows	Windows-Schnittstellenstatus
+Typ rozhraní Windows	Windows-Schnittstellentyp
+Typ tunelu Windows	Windows-Tunneltyp
+Připojení	Verbindung
+Fyzické	Physisch
+Jiné	Andere
+Diskové zařízení	Datenträgergerät
+Odezva čtení	Lese-Antwortzeit
+Odezva zápisu	Schreib-Antwortzeit
+Adresa čtení	Leseadresse
+Poslední čtení API	Letzter API-Abruf
+Platnost čtení	Gültigkeit des Abrufs
+Význam měření	Bedeutung der Messung
+Omezení	Einschränkungen
+Publikované CPU vzorky	Veröffentlichte CPU-Messwerte
+Dosud neproběhlo	Noch nicht erfolgt
+Čeká na další čtení	Wartet auf den nächsten Abruf
+Čtení probíhá	Abruf läuft
+Načítání čidel	Sensoren werden geladen
+Neplatný čas	Ungültige Zeit
+Inventář není aktuální	Bestand ist nicht aktuell
+Zastaralé nebo částečně zastaralé vzorky	Veraltete oder teilweise veraltete Messwerte
+Poskytovatel nedostupný	Anbieter nicht verfügbar
+Chyba čtecího API	Fehler der Lese-API
+API neposkytlo teplotní čidlo typu CPU	Die API lieferte keinen CPU-Temperatursensor
+Místní HTTP API kompatibilní s LibreHardwareMonitor; identita poskytovatele neověřena	Lokale HTTP-API kompatibel mit LibreHardwareMonitor; Identität des Anbieters nicht überprüft
+Místní server odmítl čtecí API (HTTP)	Der lokale Server hat die Lese-API abgelehnt (HTTP)
+Místní čtecí server není dostupný nebo neodpověděl včas	Der lokale Leseserver ist nicht verfügbar oder hat nicht rechtzeitig geantwortet
+Neplatné nebo nepodporované senzorové údaje; vyžaduje se číselná teplota a čas vzorku	Ungültige oder nicht unterstützte Sensordaten; erforderlich sind eine numerische Temperatur und eine Messzeit
+Pracovní vlákno nemohlo dokončit čtení	Der Arbeitsthread konnte den Abruf nicht abschließen
+Server neposkytuje podporovaný formát /metrics	Der Server liefert kein unterstütztes /metrics-Format
+Teplotní čidla typu CPU; °C, poslední publikovaný vzorek, nikoli ACPI thermal zone	CPU-Temperatursensoren; °C, letzter veröffentlichter Messwert, nicht die ACPI-Thermalzone
+Čtecí API překročilo bezpečný limit odpovědi	Die Lese-API hat das sichere Antwortlimit überschritten
+Čtení nejvýše jednou za 5 s; stáří publikovaného UTC vzorku nejvýše 15 s. Změna hodin může vzorek zneplatnit.	Abruf höchstens alle 5 s; der veröffentlichte UTC-Messwert ist höchstens 15 s alt. Eine Uhränderung kann den Messwert ungültig machen.
+Čtení čidel překročilo časový limit	Der Sensorabruf hat das Zeitlimit überschritten

@@ -27,6 +27,17 @@ internal static class Loc
     /// <summary>Returns the translation of a Czech UI text, or the text itself when no translation exists.</summary>
     internal static string T(string text) => table.TryGetValue(text, out var value) ? value : text;
 
+    private static readonly string[] nativeSuffixes = [" operací/s", " požadavků", " logických procesorů"];
+
+    /// <summary>Translates a fixed Czech value produced by the native collectors, or only its unit after a number.</summary>
+    internal static string Native(string value)
+    {
+        if (table.TryGetValue(value, out var translated)) return translated;
+        foreach (var suffix in nativeSuffixes)
+            if (value.EndsWith(suffix, StringComparison.Ordinal)) return value[..^suffix.Length] + T(suffix);
+        return value;
+    }
+
     /// <summary>Translates a composite format string and formats it with the UI culture.</summary>
     internal static string F(string format, params object?[] args) => string.Format(Culture, T(format), args);
 

@@ -2,3 +2,43 @@
 Mezipaměť L1	Vyrovnávacia pamäť L1
 Mezipaměť L2	Vyrovnávacia pamäť L2
 Mezipaměť L3	Vyrovnávacia pamäť L3
+ operací/s	 operácií/s
+ požadavků	 požiadaviek
+ logických procesorů	 logických procesorov
+Druh rozhraní	Druh rozhrania
+LUID rozhraní	LUID rozhrania
+Stav rozhraní Windows	Stav rozhrania Windows
+Typ rozhraní Windows	Typ rozhrania Windows
+Typ tunelu Windows	Typ tunela Windows
+Připojení	Pripojenie
+Fyzické	Fyzické
+Jiné	Iné
+Diskové zařízení	Diskové zariadenie
+Odezva čtení	Odozva čítania
+Odezva zápisu	Odozva zápisu
+Adresa čtení	Adresa čítania
+Poslední čtení API	Posledné čítanie API
+Platnost čtení	Platnosť čítania
+Význam měření	Význam merania
+Omezení	Obmedzenia
+Publikované CPU vzorky	Publikované vzorky CPU
+Dosud neproběhlo	Zatiaľ neprebehlo
+Čeká na další čtení	Čaká na ďalšie čítanie
+Čtení probíhá	Čítanie prebieha
+Načítání čidel	Načítanie snímačov
+Neplatný čas	Neplatný čas
+Inventář není aktuální	Inventár nie je aktuálny
+Zastaralé nebo částečně zastaralé vzorky	Zastarané alebo čiastočne zastarané vzorky
+Poskytovatel nedostupný	Poskytovateľ nedostupný
+Chyba čtecího API	Chyba čítacieho API
+API neposkytlo teplotní čidlo typu CPU	API neposkytlo teplotný snímač typu CPU
+Místní HTTP API kompatibilní s LibreHardwareMonitor; identita poskytovatele neověřena	Miestne HTTP API kompatibilné s LibreHardwareMonitor; identita poskytovateľa neoverená
+Místní server odmítl čtecí API (HTTP)	Miestny server odmietol čítacie API (HTTP)
+Místní čtecí server není dostupný nebo neodpověděl včas	Miestny čítací server nie je dostupný alebo neodpovedal včas
+Neplatné nebo nepodporované senzorové údaje; vyžaduje se číselná teplota a čas vzorku	Neplatné alebo nepodporované údaje snímača; vyžaduje sa číselná teplota a čas vzorky
+Pracovní vlákno nemohlo dokončit čtení	Pracovné vlákno nemohlo dokončiť čítanie
+Server neposkytuje podporovaný formát /metrics	Server neposkytuje podporovaný formát /metrics
+Teplotní čidla typu CPU; °C, poslední publikovaný vzorek, nikoli ACPI thermal zone	Teplotné snímače typu CPU; °C, posledná publikovaná vzorka, nie ACPI thermal zone
+Čtecí API překročilo bezpečný limit odpovědi	Čítacie API prekročilo bezpečný limit odpovede
+Čtení nejvýše jednou za 5 s; stáří publikovaného UTC vzorku nejvýše 15 s. Změna hodin může vzorek zneplatnit.	Čítanie najviac raz za 5 s; vek publikovanej vzorky UTC najviac 15 s. Zmena hodín môže vzorku zneplatniť.
+Čtení čidel překročilo časový limit	Čítanie snímačov prekročilo časový limit

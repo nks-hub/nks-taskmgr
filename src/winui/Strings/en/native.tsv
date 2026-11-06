@@ -2,3 +2,43 @@
 Mezipaměť L1	L1 cache
 Mezipaměť L2	L2 cache
 Mezipaměť L3	L3 cache
+ operací/s	 operations/s
+ požadavků	 requests
+ logických procesorů	 logical processors
+Druh rozhraní	Interface kind
+LUID rozhraní	Interface LUID
+Stav rozhraní Windows	Windows interface state
+Typ rozhraní Windows	Windows interface type
+Typ tunelu Windows	Windows tunnel type
+Připojení	Connection
+Fyzické	Physical
+Jiné	Other
+Diskové zařízení	Disk device
+Odezva čtení	Read response time
+Odezva zápisu	Write response time
+Adresa čtení	Read address
+Poslední čtení API	Last API read
+Platnost čtení	Read validity
+Význam měření	Measurement meaning
+Omezení	Limits
+Publikované CPU vzorky	Published CPU samples
+Dosud neproběhlo	Not yet
+Čeká na další čtení	Waiting for the next read
+Čtení probíhá	Reading
+Načítání čidel	Loading sensors
+Neplatný čas	Invalid time
+Inventář není aktuální	Inventory is not current
+Zastaralé nebo částečně zastaralé vzorky	Stale or partly stale samples
+Poskytovatel nedostupný	Provider unavailable
+Chyba čtecího API	Read API error
+API neposkytlo teplotní čidlo typu CPU	The API provided no CPU temperature sensor
+Místní HTTP API kompatibilní s LibreHardwareMonitor; identita poskytovatele neověřena	Local HTTP API compatible with LibreHardwareMonitor; provider identity not verified
+Místní server odmítl čtecí API (HTTP)	The local server refused the read API (HTTP)
+Místní čtecí server není dostupný nebo neodpověděl včas	The local read server is unavailable or did not respond in time
+Neplatné nebo nepodporované senzorové údaje; vyžaduje se číselná teplota a čas vzorku	Invalid or unsupported sensor data; a numeric temperature and a sample time are required
+Pracovní vlákno nemohlo dokončit čtení	The worker thread could not finish reading
+Server neposkytuje podporovaný formát /metrics	The server does not provide a supported /metrics format
+Teplotní čidla typu CPU; °C, poslední publikovaný vzorek, nikoli ACPI thermal zone	CPU temperature sensors; °C, last published sample, not the ACPI thermal zone
+Čtecí API překročilo bezpečný limit odpovědi	The read API exceeded the safe response limit
+Čtení nejvýše jednou za 5 s; stáří publikovaného UTC vzorku nejvýše 15 s. Změna hodin může vzorek zneplatnit.	Read at most once every 5 s; the published UTC sample is at most 15 s old. A clock change can invalidate the sample.
+Čtení čidel překročilo časový limit	Reading the sensors timed out

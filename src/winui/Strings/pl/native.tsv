@@ -2,3 +2,43 @@
 Mezipaměť L1	Pamięć podręczna L1
 Mezipaměť L2	Pamięć podręczna L2
 Mezipaměť L3	Pamięć podręczna L3
+ operací/s	 operacji/s
+ požadavků	 żądań
+ logických procesorů	 procesorów logicznych
+Druh rozhraní	Rodzaj interfejsu
+LUID rozhraní	LUID interfejsu
+Stav rozhraní Windows	Stan interfejsu Windows
+Typ rozhraní Windows	Typ interfejsu Windows
+Typ tunelu Windows	Typ tunelu Windows
+Připojení	Połączenie
+Fyzické	Fizyczny
+Jiné	Inny
+Diskové zařízení	Urządzenie dyskowe
+Odezva čtení	Czas odpowiedzi odczytu
+Odezva zápisu	Czas odpowiedzi zapisu
+Adresa čtení	Adres odczytu
+Poslední čtení API	Ostatni odczyt API
+Platnost čtení	Ważność odczytu
+Význam měření	Znaczenie pomiaru
+Omezení	Ograniczenia
+Publikované CPU vzorky	Opublikowane próbki CPU
+Dosud neproběhlo	Jeszcze nie
+Čeká na další čtení	Oczekiwanie na następny odczyt
+Čtení probíhá	Trwa odczyt
+Načítání čidel	Wczytywanie czujników
+Neplatný čas	Nieprawidłowy czas
+Inventář není aktuální	Spis nie jest aktualny
+Zastaralé nebo částečně zastaralé vzorky	Nieaktualne lub częściowo nieaktualne próbki
+Poskytovatel nedostupný	Dostawca niedostępny
+Chyba čtecího API	Błąd API odczytu
+API neposkytlo teplotní čidlo typu CPU	API nie udostępniło czujnika temperatury CPU
+Místní HTTP API kompatibilní s LibreHardwareMonitor; identita poskytovatele neověřena	Lokalne API HTTP zgodne z LibreHardwareMonitor; tożsamość dostawcy niezweryfikowana
+Místní server odmítl čtecí API (HTTP)	Lokalny serwer odrzucił API odczytu (HTTP)
+Místní čtecí server není dostupný nebo neodpověděl včas	Lokalny serwer odczytu jest niedostępny lub nie odpowiedział na czas
+Neplatné nebo nepodporované senzorové údaje; vyžaduje se číselná teplota a čas vzorku	Nieprawidłowe lub nieobsługiwane dane czujnika; wymagana jest liczbowa temperatura i czas próbki
+Pracovní vlákno nemohlo dokončit čtení	Wątek roboczy nie mógł ukończyć odczytu
+Server neposkytuje podporovaný formát /metrics	Serwer nie udostępnia obsługiwanego formatu /metrics
+Teplotní čidla typu CPU; °C, poslední publikovaný vzorek, nikoli ACPI thermal zone	Czujniki temperatury CPU; °C, ostatnia opublikowana próbka, nie strefa termiczna ACPI
+Čtecí API překročilo bezpečný limit odpovědi	API odczytu przekroczyło bezpieczny limit odpowiedzi
+Čtení nejvýše jednou za 5 s; stáří publikovaného UTC vzorku nejvýše 15 s. Změna hodin může vzorek zneplatnit.	Odczyt najwyżej raz na 5 s; opublikowana próbka UTC ma najwyżej 15 s. Zmiana zegara może unieważnić próbkę.
+Čtení čidel překročilo časový limit	Odczyt czujników przekroczył limit czasu

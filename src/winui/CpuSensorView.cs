@@ -40,7 +40,7 @@ public sealed partial class MonitorModel
             "Poskytovatel nedostupný" => Loc.T("Externí program s čidly neběží nebo není dostupný"),
             "Chyba čtecího API" => Loc.T("Externí program neposkytl použitelné údaje z čidel"),
             "Nepodporováno" => Loc.T("Externí program neposkytuje podporované teplotní čidlo CPU"),
-            var status => status
+            var status => Loc.Native(status)
         } : null)
         ?? Loc.T("Čeká na první odpověď externího programu s čidly");
 
@@ -66,7 +66,7 @@ public sealed partial class MonitorModel
     {
         if (CpuSensorGate is { } gate) return new() { [Loc.T("Stav CPU čidel")] = gate };
         if (!Hardware.TryGetValue("cpu-sensors", out var facts)) return new() { [Loc.T("Stav CPU čidel")] = CpuSensorStatus };
-        return facts.ToDictionary(pair => Loc.F("Čidla · {0}", pair.Key), pair => pair.Value);
+        return facts.ToDictionary(pair => Loc.F("Čidla · {0}", Loc.Native(pair.Key)), pair => Loc.Native(pair.Value));
     }
 }
 
