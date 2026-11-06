@@ -32,13 +32,13 @@ public sealed partial class MainWindow : Window
     private readonly Grid root = new() { Background = Display.Brush(0x171d21) };
     private readonly Grid page = new();
     private readonly Grid sidebar = new() { Background = Display.Brush(0x12181c), Width = 68 };
-    private readonly TextBlock heading = Label("Výkon", 16, 0xe9eef0);
+    private readonly TextBlock heading = Label(Loc.T("Výkon"), 16, 0xe9eef0);
     private readonly Grid shellHeader = new();
-    private readonly TextBlock footer = Label("Načítám živá data…", 9, 0x95a4ad);
-    private readonly TextBox search = new() { Width = 220, Height = 30, MinHeight = 0, FontSize = 12, PlaceholderText = "Hledat název nebo PID", Visibility = Visibility.Collapsed };
-    private readonly Button pause = Button("Pozastavit"), interval = Button("1 s");
-    private readonly Button performanceNav = Button("Výkon"), processesNav = Button("Procesy"), servicesNav = Button("Služby");
-    private readonly Button hardwareNav = Button("Sestava"), applicationNav = Button("Aplikace");
+    private readonly TextBlock footer = Label(Loc.T("Načítám živá data…"), 9, 0x95a4ad);
+    private readonly TextBox search = new() { Width = 220, Height = 30, MinHeight = 0, FontSize = 12, PlaceholderText = Loc.T("Hledat název nebo PID"), Visibility = Visibility.Collapsed };
+    private readonly Button pause = Button(Loc.T("Pozastavit")), interval = Button("1 s");
+    private readonly Button performanceNav = Button(Loc.T("Výkon")), processesNav = Button(Loc.T("Procesy")), servicesNav = Button(Loc.T("Služby"));
+    private readonly Button hardwareNav = Button(Loc.T("Sestava")), applicationNav = Button(Loc.T("Aplikace"));
     private readonly List<(ProcessMode Mode, Button Button)> processModeButtons = [];
     private readonly ComboBox processValueMode = new() { Width = 168, Height = 28, MinHeight = 0, FontSize = 11,
         Margin = new Thickness(8, 0, 0, 0), Visibility = Visibility.Collapsed };
@@ -47,15 +47,15 @@ public sealed partial class MainWindow : Window
     private readonly Grid performancePage = new(), processPage = new();
     private ProcessTable processTable = null!;
     private readonly Grid performanceBody = new(), chartGrid = new();
-    private readonly TextBlock resourceEyebrow = Label("PROCESOR", 9, 0x95a4ad);
-    private readonly TextBlock resourceTitle = Label("Procesor", 20, 0xe9eef0), resourceDescription = Label("", 10, 0x95a4ad);
-    private readonly TextBlock resourceValue = Label("Načítám…", 42, 0x80c5c0);
+    private readonly TextBlock resourceEyebrow = Label(Loc.T("PROCESOR"), 9, 0x95a4ad);
+    private readonly TextBlock resourceTitle = Label(Loc.T("Procesor"), 20, 0xe9eef0), resourceDescription = Label("", 10, 0x95a4ad);
+    private readonly TextBlock resourceValue = Label(Loc.T("Načítám…"), 42, 0x80c5c0);
     private readonly TextBlock resourceUnit = Label("", 13, 0x95a4ad);
     private readonly List<ToggleButton> rangeButtons = [], cpuButtons = [];
     private readonly TextBlock retained = Label("", 9, 0x95a4ad);
     private readonly TextBlock resourceCount = Label("", 9, 0x95a4ad);
     private readonly StackPanel cpuModes = new() { Orientation = Orientation.Horizontal, Spacing = 3 };
-    private readonly ToggleButton scaleChoice = Choice("Auto měřítko");
+    private readonly ToggleButton scaleChoice = Choice(Loc.T("Auto měřítko"));
     private readonly Grid plotToolbar = new() { Margin = new Thickness(0, 12, 0, 12), RowSpacing = 6 };
     private readonly StackPanel chartControls = new() { Orientation = Orientation.Horizontal, Spacing = 3, HorizontalAlignment = HorizontalAlignment.Right };
     private readonly Grid processors = new();
@@ -137,7 +137,7 @@ public sealed partial class MainWindow : Window
                 args.Handled = true;
             }
         };
-        pause.Click += (_, _) => { model.SetPaused(!model.Paused); pause.Content = model.Paused ? "Pokračovat" : "Pozastavit"; };
+        pause.Click += (_, _) => { model.SetPaused(!model.Paused); pause.Content = model.Paused ? Loc.T("Pokračovat") : Loc.T("Pozastavit"); };
         interval.Click += (_, _) => { model.SetInterval(model.Interval == 1000 ? 250u : 1000u); interval.Content = model.Interval == 1000 ? "1 s" : "250 ms"; };
         search.TextChanged += (_, _) => {
             if (navigationSearchText is { } expected) {
@@ -162,7 +162,7 @@ public sealed partial class MainWindow : Window
             args.Handled = true;
         };
         AutomationProperties.SetAcceleratorKey(search, "Ctrl+F");
-        ToolTipService.SetToolTip(search, "Hledat (Ctrl+F)");
+        ToolTipService.SetToolTip(search, Loc.T("Hledat (Ctrl+F)"));
         root.SizeChanged += (_, _) => Resize();
         timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromMilliseconds(VisibleTickMs);
         timer.Tick += (_, _) => Tick(); timer.Start();
@@ -204,6 +204,17 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>Formats a count with the plural form the UI language uses for it; the forms are translated "{0} …" texts.</summary>
+    internal static string CountText(int count, string one, string few, string many)
+    {
+        bool paucal = Loc.Language switch {
+            "en" or "de" => false,
+            "pl" => count % 10 is >= 2 and <= 4 && count % 100 is < 12 or > 14,
+            _ => count is >= 2 and <= 4
+        };
+        return string.Format(Loc.Culture, count == 1 ? one : paucal ? few : many, count);
+    }
+
     private static TextBlock Label(string text, double size, uint color) => new() {
         Text = text, FontSize = Math.Max(11, size), Foreground = Display.Brush(color), FontFamily = UiTypography.Font,
         FontWeight = size >= 14 && size != 42 ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal,
@@ -240,10 +251,10 @@ public sealed partial class MainWindow : Window
         var resourceStyle = new Style { TargetType = typeof(ListViewItem), BasedOn = itemStyle };
         resourceStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 50d));
         resourceList.ItemContainerStyle = resourceStyle;
-        AutomationProperties.SetName(resourceList, "Jednotlivé prostředky systému");
-        AutomationProperties.SetName(processList, "Živé procesy");
+        AutomationProperties.SetName(resourceList, Loc.T("Jednotlivé prostředky systému"));
+        AutomationProperties.SetName(processList, Loc.T("Živé procesy"));
         AutomationProperties.SetAutomationId(processList, "processes-list");
-        AutomationProperties.SetName(search, "Hledat název procesu nebo PID");
+        AutomationProperties.SetName(search, Loc.T("Hledat název procesu nebo PID"));
         search.FontFamily = UiTypography.Font; search.FontSize = 12;
     }
 
@@ -263,12 +274,12 @@ public sealed partial class MainWindow : Window
             button.Height = 44; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 11; button.BorderThickness = new Thickness(0);
             button.Padding = new Thickness(4, 0, 4, 0);
             var content = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Center };
-            string name = button == startupNav ? "Po spuštění" : button == usersNav ? "Uživatelé" : button == applicationNav ? "Aplikace" : button == performanceNav ? "Výkon" : button == servicesNav ? "Služby" : button == hardwareNav ? "Sestava" : "Procesy";
+            string name = button == startupNav ? Loc.T("Po spuštění") : button == usersNav ? Loc.T("Uživatelé") : button == applicationNav ? Loc.T("Aplikace") : button == performanceNav ? Loc.T("Výkon") : button == servicesNav ? Loc.T("Služby") : button == hardwareNav ? Loc.T("Sestava") : Loc.T("Procesy");
             AutomationProperties.SetName(button, name);
             content.Children.Add(button == startupNav ? new SymbolIcon(Symbol.Play) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
                 : button == applicationNav || button == usersNav ? new SymbolIcon(button == usersNav ? Symbol.People : Symbol.AllApps) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
                 : UiIcon.Create(button == performanceNav ? "performance" : button == servicesNav ? "services" : button == hardwareNav ? "hardware" : "processes", 0x95a4ad));
-            content.Children.Add(Label(button == startupNav ? "Spuštění" : name, 9, 0x95a4ad));
+            content.Children.Add(Label(button == startupNav ? Loc.T("Spuštění") : name, 9, 0x95a4ad));
             button.Content = content;
             nav.Children.Add(button);
         }
@@ -298,10 +309,10 @@ public sealed partial class MainWindow : Window
         toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var filters = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         foreach (var mode in new[] { ProcessMode.All, ProcessMode.Active, ProcessMode.Tree }) {
-            var button = Button(mode == ProcessMode.All ? "Všechny procesy" : mode == ProcessMode.Active ? "Aktivní" : "Strom"); button.Height = 28;
+            var button = Button(mode == ProcessMode.All ? Loc.T("Všechny procesy") : mode == ProcessMode.Active ? Loc.T("Aktivní") : Loc.T("Strom")); button.Height = 28;
             button.Click += (_, _) => SelectProcessMode(mode); filters.Children.Add(button); processModeButtons.Add((mode, button));
         }
-        processValueMode.Items.Add("Vlastní hodnoty"); processValueMode.Items.Add("Proces s potomky");
+        processValueMode.Items.Add(Loc.T("Vlastní hodnoty")); processValueMode.Items.Add(Loc.T("Proces s potomky"));
         processValueMode.SelectedIndex = 0;
         processValueMode.SelectionChanged += (_, _) => {
             if (processValueMode.SelectedIndex < 0) return;
@@ -309,24 +320,24 @@ public sealed partial class MainWindow : Window
             if (model.TableValueMode == value) return;
             model.SetTableValueMode(value); RefreshProcesses();
         };
-        AutomationProperties.SetName(processValueMode, "Význam hodnot ve stromu procesů");
+        AutomationProperties.SetName(processValueMode, Loc.T("Význam hodnot ve stromu procesů"));
         AutomationProperties.SetAutomationId(processValueMode, "process-tree-value-mode");
-        ToolTipService.SetToolTip(processValueMode, "Vlastní hodnoty patří jednomu PID. Proces s potomky sčítá CPU, paměť a I/O ověřených členů celé větve i při hledání nebo sbalení. Chybějící údaje jsou označené. Součet pracovních sad může sdílené stránky RAM započítat opakovaně.");
+        ToolTipService.SetToolTip(processValueMode, Loc.T("Vlastní hodnoty patří jednomu PID. Proces s potomky sčítá CPU, paměť a I/O ověřených členů celé větve i při hledání nebo sbalení. Chybějící údaje jsou označené. Součet pracovních sad může sdílené stránky RAM započítat opakovaně."));
         filters.Children.Add(processValueMode);
         filters.Children.Add(processCount); processCount.Margin = new Thickness(8, 0, 0, 0); processCount.VerticalAlignment = VerticalAlignment.Center;
         toolbar.Children.Add(new ScrollViewer { Content = filters, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
             VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
         processTable = new ProcessTable(processList, SortProcesses);
-        var columns = Button("Sloupce"); columns.Height = 28; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
-        columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, "Zobrazit nebo skrýt sloupce procesů");
+        var columns = Button(Loc.T("Sloupce")); columns.Height = 28; columns.HorizontalAlignment = HorizontalAlignment.Right; columns.VerticalAlignment = VerticalAlignment.Center;
+        columns.Flyout = processTable.VisibilityMenu(); AutomationProperties.SetName(columns, Loc.T("Zobrazit nebo skrýt sloupce procesů"));
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
         foreach (var action in new[] { columns, exportSnapshot, compareSnapshots, processDetailsButton, globalObjectSearchButton, processEventsButton, processDumpButton, processActionsButton }) {
             action.Height = 28; action.MinHeight = 0; actions.Children.Add(action);
         }
         // Icon-only commands get a visible word when the window is wide enough; narrow windows keep the icons alone.
         var labels = new List<TextBlock>();
-        foreach (var (button, label) in new[] { (exportSnapshot, "Export"), (compareSnapshots, "Porovnat"), (processDetailsButton, "Podrobnosti"),
-                     (globalObjectSearchButton, "Hledat objekty"), (processEventsButton, "Události") }) {
+        foreach (var (button, label) in new[] { (exportSnapshot, Loc.T("Export")), (compareSnapshots, Loc.T("Porovnat")), (processDetailsButton, Loc.T("Podrobnosti")),
+                     (globalObjectSearchButton, Loc.T("Hledat objekty")), (processEventsButton, Loc.T("Události")) }) {
             var text = new TextBlock { Text = label, FontSize = 12, FontFamily = UiTypography.Font, VerticalAlignment = VerticalAlignment.Center };
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
             content.Children.Add((UIElement)button.Content); content.Children.Add(text);
@@ -369,7 +380,7 @@ public sealed partial class MainWindow : Window
         bool applications = next == DesktopView.Applications;
         bool startup = next == DesktopView.Startup;
         if (services) servicesModel ??= new ServiceModel();
-        heading.Text = startup ? "Po spuštění" : hardware ? "Sestava" : services ? "Služby" : performance ? "Výkon" : applications ? "Aplikace" : "Procesy";
+        heading.Text = startup ? Loc.T("Po spuštění") : hardware ? Loc.T("Sestava") : services ? Loc.T("Služby") : performance ? Loc.T("Výkon") : applications ? Loc.T("Aplikace") : Loc.T("Procesy");
         heading.Visibility = services || hardware || startup ? Visibility.Visible : Visibility.Collapsed;
         model.SetResourceViewVisible(performance);
         performancePage.Visibility = performance ? Visibility.Visible : Visibility.Collapsed;
@@ -381,7 +392,7 @@ public sealed partial class MainWindow : Window
         search.Visibility = performance || hardware || startup ? Visibility.Collapsed : Visibility.Visible;
         overviewScroll.Visibility = next == DesktopView.Processes ? Visibility.Visible : Visibility.Collapsed;
         interval.Visibility = services || hardware || startup ? Visibility.Collapsed : Visibility.Visible;
-        search.PlaceholderText = services ? "Hledat službu, účet nebo PID" : "Hledat název nebo PID";
+        search.PlaceholderText = services ? Loc.T("Hledat službu, účet nebo PID") : Loc.T("Hledat název nebo PID");
         AutomationProperties.SetName(search, search.PlaceholderText);
         SetNavigationSearchText(services ? servicesModel!.Query : processQuery);
         if (!services) model.SetQuery(processQuery);
@@ -466,8 +477,8 @@ public sealed partial class MainWindow : Window
             }
             ++ticks;
             if (secondTick && !minimized) {
-                footer.Text = view == DesktopView.Services ? ServicesFooter() : (model.Paused ? "Pozastaveno" : "Živá data") + $" · {model.Processes.Count} procesů · stáří "
-                    + Display.Number((NativeMonitor.MonotonicNowNs - model.ProcessTime) / 1_000_000_000d, " s")
+                footer.Text = view == DesktopView.Services ? ServicesFooter() : Loc.F("{0} · {1} procesů · stáří {2}", model.Paused ? Loc.T("Pozastaveno") : Loc.T("Živá data"),
+                    model.Processes.Count, Display.Number((NativeMonitor.MonotonicNowNs - model.ProcessTime) / 1_000_000_000d, " s"))
                     + (model.ProcessError.Length == 0 ? "" : " · " + model.ProcessError) + (model.ResourceError.Length == 0 ? "" : " · " + model.ResourceError);
                 if (model.HistoryWarning.Length != 0) footer.Text += " · " + model.HistoryWarning;
             }
@@ -509,7 +520,8 @@ public sealed partial class MainWindow : Window
         }
         RefreshApplicationGroups();
         int visible = model.VisibleProcesses.Count;
-        string countText = visible + (visible == 1 ? " proces" : visible is >= 2 and <= 4 ? " procesy" : " procesů") + (model.Held ? " · pořadí přidrženo" : "");
+        string countText = CountText(visible, Loc.T("{0} proces"), Loc.T("{0} procesy"), Loc.T("{0} procesů"));
+        if (model.Held) countText = Loc.F("{0} · pořadí přidrženo", countText);
         if (processCount.Text != countText) processCount.Text = countText;
         RefreshProcessOverview();
         RefreshSelection();

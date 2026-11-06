@@ -30,10 +30,10 @@ internal static class DumpRecoveryStore
         try {
             var actual = new DirectoryInfo(Folder).GetAccessControl(AccessControlSections.Owner | AccessControlSections.Access);
             if (actual.GetOwner(typeof(SecurityIdentifier)) is not SecurityIdentifier owner || owner.Value != sid.Value || !actual.AreAccessRulesProtected)
-                throw new IOException("Soukromé úložiště obnovy nemá ověřeného vlastníka nebo ochranu přístupu.");
+                throw new IOException(Loc.T("Soukromé úložiště obnovy nemá ověřeného vlastníka nebo ochranu přístupu."));
             foreach (FileSystemAccessRule rule in actual.GetAccessRules(true, true, typeof(SecurityIdentifier)))
                 if (rule.AccessControlType != AccessControlType.Allow || rule.IdentityReference.Value != sid.Value && rule.IdentityReference.Value != "S-1-5-18")
-                    throw new IOException("Úložiště obnovy má neočekávaná oprávnění. Záznamy zůstávají zachované.");
+                    throw new IOException(Loc.T("Úložiště obnovy má neočekávaná oprávnění. Záznamy zůstávají zachované."));
             return held;
         } catch { held.Dispose(); throw; }
     }
@@ -43,15 +43,15 @@ internal static class DumpRecoveryStore
         try {
             ProcessDumpFile.CheckSingleFile(file);
             if (ProcessDumpFile.Owner(file) != DumpRecoveryProcesses.UserSid || RandomAccess.GetLength(file) != 0)
-                throw new IOException("Zámek úložiště obnovy není ověřitelný.");
+                throw new IOException(Loc.T("Zámek úložiště obnovy není ověřitelný."));
             return file;
         } catch { file.Dispose(); throw; }
     }
     private static string[] Names()
     {
         var names = Directory.EnumerateFileSystemEntries(Folder, "*", SearchOption.TopDirectoryOnly).Take(130)
-            .Select(path => Path.GetFileName(path) ?? throw new IOException("Neplatný název záznamu obnovy.")).ToArray();
-        if (names.Length > 129) throw new IOException("Úložiště obnovy překročilo omezený počet souborů. Nic se nebude měnit.");
+            .Select(path => Path.GetFileName(path) ?? throw new IOException(Loc.T("Neplatný název záznamu obnovy."))).ToArray();
+        if (names.Length > 129) throw new IOException(Loc.T("Úložiště obnovy překročilo omezený počet souborů. Nic se nebude měnit."));
         return names;
     }
     private static bool Canonical(string name) => name.Length == 37 && name.EndsWith(".json", StringComparison.Ordinal)
@@ -60,17 +60,17 @@ internal static class DumpRecoveryStore
     {
         using var file = ProcessDumpFile.OpenEntry(directory.Parent, name);
         ProcessDumpFile.CheckSingleFile(file);
-        if (ProcessDumpFile.Owner(file) != DumpRecoveryProcesses.UserSid) throw new IOException("Vlastník záznamu obnovy nesouhlasí.");
+        if (ProcessDumpFile.Owner(file) != DumpRecoveryProcesses.UserSid) throw new IOException(Loc.T("Vlastník záznamu obnovy nesouhlasí."));
         long length = RandomAccess.GetLength(file);
-        if (length is <= 0 or > MaximumDocument) throw new IOException("Záznam obnovy má nepovolenou velikost.");
-        if (length > maximumBytes) throw new RecoveryLimitException("Úložiště překročilo limit 1 MiB. Nic se nebude měnit.");
+        if (length is <= 0 or > MaximumDocument) throw new IOException(Loc.T("Záznam obnovy má nepovolenou velikost."));
+        if (length > maximumBytes) throw new RecoveryLimitException(Loc.T("Úložiště překročilo limit 1 MiB. Nic se nebude měnit."));
         var bytes = new byte[length]; int at = 0;
-        while (at < bytes.Length) { int read = RandomAccess.Read(file, bytes.AsSpan(at), at); if (read == 0) throw new IOException("Záznam obnovy je neúplný."); at += read; }
+        while (at < bytes.Length) { int read = RandomAccess.Read(file, bytes.AsSpan(at), at); if (read == 0) throw new IOException(Loc.T("Záznam obnovy je neúplný.")); at += read; }
         return bytes;
     }
     private static DumpRecoveryDocument Decode(string name, byte[] bytes)
     {
-        var value = JsonSerializer.Deserialize(bytes, DumpRecoveryJsonContext.Default.DumpRecoveryRecord) ?? throw new IOException("Záznam obnovy je prázdný.");
+        var value = JsonSerializer.Deserialize(bytes, DumpRecoveryJsonContext.Default.DumpRecoveryRecord) ?? throw new IOException(Loc.T("Záznam obnovy je prázdný."));
         Validate(value, name);
         return new(name, value, Convert.ToHexString(SHA256.HashData(bytes)), "");
     }
@@ -95,9 +95,9 @@ internal static class DumpRecoveryStore
             || value.Phase == DumpRecoveryPhase.Ready && (value.FileBytes is 0 or > ProcessDumpProtocol.MaximumFileBytes || value.Sha256 is not { Length: 64 }
                 || value.Sha256.Any(c => !Uri.IsHexDigit(c)) || value.Architecture is not (ProcessArchitecture.X86 or ProcessArchitecture.X64)
                 || value.CaptureFlags != (value.Mode == ProcessDumpMode.Full ? 0x1802u : 0)))
-            throw new IOException("Záznam obnovy je poškozený nebo neodpovídá podporované transakci. Zůstane zachovaný.");
+            throw new IOException(Loc.T("Záznam obnovy je poškozený nebo neodpovídá podporované transakci. Zůstane zachovaný."));
         try { _ = new SecurityIdentifier(value.OwnerSid); if (value.Phase != DumpRecoveryPhase.Intent) _ = new SecurityIdentifier(value.FileOwnerSid); }
-        catch (ArgumentException error) { throw new IOException("Identita vlastníka v záznamu je neplatná.", error); }
+        catch (ArgumentException error) { throw new IOException(Loc.T("Identita vlastníka v záznamu je neplatná."), error); }
     }
     internal static DumpRecoveryDocument[] ReadAll(CancellationToken cancellation)
     {
@@ -105,13 +105,13 @@ internal static class DumpRecoveryStore
         var names = Names(); var result = new List<DumpRecoveryDocument>(); long total = 0; int journals = 0;
         foreach (string name in names.Where(name => name != ".lock")) {
             cancellation.ThrowIfCancellationRequested();
-            if (!Canonical(name)) { result.Add(new(name, null, "", "Neznámý nebo nedokončený pomocný zápis zůstane zachovaný.")); continue; }
-            if (++journals > 64) throw new IOException("Úložiště překročilo limit 64 záznamů. Nic se nebude měnit.");
+            if (!Canonical(name)) { result.Add(new(name, null, "", Loc.T("Neznámý nebo nedokončený pomocný zápis zůstane zachovaný."))); continue; }
+            if (++journals > 64) throw new IOException(Loc.T("Úložiště překročilo limit 64 záznamů. Nic se nebude měnit."));
             try {
                 var bytes = Read(directory, name, MaximumTotal - total); total += bytes.Length;
                 result.Add(Decode(name, bytes));
             } catch (Exception error) when (error is not RecoveryLimitException && (error is IOException or JsonException or Win32Exception or ArgumentException or UnauthorizedAccessException)) {
-                result.Add(new(name, null, "", "Záznam nelze bezpečně přečíst. Zůstane zachovaný. " + error.Message));
+                result.Add(new(name, null, "", Loc.F("Záznam nelze bezpečně přečíst. Zůstane zachovaný. {0}", error.Message)));
             }
         }
         return result.ToArray();
@@ -120,27 +120,27 @@ internal static class DumpRecoveryStore
     {
         using var directory = DirectoryLease(); using var held = Lock(directory);
         var result = Decode(id + ".json", Read(directory, id + ".json"));
-        if (result.Proof != expectedProof) throw new IOException("Záznam obnovy se změnil. Obnovte přehled; soubor zůstal zachovaný.");
+        if (result.Proof != expectedProof) throw new IOException(Loc.T("Záznam obnovy se změnil. Obnovte přehled; soubor zůstal zachovaný."));
         return result;
     }
     internal static string Write(DumpRecoveryRecord record, string? previousProof)
     {
         string name = record.Id + ".json"; Validate(record, name);
         byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(record, DumpRecoveryJsonContext.Default.DumpRecoveryRecord);
-        if (bytes.Length > MaximumDocument) throw new IOException("Záznam dumpu překračuje limit bezpečného úložiště.");
+        if (bytes.Length > MaximumDocument) throw new IOException(Loc.T("Záznam dumpu překračuje limit bezpečného úložiště."));
         string proof = Convert.ToHexString(SHA256.HashData(bytes));
         using var directory = DirectoryLease(); using var held = Lock(directory);
         string[] names = Names(); long total = 0;
-        if (names.Count(Canonical) >= 64 && previousProof is null) throw new IOException("Úložiště obsahuje 64 nedokončených dumpů. Nejdřív otevřete jejich přehled.");
+        if (names.Count(Canonical) >= 64 && previousProof is null) throw new IOException(Loc.T("Úložiště obsahuje 64 nedokončených dumpů. Nejdřív otevřete jejich přehled."));
         foreach (string item in names.Where(item => item != ".lock")) {
             using var existing = ProcessDumpFile.OpenEntry(directory.Parent, item);
             ProcessDumpFile.CheckSingleFile(existing); total += RandomAccess.GetLength(existing);
-            if (total + bytes.Length > MaximumTotal) throw new IOException("Úložiště obnovy překročilo limit 1 MiB. Nový dump nebyl zahájen.");
+            if (total + bytes.Length > MaximumTotal) throw new IOException(Loc.T("Úložiště obnovy překročilo limit 1 MiB. Nový dump nebyl zahájen."));
         }
         if (previousProof is not null) {
             var old = Read(directory, name); _ = Decode(name, old);
-            if (Convert.ToHexString(SHA256.HashData(old)) != previousProof) throw new IOException("Trvalý záznam dumpu se změnil. Nebude přepsán.");
-        } else if (names.Contains(name, StringComparer.OrdinalIgnoreCase)) throw new IOException("Identifikátor transakce už existuje.");
+            if (Convert.ToHexString(SHA256.HashData(old)) != previousProof) throw new IOException(Loc.T("Trvalý záznam dumpu se změnil. Nebude přepsán."));
+        } else if (names.Contains(name, StringComparer.OrdinalIgnoreCase)) throw new IOException(Loc.T("Identifikátor transakce už existuje."));
         string temporary = "." + record.Id + "-" + Guid.NewGuid().ToString("N") + ".tmp";
         using var file = ProcessDumpFile.OpenEntry(directory.Parent, temporary, 0xc0110000, 0, 2); bool moved = false;
         try {
@@ -155,13 +155,13 @@ internal static class DumpRecoveryStore
         string name = id + ".json";
         using var file = ProcessDumpFile.OpenEntry(directory.Parent, name, 0x80110000, 0);
         ProcessDumpFile.CheckSingleFile(file);
-        if (ProcessDumpFile.Owner(file) != DumpRecoveryProcesses.UserSid) throw new IOException("Vlastník záznamu se změnil. Záznam zůstane zachovaný.");
+        if (ProcessDumpFile.Owner(file) != DumpRecoveryProcesses.UserSid) throw new IOException(Loc.T("Vlastník záznamu se změnil. Záznam zůstane zachovaný."));
         long length = RandomAccess.GetLength(file);
-        if (length is <= 0 or > MaximumDocument) throw new IOException("Záznam obnovy je poškozený. Zůstane zachovaný.");
+        if (length is <= 0 or > MaximumDocument) throw new IOException(Loc.T("Záznam obnovy je poškozený. Zůstane zachovaný."));
         var bytes = new byte[length]; int at = 0;
-        while (at < bytes.Length) { int read = RandomAccess.Read(file, bytes.AsSpan(at), at); if (read == 0) throw new IOException("Záznam je neúplný."); at += read; }
+        while (at < bytes.Length) { int read = RandomAccess.Read(file, bytes.AsSpan(at), at); if (read == 0) throw new IOException(Loc.T("Záznam je neúplný.")); at += read; }
         _ = Decode(name, bytes);
-        if (Convert.ToHexString(SHA256.HashData(bytes)) != proof) throw new IOException("Záznam obnovy se změnil. Zůstane zachovaný.");
+        if (Convert.ToHexString(SHA256.HashData(bytes)) != proof) throw new IOException(Loc.T("Záznam obnovy se změnil. Zůstane zachovaný."));
         ProcessDumpFile.DeleteEntry(file);
     }
 }

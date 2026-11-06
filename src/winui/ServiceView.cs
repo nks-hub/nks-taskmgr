@@ -14,10 +14,10 @@ public sealed partial class MainWindow
     private ServiceModel? servicesModel;
     private readonly Grid servicesPage = new(), serviceWorkspace = new();
     private readonly ListView serviceList = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
-    private readonly TextBlock serviceCount = Label("", 10, 0x95a4ad), serviceEmpty = Label("Načítám služby…", 12, 0x95a4ad);
+    private readonly TextBlock serviceCount = Label("", 10, 0x95a4ad), serviceEmpty = Label(Loc.T("Načítám služby…"), 12, 0x95a4ad);
     private readonly List<Button> serviceFilters = [];
     private readonly List<TextBlock> serviceCounters = [];
-    private readonly ToggleButton sharedServiceHosts = Choice("Společný PID");
+    private readonly ToggleButton sharedServiceHosts = Choice(Loc.T("Společný PID"));
     private readonly ServiceHostTemplates serviceHostTemplates = new();
     private readonly ScrollViewer serviceDetailScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private bool updatingServices;
@@ -35,7 +35,7 @@ public sealed partial class MainWindow
         toolbar.ColumnDefinitions.Add(new ColumnDefinition()); toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
         foreach (var filter in filters) {
-            string caption = filter == ServiceFilter.All ? "Všechny" : filter == ServiceFilter.Running ? "Běžící" : filter == ServiceFilter.Stopped ? "Zastavené" : "Ostatní";
+            string caption = filter == ServiceFilter.All ? Loc.T("Všechny") : filter == ServiceFilter.Running ? Loc.T("Běžící") : filter == ServiceFilter.Stopped ? Loc.T("Zastavené") : Loc.T("Ostatní");
             var button = Button("");
             var label = Label(caption, 11, 0x95a4ad); var count = Label("—", 11, 0xe9eef0);
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
@@ -47,9 +47,9 @@ public sealed partial class MainWindow
         sharedServiceHosts.Margin = new Thickness(8, 0, 0, 0); sharedServiceHosts.Padding = new Thickness(8, 0, 8, 0);
         sharedServiceHosts.Checked += (_, _) => { if (!updatingServices) UpdateServices(() => servicesModel!.SetSharedHostsOnly(true)); };
         sharedServiceHosts.Unchecked += (_, _) => { if (!updatingServices) UpdateServices(() => servicesModel!.SetSharedHostsOnly(false)); };
-        AutomationProperties.SetName(sharedServiceHosts, "Pouze služby se společným hlášeným PID");
+        AutomationProperties.SetName(sharedServiceHosts, Loc.T("Pouze služby se společným hlášeným PID"));
         AutomationProperties.SetAutomationId(sharedServiceHosts, "services-shared-hosts");
-        ToolTipService.SetToolTip(sharedServiceHosts, "Služby se stejným nenulovým PID hlášeným správcem služeb. Kombinuje se s filtrem stavu a hledáním.");
+        ToolTipService.SetToolTip(sharedServiceHosts, Loc.T("Služby se stejným nenulovým PID hlášeným správcem služeb. Kombinuje se s filtrem stavu a hledáním."));
         controls.Children.Add(sharedServiceHosts);
         toolbar.Children.Add(new ScrollViewer { Content = controls, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
@@ -61,7 +61,7 @@ public sealed partial class MainWindow
         var columns = new Grid { Padding = new Thickness(18, 0, 18, 0), Background = Display.Brush(0x1d252a) };
         foreach (var width in new[] { new GridLength(1, GridUnitType.Star), new GridLength(105), new GridLength(140), new GridLength(65), new GridLength(150) }) columns.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
         columns.ColumnDefinitions[0].MinWidth = 210;
-        string[] headings = ["Služba", "Stav", "Spouštění", "PID", "Účet"];
+        string[] headings = [Loc.T("Služba"), Loc.T("Stav"), Loc.T("Spouštění"), "PID", Loc.T("Účet")];
         for (int i = 0; i < headings.Length; ++i) {
             int column = i; var button = Button(headings[i]); button.BorderThickness = new Thickness(0); button.Padding = new Thickness(0); button.FontSize = 11;
             button.HorizontalContentAlignment = i == 3 ? HorizontalAlignment.Right : HorizontalAlignment.Left; button.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -83,7 +83,7 @@ public sealed partial class MainWindow
             RefreshServiceDetail();
             RefreshServiceActions();
         };
-        AutomationProperties.SetName(serviceList, "Systémové služby");
+        AutomationProperties.SetName(serviceList, Loc.T("Systémové služby"));
         AutomationProperties.SetAutomationId(serviceList, "services-list");
         Grid.SetRow(serviceList, 1); table.Children.Add(serviceList);
         serviceEmpty.HorizontalAlignment = HorizontalAlignment.Center; serviceEmpty.VerticalAlignment = VerticalAlignment.Center; Grid.SetRow(serviceEmpty, 1); table.Children.Add(serviceEmpty);
@@ -117,9 +117,9 @@ public sealed partial class MainWindow
         updatingServices = true;
         try { serviceList.SelectedItem = servicesModel.Selected; sharedServiceHosts.IsChecked = servicesModel.SharedHostsOnly; } finally { updatingServices = false; }
         serviceCount.Text = ServiceText.Count(servicesModel.Visible.Count);
-        sharedServiceHosts.Content = "Společný PID (" + servicesModel.SharedHostCount + ")";
+        sharedServiceHosts.Content = Loc.F("Společný PID ({0})", servicesModel.SharedHostCount);
         serviceEmpty.Visibility = servicesModel.Visible.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        serviceEmpty.Text = servicesModel.Error.Length > 0 ? servicesModel.Error : servicesModel.Time == 0 ? "Načítám služby…" : "Žádná služba neodpovídá filtru.";
+        serviceEmpty.Text = servicesModel.Error.Length > 0 ? servicesModel.Error : servicesModel.Time == 0 ? Loc.T("Načítám služby…") : Loc.T("Žádná služba neodpovídá filtru.");
         var counts = new[] { servicesModel.All.Count, servicesModel.All.Count(row => row.State == 4), servicesModel.All.Count(row => row.State == 1), servicesModel.All.Count(row => row.State != 1 && row.State != 4) };
         for (int i = 0; i < serviceCounters.Count; ++i) {
             serviceCounters[i].Text = servicesModel.Time == 0 ? "—" : counts[i].ToString();
@@ -160,9 +160,9 @@ public sealed partial class MainWindow
     }
     private string ServicesFooter()
     {
-        if (servicesModel is null) return "Načítám služby…";
-        return (model.Paused ? "Pozastaveno" : servicesModel.Stale ? "Zastaralá data" : "Živá data") + " · " + servicesModel.All.Count + " služeb · stáří "
-            + (servicesModel.Time == 0 ? "—" : Display.Number((NativeMonitor.MonotonicNowNs - servicesModel.Time) / 1_000_000_000d, " s"))
+        if (servicesModel is null) return Loc.T("Načítám služby…");
+        return Loc.F("{0} · {1} služeb · stáří {2}", model.Paused ? Loc.T("Pozastaveno") : servicesModel.Stale ? Loc.T("Zastaralá data") : Loc.T("Živá data"), servicesModel.All.Count,
+                servicesModel.Time == 0 ? "—" : Display.Number((NativeMonitor.MonotonicNowNs - servicesModel.Time) / 1_000_000_000d, " s"))
             + (servicesModel.Error.Length == 0 ? "" : " · " + servicesModel.Error);
     }
 }

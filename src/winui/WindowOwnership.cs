@@ -15,8 +15,8 @@ internal static partial class WindowOwnership
         Marshal.SetLastSystemError(0);
         nint previous = SetWindowLongPtr(handle, OwnerWindowIndex, parent);
         int error = Marshal.GetLastPInvokeError();
-        if (previous == 0 && error != 0) throw new Win32Exception(error, "Okno se nepodařilo svázat s hlavním oknem.");
-        if (GetWindow(handle, OwnerWindow) != parent) throw new InvalidOperationException("Okno nemá ověřené hlavní okno.");
+        if (previous == 0 && error != 0) throw new Win32Exception(error, Loc.T("Okno se nepodařilo svázat s hlavním oknem."));
+        if (GetWindow(handle, OwnerWindow) != parent) throw new InvalidOperationException(Loc.T("Okno nemá ověřené hlavní okno."));
     }
 
     internal static void Restore(Window window)
@@ -24,7 +24,7 @@ internal static partial class WindowOwnership
         nint handle = WinRT.Interop.WindowNative.GetWindowHandle(window);
         if (IsIconic(handle)) {
             ShowWindow(handle, 9);
-            if (IsIconic(handle)) throw new InvalidOperationException("Minimalizované okno se nepodařilo obnovit.");
+            if (IsIconic(handle)) throw new InvalidOperationException(Loc.T("Minimalizované okno se nepodařilo obnovit."));
         }
     }
 

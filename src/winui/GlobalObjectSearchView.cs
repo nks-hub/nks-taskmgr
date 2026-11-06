@@ -18,9 +18,9 @@ public sealed partial class MainWindow
     {
         globalObjectSearchButton.Width = 35; globalObjectSearchButton.Padding = new Thickness(0);
         globalObjectSearchButton.Content = UiIcon.Create("object-search", 0x95a4ad, 19);
-        AutomationProperties.SetName(globalObjectSearchButton, "Hledat otevřené objekty ve všech dostupných procesech");
+        AutomationProperties.SetName(globalObjectSearchButton, Loc.T("Hledat otevřené objekty ve všech dostupných procesech"));
         AutomationProperties.SetAutomationId(globalObjectSearchButton, "global-object-search");
-        ToolTipService.SetToolTip(globalObjectSearchButton, "Hledat otevřené objekty podle názvu nebo typu");
+        ToolTipService.SetToolTip(globalObjectSearchButton, Loc.T("Hledat otevřené objekty podle názvu nebo typu"));
         globalObjectSearchButton.Click += (_, _) => {
             if (globalObjectSearch is null) {
                 globalObjectSearch = new GlobalObjectSearchView(processDetailsClient,
@@ -57,14 +57,14 @@ internal sealed class GlobalObjectSearchView : Window
     private readonly Func<ProcessKey, bool> openOwner;
     private readonly Grid layout = new() { Padding = new Thickness(12), RowSpacing = 6, Background = Display.Brush(0x171d21) };
     private readonly Grid body = new() { ColumnSpacing = 12, RowSpacing = 8 };
-    private readonly TextBox name = new() { PlaceholderText = @"Část názvu nebo cesty, například C:\složka\soubor", MaxLength = 1024, MinHeight = 32 };
-    private readonly TextBox type = new() { PlaceholderText = "Například File, Event nebo Mutant", MaxLength = 128, MinHeight = 32 };
-    private readonly Button start = Command("Spustit"), cancel = Command("Zrušit"), open = Command("Vybrat živý proces →");
-    private readonly TextBlock status = Label("Zadejte alespoň dva znaky do názvu nebo typu. Hledání se spouští tlačítkem."), progress = Label(""), count = Label("0 výsledků");
+    private readonly TextBox name = new() { PlaceholderText = Loc.T("Část názvu nebo cesty, například C:\\složka\\soubor"), MaxLength = 1024, MinHeight = 32 };
+    private readonly TextBox type = new() { PlaceholderText = Loc.T("Například File, Event nebo Mutant"), MaxLength = 128, MinHeight = 32 };
+    private readonly Button start = Command(Loc.T("Spustit")), cancel = Command(Loc.T("Zrušit")), open = Command(Loc.T("Vybrat živý proces →"));
+    private readonly TextBlock status = Label(Loc.T("Zadejte alespoň dva znaky do názvu nebo typu. Hledání se spouští tlačítkem.")), progress = Label(""), count = Label(Loc.F("{0} výsledků", 0));
     private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
     private readonly ObservableCollection<GlobalObjectSearchResult> results = [];
     private readonly TextBox detail = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
-        FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas"), FontSize = 12, MinHeight = 0, Text = "Vyberte výsledek ze seznamu." };
+        FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas"), FontSize = 12, MinHeight = 0, Text = Loc.T("Vyberte výsledek ze seznamu.") };
     private readonly DispatcherTimer availability = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? operation;
@@ -76,15 +76,15 @@ internal sealed class GlobalObjectSearchView : Window
         Func<ProcessKey, bool> isCurrent, Func<ProcessKey, bool> openOwner)
     {
         ui = DispatcherQueue; coordinator = new(client); this.getBoot = getBoot; this.isCurrent = isCurrent; this.openOwner = openOwner;
-        Title = "Hledat otevřené objekty · NKS Task Manager";
+        Title = Loc.T("Hledat otevřené objekty") + " · NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.ResizeDip(1100, 780);
         Appearance.Attach(this, layout);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
             layout.RowDefinitions.Add(new RowDefinition { Height = height });
         var query = new Grid { ColumnSpacing = 10 };
         query.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) }); query.ColumnDefinitions.Add(new ColumnDefinition());
-        var names = new StackPanel { Spacing = 4 }; names.Children.Add(Label("Název objektu nebo cesta obsahuje")); names.Children.Add(name); query.Children.Add(names);
-        var types = new StackPanel { Spacing = 4 }; types.Children.Add(Label("Typ objektu obsahuje")); types.Children.Add(type); query.Children.Add(types); Grid.SetColumn(types, 1); layout.Children.Add(query);
+        var names = new StackPanel { Spacing = 4 }; names.Children.Add(Label(Loc.T("Název objektu nebo cesta obsahuje"))); names.Children.Add(name); query.Children.Add(names);
+        var types = new StackPanel { Spacing = 4 }; types.Children.Add(Label(Loc.T("Typ objektu obsahuje"))); types.Children.Add(type); query.Children.Add(types); Grid.SetColumn(types, 1); layout.Children.Add(query);
         var commands = new Grid { ColumnSpacing = 8 };
         commands.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); commands.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); commands.ColumnDefinitions.Add(new ColumnDefinition());
         commands.Children.Add(start); commands.Children.Add(cancel); Grid.SetColumn(cancel, 1);
@@ -104,18 +104,18 @@ internal sealed class GlobalObjectSearchView : Window
         body.Children.Add(detail); Grid.SetColumn(detail, 1); Grid.SetRow(body, 3); layout.Children.Add(body);
         var footer = new Grid { ColumnSpacing = 10 }; footer.ColumnDefinitions.Add(new ColumnDefinition()); footer.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         count.VerticalAlignment = VerticalAlignment.Center; count.TextWrapping = TextWrapping.Wrap; footer.Children.Add(count); footer.Children.Add(open); Grid.SetColumn(open, 1); Grid.SetRow(footer, 4); layout.Children.Add(footer);
-        Identify(name, "object-search-name", "Část názvu objektu nebo cesty"); Identify(type, "object-search-type", "Část typu objektu");
-        Identify(start, "object-search-start", "Spustit nové hledání napříč dostupnými procesy"); Identify(cancel, "object-search-cancel", "Zrušit hledání");
-        Identify(list, "object-search-results", "Pozorované otevřené objekty a jejich vlastníci"); Identify(detail, "object-search-detail", "Údaje vybraného objektu pouze pro čtení");
-        Identify(open, "object-search-process", "Vybrat proces pouze při shodě celé aktuální identity"); Identify(progress, "object-search-progress", "Průběh a omezení hledání");
+        Identify(name, "object-search-name", Loc.T("Část názvu objektu nebo cesty")); Identify(type, "object-search-type", Loc.T("Část typu objektu"));
+        Identify(start, "object-search-start", Loc.T("Spustit nové hledání napříč dostupnými procesy")); Identify(cancel, "object-search-cancel", Loc.T("Zrušit hledání"));
+        Identify(list, "object-search-results", Loc.T("Pozorované otevřené objekty a jejich vlastníci")); Identify(detail, "object-search-detail", Loc.T("Údaje vybraného objektu pouze pro čtení"));
+        Identify(open, "object-search-process", Loc.T("Vybrat proces pouze při shodě celé aktuální identity")); Identify(progress, "object-search-progress", Loc.T("Průběh a omezení hledání"));
         name.TextChanged += (_, _) => QueryChanged(); type.TextChanged += (_, _) => QueryChanged();
         start.Click += async (_, _) => await SearchAsync(); cancel.Click += (_, _) => {
-            liveLinks = false; open.IsEnabled = false; operation?.Cancel(); cancel.IsEnabled = false; status.Text = "Ruším hledání…";
+            liveLinks = false; open.IsEnabled = false; operation?.Cancel(); cancel.IsEnabled = false; status.Text = Loc.T("Ruším hledání…");
         };
         list.SelectionChanged += (_, _) => { UpdateDetail(); UpdateAvailability(); };
         open.Click += (_, _) => {
             if (!liveLinks || dirty || list.SelectedItem is not GlobalObjectSearchResult row || !isCurrent(row.Owner) || !openOwner(row.Owner)) {
-                open.IsEnabled = false; status.Text = "Historické pozorování: shodný aktuální proces není dostupný. Žádná akce nebyla provedena.";
+                open.IsEnabled = false; status.Text = Loc.T("Historické pozorování: shodný aktuální proces není dostupný. Žádná akce nebyla provedena.");
             }
         };
         layout.SizeChanged += (_, _) => Resize(); availability.Tick += (_, _) => UpdateAvailability();
@@ -126,24 +126,24 @@ internal sealed class GlobalObjectSearchView : Window
     private void QueryChanged()
     {
         dirty = lastProgress is not null;
-        if (dirty) status.Text = "Pole obsahují nový dotaz. Výsledky patří předchozímu hledání; použijte Spustit.";
+        if (dirty) status.Text = Loc.T("Pole obsahují nový dotaz. Výsledky patří předchozímu hledání; použijte Spustit.");
         UpdateAvailability();
     }
 
     private async Task SearchAsync()
     {
         if (operation is not null || !new GlobalObjectSearchQuery(name.Text, type.Text).IsValid) return;
-        if (getBoot() is not { } boot) { status.Text = "Identitu spuštění Windows zatím nelze ověřit. Počkejte na sběr dat a zkuste to znovu."; return; }
+        if (getBoot() is not { } boot) { status.Text = Loc.T("Identitu spuštění Windows zatím nelze ověřit. Počkejte na sběr dat a zkuste to znovu."); return; }
         using var current = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token); operation = current;
-        results.Clear(); lastProgress = null; dirty = false; liveLinks = true; detail.Text = "Vyberte výsledek ze seznamu.";
-        count.Text = "0 výsledků · pouze čtení";
-        status.Text = "Načítám vlastníky otevřených objektů…"; progress.Text = "Limity: 2 minuty, 25 000 dotazů, 4 096 objektů na vlastníka, 5 000 výsledků a 8 MiB textu. Nedostupné položky se přeskočí.";
+        results.Clear(); lastProgress = null; dirty = false; liveLinks = true; detail.Text = Loc.T("Vyberte výsledek ze seznamu.");
+        count.Text = Loc.F("{0} výsledků · pouze čtení", 0);
+        status.Text = Loc.T("Načítám vlastníky otevřených objektů…"); progress.Text = Loc.T("Limity: 2 minuty, 25 000 dotazů, 4 096 objektů na vlastníka, 5 000 výsledků a 8 MiB textu. Nedostupné položky se přeskočí.");
         UpdateAvailability();
         try { await coordinator.SearchAsync(boot, new(name.Text, type.Text), DeliverAsync, current.Token); }
         catch (OperationCanceledException) when (current.IsCancellationRequested || closed) {
-            if (!closed) { liveLinks = false; status.Text = "Hledání bylo zrušené; výsledky jsou neúplná historická pozorování."; }
+            if (!closed) { liveLinks = false; status.Text = Loc.T("Hledání bylo zrušené; výsledky jsou neúplná historická pozorování."); }
         } catch (Exception error) when (error is IOException or InvalidDataException or TimeoutException or ObjectDisposedException or ArgumentException) {
-            if (!closed) { liveLinks = false; status.Text = "Hledání nelze dokončit: " + error.Message; }
+            if (!closed) { liveLinks = false; status.Text = Loc.F("Hledání nelze dokončit: {0}", error.Message); }
         } finally {
             operation = null;
             if (closed) lifetime.Dispose(); else UpdateAvailability();
@@ -172,15 +172,16 @@ internal sealed class GlobalObjectSearchView : Window
         var value = lastProgress = batch.Progress;
         string total = value.TotalOwners < 0 ? "?" : value.TotalOwners.ToString(CultureInfo.InvariantCulture);
         string remaining = value.TotalOwners < 0 ? "?" : Math.Max(0, value.TotalOwners - value.ExaminedOwners).ToString(CultureInfo.InvariantCulture);
-        progress.Text = $"Vlastníci: {value.ExaminedOwners}/{total} · prohledaní {value.SearchedOwners} · s nedostupnými údaji {value.UnavailableOwners} · změnění/ukončení {value.EndedOwners} · omezení {value.LimitedOwners} · zbývá {remaining}\n"
-            + $"Dotazy na objekty: {value.ObjectsExamined} · přeskočené položky: {value.ObjectsSkipped} · shody: {value.Matches}"
-            + (value.Partial ? "\nČástečné výsledky: další objekty či vlastníci mohou chybět." : "") + (value.Note.Length > 0 ? "\n" + value.Note : "");
-        status.Text = !value.Finished ? "Prohledávám " + value.CurrentOwner
-            : value.Cancelled ? "Zrušeno · výsledky jsou neúplná historická pozorování."
-            : value.Partial ? "Průchod není úplný; chybějící shoda neznamená, že objekt není otevřený."
-            : "Průchod dokončen. Výsledky jsou pozorování v době dotazu.";
+        progress.Text = Loc.F("Vlastníci: {0}/{1} · prohledaní {2} · s nedostupnými údaji {3} · změnění/ukončení {4} · omezení {5} · zbývá {6}",
+                value.ExaminedOwners, total, value.SearchedOwners, value.UnavailableOwners, value.EndedOwners, value.LimitedOwners, remaining) + "\n"
+            + Loc.F("Dotazy na objekty: {0} · přeskočené položky: {1} · shody: {2}", value.ObjectsExamined, value.ObjectsSkipped, value.Matches)
+            + (value.Partial ? "\n" + Loc.T("Částečné výsledky: další objekty či vlastníci mohou chybět.") : "") + (value.Note.Length > 0 ? "\n" + value.Note : "");
+        status.Text = !value.Finished ? Loc.F("Prohledávám {0}", value.CurrentOwner)
+            : value.Cancelled ? Loc.T("Zrušeno · výsledky jsou neúplná historická pozorování.")
+            : value.Partial ? Loc.T("Průchod není úplný; chybějící shoda neznamená, že objekt není otevřený.")
+            : Loc.T("Průchod dokončen. Výsledky jsou pozorování v době dotazu.");
         if (value.Cancelled) liveLinks = false;
-        count.Text = results.Count + " výsledků · pouze čtení";
+        count.Text = Loc.F("{0} výsledků · pouze čtení", results.Count);
         UpdateAvailability();
     }
 
@@ -189,27 +190,27 @@ internal sealed class GlobalObjectSearchView : Window
         if (closed) return;
         bool busy = operation is not null;
         start.IsEnabled = !busy && new GlobalObjectSearchQuery(name.Text, type.Text).IsValid;
-        start.Content = lastProgress is null || dirty ? "Spustit" : "Zopakovat";
+        start.Content = lastProgress is null || dirty ? Loc.T("Spustit") : Loc.T("Zopakovat");
         cancel.IsEnabled = busy && lastProgress?.Finished != true && !operation!.IsCancellationRequested;
         name.IsEnabled = type.IsEnabled = !busy;
         open.IsEnabled = liveLinks && !dirty && list.SelectedItem is GlobalObjectSearchResult row && isCurrent(row.Owner);
-        ToolTipService.SetToolTip(open, open.IsEnabled ? "Vybrat shodný aktuální proces v hlavním okně." : "Historická nebo neověřitelná identita nemá živou akci.");
+        ToolTipService.SetToolTip(open, open.IsEnabled ? Loc.T("Vybrat shodný aktuální proces v hlavním okně.") : Loc.T("Historická nebo neověřitelná identita nemá živou akci."));
     }
 
     private void UpdateDetail()
     {
-        if (list.SelectedItem is not GlobalObjectSearchResult row) { detail.Text = "Vyberte výsledek ze seznamu."; return; }
+        if (list.SelectedItem is not GlobalObjectSearchResult row) { detail.Text = Loc.T("Vyberte výsledek ze seznamu."); return; }
         var item = row.Observation;
-        var text = new StringBuilder().AppendLine(row.OwnerText).AppendLine("Handle: " + row.HandleText)
-            .AppendLine("Typ: " + item.Type + " · " + GlobalObjectSearchText.State(item.TypeState) + " · NTSTATUS 0x" + item.TypeNtStatus.ToString("X8"))
-            .AppendLine("Pozorovaný název: " + (item.NameState == SampleState.Valid && item.Name.Length == 0 ? "(bez názvu)" : item.Name))
-            .AppendLine("Stav názvu: " + GlobalObjectSearchText.State(item.NameState) + " · NTSTATUS 0x" + item.NameNtStatus.ToString("X8"));
-        if (item.NameState == SampleState.Valid && row.DisplayName != item.Name) text.AppendLine("DOS/UNC zobrazení: " + row.DisplayName);
-        text.AppendLine("Přístup ze seznamu: 0x" + row.Handle.GrantedAccess.ToString("X8") + " · atributy 0x" + row.Handle.Attributes.ToString("X"))
-            .AppendLine("Přijato: " + row.ReceivedAt.ToLocalTime().ToString("G", CultureInfo.GetCultureInfo("cs-CZ")))
-            .AppendLine("Boot: " + row.Owner.Boot.Low.ToString("X16") + row.Owner.Boot.High.ToString("X16"))
-            .AppendLine("Generace: " + row.Owner.Kind + " · " + row.Owner.Generation)
-            .AppendLine().Append("Název a typ patří pozorovanému duplikátu. Číselná hodnota handle mohla být od výpisu znovu použita. Objekty nelze zavírat ani měnit.");
+        var text = new StringBuilder().AppendLine(row.OwnerText).AppendLine(Loc.F("Handle: {0}", row.HandleText))
+            .AppendLine(Loc.F("Typ: {0} · {1} · NTSTATUS 0x{2}", item.Type, GlobalObjectSearchText.State(item.TypeState), item.TypeNtStatus.ToString("X8")))
+            .AppendLine(Loc.F("Pozorovaný název: {0}", item.NameState == SampleState.Valid && item.Name.Length == 0 ? Loc.T("(bez názvu)") : item.Name))
+            .AppendLine(Loc.F("Stav názvu: {0} · NTSTATUS 0x{1}", GlobalObjectSearchText.State(item.NameState), item.NameNtStatus.ToString("X8")));
+        if (item.NameState == SampleState.Valid && row.DisplayName != item.Name) text.AppendLine(Loc.F("DOS/UNC zobrazení: {0}", row.DisplayName));
+        text.AppendLine(Loc.F("Přístup ze seznamu: 0x{0} · atributy 0x{1}", row.Handle.GrantedAccess.ToString("X8"), row.Handle.Attributes.ToString("X")))
+            .AppendLine(Loc.F("Přijato: {0}", row.ReceivedAt.ToLocalTime().ToString("G", Loc.Culture)))
+            .AppendLine(Loc.F("Boot: {0}", row.Owner.Boot.Low.ToString("X16") + row.Owner.Boot.High.ToString("X16")))
+            .AppendLine(Loc.F("Generace: {0} · {1}", row.Owner.Kind, row.Owner.Generation))
+            .AppendLine().Append(Loc.T("Název a typ patří pozorovanému duplikátu. Číselná hodnota handle mohla být od výpisu znovu použita. Objekty nelze zavírat ani měnit."));
         detail.Text = text.ToString();
     }
 

@@ -22,12 +22,12 @@ public sealed class GlobalObjectSearchResult
     {
         Owner = owner; OwnerName = ownerName; Handle = handle; Observation = observation; DisplayName = displayName; ReceivedAt = receivedAt;
     }
-    public string OwnerText => GlobalObjectSearchText.Flat(OwnerName.Length == 0 ? "Proces" : OwnerName, 100) + " · PID " + Owner.Pid;
+    public string OwnerText => GlobalObjectSearchText.Flat(OwnerName.Length == 0 ? Loc.T("Proces") : OwnerName, 100) + " · PID " + Owner.Pid;
     public string HandleText => "0x" + Handle.Value.ToString("X", CultureInfo.InvariantCulture);
-    public string TypeText => Observation.TypeState == SampleState.Valid ? Observation.Type.Length == 0 ? "(prázdný typ)" : Observation.Type
-        : "Typ: " + GlobalObjectSearchText.State(Observation.TypeState);
-    public string NameText => Observation.NameState != SampleState.Valid ? "Název: " + GlobalObjectSearchText.State(Observation.NameState)
-        : DisplayName.Length == 0 ? "Bez názvu" : GlobalObjectSearchText.Flat(DisplayName, 200);
+    public string TypeText => Observation.TypeState == SampleState.Valid ? Observation.Type.Length == 0 ? Loc.T("(prázdný typ)") : Observation.Type
+        : Loc.F("Typ: {0}", GlobalObjectSearchText.State(Observation.TypeState));
+    public string NameText => Observation.NameState != SampleState.Valid ? Loc.F("Název: {0}", GlobalObjectSearchText.State(Observation.NameState))
+        : DisplayName.Length == 0 ? Loc.T("Bez názvu") : GlobalObjectSearchText.Flat(DisplayName, 200);
     public string ObjectText => GlobalObjectSearchText.Flat(TypeText, 80) + " · " + NameText;
 }
 
@@ -47,8 +47,8 @@ internal static class GlobalObjectSearchText
         return length < flat.Length ? flat[..length] + "…" : flat;
     }
     internal static string State(SampleState state) => state switch {
-        SampleState.Valid => "Dostupné", SampleState.First => "První vzorek", SampleState.AccessDenied => "Chybí oprávnění",
-        SampleState.Unsupported => "Nepodporováno", SampleState.Stale => "Zastaralé", SampleState.Error => "Chyba",
-        SampleState.Gap => "Mezera", _ => "Nedostupné"
+        SampleState.Valid => Loc.T("Dostupné"), SampleState.First => Loc.T("První vzorek"), SampleState.AccessDenied => Loc.T("Chybí oprávnění"),
+        SampleState.Unsupported => Loc.T("Nepodporováno"), SampleState.Stale => Loc.T("Zastaralé"), SampleState.Error => Loc.T("Chyba"),
+        SampleState.Gap => Loc.T("Mezera"), _ => Loc.T("Nedostupné")
     };
 }

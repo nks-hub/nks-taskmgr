@@ -23,7 +23,7 @@ internal static class PublisherTrust
     {
         try { return ReadProductCore(image, description, originalFilename); }
         catch (Exception error) when (error is DecoderFallbackException or ArgumentOutOfRangeException or OverflowException) {
-            throw new InvalidDataException("Podepsaný prostředek verze PE je poškozený.", error);
+            throw new InvalidDataException(Loc.T("Podepsaný prostředek verze PE je poškozený."), error);
         }
     }
     private static SignedImageProduct ReadProductCore(SignedImageLease image, string description, string originalFilename)
@@ -64,7 +64,7 @@ internal static class PublisherTrust
             if (dataRva < rva || dataSize is < 64 or > 65535 || dataRva - rva > resources.Length
                 || dataSize > resources.Length - (dataRva - rva) || U32(resources, language.Offset + 12) != 0) throw Invalid();
             var product = RequireVersionResource(resources.AsSpan(checked((int)(dataRva - rva)), checked((int)dataSize)).ToArray(), description, originalFilename);
-            if (result is not null && result != product) throw new InvalidDataException("Jazykové varianty podepsané role si odporují.");
+            if (result is not null && result != product) throw new InvalidDataException(Loc.T("Jazykové varianty podepsané role si odporují."));
             result = product;
         }
         image.VerifyUnchanged(); return result ?? throw Invalid();
@@ -74,7 +74,7 @@ internal static class PublisherTrust
         bool installer = description == "NKS Task Manager Setup" && originalFilename == "NksTaskMgrSetup.exe";
         var product = VersionResource(bytes, installer);
         if (product.ProductName != "NKS Task Manager" || product.Description != description || product.OriginalFilename != originalFilename
-            || !ValidProductVersion(product.ProductVersion)) throw new InvalidDataException("Podepsaná role nebo verze souboru neodpovídá aplikaci.");
+            || !ValidProductVersion(product.ProductVersion)) throw new InvalidDataException(Loc.T("Podepsaná role nebo verze souboru neodpovídá aplikaci."));
         return product;
     }
     internal static bool ValidProductVersion(string value)
@@ -108,7 +108,7 @@ internal static class PublisherTrust
                 if (!values.TryGetValue("ProductName", out var name) || !values.TryGetValue("FileDescription", out var description)
                     || !values.TryGetValue("OriginalFilename", out var original) || !values.TryGetValue("ProductVersion", out var version)) throw Invalid();
                 var current = new SignedImageProduct(name, description, original, version);
-                if (product is not null && product != current) throw new InvalidDataException("Podepsané verze prostředků si odporují.");
+                if (product is not null && product != current) throw new InvalidDataException(Loc.T("Podepsané verze prostředků si odporují."));
                 product = current;
             }
         }
@@ -154,5 +154,5 @@ internal static class PublisherTrust
     private static int Align(int value) => (value + 3) & ~3;
     private static ushort U16(byte[] bytes, int offset) => BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(offset));
     private static uint U32(byte[] bytes, int offset) => BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(offset));
-    private static InvalidDataException Invalid() => new("Podepsaný soubor nemá jednoznačné platné prostředky verze PE.");
+    private static InvalidDataException Invalid() => new(Loc.T("Podepsaný soubor nemá jednoznačné platné prostředky verze PE."));
 }

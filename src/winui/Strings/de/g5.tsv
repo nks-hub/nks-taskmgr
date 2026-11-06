@@ -1,0 +1,444 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Výkon	Leistung
+Načítám živá data…	Live-Daten werden geladen…
+Hledat název nebo PID	Name oder PID suchen
+Pozastavit	Anhalten
+Procesy	Prozesse
+Služby	Dienste
+Sestava	System
+Aplikace	Apps
+PROCESOR	PROZESSOR
+Procesor	Prozessor
+Načítám…	Wird geladen…
+Auto měřítko	Auto-Skalierung
+Pokračovat	Fortsetzen
+Hledat (Ctrl+F)	Suchen (Strg+F)
+Jednotlivé prostředky systému	Einzelne Systemressourcen
+Živé procesy	Laufende Prozesse
+Hledat název procesu nebo PID	Prozessname oder PID suchen
+Po spuštění	Autostart
+Uživatelé	Benutzer
+Spuštění	Autostart
+Všechny procesy	Alle Prozesse
+Aktivní	Aktiv
+Strom	Struktur
+Vlastní hodnoty	Eigene Werte
+Proces s potomky	Prozess mit Nachfolgern
+Význam hodnot ve stromu procesů	Bedeutung der Werte in der Prozessstruktur
+Vlastní hodnoty patří jednomu PID. Proces s potomky sčítá CPU, paměť a I/O ověřených členů celé větve i při hledání nebo sbalení. Chybějící údaje jsou označené. Součet pracovních sad může sdílené stránky RAM započítat opakovaně.	Eigene Werte gehören zu einer PID. „Prozess mit Nachfolgern“ summiert CPU, Arbeitsspeicher und E/A der überprüften Mitglieder des ganzen Zweigs, auch bei Suche oder Zuklappen. Fehlende Angaben sind gekennzeichnet. Die Summe der Arbeitssätze kann gemeinsam genutzte RAM-Seiten mehrfach zählen.
+Sloupce	Spalten
+Zobrazit nebo skrýt sloupce procesů	Prozessspalten ein- oder ausblenden
+Export	Export
+Porovnat	Vergleichen
+Podrobnosti	Details
+Hledat objekty	Objekte suchen
+Události	Ereignisse
+Hledat službu, účet nebo PID	Dienst, Konto oder PID suchen
+{0} · {1} procesů · stáří {2}	{0} · {1} Prozesse · Alter {2}
+Pozastaveno	Angehalten
+Živá data	Live-Daten
+{0} proces	{0} Prozess
+{0} procesy	{0} Prozesse
+{0} procesů	{0} Prozesse
+{0} · pořadí přidrženo	{0} · Reihenfolge gehalten
+Porovnat snímky	Momentaufnahmen vergleichen
+Vybrat původní JSON…	Frühere JSON-Datei auswählen…
+Vybrat následující JSON…	Spätere JSON-Datei auswählen…
+Zrušit načítání	Laden abbrechen
+Soubor není vybraný	Keine Datei ausgewählt
+Vyberte původní a následující snímek.	Wählen Sie die frühere und die spätere Momentaufnahme.
+Vyberte proces ze seznamu.	Wählen Sie einen Prozess aus der Liste.
+Vše	Alle
+Detail vybraného procesu · pouze pro čtení	Details des ausgewählten Prozesses · schreibgeschützt
+Porovnání historických snímků	Vergleich historischer Momentaufnahmen
+Vybrat původní snímek JSON	Frühere JSON-Momentaufnahme auswählen
+Vybrat následující snímek JSON	Spätere JSON-Momentaufnahme auswählen
+Porovnat vybrané snímky	Ausgewählte Momentaufnahmen vergleichen
+Zrušit načítání a porovnání	Laden und Vergleich abbrechen
+Filtrovat podle výsledku porovnání	Nach Vergleichsergebnis filtern
+Výsledky porovnání procesů	Ergebnisse des Prozessvergleichs
+Původní a následující hodnoty vybraného procesu	Frühere und spätere Werte des ausgewählten Prozesses
+Původní snímek JSON	Frühere JSON-Momentaufnahme
+Následující snímek JSON	Spätere JSON-Momentaufnahme
+Soubory se porovnají v pořadí původní → následující.	Die Dateien werden in der Reihenfolge früher → später verglichen.
+Soubor se nepodařilo vybrat: {0}	Die Datei konnte nicht ausgewählt werden: {0}
+Původní snímek	Frühere Momentaufnahme
+Načítám původní snímek…	Frühere Momentaufnahme wird geladen…
+Následující snímek	Spätere Momentaufnahme
+Načítám následující snímek…	Spätere Momentaufnahme wird geladen…
+Porovnání	Vergleich
+Porovnávám procesy…	Prozesse werden verglichen…
+Načítání nebo porovnání bylo zrušeno.	Laden oder Vergleich wurde abgebrochen.
+Původní	Früher
+Následující	Später
+Porovnání dokončeno.	Vergleich abgeschlossen.
+následující	später
+původní	früher
+Proces v tomto snímku není.	Der Prozess ist nicht in dieser Momentaufnahme.
+Název není součástí snímku.	Der Name ist nicht Teil der Momentaufnahme.
+identita ověřená	Identität überprüft
+identita neověřená	Identität nicht überprüft
+Rozdíl = následující - původní	Differenz = später - früher
+Rozdíl	Differenz
+Nové	Neu
+Ukončené	Beendet
+Změněné	Geändert
+Beze změny	Unverändert
+Nelze porovnat	Nicht vergleichbar
+U snímku nelze ověřit spuštění systému.	Der Systemstart der Momentaufnahme kann nicht überprüft werden.
+Snímky pocházejí z různých spuštění systému.	Die Momentaufnahmen stammen aus verschiedenen Systemstarts.
+Životnost procesu není spolehlivě ověřená.	Die Lebensdauer des Prozesses ist nicht zuverlässig überprüft.
+Druh identity procesu se mezi snímky liší.	Die Art der Prozessidentität unterscheidet sich zwischen den Momentaufnahmen.
+Snímek procesů není úplný nebo aktuální.	Die Prozessmomentaufnahme ist unvollständig oder nicht aktuell.
+Pracovní sada	Arbeitssatz
+Soukromá paměť	Privater Arbeitsspeicher
+Čtení I/O	E/A-Lesevorgänge
+Zápis I/O	E/A-Schreibvorgänge
+Vlákna	Threads
+Popisovače	Handles
+% počítače	% des Computers
+Platné	Gültig
+První vzorek	Erste Stichprobe
+Nedostupné	Nicht verfügbar
+Chybí oprávnění	Keine Berechtigung
+Nepodporováno	Nicht unterstützt
+Zastaralé	Veraltet
+Chyba	Fehler
+Mezera v měření	Messlücke
+Pole není ve snímku.	Das Feld ist nicht in der Momentaufnahme.
+p. b.	Pp.
+Nelze určit.	Nicht bestimmbar.
+Akce	Aktionen
+Akce s vybranými živými procesy	Aktionen für die ausgewählten laufenden Prozesse
+Se zvýšenými právy správce	Mit Administratorrechten
+{0} jako správce…	{0} als Administrator…
+Čekám na ukončení vlastního pracovníka nebo zvýšeného požadavku. Neopakujte akci.	Warten auf das Ende des eigenen Hilfsprozesses oder der Anfrage mit erhöhten Rechten. Wiederholen Sie die Aktion nicht.
+Vyberte nejvýše 64 procesů.	Wählen Sie höchstens 64 Prozesse.
+Zavření oken, ukončení, pozastavení, priorita a afinita živých procesů stejného uživatele a relace	Fenster schließen, beenden, anhalten, Priorität und Affinität laufender Prozesse desselben Benutzers und derselben Sitzung
+Ukončit strom	Prozessstruktur beenden
+Vyberte jeden živý kořen. Potomky znovu zjistí a ověří pracovník.	Wählen Sie einen laufenden Stammprozess. Der Hilfsprozess ermittelt und überprüft die Nachfolger erneut.
+Vyberte jeden proces. Každý proces má vlastní přiřazení procesorů.	Wählen Sie einen Prozess. Jeder Prozess hat eine eigene Prozessorzuordnung.
+Načítám výchozí CPU sets a dostupné logické procesory…	Standard-CPU-Sets und verfügbare logische Prozessoren werden geladen…
+Načítám současnou prioritu a afinitu vybraných procesů…	Aktuelle Priorität und Affinität der ausgewählten Prozesse werden geladen…
+Nastavení procesu není dostupné	Prozesseinstellungen sind nicht verfügbar
+Výběr se změnil	Die Auswahl hat sich geändert
+Akce nebyla odeslána. Vyberte znovu živý proces.	Die Aktion wurde nicht gesendet. Wählen Sie erneut einen laufenden Prozess.
+Dotaz na nastavení nebyl dokončen	Die Abfrage der Einstellungen wurde nicht abgeschlossen
+Výběr už není aktuální nebo byl dotaz zrušen. Změna nebyla odeslána.	Die Auswahl ist nicht mehr aktuell oder die Abfrage wurde abgebrochen. Es wurde keine Änderung gesendet.
+{0} Změna nebyla odeslána.	{0} Es wurde keine Änderung gesendet.
+Nízká	Niedrig
+Nižší než normální	Niedriger als normal
+Normální	Normal
+Vyšší než normální	Höher als normal
+Vysoká	Hoch
+{0}: současná priorita {1}	{0}: aktuelle Priorität {1}
+nedostupná	nicht verfügbar
+Nová priorita procesu	Neue Prozesspriorität
+Vysoká priorita může omezit odezvu ostatních aplikací.	Eine hohe Priorität kann die Reaktionsfähigkeit anderer Apps verringern.
+Afinita není dostupná	Affinität ist nicht verfügbar
+Toto nastavení vyžaduje jedinou ověřenou skupinu procesorů a dostupné masky procesu i systému. Výchozí CPU sets napříč skupinami mají samostatnou nabídku.	Diese Einstellung erfordert eine einzige überprüfte Prozessorgruppe und verfügbare Prozess- und Systemmasken. Standard-CPU-Sets über Gruppen hinweg haben einen eigenen Menüeintrag.
+Skupina {0} · současná maska 0x{1} · dostupná 0x{2}	Gruppe {0} · aktuelle Maske 0x{1} · verfügbar 0x{2}
+Vyberte alespoň jeden procesor. CPU sets se tímto ovládáním nenastavují.	Wählen Sie mindestens einen Prozessor. CPU-Sets werden mit diesem Steuerelement nicht festgelegt.
+Provést	Ausführen
+Zrušit	Abbrechen
+Čekám na výsledek pracovníka. Zrušení čekání nevrátí již provedenou akci.	Warten auf das Ergebnis des Hilfsprozesses. Das Abbrechen des Wartens macht eine bereits ausgeführte Aktion nicht rückgängig.
+Výslovně žádáte zvýšení práv. Následuje UAC (nejvýše 90 s) a vlastní potvrzení správce (60 s); samotná akce má limit 5 s. Nepotvrzený požadavek se automaticky neopakuje.	Sie fordern ausdrücklich erhöhte Rechte an. Es folgen die UAC (höchstens 90 s) und die eigene Administratorbestätigung (60 s); die Aktion selbst ist auf 5 s begrenzt. Eine unbestätigte Anfrage wird nicht automatisch wiederholt.
+Zrušit čekání	Warten abbrechen
+Čekání bylo zrušeno nebo se změnil vybraný proces.	Das Warten wurde abgebrochen oder der ausgewählte Prozess hat sich geändert.
+Výsledek není známý. Akce se mohla provést. {0}	Das Ergebnis ist unbekannt. Die Aktion wurde möglicherweise ausgeführt. {0}
+Zavřít	Schließen
+Výsledky procesové akce jsou v dialogu.	Die Ergebnisse der Prozessaktion stehen im Dialog.
+nízká	niedrig
+nižší než normální	niedriger als normal
+normální	normal
+vyšší než normální	höher als normal
+vysoká	hoch
+reálný čas (nelze nastavit)	Echtzeit (nicht einstellbar)
+Požádat o zavření oken	Fenster zum Schließen auffordern
+Ukončit proces	Prozess beenden
+Pozastavit proces	Prozess anhalten
+Obnovit běh procesu	Prozess fortsetzen
+Změnit prioritu	Priorität festlegen
+Afinita procesorů	Prozessoraffinität
+Výchozí CPU sets	Standard-CPU-Sets
+Zavřít handle v procesu	Handle im Prozess schließen
+Správce úloh Windows	Windows-Task-Manager
+Nastavení procesu	Prozesseinstellungen
+Pošle požadavek zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.	Sendet eine Schließanforderung an die sichtbaren Fenster der ausgewählten Prozesse. Die App kann das Speichern anbieten; das tatsächliche Schließen ist nicht garantiert.
+Ukončí vybrané procesy bez nabídky uložení. Neuložená data mohou být ztracena.	Beendet die ausgewählten Prozesse, ohne das Speichern anzubieten. Nicht gespeicherte Daten können verloren gehen.
+Pracovník znovu zjistí potomky tohoto kořene a ukončí ověřené děti před rodičem. Neuložená data mohou být ztracena. Nejvýše 256 cílů, tři průchody a pět sekund. Průchod není atomický; nově vzniklé nebo neověřitelné potomky nemusí zahrnout. Zrušení čekání provedené zásahy nevrací.	Der Hilfsprozess ermittelt die Nachfolger dieses Stammprozesses erneut und beendet überprüfte untergeordnete Prozesse vor dem übergeordneten. Nicht gespeicherte Daten können verloren gehen. Höchstens 256 Ziele, drei Durchläufe und fünf Sekunden. Der Durchlauf ist nicht atomar; neu entstandene oder nicht überprüfbare Nachfolger werden eventuell nicht erfasst. Das Abbrechen des Wartens macht bereits ausgeführte Eingriffe nicht rückgängig.
+Požádá systém o pozastavení procesu. Jeho okna přestanou reagovat a prostředky zůstanou obsazené.	Fordert das System auf, den Prozess anzuhalten. Seine Fenster reagieren nicht mehr und seine Ressourcen bleiben belegt.
+Požádá systém o obnovení procesu. Výsledek nezaručuje běh všech vláken pozastavených jinými nástroji.	Fordert das System auf, den Prozess fortzusetzen. Das Ergebnis garantiert nicht, dass von anderen Tools angehaltene Threads laufen.
+Nastaví prioritu plánování času CPU u vybraných procesů. Priorita reálného času není v nabídce.	Legt die CPU-Planungspriorität der ausgewählten Prozesse fest. Echtzeitpriorität wird nicht angeboten.
+Omezí proces na vybrané logické procesory v jediné skupině.	Beschränkt den Prozess auf die ausgewählten logischen Prozessoren in einer einzigen Gruppe.
+Nastaví výchozí výběr logických procesorů i napříč skupinami. Výslovné volby jednotlivých vláken a pevná afinita mají přednost. Potvrzení nastavení není důkaz, na kterém procesoru se vlákno skutečně spustilo.	Legt die Standardauswahl logischer Prozessoren fest, auch über Gruppen hinweg. Ausdrückliche Vorgaben einzelner Threads und feste Affinität haben Vorrang. Die Bestätigung der Einstellung beweist nicht, auf welchem Prozessor ein Thread tatsächlich lief.
+Odpověď {0} · {1}	Antwort {0} · {1}
+Výsledek není známý. Akce se mohla provést.	Das Ergebnis ist unbekannt. Die Aktion wurde möglicherweise ausgeführt.
+Pracovník požadavek nepřijal; akce nebyla provedena.	Der Hilfsprozess hat die Anfrage nicht angenommen; die Aktion wurde nicht ausgeführt.
+Aktuální stav: {0}	Aktueller Status: {0}
+Nastavení bylo načteno.	Die Einstellungen wurden gelesen.
+Konec tohoto procesu byl potvrzen.	Das Ende dieses Prozesses wurde bestätigt.
+Handle byl zavřen. Název nebo otisk zavřeného objektu odpovídá potvrzenému objektu.	Das Handle wurde geschlossen. Name oder Fingerabdruck des geschlossenen Objekts entsprechen dem bestätigten Objekt.
+Zavřen objekt stejného typu a přístupu; totožnost s potvrzeným objektem nelze prokázat.	Ein Objekt desselben Typs und Zugriffs wurde geschlossen; die Identität mit dem bestätigten Objekt lässt sich nicht nachweisen.
+Změna byla ověřena zpětným čtením.	Die Änderung wurde durch erneutes Lesen überprüft.
+Požadavek zavření byl odeslán; zavření není potvrzené.	Die Schließanforderung wurde gesendet; das Schließen ist nicht bestätigt.
+Požadavek ukončení byl přijat; konec procesu zatím není potvrzený.	Die Beendigungsanforderung wurde angenommen; das Ende des Prozesses ist noch nicht bestätigt.
+Systém přijal požadavek. Stav všech vláken není potvrzený.	Das System hat die Anfrage angenommen. Der Status aller Threads ist nicht bestätigt.
+Akce byla odmítnuta.	Die Aktion wurde abgelehnt.
+Identita procesu se změnila; výsledek není ověřený.	Die Prozessidentität hat sich geändert; das Ergebnis ist nicht überprüft.
+Identita procesu se změnila. Akce nebyla provedena.	Die Prozessidentität hat sich geändert. Die Aktion wurde nicht ausgeführt.
+Proces už skončil.	Der Prozess ist bereits beendet.
+Zásah nebyl proveden.	Es wurde kein Eingriff ausgeführt.
+Operace není pro tento cíl podporovaná.	Der Vorgang wird für dieses Ziel nicht unterstützt.
+Výsledek nebyl ověřen. Akce se mohla provést.	Das Ergebnis wurde nicht überprüft. Die Aktion wurde möglicherweise ausgeführt.
+Akce skončila chybou.	Die Aktion ist fehlgeschlagen.
+Akce se mohla provést.	Die Aktion wurde möglicherweise ausgeführt.
+Odesláno oknům: {0}, chyby odeslání: {1}.	An Fenster gesendet: {0}, Sendefehler: {1}.
+Neplatný cíl.	Ungültiges Ziel.
+Pracovník ani řídicí aplikace nejsou povoleným cílem.	Weder der Hilfsprozess noch die steuernde App ist ein zulässiges Ziel.
+Systémový nebo služební proces.	System- oder Dienstprozess.
+Kritický proces systému.	Kritischer Systemprozess.
+Chráněný proces.	Geschützter Prozess.
+Cíl patří jinému uživateli nebo relaci.	Das Ziel gehört einem anderen Benutzer oder einer anderen Sitzung.
+Windows odmítl přístup.	Windows hat den Zugriff verweigert.
+Identitu nelze ověřit.	Die Identität kann nicht überprüft werden.
+Čas vytvoření neodpovídá výběru.	Die Erstellungszeit stimmt nicht mit der Auswahl überein.
+Proces nemá vhodné viditelné okno.	Der Prozess hat kein geeignetes sichtbares Fenster.
+Okno už nepatří tomuto procesu.	Das Fenster gehört nicht mehr zu diesem Prozess.
+Nepovolená hodnota nastavení.	Unzulässiger Einstellungswert.
+Více skupin procesorů není podporováno.	Mehrere Prozessorgruppen werden nicht unterstützt.
+Některá okna požadavek nepřijala.	Einige Fenster haben die Anforderung nicht angenommen.
+Zpětné čtení nepotvrdilo požadovanou hodnotu.	Das erneute Lesen hat den angeforderten Wert nicht bestätigt.
+Ochranu cíle nelze ověřit.	Der Schutz des Ziels kann nicht überprüft werden.
+Identitu řídicí aplikace nelze ověřit.	Die Identität der steuernden App kann nicht überprüft werden.
+Hodnota už byla nastavená.	Der Wert war bereits festgelegt.
+Byl překročen omezený počet oken.	Die Fensterbegrenzung wurde überschritten.
+Potřebná systémová funkce není dostupná.	Eine benötigte Systemfunktion ist nicht verfügbar.
+Vazbu na potvrzený strom nelze ověřit.	Die Zugehörigkeit zur bestätigten Struktur kann nicht überprüft werden.
+Pro tento cíl nezbyl čas v omezeném průchodu.	Für dieses Ziel blieb im begrenzten Durchlauf keine Zeit.
+Nový inventář stromu není dostupný.	Eine neue Bestandsaufnahme der Struktur ist nicht verfügbar.
+Zásah nebyl bezpečně ověřitelný.	Der Eingriff war nicht sicher überprüfbar.
+Handle s touto hodnotou už v procesu není.	Ein Handle mit diesem Wert ist nicht mehr im Prozess.
+Pod hodnotou handle je jiný objekt, typ nebo přístup než při potvrzení.	Der Handle-Wert verweist auf ein anderes Objekt, einen anderen Typ oder Zugriff als bei der Bestätigung.
+Objekt handle nelze ověřit.	Das Handle-Objekt kann nicht überprüft werden.
+Handle je chráněný proti zavření.	Das Handle ist gegen Schließen geschützt.
+Hledat otevřené objekty ve všech dostupných procesech	Geöffnete Objekte in allen verfügbaren Prozessen suchen
+Hledat otevřené objekty podle názvu nebo typu	Geöffnete Objekte nach Name oder Typ suchen
+Část názvu nebo cesty, například C:\\složka\\soubor	Teil eines Namens oder Pfads, zum Beispiel C:\\Ordner\\Datei
+Například File, Event nebo Mutant	Zum Beispiel File, Event oder Mutant
+Spustit	Starten
+Vybrat živý proces →	Laufenden Prozess auswählen →
+Zadejte alespoň dva znaky do názvu nebo typu. Hledání se spouští tlačítkem.	Geben Sie mindestens zwei Zeichen in Name oder Typ ein. Die Suche startet über die Schaltfläche.
+{0} výsledků	{0} Ergebnisse
+Vyberte výsledek ze seznamu.	Wählen Sie ein Ergebnis aus der Liste.
+Hledat otevřené objekty	Geöffnete Objekte suchen
+Název objektu nebo cesta obsahuje	Objektname oder Pfad enthält
+Typ objektu obsahuje	Objekttyp enthält
+Část názvu objektu nebo cesty	Teil des Objektnamens oder Pfads
+Část typu objektu	Teil des Objekttyps
+Spustit nové hledání napříč dostupnými procesy	Neue Suche in allen verfügbaren Prozessen starten
+Zrušit hledání	Suche abbrechen
+Pozorované otevřené objekty a jejich vlastníci	Beobachtete geöffnete Objekte und ihre Besitzer
+Údaje vybraného objektu pouze pro čtení	Angaben zum ausgewählten Objekt, schreibgeschützt
+Vybrat proces pouze při shodě celé aktuální identity	Prozess nur bei Übereinstimmung der gesamten aktuellen Identität auswählen
+Průběh a omezení hledání	Suchfortschritt und Grenzen
+Ruším hledání…	Suche wird abgebrochen…
+Historické pozorování: shodný aktuální proces není dostupný. Žádná akce nebyla provedena.	Historische Beobachtung: Ein übereinstimmender aktueller Prozess ist nicht verfügbar. Es wurde keine Aktion ausgeführt.
+Pole obsahují nový dotaz. Výsledky patří předchozímu hledání; použijte Spustit.	Die Felder enthalten eine neue Abfrage. Die Ergebnisse gehören zur vorherigen Suche; verwenden Sie „Starten“.
+Identitu spuštění Windows zatím nelze ověřit. Počkejte na sběr dat a zkuste to znovu.	Die Identität des Windows-Starts kann noch nicht überprüft werden. Warten Sie auf die Datenerfassung und versuchen Sie es erneut.
+{0} výsledků · pouze čtení	{0} Ergebnisse · schreibgeschützt
+Načítám vlastníky otevřených objektů…	Besitzer geöffneter Objekte werden geladen…
+Limity: 2 minuty, 25 000 dotazů, 4 096 objektů na vlastníka, 5 000 výsledků a 8 MiB textu. Nedostupné položky se přeskočí.	Grenzen: 2 Minuten, 25.000 Abfragen, 4.096 Objekte pro Besitzer, 5.000 Ergebnisse und 8 MiB Text. Nicht verfügbare Elemente werden übersprungen.
+Hledání bylo zrušené; výsledky jsou neúplná historická pozorování.	Die Suche wurde abgebrochen; die Ergebnisse sind unvollständige historische Beobachtungen.
+Hledání nelze dokončit: {0}	Die Suche kann nicht abgeschlossen werden: {0}
+Vlastníci: {0}/{1} · prohledaní {2} · s nedostupnými údaji {3} · změnění/ukončení {4} · omezení {5} · zbývá {6}	Besitzer: {0}/{1} · durchsucht {2} · mit nicht verfügbaren Angaben {3} · geändert/beendet {4} · begrenzt {5} · verbleibend {6}
+Dotazy na objekty: {0} · přeskočené položky: {1} · shody: {2}	Objektabfragen: {0} · übersprungene Elemente: {1} · Treffer: {2}
+Částečné výsledky: další objekty či vlastníci mohou chybět.	Teilergebnisse: Weitere Objekte oder Besitzer können fehlen.
+Prohledávám {0}	Durchsuche {0}
+Zrušeno · výsledky jsou neúplná historická pozorování.	Abgebrochen · die Ergebnisse sind unvollständige historische Beobachtungen.
+Průchod není úplný; chybějící shoda neznamená, že objekt není otevřený.	Der Durchlauf ist unvollständig; ein fehlender Treffer bedeutet nicht, dass das Objekt nicht geöffnet ist.
+Průchod dokončen. Výsledky jsou pozorování v době dotazu.	Durchlauf abgeschlossen. Die Ergebnisse sind Beobachtungen zum Zeitpunkt der Abfrage.
+Zopakovat	Wiederholen
+Vybrat shodný aktuální proces v hlavním okně.	Den übereinstimmenden aktuellen Prozess im Hauptfenster auswählen.
+Historická nebo neověřitelná identita nemá živou akci.	Eine historische oder nicht überprüfbare Identität hat keine Live-Aktion.
+Handle: {0}	Handle: {0}
+Typ: {0} · {1} · NTSTATUS 0x{2}	Typ: {0} · {1} · NTSTATUS 0x{2}
+Pozorovaný název: {0}	Beobachteter Name: {0}
+(bez názvu)	(ohne Namen)
+Stav názvu: {0} · NTSTATUS 0x{1}	Namensstatus: {0} · NTSTATUS 0x{1}
+DOS/UNC zobrazení: {0}	DOS/UNC-Darstellung: {0}
+Přístup ze seznamu: 0x{0} · atributy 0x{1}	Zugriff laut Liste: 0x{0} · Attribute 0x{1}
+Přijato: {0}	Empfangen: {0}
+Boot: {0}	Systemstart: {0}
+Generace: {0} · {1}	Generation: {0} · {1}
+Název a typ patří pozorovanému duplikátu. Číselná hodnota handle mohla být od výpisu znovu použita. Objekty nelze zavírat ani měnit.	Name und Typ gehören zum beobachteten Duplikat. Der numerische Handle-Wert wurde seit der Auflistung möglicherweise wiederverwendet. Objekte können weder geschlossen noch geändert werden.
+kontext měření nedostupný	Messkontext nicht verfügbar
+měřicí okno {0}	Messfenster {0}
+okamžitý odečet	Momentanwert
+měřicí okno zatím nedostupné	Messfenster noch nicht verfügbar
+měřicí okno zdroj neuvádí	Quelle gibt kein Messfenster an
+Zastaralá data	Veraltete Daten
+Platný vzorek	Gültige Stichprobe
+Stav: {0}\nZdroj: {1}	Status: {0}\nQuelle: {1}
+Kontext měření není dostupný.	Messkontext ist nicht verfügbar.
+Jednotka vzorku: {0}\nVýpočet: {1}	Stichprobeneinheit: {0}\nBerechnung: {1}
+Normalizace: {0}	Normalisierung: {0}
+100 % znamená celý počítač	100 % bedeutet den ganzen Computer
+100 % znamená jeden logický procesor	100 % bedeutet einen logischen Prozessor
+nejvytíženější GPU engine	am stärksten ausgelastete GPU-Engine
+aktivní čas zařízení	aktive Zeit des Geräts
+bez normalizace	ohne Normalisierung
+použitý dělitel {0}	verwendeter Divisor {0}
+dělitel není známý	Divisor unbekannt
+Odstup pozorování: {0}	Beobachtungsabstand: {0}
+zatím nedostupný	noch nicht verfügbar
+Pozorováno před {0}	Beobachtet vor {0}
+nativní statistiky procesů	native Prozessstatistik
+časové čítače procesorů	Prozessorzeitzähler
+systémové paměťové statistiky	Systemspeicherstatistik
+čítač výkonu Windows (PDH)	Windows-Leistungsindikator (PDH)
+čítače síťového adaptéru	Netzwerkadapterzähler
+ovladač grafického adaptéru	Grafikkartentreiber
+neznámý	unbekannt
+počet	Anzahl
+operace/s	Vorgänge/s
+neznámá	unbekannt
+okamžitá hodnota	Momentanwert
+rozdíl čítačů za skutečný časový interval	Zählerdifferenz über das tatsächliche Zeitintervall
+poměr rozdílů čítačů	Verhältnis der Zählerdifferenzen
+určuje poskytovatel	vom Anbieter festgelegt
+Uložit snímek	Momentaufnahme speichern
+Náhled exportu JSON	Vorschau des JSON-Exports
+{0} zařízení	{0} Geräte
+zařízení nedostupná	Geräte nicht verfügbar
+zařízení čekají na vzorek	Geräte warten auf eine Stichprobe
+{0} procesů · {1} · {2:g}	{0} Prozesse · {1} · {2:g}
+Paměť	Arbeitsspeicher
+Procesové I/O	Prozess-E/A
+Zařízení	Geräte
+Zahrnout názvy procesů a zařízení	Prozess- und Gerätenamen einschließen
+Zahrnout identifikátory zařízení	Gerätekennungen einschließen
+Názvy a identifikátory mohou obsahovat osobní údaje nebo sériová čísla. Příkazy, argumenty a účty se neukládají.	Namen und Kennungen können personenbezogene Daten oder Seriennummern enthalten. Befehle, Argumente und Konten werden nicht gespeichert.
+Ukázka: nejvýše 3 položky z každého seznamu. Soubor obsahuje celý snímek.	Vorschau: höchstens 3 Elemente aus jeder Liste. Die Datei enthält die ganze Momentaufnahme.
+Uložit…	Speichern…
+Uložen snímek: {0}	Momentaufnahme gespeichert: {0}
+Snímek je uložený	Die Momentaufnahme ist gespeichert
+Původní zálohu se nepodařilo odstranit. Zůstala v souboru: {0}	Die ursprüngliche Sicherung konnte nicht entfernt werden. Sie verbleibt in der Datei: {0}
+Snímek se nepodařilo uložit	Die Momentaufnahme konnte nicht gespeichert werden
+Načítám služby…	Dienste werden geladen…
+Společný PID	Gemeinsame PID
+Všechny	Alle
+Běžící	Wird ausgeführt
+Zastavené	Beendet
+Ostatní	Sonstige
+Pouze služby se společným hlášeným PID	Nur Dienste mit gemeinsamer gemeldeter PID
+Služby se stejným nenulovým PID hlášeným správcem služeb. Kombinuje se s filtrem stavu a hledáním.	Dienste mit derselben PID ungleich null, die der Dienststeuerungs-Manager meldet. Wird mit dem Statusfilter und der Suche kombiniert.
+Služba	Dienst
+Stav	Status
+Spouštění	Starttyp
+Účet	Konto
+Systémové služby	Systemdienste
+Společný PID ({0})	Gemeinsame PID ({0})
+Žádná služba neodpovídá filtru.	Kein Dienst entspricht dem Filter.
+{0} · {1} služeb · stáří {2}	{0} · {1} Dienste · Alter {2}
+Klient aktualizací nemá ověřenou životnost.	Der Aktualisierungsclient hat keine überprüfte Lebensdauer.
+Podepsaný pracovník tento ruční úklid neposkytuje. Úklid nebyl potvrzen.	Der signierte Hilfsprozess bietet diese manuelle Bereinigung nicht an. Die Bereinigung wurde nicht bestätigt.
+Součty úklidu překračují číselný rozsah.	Die Bereinigungssummen überschreiten den Zahlenbereich.
+Výsledek mazání nebyl doručen; neopakujte požadavek naslepo.	Das Löschergebnis wurde nicht zugestellt; wiederholen Sie die Anfrage nicht blind.
+Potvrzení úklidu nebylo odesláno.	Die Bestätigung der Bereinigung wurde nicht gesendet.
+Neplatný balíček aktualizace.	Ungültiges Aktualisierungspaket.
+Cesta balíčku překračuje limit protokolu.	Der Paketpfad überschreitet die Protokollgrenze.
+Odpověď aktualizací nepatří požadavku nebo ověřenému klientovi.	Die Aktualisierungsantwort gehört nicht zur Anfrage oder zum überprüften Client.
+Neúplný rámec aktualizace.	Unvollständiger Aktualisierungsrahmen.
+Neplatný identifikátor obnovy.	Ungültige Wiederherstellungskennung.
+Identifikátor obnovy nesmí být nulový.	Die Wiederherstellungskennung darf nicht null sein.
+Neplatný SHA256 balíčku.	Ungültiger Paket-SHA256.
+SHA256 balíčku nesmí být nulový.	Der Paket-SHA256 darf nicht null sein.
+Pracovník nevrátil kanonickou místní cestu.	Der Hilfsprozess hat keinen kanonischen lokalen Pfad zurückgegeben.
+Neplatný text aktualizace.	Ungültiger Aktualisierungstext.
+Pracovník vrátil neplatná metadata aktualizace.	Der Hilfsprozess hat ungültige Aktualisierungsmetadaten zurückgegeben.
+Potvrzeno	Bestätigt
+Chybí důvěra vydavatele	Herausgebervertrauen fehlt
+Požadavek odmítnut	Anfrage abgelehnt
+Neplatný požadavek	Ungültige Anfrage
+Úložiště balíčků je plné	Der Paketspeicher ist voll
+Souběžná operace nebo změněný plán	Gleichzeitiger Vorgang oder geänderter Plan
+Balíček nebo předchozí ověřená instalace není dostupná	Das Paket oder die vorherige überprüfte Installation ist nicht verfügbar
+Chyba souboru nebo komunikace	Datei- oder Kommunikationsfehler
+Aplikace stále běží; instalace nebyla zahájena	Die App läuft noch; die Installation wurde nicht gestartet
+Instalátor ohlásil chybu	Das Installationsprogramm hat einen Fehler gemeldet
+Ověření instalace selhalo	Überprüfung der Installation fehlgeschlagen
+Jiná aktualizace probíhá	Eine andere Aktualisierung läuft
+Výsledek není známý	Das Ergebnis ist unbekannt
+Využití	Auslastung
+Odesílání	Senden
+{0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.	{0}. Pfeiltasten durchlaufen den Verlauf, Eingabe heftet einen Zeitpunkt an. Umschalt und Klick oder Umschalt und Eingabe wählen die zwei Enden eines Intervalls. Esc hebt die Auswahl auf.
+nyní	jetzt
+Soukromé úložiště obnovy nemá ověřeného vlastníka nebo ochranu přístupu.	Der private Wiederherstellungsspeicher hat keinen überprüften Besitzer oder Zugriffsschutz.
+Úložiště obnovy má neočekávaná oprávnění. Záznamy zůstávají zachované.	Der Wiederherstellungsspeicher hat unerwartete Berechtigungen. Die Einträge bleiben erhalten.
+Zámek úložiště obnovy není ověřitelný.	Die Sperre des Wiederherstellungsspeichers ist nicht überprüfbar.
+Neplatný název záznamu obnovy.	Ungültiger Name des Wiederherstellungseintrags.
+Úložiště obnovy překročilo omezený počet souborů. Nic se nebude měnit.	Der Wiederherstellungsspeicher hat die Dateibegrenzung überschritten. Es wird nichts geändert.
+Vlastník záznamu obnovy nesouhlasí.	Der Besitzer des Wiederherstellungseintrags stimmt nicht überein.
+Záznam obnovy má nepovolenou velikost.	Der Wiederherstellungseintrag hat eine unzulässige Größe.
+Úložiště překročilo limit 1 MiB. Nic se nebude měnit.	Der Speicher hat die Grenze von 1 MiB überschritten. Es wird nichts geändert.
+Záznam obnovy je neúplný.	Der Wiederherstellungseintrag ist unvollständig.
+Záznam obnovy je prázdný.	Der Wiederherstellungseintrag ist leer.
+Záznam obnovy je poškozený nebo neodpovídá podporované transakci. Zůstane zachovaný.	Der Wiederherstellungseintrag ist beschädigt oder entspricht keiner unterstützten Transaktion. Er bleibt erhalten.
+Identita vlastníka v záznamu je neplatná.	Die Besitzeridentität im Eintrag ist ungültig.
+Neznámý nebo nedokončený pomocný zápis zůstane zachovaný.	Ein unbekannter oder unvollständiger Hilfseintrag bleibt erhalten.
+Úložiště překročilo limit 64 záznamů. Nic se nebude měnit.	Der Speicher hat die Grenze von 64 Einträgen überschritten. Es wird nichts geändert.
+Záznam nelze bezpečně přečíst. Zůstane zachovaný. {0}	Der Eintrag kann nicht sicher gelesen werden. Er bleibt erhalten. {0}
+Záznam obnovy se změnil. Obnovte přehled; soubor zůstal zachovaný.	Der Wiederherstellungseintrag hat sich geändert. Aktualisieren Sie die Übersicht; die Datei bleibt erhalten.
+Záznam dumpu překračuje limit bezpečného úložiště.	Der Abbildeintrag überschreitet die Grenze des sicheren Speichers.
+Úložiště obsahuje 64 nedokončených dumpů. Nejdřív otevřete jejich přehled.	Der Speicher enthält 64 unvollständige Abbilder. Öffnen Sie zuerst ihre Übersicht.
+Úložiště obnovy překročilo limit 1 MiB. Nový dump nebyl zahájen.	Der Wiederherstellungsspeicher hat die Grenze von 1 MiB überschritten. Ein neues Abbild wurde nicht gestartet.
+Trvalý záznam dumpu se změnil. Nebude přepsán.	Der dauerhafte Abbildeintrag hat sich geändert. Er wird nicht überschrieben.
+Identifikátor transakce už existuje.	Die Transaktionskennung existiert bereits.
+Vlastník záznamu se změnil. Záznam zůstane zachovaný.	Der Besitzer des Eintrags hat sich geändert. Der Eintrag bleibt erhalten.
+Záznam obnovy je poškozený. Zůstane zachovaný.	Der Wiederherstellungseintrag ist beschädigt. Er bleibt erhalten.
+Záznam je neúplný.	Der Eintrag ist unvollständig.
+Záznam obnovy se změnil. Zůstane zachovaný.	Der Wiederherstellungseintrag hat sich geändert. Er bleibt erhalten.
+Proces	Prozess
+(prázdný typ)	(leerer Typ)
+Typ: {0}	Typ: {0}
+Název: {0}	Name: {0}
+Bez názvu	Ohne Namen
+Dostupné	Verfügbar
+Mezera	Lücke
+Podepsaný prostředek verze PE je poškozený.	Die signierte PE-Versionsressource ist beschädigt.
+Jazykové varianty podepsané role si odporují.	Die Sprachvarianten der signierten Rolle widersprechen sich.
+Podepsaná role nebo verze souboru neodpovídá aplikaci.	Die signierte Rolle oder Dateiversion passt nicht zur App.
+Podepsané verze prostředků si odporují.	Die signierten Ressourcenversionen widersprechen sich.
+Podepsaný soubor nemá jednoznačné platné prostředky verze PE.	Die signierte Datei hat keine eindeutigen gültigen PE-Versionsressourcen.
+Předchozí dump nebo jeho úklid ještě probíhá.	Ein vorheriges Abbild oder dessen Bereinigung läuft noch.
+Dump uložen	Abbild gespeichert
+Dump neuložen: {0}	Abbild nicht gespeichert: {0}
+přístup odmítnut	Zugriff verweigert
+nepodporováno	nicht unterstützt
+proces skončil nebo se změnil	Prozess beendet oder geändert
+cíl nedostupný	Ziel nicht verfügbar
+překročen limit velikosti	Größengrenze überschritten
+zrušeno nebo překročen čas	abgebrochen oder Zeit überschritten
+neplatný požadavek	ungültige Anfrage
+výsledek nepotvrzen	Ergebnis nicht bestätigt
+Dump překročil limit 60 sekund. Výsledek není potvrzený; pracovník se ukončuje a vlastní dočasný soubor se uklízí.	Das Abbild hat die Grenze von 60 Sekunden überschritten. Das Ergebnis ist nicht bestätigt; der Hilfsprozess wird beendet und die eigene temporäre Datei wird bereinigt.
+Rodičovský adresář nelze ověřit. Soubor i záznam zůstanou zachované.	Der übergeordnete Ordner kann nicht überprüft werden. Datei und Eintrag bleiben erhalten.
+Rodičovský adresář má jinou identitu. Soubor zůstane zachovaný.	Der übergeordnete Ordner hat eine andere Identität. Die Datei bleibt erhalten.
+Cesta souboru neodpovídá záznamu. Soubor zůstane zachovaný.	Der Dateipfad entspricht nicht dem Eintrag. Die Datei bleibt erhalten.
+Identita nebo vlastník souboru nesouhlasí. Soubor zůstane zachovaný.	Identität oder Besitzer der Datei stimmen nicht überein. Die Datei bleibt erhalten.
+Velikost souboru překračuje limit obnovy.	Die Dateigröße überschreitet die Wiederherstellungsgrenze.
+Soubor se během ověřování změnil.	Die Datei hat sich während der Überprüfung geändert.
+Velikost souboru se během ověřování změnila.	Die Dateigröße hat sich während der Überprüfung geändert.
+Přejmenování vyžaduje jeden platný název souboru.	Das Umbenennen erfordert einen gültigen Dateinamen.
+Soubor neleží v ověřeném rodičovském adresáři.	Die Datei liegt nicht im überprüften übergeordneten Ordner.
+Soubor má nepovolený typ nebo více odkazů. Zůstane zachovaný.	Die Datei hat einen unzulässigen Typ oder mehrere Verknüpfungen. Sie bleibt erhalten.
+Prostředky	Ressourcen
+Automaticky podle uložených vzorků. Vypnuto: 0–100 %, kapacita paměti nebo rychlost připojení.	Automatisch nach gespeicherten Stichproben. Aus: 0–100 %, Speicherkapazität oder Verbindungsgeschwindigkeit.
+Celkem	Gesamt
+Logické	Logisch
+Překrytí	Überlagerung
+Připojené a zobrazené prostředky s historií využití	Verbundene und angezeigte Ressourcen mit Auslastungsverlauf
+Okno se nepodařilo svázat s hlavním oknem.	Das Fenster konnte nicht an das Hauptfenster gebunden werden.
+Okno nemá ověřené hlavní okno.	Das Fenster hat kein überprüftes Hauptfenster.
+Minimalizované okno se nepodařilo obnovit.	Das minimierte Fenster konnte nicht wiederhergestellt werden.

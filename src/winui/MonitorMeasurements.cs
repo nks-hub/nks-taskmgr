@@ -49,48 +49,48 @@ internal static class MeasurementText
 {
     internal static string Summary(MeasurementMetadata? metadata)
     {
-        if (metadata is not { Unit: not MeasurementUnit.Unknown } item) return "kontext měření nedostupný";
+        if (metadata is not { Unit: not MeasurementUnit.Unknown } item) return Loc.T("kontext měření nedostupný");
         return item.IntervalState switch {
-            MeasurementIntervalState.Measured => "měřicí okno " + Display.Number(item.IntervalNs / 1_000_000d, " ms", 1),
-            MeasurementIntervalState.NotApplicable => "okamžitý odečet", MeasurementIntervalState.Unavailable => "měřicí okno zatím nedostupné",
-            _ => "měřicí okno zdroj neuvádí"
+            MeasurementIntervalState.Measured => Loc.F("měřicí okno {0}", Display.Number(item.IntervalNs / 1_000_000d, " ms", 1)),
+            MeasurementIntervalState.NotApplicable => Loc.T("okamžitý odečet"), MeasurementIntervalState.Unavailable => Loc.T("měřicí okno zatím nedostupné"),
+            _ => Loc.T("měřicí okno zdroj neuvádí")
         };
     }
 
     internal static string Describe(MeasurementMetadata? metadata, Metric metric, bool stale)
     {
-        string state = stale ? "Zastaralá data" : metric.State == SampleState.Valid ? "Platný vzorek" : Display.Metric(metric, "");
-        string text = "Stav: " + state + "\nZdroj: " + Source(metric.Source);
+        string state = stale ? Loc.T("Zastaralá data") : metric.State == SampleState.Valid ? Loc.T("Platný vzorek") : Display.Metric(metric, "");
+        string text = Loc.F("Stav: {0}\nZdroj: {1}", state, Source(metric.Source));
         return text + "\n" + DescribeFormat(metadata);
     }
 
     internal static string DescribeFormat(MeasurementMetadata? metadata)
     {
-        if (metadata is not { Unit: not MeasurementUnit.Unknown } item) return "Kontext měření není dostupný.";
-        string text = "Jednotka vzorku: " + Unit(item.Unit) + "\nVýpočet: " + Basis(item.Basis);
-        text += "\nNormalizace: " + (item.Normalization switch {
-            MeasurementNormalization.WholeMachine => "100 % znamená celý počítač", MeasurementNormalization.LogicalProcessor => "100 % znamená jeden logický procesor",
-            MeasurementNormalization.BusiestGpuEngine => "nejvytíženější GPU engine", MeasurementNormalization.DeviceActiveTime => "aktivní čas zařízení", _ => "bez normalizace"
+        if (metadata is not { Unit: not MeasurementUnit.Unknown } item) return Loc.T("Kontext měření není dostupný.");
+        string text = Loc.F("Jednotka vzorku: {0}\nVýpočet: {1}", Unit(item.Unit), Basis(item.Basis));
+        text += "\n" + Loc.F("Normalizace: {0}", item.Normalization switch {
+            MeasurementNormalization.WholeMachine => Loc.T("100 % znamená celý počítač"), MeasurementNormalization.LogicalProcessor => Loc.T("100 % znamená jeden logický procesor"),
+            MeasurementNormalization.BusiestGpuEngine => Loc.T("nejvytíženější GPU engine"), MeasurementNormalization.DeviceActiveTime => Loc.T("aktivní čas zařízení"), _ => Loc.T("bez normalizace")
         });
-        if (item.NormalizationDivisor > 1) text += "; použitý dělitel " + item.NormalizationDivisor;
-        else if (item.NormalizationDivisor == 0) text += "; dělitel není známý";
+        if (item.NormalizationDivisor > 1) text += "; " + Loc.F("použitý dělitel {0}", item.NormalizationDivisor);
+        else if (item.NormalizationDivisor == 0) text += "; " + Loc.T("dělitel není známý");
         text += "\n" + Summary(item);
-        text += "\nOdstup pozorování: " + (item.CadenceNs > 0 ? Display.Number(item.CadenceNs / 1_000_000d, " ms", 1) : "zatím nedostupný");
-        if (item.ObservedAtNs > 0) text += "\nPozorováno před " + Display.Number(Math.Max(0, NativeMonitor.MonotonicNowNs - item.ObservedAtNs) / 1_000_000_000d, " s", 2);
+        text += "\n" + Loc.F("Odstup pozorování: {0}", item.CadenceNs > 0 ? Display.Number(item.CadenceNs / 1_000_000d, " ms", 1) : Loc.T("zatím nedostupný"));
+        if (item.ObservedAtNs > 0) text += "\n" + Loc.F("Pozorováno před {0}", Display.Number(Math.Max(0, NativeMonitor.MonotonicNowNs - item.ObservedAtNs) / 1_000_000_000d, " s", 2));
         return text;
     }
 
     internal static string Source(MetricSource value) => value switch {
-        MetricSource.NativeProcess => "nativní statistiky procesů", MetricSource.ProcessorTime => "časové čítače procesorů",
-        MetricSource.PerformanceInfo => "systémové paměťové statistiky", MetricSource.PerformanceCounter => "čítač výkonu Windows (PDH)",
-        MetricSource.NetworkInterface => "čítače síťového adaptéru", MetricSource.Dxgi => "DXGI", MetricSource.GpuAdapter => "ovladač grafického adaptéru", _ => "neznámý"
+        MetricSource.NativeProcess => Loc.T("nativní statistiky procesů"), MetricSource.ProcessorTime => Loc.T("časové čítače procesorů"),
+        MetricSource.PerformanceInfo => Loc.T("systémové paměťové statistiky"), MetricSource.PerformanceCounter => Loc.T("čítač výkonu Windows (PDH)"),
+        MetricSource.NetworkInterface => Loc.T("čítače síťového adaptéru"), MetricSource.Dxgi => "DXGI", MetricSource.GpuAdapter => Loc.T("ovladač grafického adaptéru"), _ => Loc.T("neznámý")
     };
     private static string Unit(MeasurementUnit value) => value switch {
         MeasurementUnit.Percent => "%", MeasurementUnit.Bytes => "B", MeasurementUnit.BytesPerSecond => "B/s", MeasurementUnit.BitsPerSecond => "bit/s",
-        MeasurementUnit.Celsius => "°C", MeasurementUnit.Seconds => "s", MeasurementUnit.Count => "počet", MeasurementUnit.OperationsPerSecond => "operace/s", _ => "neznámá"
+        MeasurementUnit.Celsius => "°C", MeasurementUnit.Seconds => "s", MeasurementUnit.Count => Loc.T("počet"), MeasurementUnit.OperationsPerSecond => Loc.T("operace/s"), _ => Loc.T("neznámá")
     };
     private static string Basis(MeasurementBasis value) => value switch {
-        MeasurementBasis.Gauge => "okamžitá hodnota", MeasurementBasis.ElapsedDelta => "rozdíl čítačů za skutečný časový interval",
-        MeasurementBasis.CounterRatio => "poměr rozdílů čítačů", MeasurementBasis.ProviderDefined => "určuje poskytovatel", _ => "neznámý"
+        MeasurementBasis.Gauge => Loc.T("okamžitá hodnota"), MeasurementBasis.ElapsedDelta => Loc.T("rozdíl čítačů za skutečný časový interval"),
+        MeasurementBasis.CounterRatio => Loc.T("poměr rozdílů čítačů"), MeasurementBasis.ProviderDefined => Loc.T("určuje poskytovatel"), _ => Loc.T("neznámý")
     };
 }

@@ -16,9 +16,9 @@ public sealed partial class MainWindow
     {
         exportSnapshot.Width = 35; exportSnapshot.Padding = new Thickness(0); exportSnapshot.IsEnabled = false;
         exportSnapshot.Content = UiIcon.Create("export", 0x95a4ad, 19);
-        AutomationProperties.SetName(exportSnapshot, "Uložit snímek");
+        AutomationProperties.SetName(exportSnapshot, Loc.T("Uložit snímek"));
         AutomationProperties.SetAutomationId(exportSnapshot, "snapshot-export");
-        ToolTipService.SetToolTip(exportSnapshot, "Uložit snímek");
+        ToolTipService.SetToolTip(exportSnapshot, Loc.T("Uložit snímek"));
         exportSnapshot.Click += async (_, _) => await ExportSnapshotAsync();
     }
 
@@ -31,10 +31,10 @@ public sealed partial class MainWindow
             var preview = new TextBox { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
                 FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas"), FontSize = 11, Height = 190 };
             AutomationProperties.SetAutomationId(preview, "snapshot-preview");
-            AutomationProperties.SetName(preview, "Náhled exportu JSON");
+            AutomationProperties.SetName(preview, Loc.T("Náhled exportu JSON"));
             var body = new StackPanel { Spacing = 10, MinWidth = 330 };
-            string devices = snapshot.ResourceTimeNs > 0 ? $"{snapshot.Resources.Length} zařízení" : snapshot.ResourceError ? "zařízení nedostupná" : "zařízení čekají na vzorek";
-            var summary = Label($"{snapshot.Processes.Length} procesů · {devices} · {snapshot.CapturedAt.LocalDateTime:g}", 12, 0x95a4ad);
+            string devices = snapshot.ResourceTimeNs > 0 ? Loc.F("{0} zařízení", snapshot.Resources.Length) : snapshot.ResourceError ? Loc.T("zařízení nedostupná") : Loc.T("zařízení čekají na vzorek");
+            var summary = Label(Loc.F("{0} procesů · {1} · {2:g}", snapshot.Processes.Length, devices, snapshot.CapturedAt.LocalDateTime), 12, 0x95a4ad);
             summary.TextWrapping = TextWrapping.Wrap; body.Children.Add(summary);
             var checks = new Dictionary<SnapshotFields, CheckBox>();
             var metrics = new Grid { ColumnSpacing = 14, RowSpacing = 2 };
@@ -48,21 +48,21 @@ public sealed partial class MainWindow
             }
             int position = 0;
             foreach (var (field, text, id) in new[] {
-                (SnapshotFields.Cpu, "Procesor", "snapshot-cpu"), (SnapshotFields.Memory, "Paměť", "snapshot-memory"),
-                (SnapshotFields.Io, "Procesové I/O", "snapshot-io"), (SnapshotFields.Devices, "Zařízení", "snapshot-devices") }) {
+                (SnapshotFields.Cpu, Loc.T("Procesor"), "snapshot-cpu"), (SnapshotFields.Memory, Loc.T("Paměť"), "snapshot-memory"),
+                (SnapshotFields.Io, Loc.T("Procesové I/O"), "snapshot-io"), (SnapshotFields.Devices, Loc.T("Zařízení"), "snapshot-devices") }) {
                 var check = AddChoice(field, text, id); Grid.SetColumn(check, position % 2); Grid.SetRow(check, position++ / 2); metrics.Children.Add(check);
             }
-            body.Children.Add(AddChoice(SnapshotFields.Names, "Zahrnout názvy procesů a zařízení", "snapshot-names"));
-            var ids = AddChoice(SnapshotFields.DeviceIds, "Zahrnout identifikátory zařízení", "snapshot-device-ids"); body.Children.Add(ids);
-            var privacy = Label("Názvy a identifikátory mohou obsahovat osobní údaje nebo sériová čísla. Příkazy, argumenty a účty se neukládají.", 11, 0x95a4ad);
+            body.Children.Add(AddChoice(SnapshotFields.Names, Loc.T("Zahrnout názvy procesů a zařízení"), "snapshot-names"));
+            var ids = AddChoice(SnapshotFields.DeviceIds, Loc.T("Zahrnout identifikátory zařízení"), "snapshot-device-ids"); body.Children.Add(ids);
+            var privacy = Label(Loc.T("Názvy a identifikátory mohou obsahovat osobní údaje nebo sériová čísla. Příkazy, argumenty a účty se neukládají."), 11, 0x95a4ad);
             privacy.TextWrapping = TextWrapping.Wrap; body.Children.Add(privacy);
-            var previewLabel = Label("Ukázka: nejvýše 3 položky z každého seznamu. Soubor obsahuje celý snímek.", 11, 0x95a4ad);
+            var previewLabel = Label(Loc.T("Ukázka: nejvýše 3 položky z každého seznamu. Soubor obsahuje celý snímek."), 11, 0x95a4ad);
             previewLabel.TextWrapping = TextWrapping.Wrap; body.Children.Add(previewLabel); body.Children.Add(preview);
             SnapshotFields Fields() => checks.Aggregate((SnapshotFields)0, (value, pair) => pair.Value.IsChecked == true ? value | pair.Key : value);
             void RefreshPreview() => preview.Text = SnapshotExport.Preview(snapshot, Fields());
             RefreshPreview();
-            var dialog = Appearance.Dialog(new ContentDialog { Title = "Uložit snímek", XamlRoot = root.XamlRoot,
-                PrimaryButtonText = "Uložit…", CloseButtonText = "Zrušit", DefaultButton = ContentDialogButton.Primary,
+            var dialog = Appearance.Dialog(new ContentDialog { Title = Loc.T("Uložit snímek"), XamlRoot = root.XamlRoot,
+                PrimaryButtonText = Loc.T("Uložit…"), CloseButtonText = Loc.T("Zrušit"), DefaultButton = ContentDialogButton.Primary,
                 Content = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                     HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, MaxHeight = Math.Max(60, Math.Min(520, root.ActualHeight - 280)) } });
             AutomationProperties.SetAutomationId(dialog, "snapshot-dialog");
@@ -72,12 +72,12 @@ public sealed partial class MainWindow
             var file = await picker.PickSaveFileAsync();
             if (file is null) return;
             string? backup = await SnapshotExport.SaveAsync(file.Path, snapshot, Fields());
-            footer.Text = "Uložen snímek: " + Path.GetFileName(file.Path);
-            if (backup is not null) await Appearance.Dialog(new ContentDialog { Title = "Snímek je uložený", XamlRoot = root.XamlRoot,
-                Content = "Původní zálohu se nepodařilo odstranit. Zůstala v souboru: " + backup, CloseButtonText = "Zavřít" }).ShowAsync();
+            footer.Text = Loc.F("Uložen snímek: {0}", Path.GetFileName(file.Path));
+            if (backup is not null) await Appearance.Dialog(new ContentDialog { Title = Loc.T("Snímek je uložený"), XamlRoot = root.XamlRoot,
+                Content = Loc.F("Původní zálohu se nepodařilo odstranit. Zůstala v souboru: {0}", backup), CloseButtonText = Loc.T("Zavřít") }).ShowAsync();
         } catch (Exception error) when (error is IOException or UnauthorizedAccessException or COMException or ArgumentException) {
-            await Appearance.Dialog(new ContentDialog { Title = "Snímek se nepodařilo uložit", Content = error.Message,
-                XamlRoot = root.XamlRoot, CloseButtonText = "Zavřít" }).ShowAsync();
+            await Appearance.Dialog(new ContentDialog { Title = Loc.T("Snímek se nepodařilo uložit"), Content = error.Message,
+                XamlRoot = root.XamlRoot, CloseButtonText = Loc.T("Zavřít") }).ShowAsync();
         } finally { exporting = false; exportSnapshot.IsEnabled = model.ProcessTime > 0; }
     }
 }

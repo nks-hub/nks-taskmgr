@@ -31,7 +31,7 @@ public sealed partial class MainWindow
         inventory.RowDefinitions.Add(new RowDefinition { Height = new GridLength(28) });
         inventory.RowDefinitions.Add(new RowDefinition());
         var inventoryHeader = new Grid { Margin = new Thickness(8, 0, 8, 0) };
-        var inventoryLabel = Label("Prostředky", 11, 0x95a4ad); inventoryLabel.VerticalAlignment = VerticalAlignment.Center;
+        var inventoryLabel = Label(Loc.T("Prostředky"), 11, 0x95a4ad); inventoryLabel.VerticalAlignment = VerticalAlignment.Center;
         resourceCount.FontSize = 11; resourceCount.HorizontalAlignment = HorizontalAlignment.Right; resourceCount.VerticalAlignment = VerticalAlignment.Center;
         inventoryHeader.Children.Add(inventoryLabel); inventoryHeader.Children.Add(resourceCount); inventory.Children.Add(inventoryHeader);
         ConfigureNetworkFilters(inventoryHeader);
@@ -59,7 +59,7 @@ public sealed partial class MainWindow
         performanceHeading.Children.Add(headingText);
         scaleChoice.IsChecked = false; CompactPerformanceChoice(scaleChoice);
         scaleChoice.Click += (_, _) => SetPerformanceAutomaticScale(scaleChoice.IsChecked == true);
-        ToolTipService.SetToolTip(scaleChoice, "Automaticky podle uložených vzorků. Vypnuto: 0–100 %, kapacita paměti nebo rychlost připojení.");
+        ToolTipService.SetToolTip(scaleChoice, Loc.T("Automaticky podle uložených vzorků. Vypnuto: 0–100 %, kapacita paměti nebo rychlost připojení."));
         chartControls.Children.Add(scaleChoice);
         foreach (int seconds in new[] { 60, 600 }) {
             var button = Choice(seconds == 60 ? "60 s" : "10 min"); CompactPerformanceChoice(button); rangeButtons.Add(button);
@@ -70,7 +70,7 @@ public sealed partial class MainWindow
         resourceValue.FontSize = 18; resourceValue.CharacterSpacing = -15; performanceReading.Children.Add(resourceValue);
         resourceUnit.FontSize = 11; resourceUnit.VerticalAlignment = VerticalAlignment.Bottom; resourceUnit.Margin = new Thickness(0, 0, 0, 2); performanceReading.Children.Add(resourceUnit);
         Grid.SetColumn(performanceReading, 1); performanceHeading.Children.Add(performanceReading); content.Children.Add(performanceHeading);
-        foreach (var mode in new[] { "Celkem", "Logické", "Překrytí" }) {
+        foreach (var mode in new[] { Loc.T("Celkem"), Loc.T("Logické"), Loc.T("Překrytí") }) {
             int index = cpuModes.Children.Count; var button = Choice(mode); CompactPerformanceChoice(button); cpuButtons.Add(button);
             button.Click += (_, _) => { cpuMode = index; RefreshPerformance(); }; cpuModes.Children.Add(button);
         }
@@ -89,7 +89,7 @@ public sealed partial class MainWindow
         performanceBody.Children.Add(chartGrid);
         facts.Padding = new Thickness(0); facts.Spacing = 8; Grid.SetRow(facts, 1); performanceBody.Children.Add(facts);
         consumers.Spacing = 5; Grid.SetRow(consumers, 2); performanceBody.Children.Add(consumers);
-        AutomationProperties.SetName(inventory, "Připojené a zobrazené prostředky s historií využití");
+        AutomationProperties.SetName(inventory, Loc.T("Připojené a zobrazené prostředky s historií využití"));
         page.Children.Add(performancePage);
     }
 

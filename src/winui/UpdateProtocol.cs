@@ -80,7 +80,7 @@ internal static class UpdateProtocol
     {
         payload ??= [];
         if (gui.Boot.IsEmpty || gui.Pid == 0 || gui.Kind != GenerationKind.CreationTime || gui.Generation == 0 || payload.Length > MaximumPayload)
-            throw new InvalidDataException("Klient aktualizací nemá ověřenou životnost.");
+            throw new InvalidDataException(Loc.T("Klient aktualizací nemá ověřenou životnost."));
         var result = new byte[HeaderBytes + payload.Length];
         W32(result, 0, 0x3150554e); BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(4), 2);
         BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(6), (ushort)command); W32(result, 8, (uint)payload.Length);
@@ -109,7 +109,7 @@ internal static class UpdateProtocol
         if (plan is null && payload.Length < 80) {
             var unsupported = Decode(header, payload, request);
             if (unsupported.Frame == UpdateFrame.Rejected && unsupported.Status != UpdateStatus.Ok)
-                throw new UpdateException(unsupported.Status, "Podepsaný pracovník tento ruční úklid neposkytuje. Úklid nebyl potvrzen.", unsupported.Error);
+                throw new UpdateException(unsupported.Status, Loc.T("Podepsaný pracovník tento ruční úklid neposkytuje. Úklid nebyl potvrzen."), unsupported.Error);
         }
         if (payload.Length != PayloadLength(header, request) || payload.Length < 80) throw Bad();
         var frame = (UpdateFrame)U32(header, 12); var status = (UpdateStatus)U32(payload, 0);
@@ -181,13 +181,13 @@ internal static class UpdateProtocol
                 totals[(int)UpdateCleanupOutcome.Deleted] = new(checked(deleted.Files + row.DeletedFiles), checked(deleted.Directories + row.DeletedDirectories),
                     checked(deleted.KnownBytes + row.DeletedBytes), deleted.UnknownSizeCount);
             }
-        } catch (OverflowException error) { throw new InvalidDataException("Součty úklidu překračují číselný rozsah.", error); }
+        } catch (OverflowException error) { throw new InvalidDataException(Loc.T("Součty úklidu překračují číselný rozsah."), error); }
         return new(totals[0], totals[1], totals[2], totals[3], totals[4], totals[5], complete);
     }
     internal static UpdateCleanupResult CleanupInterrupted(UpdateCleanupPlan plan, bool mayHaveDeleted, UpdateStatus status, uint error, string detail)
     {
         var rows = plan.Items.Select(item => item with { Outcome = mayHaveDeleted ? UpdateCleanupOutcome.Unknown : UpdateCleanupOutcome.Skipped,
-            Reason = UpdateCleanupReason.Cancelled, Detail = mayHaveDeleted ? "Výsledek mazání nebyl doručen; neopakujte požadavek naslepo." : "Potvrzení úklidu nebylo odesláno." }).ToArray();
+            Reason = UpdateCleanupReason.Cancelled, Detail = mayHaveDeleted ? Loc.T("Výsledek mazání nebyl doručen; neopakujte požadavek naslepo.") : Loc.T("Potvrzení úklidu nebylo odesláno.") }).ToArray();
         var summary = CleanupSummary(rows, false);
         if (mayHaveDeleted) summary = summary with {
             Deleted = summary.Deleted with { CountsKnown = false }, Kept = summary.Kept with { CountsKnown = false },
@@ -198,10 +198,10 @@ internal static class UpdateProtocol
     }
     internal static byte[] CachePayload(SignedImageLease source, byte[] hash)
     {
-        if (hash.Length != 32 || source.Length is 0 or > MaximumPackageBytes) throw new InvalidDataException("Neplatný balíček aktualizace.");
+        if (hash.Length != 32 || source.Length is 0 or > MaximumPackageBytes) throw new InvalidDataException(Loc.T("Neplatný balíček aktualizace."));
         ValidatePath(source.Path);
         var result = new byte[80 + source.Path.Length * 2];
-        if (result.Length > MaximumPayload) throw new InvalidDataException("Cesta balíčku překračuje limit protokolu.");
+        if (result.Length > MaximumPayload) throw new InvalidDataException(Loc.T("Cesta balíčku překračuje limit protokolu."));
         W64(result, 0, unchecked((ulong)source.Handle.DangerousGetHandle())); W64(result, 8, source.Length);
         W64(result, 16, source.Identity.Volume); W64(result, 24, source.Identity.Low); W64(result, 32, source.Identity.High);
         hash.CopyTo(result, 40); W32(result, 72, (uint)source.Path.Length); Utf16.GetBytes(source.Path, result.AsSpan(80)); return result;
@@ -211,12 +211,12 @@ internal static class UpdateProtocol
         if (header.Length != HeaderBytes || request.Length < HeaderBytes || !header.AsSpan(0, 8).SequenceEqual(request.AsSpan(0, 8))
             || !header.AsSpan(16).SequenceEqual(request.AsSpan(16, HeaderBytes - 16)) || U64(header, 120) != 0
             || U32(header, 12) is < 1 or > 4 || U32(header, 8) is < 40 or > MaximumPayload)
-            throw new InvalidDataException("Odpověď aktualizací nepatří požadavku nebo ověřenému klientovi.");
+            throw new InvalidDataException(Loc.T("Odpověď aktualizací nepatří požadavku nebo ověřenému klientovi."));
         return checked((int)U32(header, 8));
     }
     internal static UpdateResponse Decode(byte[] header, byte[] payload, byte[] request)
     {
-        if (payload.Length != PayloadLength(header, request)) throw new InvalidDataException("Neúplný rámec aktualizace.");
+        if (payload.Length != PayloadLength(header, request)) throw new InvalidDataException(Loc.T("Neúplný rámec aktualizace."));
         var frame = (UpdateFrame)U32(header, 12); var status = (UpdateStatus)U32(payload, 0); var journal = (UpdateJournalState)U32(payload, 12);
         uint count = U32(payload, 8), planBytes = U32(payload, 20), inventoryBytes = U32(payload, 32), inspectionCount = U32(payload, 36);
         ulong deadline = U64(payload, 24); int offset = 40;
@@ -327,9 +327,9 @@ internal static class UpdateProtocol
     }
     internal static byte[] ParseId(string id)
     {
-        if (id.Length != 32 || !id.All(Uri.IsHexDigit)) throw new ArgumentException("Neplatný identifikátor obnovy.");
+        if (id.Length != 32 || !id.All(Uri.IsHexDigit)) throw new ArgumentException(Loc.T("Neplatný identifikátor obnovy."));
         var bytes = Convert.FromHexString(id);
-        if (bytes.AsSpan().IndexOfAnyExcept((byte)0) < 0) throw new ArgumentException("Identifikátor obnovy nesmí být nulový.");
+        if (bytes.AsSpan().IndexOfAnyExcept((byte)0) < 0) throw new ArgumentException(Loc.T("Identifikátor obnovy nesmí být nulový."));
         return bytes;
     }
     private static ProcessKey Key(byte[] bytes, int at) => new(new(U64(bytes, at), U64(bytes, at + 8)), U32(bytes, at + 16), (GenerationKind)U32(bytes, at + 20), U64(bytes, at + 24));
@@ -338,9 +338,9 @@ internal static class UpdateProtocol
     private static string OptionalHash(byte[] bytes, int at) => bytes.AsSpan(at, 32).IndexOfAnyExcept((byte)0) < 0 ? "" : Convert.ToHexString(bytes.AsSpan(at, 32));
     internal static byte[] ParseHash(string hash)
     {
-        if (hash.Length != 64 || !hash.All(Uri.IsHexDigit)) throw new ArgumentException("Neplatný SHA256 balíčku.");
+        if (hash.Length != 64 || !hash.All(Uri.IsHexDigit)) throw new ArgumentException(Loc.T("Neplatný SHA256 balíčku."));
         var result = Convert.FromHexString(hash);
-        if (result.AsSpan().IndexOfAnyExcept((byte)0) < 0) throw new ArgumentException("SHA256 balíčku nesmí být nulový.");
+        if (result.AsSpan().IndexOfAnyExcept((byte)0) < 0) throw new ArgumentException(Loc.T("SHA256 balíčku nesmí být nulový."));
         return result;
     }
     internal static void ValidatePath(string path)
@@ -348,14 +348,14 @@ internal static class UpdateProtocol
         int root = path.IndexOf("}\\", StringComparison.Ordinal);
         if (!path.StartsWith("\\\\?\\Volume{", StringComparison.Ordinal) || root < 12 || path.Length is 0 or > 32767
             || path.Any(ch => ch < ' ') || path[(root + 2)..].Split('\\').Any(part => part is "." or ".." || part.Contains(':') || part.Contains('/')))
-            throw new InvalidDataException("Pracovník nevrátil kanonickou místní cestu.");
+            throw new InvalidDataException(Loc.T("Pracovník nevrátil kanonickou místní cestu."));
     }
     private static string Text(byte[] bytes, ref int offset, uint chars)
     {
         if (chars > 32767 || offset > bytes.Length || chars * 2 > bytes.Length - offset) throw Bad();
         string text;
         try { text = Utf16.GetString(bytes.AsSpan(offset, checked((int)chars * 2))); }
-        catch (DecoderFallbackException error) { throw new InvalidDataException("Neplatný text aktualizace.", error); }
+        catch (DecoderFallbackException error) { throw new InvalidDataException(Loc.T("Neplatný text aktualizace."), error); }
         offset += checked((int)chars * 2);
         if (text.Any(ch => ch < ' ')) throw Bad();
         return text;
@@ -368,12 +368,12 @@ internal static class UpdateProtocol
     private static ulong U64(byte[] bytes, int at) => BinaryPrimitives.ReadUInt64LittleEndian(bytes.AsSpan(at));
     private static void W32(byte[] bytes, int at, uint value) => BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(at), value);
     private static void W64(byte[] bytes, int at, ulong value) => BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(at), value);
-    private static InvalidDataException Bad() => new("Pracovník vrátil neplatná metadata aktualizace.");
+    private static InvalidDataException Bad() => new(Loc.T("Pracovník vrátil neplatná metadata aktualizace."));
     internal static string StatusText(UpdateStatus value) => value switch {
-        UpdateStatus.Ok => "Potvrzeno", UpdateStatus.TrustMissing => "Chybí důvěra vydavatele", UpdateStatus.Rejected => "Požadavek odmítnut",
-        UpdateStatus.InvalidRequest => "Neplatný požadavek", UpdateStatus.CacheFull => "Úložiště balíčků je plné", UpdateStatus.Conflict => "Souběžná operace nebo změněný plán",
-        UpdateStatus.NotFound => "Balíček nebo předchozí ověřená instalace není dostupná", UpdateStatus.Io => "Chyba souboru nebo komunikace",
-        UpdateStatus.GuiAlive => "Aplikace stále běží; instalace nebyla zahájena", UpdateStatus.InstallerFailed => "Instalátor ohlásil chybu",
-        UpdateStatus.VerificationFailed => "Ověření instalace selhalo", UpdateStatus.Busy => "Jiná aktualizace probíhá", _ => "Výsledek není známý"
+        UpdateStatus.Ok => Loc.T("Potvrzeno"), UpdateStatus.TrustMissing => Loc.T("Chybí důvěra vydavatele"), UpdateStatus.Rejected => Loc.T("Požadavek odmítnut"),
+        UpdateStatus.InvalidRequest => Loc.T("Neplatný požadavek"), UpdateStatus.CacheFull => Loc.T("Úložiště balíčků je plné"), UpdateStatus.Conflict => Loc.T("Souběžná operace nebo změněný plán"),
+        UpdateStatus.NotFound => Loc.T("Balíček nebo předchozí ověřená instalace není dostupná"), UpdateStatus.Io => Loc.T("Chyba souboru nebo komunikace"),
+        UpdateStatus.GuiAlive => Loc.T("Aplikace stále běží; instalace nebyla zahájena"), UpdateStatus.InstallerFailed => Loc.T("Instalátor ohlásil chybu"),
+        UpdateStatus.VerificationFailed => Loc.T("Ověření instalace selhalo"), UpdateStatus.Busy => Loc.T("Jiná aktualizace probíhá"), _ => Loc.T("Výsledek není známý")
     };
 }

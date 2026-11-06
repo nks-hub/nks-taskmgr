@@ -14,7 +14,7 @@ public sealed partial class ChartView
     private readonly TextBlock startTime = Caption(), endTime = Caption();
     private readonly TextBlock legend = Caption();
     private ChartUnit unit;
-    private string primaryName = "Využití", secondaryName = "Odesílání";
+    private string primaryName = Loc.T("Využití"), secondaryName = Loc.T("Odesílání");
     private bool axes = true;
     private readonly record struct ChartConfiguration(string Name, ChartUnit Unit, bool Axes, string SecondaryName, bool Interactive);
     private readonly record struct AxisState(ChartUnit Unit, double Maximum, int Seconds, bool Secondary, string PrimaryName, string SecondaryName);
@@ -40,8 +40,9 @@ public sealed partial class ChartView
         Children.Add(scale); Children.Add(timeline); Grid.SetRow(timeline, 1); Grid.SetColumn(timeline, 1);
     }
 
-    public void Configure(string name, ChartUnit valueUnit = ChartUnit.Percent, bool showAxes = true, string secondName = "Odesílání", bool interactive = true)
+    public void Configure(string name, ChartUnit valueUnit = ChartUnit.Percent, bool showAxes = true, string? secondName = null, bool interactive = true)
     {
+        secondName ??= Loc.T("Odesílání");
         var next = new ChartConfiguration(name, valueUnit, showAxes, secondName, interactive);
         if (configuration == next) return;
         if (primaryName != name || unit != valueUnit) SeriesChanged();
@@ -49,7 +50,7 @@ public sealed partial class ChartView
         if (configuration?.Axes != showAxes) scale.Visibility = timeline.Visibility = axes ? Visibility.Visible : Visibility.Collapsed;
         if (configuration?.Interactive != interactive) { IsTabStop = interactive; IsHitTestVisible = interactive; }
         if (configuration?.Name != name)
-            AutomationProperties.SetName(this, name + ". Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.");
+            AutomationProperties.SetName(this, Loc.F("{0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.", name));
         configuration = next;
         UpdateAxes();
         ApplyTimeline();
@@ -73,7 +74,7 @@ public sealed partial class ChartView
         if (axisState == next) return;
         SetAxisText(upper, Format(maximum)); SetAxisText(middle, Format(maximum / 2)); SetAxisText(lower, Format(0));
         SetAxisText(startTime, seconds >= 60 ? seconds / 60 + " min" : seconds + " s");
-        SetAxisText(endTime, "nyní");
+        SetAxisText(endTime, Loc.T("nyní"));
         SetAxisText(legend, secondary is not null ? primaryName + " · " + secondaryName : "");
         axisState = next;
     }

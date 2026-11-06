@@ -1,0 +1,444 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Výkon	Performance
+Načítám živá data…	Loading live data…
+Hledat název nebo PID	Search name or PID
+Pozastavit	Pause
+Procesy	Processes
+Služby	Services
+Sestava	System
+Aplikace	Apps
+PROCESOR	PROCESSOR
+Procesor	Processor
+Načítám…	Loading…
+Auto měřítko	Auto scale
+Pokračovat	Resume
+Hledat (Ctrl+F)	Search (Ctrl+F)
+Jednotlivé prostředky systému	Individual system resources
+Živé procesy	Live processes
+Hledat název procesu nebo PID	Search process name or PID
+Po spuštění	Startup apps
+Uživatelé	Users
+Spuštění	Startup
+Všechny procesy	All processes
+Aktivní	Active
+Strom	Tree
+Vlastní hodnoty	Own values
+Proces s potomky	Process with descendants
+Význam hodnot ve stromu procesů	Meaning of values in the process tree
+Vlastní hodnoty patří jednomu PID. Proces s potomky sčítá CPU, paměť a I/O ověřených členů celé větve i při hledání nebo sbalení. Chybějící údaje jsou označené. Součet pracovních sad může sdílené stránky RAM započítat opakovaně.	Own values belong to one PID. Process with descendants adds up CPU, memory and I/O of the verified members of the whole branch, even while searching or collapsed. Missing data is marked. The sum of working sets can count shared RAM pages more than once.
+Sloupce	Columns
+Zobrazit nebo skrýt sloupce procesů	Show or hide process columns
+Export	Export
+Porovnat	Compare
+Podrobnosti	Details
+Hledat objekty	Find objects
+Události	Events
+Hledat službu, účet nebo PID	Search service, account or PID
+{0} · {1} procesů · stáří {2}	{0} · {1} processes · age {2}
+Pozastaveno	Paused
+Živá data	Live data
+{0} proces	{0} process
+{0} procesy	{0} processes
+{0} procesů	{0} processes
+{0} · pořadí přidrženo	{0} · order held
+Porovnat snímky	Compare snapshots
+Vybrat původní JSON…	Choose earlier JSON…
+Vybrat následující JSON…	Choose later JSON…
+Zrušit načítání	Cancel loading
+Soubor není vybraný	No file selected
+Vyberte původní a následující snímek.	Choose the earlier and the later snapshot.
+Vyberte proces ze seznamu.	Select a process from the list.
+Vše	All
+Detail vybraného procesu · pouze pro čtení	Selected process details · read-only
+Porovnání historických snímků	Historical snapshot comparison
+Vybrat původní snímek JSON	Choose the earlier JSON snapshot
+Vybrat následující snímek JSON	Choose the later JSON snapshot
+Porovnat vybrané snímky	Compare selected snapshots
+Zrušit načítání a porovnání	Cancel loading and comparison
+Filtrovat podle výsledku porovnání	Filter by comparison result
+Výsledky porovnání procesů	Process comparison results
+Původní a následující hodnoty vybraného procesu	Earlier and later values of the selected process
+Původní snímek JSON	Earlier JSON snapshot
+Následující snímek JSON	Later JSON snapshot
+Soubory se porovnají v pořadí původní → následující.	The files are compared in the order earlier → later.
+Soubor se nepodařilo vybrat: {0}	The file could not be selected: {0}
+Původní snímek	Earlier snapshot
+Načítám původní snímek…	Loading the earlier snapshot…
+Následující snímek	Later snapshot
+Načítám následující snímek…	Loading the later snapshot…
+Porovnání	Comparison
+Porovnávám procesy…	Comparing processes…
+Načítání nebo porovnání bylo zrušeno.	Loading or comparison was canceled.
+Původní	Earlier
+Následující	Later
+Porovnání dokončeno.	Comparison complete.
+následující	later
+původní	earlier
+Proces v tomto snímku není.	The process is not in this snapshot.
+Název není součástí snímku.	The name is not part of the snapshot.
+identita ověřená	identity verified
+identita neověřená	identity not verified
+Rozdíl = následující - původní	Difference = later - earlier
+Rozdíl	Difference
+Nové	New
+Ukončené	Ended
+Změněné	Changed
+Beze změny	Unchanged
+Nelze porovnat	Cannot compare
+U snímku nelze ověřit spuštění systému.	The system boot of the snapshot cannot be verified.
+Snímky pocházejí z různých spuštění systému.	The snapshots come from different system boots.
+Životnost procesu není spolehlivě ověřená.	The process lifetime is not reliably verified.
+Druh identity procesu se mezi snímky liší.	The kind of process identity differs between the snapshots.
+Snímek procesů není úplný nebo aktuální.	The process snapshot is incomplete or not current.
+Pracovní sada	Working set
+Soukromá paměť	Private memory
+Čtení I/O	I/O reads
+Zápis I/O	I/O writes
+Vlákna	Threads
+Popisovače	Handles
+% počítače	% of computer
+Platné	Valid
+První vzorek	First sample
+Nedostupné	Unavailable
+Chybí oprávnění	Access denied
+Nepodporováno	Not supported
+Zastaralé	Stale
+Chyba	Error
+Mezera v měření	Measurement gap
+Pole není ve snímku.	The field is not in the snapshot.
+p. b.	pp
+Nelze určit.	Cannot be determined.
+Akce	Actions
+Akce s vybranými živými procesy	Actions for the selected live processes
+Se zvýšenými právy správce	With administrator rights
+{0} jako správce…	{0} as administrator…
+Čekám na ukončení vlastního pracovníka nebo zvýšeného požadavku. Neopakujte akci.	Waiting for the app's worker or the elevated request to finish. Do not repeat the action.
+Vyberte nejvýše 64 procesů.	Select at most 64 processes.
+Zavření oken, ukončení, pozastavení, priorita a afinita živých procesů stejného uživatele a relace	Close windows, end, suspend, priority and affinity of live processes of the same user and session
+Ukončit strom	End process tree
+Vyberte jeden živý kořen. Potomky znovu zjistí a ověří pracovník.	Select one live root. The worker finds and verifies the descendants again.
+Vyberte jeden proces. Každý proces má vlastní přiřazení procesorů.	Select one process. Each process has its own processor assignment.
+Načítám výchozí CPU sets a dostupné logické procesory…	Loading default CPU sets and available logical processors…
+Načítám současnou prioritu a afinitu vybraných procesů…	Loading the current priority and affinity of the selected processes…
+Nastavení procesu není dostupné	Process settings are unavailable
+Výběr se změnil	The selection changed
+Akce nebyla odeslána. Vyberte znovu živý proces.	The action was not sent. Select a live process again.
+Dotaz na nastavení nebyl dokončen	The settings query did not finish
+Výběr už není aktuální nebo byl dotaz zrušen. Změna nebyla odeslána.	The selection is no longer current or the query was canceled. No change was sent.
+{0} Změna nebyla odeslána.	{0} No change was sent.
+Nízká	Low
+Nižší než normální	Below normal
+Normální	Normal
+Vyšší než normální	Above normal
+Vysoká	High
+{0}: současná priorita {1}	{0}: current priority {1}
+nedostupná	unavailable
+Nová priorita procesu	New process priority
+Vysoká priorita může omezit odezvu ostatních aplikací.	High priority can reduce the responsiveness of other apps.
+Afinita není dostupná	Affinity is unavailable
+Toto nastavení vyžaduje jedinou ověřenou skupinu procesorů a dostupné masky procesu i systému. Výchozí CPU sets napříč skupinami mají samostatnou nabídku.	This setting requires a single verified processor group and available process and system masks. Default CPU sets across groups have a separate menu item.
+Skupina {0} · současná maska 0x{1} · dostupná 0x{2}	Group {0} · current mask 0x{1} · available 0x{2}
+Vyberte alespoň jeden procesor. CPU sets se tímto ovládáním nenastavují.	Select at least one processor. This control does not set CPU sets.
+Provést	Apply
+Zrušit	Cancel
+Čekám na výsledek pracovníka. Zrušení čekání nevrátí již provedenou akci.	Waiting for the worker's result. Canceling the wait does not undo an action already performed.
+Výslovně žádáte zvýšení práv. Následuje UAC (nejvýše 90 s) a vlastní potvrzení správce (60 s); samotná akce má limit 5 s. Nepotvrzený požadavek se automaticky neopakuje.	You are explicitly requesting elevation. UAC follows (at most 90 s), then the app's own administrator confirmation (60 s); the action itself has a 5 s limit. An unconfirmed request is not repeated automatically.
+Zrušit čekání	Stop waiting
+Čekání bylo zrušeno nebo se změnil vybraný proces.	The wait was canceled or the selected process changed.
+Výsledek není známý. Akce se mohla provést. {0}	The result is unknown. The action may have been performed. {0}
+Zavřít	Close
+Výsledky procesové akce jsou v dialogu.	The process action results are in the dialog.
+nízká	low
+nižší než normální	below normal
+normální	normal
+vyšší než normální	above normal
+vysoká	high
+reálný čas (nelze nastavit)	realtime (cannot be set)
+Požádat o zavření oken	Ask windows to close
+Ukončit proces	End process
+Pozastavit proces	Suspend process
+Obnovit běh procesu	Resume process
+Změnit prioritu	Set priority
+Afinita procesorů	Processor affinity
+Výchozí CPU sets	Default CPU sets
+Zavřít handle v procesu	Close handle in process
+Správce úloh Windows	Windows Task Manager
+Nastavení procesu	Process settings
+Pošle požadavek zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.	Sends a close request to the visible windows of the selected processes. The app may offer to save; actual closing is not guaranteed.
+Ukončí vybrané procesy bez nabídky uložení. Neuložená data mohou být ztracena.	Ends the selected processes without offering to save. Unsaved data may be lost.
+Pracovník znovu zjistí potomky tohoto kořene a ukončí ověřené děti před rodičem. Neuložená data mohou být ztracena. Nejvýše 256 cílů, tři průchody a pět sekund. Průchod není atomický; nově vzniklé nebo neověřitelné potomky nemusí zahrnout. Zrušení čekání provedené zásahy nevrací.	The worker finds the descendants of this root again and ends verified children before their parent. Unsaved data may be lost. At most 256 targets, three passes and five seconds. The pass is not atomic; it may miss newly created or unverifiable descendants. Canceling the wait does not undo actions already taken.
+Požádá systém o pozastavení procesu. Jeho okna přestanou reagovat a prostředky zůstanou obsazené.	Asks the system to suspend the process. Its windows stop responding and its resources stay in use.
+Požádá systém o obnovení procesu. Výsledek nezaručuje běh všech vláken pozastavených jinými nástroji.	Asks the system to resume the process. The result does not guarantee that threads suspended by other tools run.
+Nastaví prioritu plánování času CPU u vybraných procesů. Priorita reálného času není v nabídce.	Sets the CPU scheduling priority of the selected processes. Realtime priority is not offered.
+Omezí proces na vybrané logické procesory v jediné skupině.	Limits the process to the selected logical processors in a single group.
+Nastaví výchozí výběr logických procesorů i napříč skupinami. Výslovné volby jednotlivých vláken a pevná afinita mají přednost. Potvrzení nastavení není důkaz, na kterém procesoru se vlákno skutečně spustilo.	Sets the default choice of logical processors, also across groups. Explicit choices of individual threads and hard affinity take precedence. Confirming the setting does not prove which processor a thread actually ran on.
+Odpověď {0} · {1}	Response {0} · {1}
+Výsledek není známý. Akce se mohla provést.	The result is unknown. The action may have been performed.
+Pracovník požadavek nepřijal; akce nebyla provedena.	The worker did not accept the request; the action was not performed.
+Aktuální stav: {0}	Current state: {0}
+Nastavení bylo načteno.	The settings were read.
+Konec tohoto procesu byl potvrzen.	The end of this process was confirmed.
+Handle byl zavřen. Název nebo otisk zavřeného objektu odpovídá potvrzenému objektu.	The handle was closed. The name or fingerprint of the closed object matches the confirmed object.
+Zavřen objekt stejného typu a přístupu; totožnost s potvrzeným objektem nelze prokázat.	An object of the same type and access was closed; its identity with the confirmed object cannot be proven.
+Změna byla ověřena zpětným čtením.	The change was verified by reading it back.
+Požadavek zavření byl odeslán; zavření není potvrzené.	The close request was sent; closing is not confirmed.
+Požadavek ukončení byl přijat; konec procesu zatím není potvrzený.	The end request was accepted; the end of the process is not confirmed yet.
+Systém přijal požadavek. Stav všech vláken není potvrzený.	The system accepted the request. The state of all threads is not confirmed.
+Akce byla odmítnuta.	The action was refused.
+Identita procesu se změnila; výsledek není ověřený.	The process identity changed; the result is not verified.
+Identita procesu se změnila. Akce nebyla provedena.	The process identity changed. The action was not performed.
+Proces už skončil.	The process has already ended.
+Zásah nebyl proveden.	No action was taken.
+Operace není pro tento cíl podporovaná.	The operation is not supported for this target.
+Výsledek nebyl ověřen. Akce se mohla provést.	The result was not verified. The action may have been performed.
+Akce skončila chybou.	The action failed.
+Akce se mohla provést.	The action may have been performed.
+Odesláno oknům: {0}, chyby odeslání: {1}.	Sent to windows: {0}, send errors: {1}.
+Neplatný cíl.	Invalid target.
+Pracovník ani řídicí aplikace nejsou povoleným cílem.	Neither the worker nor the controlling app is an allowed target.
+Systémový nebo služební proces.	System or service process.
+Kritický proces systému.	Critical system process.
+Chráněný proces.	Protected process.
+Cíl patří jinému uživateli nebo relaci.	The target belongs to another user or session.
+Windows odmítl přístup.	Windows denied access.
+Identitu nelze ověřit.	The identity cannot be verified.
+Čas vytvoření neodpovídá výběru.	The creation time does not match the selection.
+Proces nemá vhodné viditelné okno.	The process has no suitable visible window.
+Okno už nepatří tomuto procesu.	The window no longer belongs to this process.
+Nepovolená hodnota nastavení.	Setting value not allowed.
+Více skupin procesorů není podporováno.	Multiple processor groups are not supported.
+Některá okna požadavek nepřijala.	Some windows did not accept the request.
+Zpětné čtení nepotvrdilo požadovanou hodnotu.	Reading back did not confirm the requested value.
+Ochranu cíle nelze ověřit.	The target's protection cannot be verified.
+Identitu řídicí aplikace nelze ověřit.	The identity of the controlling app cannot be verified.
+Hodnota už byla nastavená.	The value was already set.
+Byl překročen omezený počet oken.	The window limit was exceeded.
+Potřebná systémová funkce není dostupná.	A required system function is unavailable.
+Vazbu na potvrzený strom nelze ověřit.	The link to the confirmed tree cannot be verified.
+Pro tento cíl nezbyl čas v omezeném průchodu.	No time was left for this target in the limited pass.
+Nový inventář stromu není dostupný.	A new inventory of the tree is unavailable.
+Zásah nebyl bezpečně ověřitelný.	The action could not be verified safely.
+Handle s touto hodnotou už v procesu není.	A handle with this value is no longer in the process.
+Pod hodnotou handle je jiný objekt, typ nebo přístup než při potvrzení.	The handle value now refers to a different object, type or access than at confirmation.
+Objekt handle nelze ověřit.	The handle object cannot be verified.
+Handle je chráněný proti zavření.	The handle is protected from closing.
+Hledat otevřené objekty ve všech dostupných procesech	Find open objects in all available processes
+Hledat otevřené objekty podle názvu nebo typu	Find open objects by name or type
+Část názvu nebo cesty, například C:\\složka\\soubor	Part of a name or path, for example C:\\folder\\file
+Například File, Event nebo Mutant	For example File, Event or Mutant
+Spustit	Start
+Vybrat živý proces →	Select live process →
+Zadejte alespoň dva znaky do názvu nebo typu. Hledání se spouští tlačítkem.	Enter at least two characters in the name or type. The search starts with the button.
+{0} výsledků	{0} results
+Vyberte výsledek ze seznamu.	Select a result from the list.
+Hledat otevřené objekty	Find open objects
+Název objektu nebo cesta obsahuje	Object name or path contains
+Typ objektu obsahuje	Object type contains
+Část názvu objektu nebo cesty	Part of the object name or path
+Část typu objektu	Part of the object type
+Spustit nové hledání napříč dostupnými procesy	Start a new search across available processes
+Zrušit hledání	Cancel search
+Pozorované otevřené objekty a jejich vlastníci	Observed open objects and their owners
+Údaje vybraného objektu pouze pro čtení	Selected object details, read-only
+Vybrat proces pouze při shodě celé aktuální identity	Select the process only if the whole current identity matches
+Průběh a omezení hledání	Search progress and limits
+Ruším hledání…	Canceling search…
+Historické pozorování: shodný aktuální proces není dostupný. Žádná akce nebyla provedena.	Historical observation: a matching current process is unavailable. No action was taken.
+Pole obsahují nový dotaz. Výsledky patří předchozímu hledání; použijte Spustit.	The fields contain a new query. The results belong to the previous search; use Start.
+Identitu spuštění Windows zatím nelze ověřit. Počkejte na sběr dat a zkuste to znovu.	The Windows boot identity cannot be verified yet. Wait for data collection and try again.
+{0} výsledků · pouze čtení	{0} results · read-only
+Načítám vlastníky otevřených objektů…	Loading owners of open objects…
+Limity: 2 minuty, 25 000 dotazů, 4 096 objektů na vlastníka, 5 000 výsledků a 8 MiB textu. Nedostupné položky se přeskočí.	Limits: 2 minutes, 25,000 queries, 4,096 objects per owner, 5,000 results and 8 MiB of text. Unavailable items are skipped.
+Hledání bylo zrušené; výsledky jsou neúplná historická pozorování.	The search was canceled; the results are incomplete historical observations.
+Hledání nelze dokončit: {0}	The search cannot be completed: {0}
+Vlastníci: {0}/{1} · prohledaní {2} · s nedostupnými údaji {3} · změnění/ukončení {4} · omezení {5} · zbývá {6}	Owners: {0}/{1} · searched {2} · with unavailable data {3} · changed/ended {4} · limited {5} · remaining {6}
+Dotazy na objekty: {0} · přeskočené položky: {1} · shody: {2}	Object queries: {0} · skipped items: {1} · matches: {2}
+Částečné výsledky: další objekty či vlastníci mohou chybět.	Partial results: other objects or owners may be missing.
+Prohledávám {0}	Searching {0}
+Zrušeno · výsledky jsou neúplná historická pozorování.	Canceled · the results are incomplete historical observations.
+Průchod není úplný; chybějící shoda neznamená, že objekt není otevřený.	The pass is incomplete; a missing match does not mean the object is not open.
+Průchod dokončen. Výsledky jsou pozorování v době dotazu.	Pass complete. The results are observations at the time of the query.
+Zopakovat	Repeat
+Vybrat shodný aktuální proces v hlavním okně.	Select the matching current process in the main window.
+Historická nebo neověřitelná identita nemá živou akci.	A historical or unverifiable identity has no live action.
+Handle: {0}	Handle: {0}
+Typ: {0} · {1} · NTSTATUS 0x{2}	Type: {0} · {1} · NTSTATUS 0x{2}
+Pozorovaný název: {0}	Observed name: {0}
+(bez názvu)	(no name)
+Stav názvu: {0} · NTSTATUS 0x{1}	Name state: {0} · NTSTATUS 0x{1}
+DOS/UNC zobrazení: {0}	DOS/UNC form: {0}
+Přístup ze seznamu: 0x{0} · atributy 0x{1}	Access from the list: 0x{0} · attributes 0x{1}
+Přijato: {0}	Received: {0}
+Boot: {0}	Boot: {0}
+Generace: {0} · {1}	Generation: {0} · {1}
+Název a typ patří pozorovanému duplikátu. Číselná hodnota handle mohla být od výpisu znovu použita. Objekty nelze zavírat ani měnit.	The name and type belong to the observed duplicate. The numeric handle value may have been reused since the listing. Objects cannot be closed or changed.
+kontext měření nedostupný	measurement context unavailable
+měřicí okno {0}	measurement window {0}
+okamžitý odečet	instant reading
+měřicí okno zatím nedostupné	measurement window not available yet
+měřicí okno zdroj neuvádí	source does not report a measurement window
+Zastaralá data	Stale data
+Platný vzorek	Valid sample
+Stav: {0}\nZdroj: {1}	State: {0}\nSource: {1}
+Kontext měření není dostupný.	Measurement context is unavailable.
+Jednotka vzorku: {0}\nVýpočet: {1}	Sample unit: {0}\nCalculation: {1}
+Normalizace: {0}	Normalization: {0}
+100 % znamená celý počítač	100 % means the whole computer
+100 % znamená jeden logický procesor	100 % means one logical processor
+nejvytíženější GPU engine	busiest GPU engine
+aktivní čas zařízení	device active time
+bez normalizace	no normalization
+použitý dělitel {0}	divisor used {0}
+dělitel není známý	divisor unknown
+Odstup pozorování: {0}	Observation interval: {0}
+zatím nedostupný	not available yet
+Pozorováno před {0}	Observed {0} ago
+nativní statistiky procesů	native process statistics
+časové čítače procesorů	processor time counters
+systémové paměťové statistiky	system memory statistics
+čítač výkonu Windows (PDH)	Windows performance counter (PDH)
+čítače síťového adaptéru	network adapter counters
+ovladač grafického adaptéru	display adapter driver
+neznámý	unknown
+počet	count
+operace/s	operations/s
+neznámá	unknown
+okamžitá hodnota	instant value
+rozdíl čítačů za skutečný časový interval	counter difference over the actual time interval
+poměr rozdílů čítačů	ratio of counter differences
+určuje poskytovatel	defined by the provider
+Uložit snímek	Save snapshot
+Náhled exportu JSON	JSON export preview
+{0} zařízení	{0} devices
+zařízení nedostupná	devices unavailable
+zařízení čekají na vzorek	devices waiting for a sample
+{0} procesů · {1} · {2:g}	{0} processes · {1} · {2:g}
+Paměť	Memory
+Procesové I/O	Process I/O
+Zařízení	Devices
+Zahrnout názvy procesů a zařízení	Include process and device names
+Zahrnout identifikátory zařízení	Include device identifiers
+Názvy a identifikátory mohou obsahovat osobní údaje nebo sériová čísla. Příkazy, argumenty a účty se neukládají.	Names and identifiers may contain personal data or serial numbers. Commands, arguments and accounts are not saved.
+Ukázka: nejvýše 3 položky z každého seznamu. Soubor obsahuje celý snímek.	Preview: at most 3 items from each list. The file contains the whole snapshot.
+Uložit…	Save…
+Uložen snímek: {0}	Snapshot saved: {0}
+Snímek je uložený	The snapshot is saved
+Původní zálohu se nepodařilo odstranit. Zůstala v souboru: {0}	The original backup could not be removed. It remains in the file: {0}
+Snímek se nepodařilo uložit	The snapshot could not be saved
+Načítám služby…	Loading services…
+Společný PID	Shared PID
+Všechny	All
+Běžící	Running
+Zastavené	Stopped
+Ostatní	Other
+Pouze služby se společným hlášeným PID	Only services with a shared reported PID
+Služby se stejným nenulovým PID hlášeným správcem služeb. Kombinuje se s filtrem stavu a hledáním.	Services with the same non-zero PID reported by the Service Control Manager. Combines with the status filter and search.
+Služba	Service
+Stav	Status
+Spouštění	Startup
+Účet	Account
+Systémové služby	System services
+Společný PID ({0})	Shared PID ({0})
+Žádná služba neodpovídá filtru.	No service matches the filter.
+{0} · {1} služeb · stáří {2}	{0} · {1} services · age {2}
+Klient aktualizací nemá ověřenou životnost.	The update client has no verified lifetime.
+Podepsaný pracovník tento ruční úklid neposkytuje. Úklid nebyl potvrzen.	The signed worker does not provide this manual cleanup. The cleanup was not confirmed.
+Součty úklidu překračují číselný rozsah.	The cleanup totals exceed the numeric range.
+Výsledek mazání nebyl doručen; neopakujte požadavek naslepo.	The deletion result was not delivered; do not repeat the request blindly.
+Potvrzení úklidu nebylo odesláno.	The cleanup confirmation was not sent.
+Neplatný balíček aktualizace.	Invalid update package.
+Cesta balíčku překračuje limit protokolu.	The package path exceeds the protocol limit.
+Odpověď aktualizací nepatří požadavku nebo ověřenému klientovi.	The update response does not belong to the request or to the verified client.
+Neúplný rámec aktualizace.	Incomplete update frame.
+Neplatný identifikátor obnovy.	Invalid recovery identifier.
+Identifikátor obnovy nesmí být nulový.	The recovery identifier must not be zero.
+Neplatný SHA256 balíčku.	Invalid package SHA256.
+SHA256 balíčku nesmí být nulový.	The package SHA256 must not be zero.
+Pracovník nevrátil kanonickou místní cestu.	The worker did not return a canonical local path.
+Neplatný text aktualizace.	Invalid update text.
+Pracovník vrátil neplatná metadata aktualizace.	The worker returned invalid update metadata.
+Potvrzeno	Confirmed
+Chybí důvěra vydavatele	Publisher trust is missing
+Požadavek odmítnut	Request rejected
+Neplatný požadavek	Invalid request
+Úložiště balíčků je plné	The package store is full
+Souběžná operace nebo změněný plán	Concurrent operation or changed plan
+Balíček nebo předchozí ověřená instalace není dostupná	The package or the previous verified installation is unavailable
+Chyba souboru nebo komunikace	File or communication error
+Aplikace stále běží; instalace nebyla zahájena	The app is still running; installation was not started
+Instalátor ohlásil chybu	The installer reported an error
+Ověření instalace selhalo	Installation verification failed
+Jiná aktualizace probíhá	Another update is in progress
+Výsledek není známý	The result is unknown
+Využití	Utilization
+Odesílání	Send
+{0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.	{0}. Arrow keys move through history, Enter pins a time. Shift and click or Shift and Enter select the two ends of an interval. Escape clears the selection.
+nyní	now
+Soukromé úložiště obnovy nemá ověřeného vlastníka nebo ochranu přístupu.	The private recovery store has no verified owner or access protection.
+Úložiště obnovy má neočekávaná oprávnění. Záznamy zůstávají zachované.	The recovery store has unexpected permissions. The records are kept.
+Zámek úložiště obnovy není ověřitelný.	The recovery store lock cannot be verified.
+Neplatný název záznamu obnovy.	Invalid recovery record name.
+Úložiště obnovy překročilo omezený počet souborů. Nic se nebude měnit.	The recovery store exceeded the file limit. Nothing will be changed.
+Vlastník záznamu obnovy nesouhlasí.	The recovery record owner does not match.
+Záznam obnovy má nepovolenou velikost.	The recovery record has a size that is not allowed.
+Úložiště překročilo limit 1 MiB. Nic se nebude měnit.	The store exceeded the 1 MiB limit. Nothing will be changed.
+Záznam obnovy je neúplný.	The recovery record is incomplete.
+Záznam obnovy je prázdný.	The recovery record is empty.
+Záznam obnovy je poškozený nebo neodpovídá podporované transakci. Zůstane zachovaný.	The recovery record is damaged or does not match a supported transaction. It will be kept.
+Identita vlastníka v záznamu je neplatná.	The owner identity in the record is invalid.
+Neznámý nebo nedokončený pomocný zápis zůstane zachovaný.	An unknown or unfinished helper write will be kept.
+Úložiště překročilo limit 64 záznamů. Nic se nebude měnit.	The store exceeded the limit of 64 records. Nothing will be changed.
+Záznam nelze bezpečně přečíst. Zůstane zachovaný. {0}	The record cannot be read safely. It will be kept. {0}
+Záznam obnovy se změnil. Obnovte přehled; soubor zůstal zachovaný.	The recovery record changed. Refresh the overview; the file was kept.
+Záznam dumpu překračuje limit bezpečného úložiště.	The dump record exceeds the safe store limit.
+Úložiště obsahuje 64 nedokončených dumpů. Nejdřív otevřete jejich přehled.	The store contains 64 unfinished dumps. Open their overview first.
+Úložiště obnovy překročilo limit 1 MiB. Nový dump nebyl zahájen.	The recovery store exceeded the 1 MiB limit. A new dump was not started.
+Trvalý záznam dumpu se změnil. Nebude přepsán.	The persistent dump record changed. It will not be overwritten.
+Identifikátor transakce už existuje.	The transaction identifier already exists.
+Vlastník záznamu se změnil. Záznam zůstane zachovaný.	The record owner changed. The record will be kept.
+Záznam obnovy je poškozený. Zůstane zachovaný.	The recovery record is damaged. It will be kept.
+Záznam je neúplný.	The record is incomplete.
+Záznam obnovy se změnil. Zůstane zachovaný.	The recovery record changed. It will be kept.
+Proces	Process
+(prázdný typ)	(empty type)
+Typ: {0}	Type: {0}
+Název: {0}	Name: {0}
+Bez názvu	No name
+Dostupné	Available
+Mezera	Gap
+Podepsaný prostředek verze PE je poškozený.	The signed PE version resource is damaged.
+Jazykové varianty podepsané role si odporují.	The language variants of the signed role contradict each other.
+Podepsaná role nebo verze souboru neodpovídá aplikaci.	The signed role or file version does not match the app.
+Podepsané verze prostředků si odporují.	The signed resource versions contradict each other.
+Podepsaný soubor nemá jednoznačné platné prostředky verze PE.	The signed file has no unambiguous valid PE version resources.
+Předchozí dump nebo jeho úklid ještě probíhá.	A previous dump or its cleanup is still running.
+Dump uložen	Dump saved
+Dump neuložen: {0}	Dump not saved: {0}
+přístup odmítnut	access denied
+nepodporováno	not supported
+proces skončil nebo se změnil	the process ended or changed
+cíl nedostupný	target unavailable
+překročen limit velikosti	size limit exceeded
+zrušeno nebo překročen čas	canceled or timed out
+neplatný požadavek	invalid request
+výsledek nepotvrzen	result not confirmed
+Dump překročil limit 60 sekund. Výsledek není potvrzený; pracovník se ukončuje a vlastní dočasný soubor se uklízí.	The dump exceeded the 60-second limit. The result is not confirmed; the worker is ending and the app's temporary file is being cleaned up.
+Rodičovský adresář nelze ověřit. Soubor i záznam zůstanou zachované.	The parent folder cannot be verified. The file and the record will be kept.
+Rodičovský adresář má jinou identitu. Soubor zůstane zachovaný.	The parent folder has a different identity. The file will be kept.
+Cesta souboru neodpovídá záznamu. Soubor zůstane zachovaný.	The file path does not match the record. The file will be kept.
+Identita nebo vlastník souboru nesouhlasí. Soubor zůstane zachovaný.	The file identity or owner does not match. The file will be kept.
+Velikost souboru překračuje limit obnovy.	The file size exceeds the recovery limit.
+Soubor se během ověřování změnil.	The file changed during verification.
+Velikost souboru se během ověřování změnila.	The file size changed during verification.
+Přejmenování vyžaduje jeden platný název souboru.	Renaming requires one valid file name.
+Soubor neleží v ověřeném rodičovském adresáři.	The file is not in the verified parent folder.
+Soubor má nepovolený typ nebo více odkazů. Zůstane zachovaný.	The file has a type that is not allowed or more than one link. It will be kept.
+Prostředky	Resources
+Automaticky podle uložených vzorků. Vypnuto: 0–100 %, kapacita paměti nebo rychlost připojení.	Automatic from stored samples. Off: 0–100 %, memory capacity or link speed.
+Celkem	Overall
+Logické	Logical
+Překrytí	Overlay
+Připojené a zobrazené prostředky s historií využití	Connected and shown resources with usage history
+Okno se nepodařilo svázat s hlavním oknem.	The window could not be attached to the main window.
+Okno nemá ověřené hlavní okno.	The window has no verified main window.
+Minimalizované okno se nepodařilo obnovit.	The minimized window could not be restored.

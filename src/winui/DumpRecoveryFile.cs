@@ -23,40 +23,40 @@ internal sealed partial class ProcessDumpFile
     {
         var held = HoldDirectory(Path.GetDirectoryName(record.Destination[4..])!);
         if (ReadIdentity(held.Parent) == record.ParentId) return held;
-        held.Dispose(); throw new IOException("Rodičovský adresář nelze ověřit. Soubor i záznam zůstanou zachované.");
+        held.Dispose(); throw new IOException(Loc.T("Rodičovský adresář nelze ověřit. Soubor i záznam zůstanou zachované."));
     }
     private ProcessDumpFile(DumpRecoveryRecord record, string proof, bool destination, bool writable)
     {
         fileName = ""; preserve = true;
         try {
             fileName = PrepareDirectories(record.Destination[4..]);
-            if (ReadIdentity(Parent) != record.ParentId) throw new IOException("Rodičovský adresář má jinou identitu. Soubor zůstane zachovaný.");
+            if (ReadIdentity(Parent) != record.ParentId) throw new IOException(Loc.T("Rodičovský adresář má jinou identitu. Soubor zůstane zachovaný."));
             Temporary = record.Temporary; Identity = record.FileId; Journal = DumpRecoveryJournal.Attach(record, proof);
             Handle = OpenRelative(Parent, Path.GetFileName(destination ? record.Destination : record.Temporary), writable ? 0xc0110000u : 0x80100000u, 0, 1, 0x00200060, 0);
             VerifyOwned(record);
             if (!StringComparer.OrdinalIgnoreCase.Equals(FinalName(Handle), destination ? record.Destination : record.Temporary))
-                throw new IOException("Cesta souboru neodpovídá záznamu. Soubor zůstane zachovaný.");
+                throw new IOException(Loc.T("Cesta souboru neodpovídá záznamu. Soubor zůstane zachovaný."));
         } catch { Dispose(); throw; }
     }
     internal void VerifyOwned(DumpRecoveryRecord record)
     {
         if (ReadIdentity(Parent) != record.ParentId || ReadIdentity(Handle) != record.FileId || Owner(Handle) != record.FileOwnerSid)
-            throw new IOException("Identita nebo vlastník souboru nesouhlasí. Soubor zůstane zachovaný.");
+            throw new IOException(Loc.T("Identita nebo vlastník souboru nesouhlasí. Soubor zůstane zachovaný."));
         CheckSingleFile(Handle);
     }
     internal string Hash(CancellationToken cancellation)
     {
         long length = RandomAccess.GetLength(Handle);
-        if (length < 0 || (ulong)length > ProcessDumpProtocol.MaximumFileBytes) throw new IOException("Velikost souboru překračuje limit obnovy.");
+        if (length < 0 || (ulong)length > ProcessDumpProtocol.MaximumFileBytes) throw new IOException(Loc.T("Velikost souboru překračuje limit obnovy."));
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         var buffer = new byte[128 * 1024]; long offset = 0;
         while (offset < length) {
             cancellation.ThrowIfCancellationRequested();
             int count = RandomAccess.Read(Handle, buffer.AsSpan(0, (int)Math.Min(buffer.Length, length - offset)), offset);
-            if (count == 0) throw new IOException("Soubor se během ověřování změnil.");
+            if (count == 0) throw new IOException(Loc.T("Soubor se během ověřování změnil."));
             hash.AppendData(buffer.AsSpan(0, count)); offset += count;
         }
-        if (RandomAccess.GetLength(Handle) != length) throw new IOException("Velikost souboru se během ověřování změnila.");
+        if (RandomAccess.GetLength(Handle) != length) throw new IOException(Loc.T("Velikost souboru se během ověřování změnila."));
         return Convert.ToHexString(hash.GetHashAndReset());
     }
     internal void DeleteRecovered(DumpRecoveryRecord record)
@@ -70,11 +70,11 @@ internal sealed partial class ProcessDumpFile
     internal static unsafe void RenameEntry(SafeFileHandle file, SafeFileHandle parent, string name, bool replace)
     {
         if (string.IsNullOrEmpty(name) || name is "." or ".." || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
-            || name.EndsWith('.') || name.EndsWith(' ')) throw new ArgumentException("Přejmenování vyžaduje jeden platný název souboru.", nameof(name));
+            || name.EndsWith('.') || name.EndsWith(' ')) throw new ArgumentException(Loc.T("Přejmenování vyžaduje jeden platný název souboru."), nameof(name));
         CheckDirectory(parent);
         string directory = FinalName(parent).TrimEnd('\\') + "\\", source = FinalName(file);
         if (!StringComparer.OrdinalIgnoreCase.Equals(source[..(source.LastIndexOf('\\') + 1)], directory))
-            throw new IOException("Soubor neleží v ověřeném rodičovském adresáři.");
+            throw new IOException(Loc.T("Soubor neleží v ověřeném rodičovském adresáři."));
         var data = new byte[checked(24 + name.Length * 2)]; data[0] = replace ? (byte)1 : (byte)0;
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(16), (uint)name.Length * 2); System.Text.Encoding.Unicode.GetBytes(name, data.AsSpan(20));
         // A leaf with no root renames within the held source directory. Reopening
@@ -91,7 +91,7 @@ internal sealed partial class ProcessDumpFile
         if (!GetFileInformationByHandle(file, bytes)) throw LastError();
         var span = new ReadOnlySpan<byte>(bytes, 52);
         if ((BinaryPrimitives.ReadUInt32LittleEndian(span) & 0x410) != 0 || BinaryPrimitives.ReadUInt32LittleEndian(span[40..]) != 1)
-            throw new IOException("Soubor má nepovolený typ nebo více odkazů. Zůstane zachovaný.");
+            throw new IOException(Loc.T("Soubor má nepovolený typ nebo více odkazů. Zůstane zachovaný."));
     }
     internal static string Owner(SafeFileHandle file)
     {
