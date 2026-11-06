@@ -19,13 +19,13 @@ internal static class CapabilityReports
     internal static void Observe(ProcessKey key, ProcessDetailsSnapshot result)
     {
         string status = result.State switch {
-            ProcessDetailsState.Ok => result.PartialMetrics ? "Část údajů chybí" : "Dotaz dokončen",
-            ProcessDetailsState.AccessDenied => "Přístup zamítnut",
-            ProcessDetailsState.Unsupported => "Nepodporováno",
-            ProcessDetailsState.TargetChanged => "Cíl už neodpovídá původnímu procesu",
-            ProcessDetailsState.LimitExceeded => "Dosažen limit čtení",
-            ProcessDetailsState.InvalidRequest => "Požadavek nebylo možné přijmout",
-            ProcessDetailsState.Unavailable => "Údaj není dostupný", _ => "Dotaz skončil chybou"
+            ProcessDetailsState.Ok => result.PartialMetrics ? Loc.T("Část údajů chybí") : Loc.T("Dotaz dokončen"),
+            ProcessDetailsState.AccessDenied => Loc.T("Přístup zamítnut"),
+            ProcessDetailsState.Unsupported => Loc.T("Nepodporováno"),
+            ProcessDetailsState.TargetChanged => Loc.T("Cíl už neodpovídá původnímu procesu"),
+            ProcessDetailsState.LimitExceeded => Loc.T("Dosažen limit čtení"),
+            ProcessDetailsState.InvalidRequest => Loc.T("Požadavek nebylo možné přijmout"),
+            ProcessDetailsState.Unavailable => Loc.T("Údaj není dostupný"), _ => Loc.T("Dotaz skončil chybou")
         };
         Store(result.Command.ToString(), new(key, status, result.ReceivedAt));
     }
@@ -39,11 +39,11 @@ internal static class CapabilityReports
     internal static void ObserveEvents(ProcessEventBatchInfo info)
     {
         string status = info.State switch {
-            ProcessEventMonitorState.Idle => "Zatím nespuštěno", ProcessEventMonitorState.Starting => "Spouští se",
-            ProcessEventMonitorState.Running => "Záznam běží", ProcessEventMonitorState.Stopping => "Zastavuje se",
-            ProcessEventMonitorState.Stopped => "Záznam zastavený", ProcessEventMonitorState.AccessDenied => "Přístup zamítnut",
-            ProcessEventMonitorState.Unsupported => "Nepodporováno", ProcessEventMonitorState.Busy => "Předchozí relace není uklizená",
-            ProcessEventMonitorState.StopTimedOut => "Zastavení překročilo limit", ProcessEventMonitorState.CleanupFailed => "Úklid nebyl potvrzený", _ => "Chyba záznamu"
+            ProcessEventMonitorState.Idle => Loc.T("Zatím nespuštěno"), ProcessEventMonitorState.Starting => Loc.T("Spouští se"),
+            ProcessEventMonitorState.Running => Loc.T("Záznam běží"), ProcessEventMonitorState.Stopping => Loc.T("Zastavuje se"),
+            ProcessEventMonitorState.Stopped => Loc.T("Záznam zastavený"), ProcessEventMonitorState.AccessDenied => Loc.T("Přístup zamítnut"),
+            ProcessEventMonitorState.Unsupported => Loc.T("Nepodporováno"), ProcessEventMonitorState.Busy => Loc.T("Předchozí relace není uklizená"),
+            ProcessEventMonitorState.StopTimedOut => Loc.T("Zastavení překročilo limit"), ProcessEventMonitorState.CleanupFailed => Loc.T("Úklid nebyl potvrzený"), _ => Loc.T("Chyba záznamu")
         };
         if (info.Win32Error != 0) status += " · Windows " + info.Win32Error;
         Store("Events", new(default, status, DateTimeOffset.UtcNow));
@@ -53,7 +53,7 @@ internal static class CapabilityReports
     {
         string status = batch.Frame == ProcessActionFrame.Results
             ? string.Join(" · ", batch.Results.GroupBy(row => row.Outcome).Select(group => group.Count() + "× " + ActionState(group.Key)))
-            : "Požadavek nedokončený · Windows " + batch.Error;
+            : Loc.F("Požadavek nedokončený · Windows {0}", batch.Error);
         var target = batch.Results.Length == 1 ? batch.Results[0].Target.Key : default;
         Store("Actions", new(target, status, batch.ReceivedAt));
     }
@@ -63,11 +63,11 @@ internal static class CapabilityReports
     private static string Bound(string text) => text.Length <= 240 ? text : text[..(char.IsHighSurrogate(text[239]) ? 239 : 240)] + "…";
 
     private static string ActionState(ProcessActionOutcome value) => value switch {
-        ProcessActionOutcome.Inspected => "ověřený dotaz", ProcessActionOutcome.Applied => "potvrzená změna",
-        ProcessActionOutcome.CloseRequested => "žádost o zavření", ProcessActionOutcome.TerminationRequested => "žádost o ukončení",
-        ProcessActionOutcome.NativeRequestAccepted => "přijatý nativní požadavek", ProcessActionOutcome.Refused => "odmítnuto",
-        ProcessActionOutcome.IdentityChanged => "změna identity", ProcessActionOutcome.AlreadyExited => "již skončeno",
-        ProcessActionOutcome.Unsupported => "nepodporováno", ProcessActionOutcome.Unverified => "neověřeno", _ => "chyba"
+        ProcessActionOutcome.Inspected => Loc.T("ověřený dotaz"), ProcessActionOutcome.Applied => Loc.T("potvrzená změna"),
+        ProcessActionOutcome.CloseRequested => Loc.T("žádost o zavření"), ProcessActionOutcome.TerminationRequested => Loc.T("žádost o ukončení"),
+        ProcessActionOutcome.NativeRequestAccepted => Loc.T("přijatý nativní požadavek"), ProcessActionOutcome.Refused => Loc.T("odmítnuto"),
+        ProcessActionOutcome.IdentityChanged => Loc.T("změna identity"), ProcessActionOutcome.AlreadyExited => Loc.T("již skončeno"),
+        ProcessActionOutcome.Unsupported => Loc.T("nepodporováno"), ProcessActionOutcome.Unverified => Loc.T("neověřeno"), _ => Loc.T("chyba")
     };
 
     private static void Store(string command, CapabilityObservation value)

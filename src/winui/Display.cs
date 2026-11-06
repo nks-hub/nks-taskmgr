@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -10,19 +9,18 @@ namespace NksTaskMgr.WinUI;
 
 public static partial class Display
 {
-    private static readonly CultureInfo Czech = CultureInfo.GetCultureInfo("cs-CZ");
-    public static string Number(double value, string unit, int digits = 1) => value.ToString("N" + digits, Czech) + unit;
+    public static string Number(double value, string unit, int digits = 1) => value.ToString("N" + digits, Loc.Culture) + unit;
     public static string Metric(Metric value, string unit, double divisor = 1) => value.State == SampleState.Valid
         ? Number(value.Value / divisor, unit) : value.State switch {
-            SampleState.First => "První vzorek", SampleState.Stale => "Zastaralá data",
-            SampleState.AccessDenied => "Chybí oprávnění", SampleState.Gap => "Mezera", _ => "Měření nedostupné"
+            SampleState.First => Loc.T("První vzorek"), SampleState.Stale => Loc.T("Zastaralá data"),
+            SampleState.AccessDenied => Loc.T("Chybí oprávnění"), SampleState.Gap => Loc.T("Mezera"), _ => Loc.T("Měření nedostupné")
         };
     public static string Bytes(ulong value) => value switch {
         >= 1UL << 40 => Number(value / 1099511627776d, " TiB", 2),
         >= 1UL << 30 => Number(value / 1073741824d, " GiB", 2),
         >= 1UL << 20 => Number(value / 1048576d, " MiB", 1),
         >= 1UL << 10 => Number(value / 1024d, " KiB", 1),
-        _ => value.ToString("N0", Czech) + " B"
+        _ => value.ToString("N0", Loc.Culture) + " B"
     };
     public static SolidColorBrush Brush(uint color) => ThemePalette.Brush(color);
     public static uint ResourceColor(ResourceKind kind) => kind switch {

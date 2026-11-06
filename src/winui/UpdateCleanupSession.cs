@@ -43,12 +43,12 @@ internal sealed class UpdateCleanupSession : IDisposable
 
     internal async Task<UpdateCleanupResult> CommitAsync(CancellationToken cancellation)
     {
-        if (Interlocked.CompareExchange(ref attempt, 1, 0) != 0) throw new IOException("Požadavek úklidu se nesmí opakovat.");
+        if (Interlocked.CompareExchange(ref attempt, 1, 0) != 0) throw new IOException(Loc.T("Požadavek úklidu se nesmí opakovat."));
         Task<UpdateCleanupResult>? operation = null;
         try {
             lock (sync) {
                 ObjectDisposedException.ThrowIf(disposed, this); cancellation.ThrowIfCancellationRequested();
-                if (UpdateProtocol.NowMs >= CommitDeadlineMonotonicMs) throw new UpdateException(UpdateStatus.Rejected, "Platnost náhledu úklidu vypršela.", 1460);
+                if (UpdateProtocol.NowMs >= CommitDeadlineMonotonicMs) throw new UpdateException(UpdateStatus.Rejected, Loc.T("Platnost náhledu úklidu vypršela."), 1460);
                 Interlocked.Exchange(ref commitSent, 1);
             }
             operation = CommitCoreAsync();
@@ -67,11 +67,11 @@ internal sealed class UpdateCleanupSession : IDisposable
         await worker.WriteAsync(request, true, deadline.Token).ConfigureAwait(false);
         var accepted = await worker.ReadCleanupAsync(request, Plan, deadline.Token).ConfigureAwait(false);
         if (accepted.Frame != UpdateFrame.Accepted || accepted.Status != UpdateStatus.Ok)
-            throw new UpdateException(accepted.Status, "Přijetí úklidu nebylo potvrzené.", accepted.Error);
+            throw new UpdateException(accepted.Status, Loc.T("Přijetí úklidu nebylo potvrzené."), accepted.Error);
         var result = await worker.ReadCleanupAsync(request, Plan, deadline.Token).ConfigureAwait(false);
-        if (result.Frame != UpdateFrame.Result) throw new InvalidDataException("Chybí konečný výsledek úklidu.");
+        if (result.Frame != UpdateFrame.Result) throw new InvalidDataException(Loc.T("Chybí konečný výsledek úklidu."));
         await worker.EndCleanupAsync(result.Status, deadline.Token).ConfigureAwait(false);
-        return new(true, result.MayHaveDeleted, result.Status, result.Error, "Pracovník dokončil odpověď; výsledek jednotlivých položek je uveden níže.",
+        return new(true, result.MayHaveDeleted, result.Status, result.Error, Loc.T("Pracovník dokončil odpověď; výsledek jednotlivých položek je uveden níže."),
             result.Items, UpdateProtocol.CleanupSummary(result.Items, Plan.CompleteInventory));
     }
     public void Dispose()

@@ -1,0 +1,492 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Procesy, CPU a paměť	Procesy, CPU a pamäť
+Základní výpis a systémová měření.	Základný výpis a systémové merania.
+Část chráněných podrobností může zůstat nepřístupná.	Časť chránených podrobností môže zostať neprístupná.
+Další ovladač se nepoužívá.	Ďalší ovládač sa nepoužíva.
+Síťové adaptéry	Sieťové adaptéry
+Čtení provozu a rychlosti linky.	Čítanie prevádzky a rýchlosti linky.
+Zvýšení práv nenahradí chybějící čítač adaptéru.	Zvýšenie práv nenahradí chýbajúce počítadlo adaptéra.
+Údaje poskytuje síťový ovladač Windows.	Údaje poskytuje sieťový ovládač Windows.
+Diskové čítače	Diskové počítadlá
+Čtení dostupných systémových čítačů.	Čítanie dostupných systémových počítadiel.
+Rozsah závisí také na zařízení a jeho zásadách.	Rozsah závisí aj od zariadenia a jeho zásad.
+Používá se stávající úložný ovladač.	Používa sa existujúci ovládač úložiska.
+Vytížení GPU	Vyťaženie GPU
+Dostupné grafické čítače lze číst bez zvýšení práv.	Dostupné grafické počítadlá možno čítať bez zvýšenia práv.
+Oprávnění sama nezajistí podporu virtuálního adaptéru.	Oprávnenia samy nezabezpečia podporu virtuálneho adaptéra.
+Čítače musí poskytovat grafický ovladač.	Počítadlá musí poskytovať grafický ovládač.
+Teplota GPU	Teplota GPU
+Čtení podporovaného senzoru grafického adaptéru.	Čítanie podporovaného senzora grafického adaptéra.
+Zamítnutý přístup a nepodporovaný senzor jsou různé stavy.	Zamietnutý prístup a nepodporovaný senzor sú rôzne stavy.
+Senzor musí poskytovat grafický ovladač.	Senzor musí poskytovať grafický ovládač.
+CPU, RAM a základní deska	CPU, RAM a základná doska
+Čtení údajů, které vystavuje Windows a firmware.	Čítanie údajov, ktoré poskytuje Windows a firmvér.
+Chybějící údaj firmwaru může zůstat nedostupný.	Chýbajúci údaj firmvéru môže zostať nedostupný.
+Další ovladač se pro tyto údaje nepoužívá.	Ďalší ovládač sa pre tieto údaje nepoužíva.
+UPS	UPS
+Čtení údajů standardního systémového rozhraní.	Čítanie údajov štandardného systémového rozhrania.
+Záleží na připojeném zařízení a jeho rozhraní.	Závisí od pripojeného zariadenia a jeho rozhrania.
+Používá se stávající ovladač zařízení.	Používa sa existujúci ovládač zariadenia.
+Stavy a konfigurace služeb	Stavy a konfigurácia služieb
+Čtení služeb dostupných aktuálnímu účtu.	Čítanie služieb dostupných aktuálnemu účtu.
+Záleží na oprávněních nastavených u konkrétní služby.	Závisí od oprávnení nastavených pri konkrétnej službe.
+Používá se správce služeb Windows, bez dalšího ovladače.	Používa sa správca služieb Windows, bez ďalšieho ovládača.
+Vlákna procesu	Vlákna procesu
+Dostupnost závisí na právech ke konkrétnímu cíli.	Dostupnosť závisí od práv ku konkrétnemu cieľu.
+Některé chráněné cíle zůstanou omezené.	Niektoré chránené ciele zostanú obmedzené.
+Dotaz běží v odděleném uživatelském pracovníku.	Dotaz beží v oddelenom používateľskom pracovníkovi.
+Moduly procesu	Moduly procesu
+Čtení seznamu vybraného procesu při dostupných právech.	Čítanie zoznamu vybraného procesu pri dostupných právach.
+Zvýšení práv nemusí zpřístupnit chráněný proces.	Zvýšenie práv nemusí sprístupniť chránený proces.
+Mapa paměti procesu	Mapa pamäte procesu
+Čtení rozložení při dostupném přístupu k cíli.	Čítanie rozloženia pri dostupnom prístupe k cieľu.
+Rozsah se posuzuje pro konkrétní cíl.	Rozsah sa posudzuje pre konkrétny cieľ.
+Jde o mapu oblastí, bez úprav jejich obsahu.	Ide o mapu oblastí, bez úprav ich obsahu.
+Otevřené objekty procesu	Otvorené objekty procesu
+Čtení dostupného výpisu handle vybraného procesu.	Čítanie dostupného zoznamu handle vybraného procesu.
+Některé systémové cíle mohou dotaz odmítnout.	Niektoré systémové ciele môžu dotaz odmietnuť.
+Typ a název objektu	Typ a názov objektu
+Vyžaduje právo duplikovat handle cílového procesu.	Vyžaduje právo duplikovať handle cieľového procesu.
+Přístup se vyhodnocuje pro konkrétní objekt.	Prístup sa vyhodnocuje pre konkrétny objekt.
+Blokující dotaz je oddělený do pracovního procesu.	Blokujúci dotaz je oddelený do pracovného procesu.
+Podpis souboru modulu	Podpis súboru modulu
+Ověření čitelného vybraného souboru na disku.	Overenie čitateľného vybraného súboru na disku.
+Oprávnění mohou pomoci s přístupem k souboru.	Oprávnenia môžu pomôcť s prístupom k súboru.
+Používá se místní ověření podpisu a katalogů.	Používa sa miestne overenie podpisu a katalógov.
+Procesy pro hledání objektů	Procesy na hľadanie objektov
+Výpis vlastníků s ověřitelnou životností.	Výpis vlastníkov s overiteľnou životnosťou.
+Nedostupní vlastníci se hlásí jako omezení výpisu.	Nedostupní vlastníci sa hlásia ako obmedzenie výpisu.
+Události procesů ETW	Udalosti procesov ETW
+Spuštění vlastní relace se vyžádá až v okně událostí; Windows může přístup odmítnout.	Spustenie vlastnej relácie sa vyžiada až v okne udalostí; Windows môže prístup odmietnuť.
+Dostupnost určuje oprávnění k systémové relaci. Aplikace práva automaticky nezvyšuje.	Dostupnosť určuje oprávnenie k systémovej relácii. Aplikácia práva automaticky nezvyšuje.
+Používá se systémový zdroj událostí; žádný další ovladač se neinstaluje.	Používa sa systémový zdroj udalostí; žiadny ďalší ovládač sa neinštaluje.
+Akce nad živým procesem	Akcie nad živým procesom
+Každý cíl se ověřuje na stejném handlu. Běžný pomocník pracuje jen s procesy stejného účtu a relace.	Každý cieľ sa overuje na rovnakom handle. Bežný pomocník pracuje len s procesmi rovnakého účtu a relácie.
+Podepsaná varianta vyžaduje výslovné zvýšení a potvrzení správce. Odmítá systémovou či cizí relaci, kritické a chráněné cíle; bez důvěryhodného podpisu se nespustí.	Podpísaná varianta vyžaduje výslovné zvýšenie a potvrdenie správcu. Odmieta systémovú či cudziu reláciu, kritické a chránené ciele; bez dôveryhodného podpisu sa nespustí.
+Používají se dostupná uživatelská rozhraní Windows, bez dalšího ovladače.	Používajú sa dostupné používateľské rozhrania Windows, bez ďalšieho ovládača.
+Dumpy procesů	Výpisy procesov
+Čtení paměti vybraného procesu x64 nebo WOW64 až po potvrzení. Soubor může obsahovat citlivé údaje.	Čítanie pamäte vybraného procesu x64 alebo WOW64 až po potvrdení. Súbor môže obsahovať citlivé údaje.
+Přístup se posuzuje pro konkrétní cíl; tato cesta práva nemění.	Prístup sa posudzuje pre konkrétny cieľ; táto cesta práva nemení.
+Používá se systémové rozhraní Windows bez dalšího ovladače.	Používa sa systémové rozhranie Windows bez ďalšieho ovládača.
+Ovládání služeb	Ovládanie služieb
+Právo určuje konkrétní služba. Závislé služby se zastaví jen podle výslovně schváleného plánu.	Právo určuje konkrétna služba. Závislé služby sa zastavia len podľa výslovne schváleného plánu.
+Více práv nezaručuje možnost ovládat chráněnou systémovou službu.	Viac práv nezaručuje možnosť ovládať chránenú systémovú službu.
+Používá se správce služeb Windows bez dalšího ovladače.	Používa sa správca služieb Windows bez ďalšieho ovládača.
+Teplota CPU	Teplota CPU
+Volitelné čtení již běžícího místního HTTP API kompatibilního s LibreHardwareMonitor (127.0.0.1:8085). Výchozí stav je vypnutý.	Voliteľné čítanie už bežiaceho miestneho HTTP API kompatibilného s LibreHardwareMonitor (127.0.0.1:8085). Predvolene vypnuté.
+Zvýšení práv samo nepřidá zdroj měření; aplikace je nevyžaduje.	Zvýšenie práv samo nepridá zdroj merania; aplikácia ho nevyžaduje.
+Aplikace ovladač ani poskytovatele neinstaluje a nespouští. Čte publikované CPU vzorky s časem; identita poskytovatele není ověřena.	Aplikácia ovládač ani poskytovateľa neinštaluje a nespúšťa. Číta publikované vzorky CPU s časom; identita poskytovateľa nie je overená.
+Aktuální dostupnost měření a výsledky posledních operací. Změna oprávnění není automatická.	Aktuálna dostupnosť meraní a výsledky posledných operácií. Zmena oprávnení nie je automatická.
+Zatím bez údaje	Zatiaľ bez údaja
+{0}\nBěžný účet: {1}\nZvýšená práva: {2}\nOvladač / zdroj: {3}	{0}\nBežný účet: {1}\nZvýšené práva: {2}\nOvládač / zdroj: {3}
+Sběr skončil chybou	Zber skončil chybou
+Čeká na vzorek	Čaká na vzorku
+Zastaralá data	Zastarané údaje
+Pozastaveno, poslední vzorek	Pozastavené, posledná vzorka
+Systémový vzorek je dostupný	Systémová vzorka je dostupná
+Čeká na systémové údaje	Čaká na systémové údaje
+Windows poskytl {0} údajů	Windows poskytol {0} údajov
+Zatím bez hlášení zařízení	Zatiaľ bez hlásenia zariadenia
+Zatím nevyžádáno	Zatiaľ nevyžiadané
+Čtení služeb skončilo chybou	Čítanie služieb skončilo chybou
+Zastaralý výpis	Zastaraný výpis
+{0} stavů · {1} konfigurací · {2} konfigurací zamítnuto	{0} stavov · {1} konfigurácií · {2} konfigurácií zamietnutých
+Zatím bez adaptéru či vzorku	Zatiaľ bez adaptéra či vzorky
+platný údaj	platný údaj
+první vzorek	prvá vzorka
+přístup zamítnut	prístup zamietnutý
+nepodporováno	nepodporované
+zastaralé	zastarané
+chyba	chyba
+mezera	medzera
+nedostupné	nedostupné
+Režim oprávnění procesu se nepodařilo zjistit.	Režim oprávnení procesu sa nepodarilo zistiť.
+Tento proces běží se zvýšenými právy. Dostupnost jednotlivých funkcí vychází z uvedených skutečných výsledků.	Tento proces beží so zvýšenými právami. Dostupnosť jednotlivých funkcií vychádza z uvedených skutočných výsledkov.
+Tento proces běží bez zvýšených práv. Ke spuštění nepoužívá další ovladač.	Tento proces beží bez zvýšených práv. Na spustenie nepoužíva ďalší ovládač.
+{0} zařízení	{0} zariadení
+{0} logických procesorů	{0} logických procesorov
+{0} GiB celkem	{0} GiB celkom
+virtuální síťové rozhraní	virtuálne sieťové rozhranie
+Grafy logických procesorů:	Grafy logických procesorov:
+Využití	Využitie
+Použito	Používa sa
+Aktivní čas	Aktívny čas
+Příjem	Prijímanie
+Příjem ↓	Prijímanie ↓
+Odesílání ↑	Odosielanie ↑
+Stránkovací soubor (swap)	Stránkovací súbor (swap)
+Zastaralé údaje	Zastarané údaje
+Použitý swap	Použitý swap
+Historie {0} · {1} vzorků · zobrazeno {2} s	História {0} · {1} vzoriek · zobrazené {2} s
+Logické procesory	Logické procesory
+Procesy	Procesy
+Doba sběru	Čas zberu
+Vlákna	Vlákna
+Instalováno	Nainštalované
+Fyzická paměť	Fyzická pamäť
+Dostupná paměť	Dostupná pamäť
+Potvrzeno / limit	Potvrdené / limit
+Stránkovaný fond	Stránkovaná oblasť
+Nestránkovaný fond	Nestránkovaná oblasť
+V mezipaměti	Vo vyrovnávacej pamäti
+Maximum swapu	Maximum swapu
+Dostupnost	Dostupnosť
+Stav	Stav
+Zastaralé	Zastarané
+Odesílání	Odosielanie
+Přijato od spuštění	Prijaté od spustenia
+Odesláno od spuštění	Odoslané od spustenia
+Počítáno od	Počítané od
+Fyzické adaptéry od spuštění	Fyzické adaptéry od spustenia
+Čtení	Čítanie
+Zápis	Zápis
+Vyhrazená paměť	Vyhradená pamäť
+Sdílená paměť	Zdieľaná pamäť
+Kapacita VRAM	Kapacita VRAM
+Limit sdílené paměti	Limit zdieľanej pamäte
+Enginy	Enginy
+Celkové vytížení	Celkové vyťaženie
+Nejvytíženější engine	Najvyťaženejší engine
+Rezervováno hardwarem	Vyhradené hardvérom
+Logický procesor {0}:{1}	Logický procesor {0}:{1}
+Logické procesory · měření nedostupné	Logické procesory · meranie nedostupné
+Načítání…	Načítava sa…
+Ověřuji dostupnost aktualizací	Overujem dostupnosť aktualizácií
+Načítám přehled místních instalačních balíčků.	Načítavam prehľad miestnych inštalačných balíkov.
+Novou verzi nainstalujte ručně jejím instalátorem po zavření aplikace.	Novú verziu nainštalujte ručne jej inštalátorom po zatvorení aplikácie.
+Načíst balíčky	Načítať balíky
+Přidat instalátor…	Pridať inštalátor…
+Vyčistit cache…	Vyčistiť cache…
+Nainstalovat vybraný…	Nainštalovať vybraný…
+Vrátit předchozí verzi…	Vrátiť predchádzajúcu verziu…
+Obnovit nedokončenou instalaci…	Obnoviť nedokončenú inštaláciu…
+Zrušit dotaz	Zrušiť dotaz
+Zavřít	Zavrieť
+Aktualizace · NKS Task Manager	Aktualizácie · NKS Task Manager
+Aktualizace a návrat verze	Aktualizácie a návrat verzie
+Aktuální sestavení: {0}	Aktuálna zostava: {0}
+Vyberte podepsaný instalátor. Ověřená instalace i přenosná kopie zachovají svůj režim. Nastavení mimo soubory aplikace se nepřepisuje.	Vyberte podpísaný inštalátor. Overená inštalácia aj prenosná kópia si zachovajú svoj režim. Nastavenia mimo súborov aplikácie sa neprepisujú.
+Balíčky se bez něj neověřují ani nespouštějí.	Balíky sa bez neho neoverujú ani nespúšťajú.
+Nedokončené instalace	Nedokončené inštalácie
+Ověřené instalační balíčky v místní cache	Overené inštalačné balíky v miestnej cache
+Nejdříve zobrazí náhled odstranitelné cache. Balíčky potřebné pro návrat a nejasné záznamy zůstanou zachované.	Najprv zobrazí náhľad odstrániteľnej cache. Balíky potrebné na návrat a nejasné záznamy zostanú zachované.
+Nejasné výsledky instalace v této složce	Nejasné výsledky inštalácie v tomto priečinku
+Toto sestavení používá ruční aktualizace.	Táto zostava používa ručné aktualizácie.
+Aktualizace přímo z aplikace nejsou pro toto sestavení dostupné.	Aktualizácie priamo z aplikácie nie sú pre túto zostavu dostupné.
+Ruční aktualizace	Ručné aktualizácie
+Složka aplikace: {0}	Priečinok aplikácie: {0}
+Aktualizace přes aplikaci není dostupná.	Aktualizácia cez aplikáciu nie je dostupná.
+Přehled balíčků se nepodařilo načíst.	Prehľad balíkov sa nepodarilo načítať.
+Výsledek předání není potvrzený. Neopakujte instalaci, dokud neověříte její stav.	Výsledok odovzdania nie je potvrdený. Neopakujte inštaláciu, kým neoveríte jej stav.
+Výsledek úklidu není potvrzený. Po skončení pomocníka načtěte přehled znovu.	Výsledok upratovania nie je potvrdený. Po skončení pomocníka načítajte prehľad znova.
+Načítání bylo zrušené. Přehled můžete načíst znovu.	Načítavanie bolo zrušené. Prehľad môžete načítať znova.
+Operace nebyla dokončená. Podrobnosti jsou uvedené níže; načtení můžete zopakovat.	Operácia nebola dokončená. Podrobnosti sú uvedené nižšie; načítanie môžete zopakovať.
+Předání nemá potvrzený výsledek.	Odovzdanie nemá potvrdený výsledok.
+Úklid nemá potvrzený výsledek.	Upratovanie nemá potvrdený výsledok.
+Operace byla zrušena.	Operácia bola zrušená.
+Operaci nelze dokončit.	Operáciu nemožno dokončiť.
+Aplikace zůstává otevřená. Neopakujte instalaci; po skončení pomocníka znovu otevřete přehled a ověřte jeho stav.	Aplikácia zostáva otvorená. Neopakujte inštaláciu; po skončení pomocníka znova otvorte prehľad a overte jeho stav.
+Část souborů už mohla být odstraněná. Po skončení pomocníka načtěte aktuální přehled; úklid se neopakuje automaticky.	Časť súborov už mohla byť odstránená. Po skončení pomocníka načítajte aktuálny prehľad; upratovanie sa neopakuje automaticky.
+Ověřuji místní balíčky…	Overujem miestne balíky…
+Nová instalace začne až po kontrole plánu, vašem potvrzení a skutečném zavření této aplikace.	Nová inštalácia začne až po kontrole plánu, vašom potvrdení a skutočnom zatvorení tejto aplikácie.
+Ověřuji a ukládám vybraný instalátor…	Overujem a ukladám vybraný inštalátor…
+Instalátor nebyl přidán.	Inštalátor nebol pridaný.
+Instalátor je uložený. Samotné přidání balíčku nic neinstaluje.	Inštalátor je uložený. Samotné pridanie balíka nič neinštaluje.
+současná verze	súčasná verzia
+předchozí verze	predchádzajúca verzia
+připravený balíček	pripravený balík
+Žádné místní instalační balíčky	Žiadne miestne inštalačné balíky
+Přehled balíčků není dostupný	Prehľad balíkov nie je dostupný
+Přidejte instalátor od nastaveného vydavatele. Nejdříve se ověří; samotné přidání nic neinstaluje.	Pridajte inštalátor od nastaveného vydavateľa. Najprv sa overí; samotné pridanie nič neinštaluje.
+Registrovaná instalace	Registrovaná inštalácia
+Přenosná kopie	Prenosná kópia
+Režim složky není ověřený	Režim priečinka nie je overený
+lze připravit obnovu	možno pripraviť obnovu
+obnova zatím není ověřená	obnova zatiaľ nie je overená
+Připravuji ověřený plán…	Pripravujem overený plán…
+Plán nebyl připraven.	Plán nebol pripravený.
+Současná verze: {0}	Súčasná verzia: {0}
+Vybraná verze: {0}	Vybraná verzia: {0}
+Uložený návrat po změně: {0}	Uložený návrat po zmene: {0}
+Cílová instalace: {0}	Cieľová inštalácia: {0}
+Zůstane přenosná kopie. Nevytváří se registrace odinstalátoru ani zástupci aplikace.	Zostane prenosná kópia. Nevytvára sa registrácia odinštalátora ani odkazy aplikácie.
+Zůstane instalace pro aktuálního uživatele.	Zostane inštalácia pre aktuálneho používateľa.
+Znovu se nainstaluje ověřená původní verze. Dřívější nejasný výsledek se považuje za vyřešený až po dokončení a ověření nové instalace.	Znova sa nainštaluje overená pôvodná verzia. Skorší nejasný výsledok sa považuje za vyriešený až po dokončení a overení novej inštalácie.
+Po potvrzení se tento program zavře a otevře se ověřený instalátor. Pomocník vyčká na skutečný zánik procesu. Pokud program zůstane otevřený, instalace se po 30 sekundách nespustí. Nastavení mimo instalační složku se nepřepisuje.	Po potvrdení sa tento program zatvorí a otvorí sa overený inštalátor. Pomocník počká na skutočné ukončenie procesu. Ak program zostane otvorený, inštalácia sa po 30 sekundách nespustí. Nastavenia mimo inštalačného priečinka sa neprepisujú.
+Obnovit nedokončenou instalaci	Obnoviť nedokončenú inštaláciu
+Vrátit předchozí verzi	Vrátiť predchádzajúcu verziu
+Nainstalovat aktualizaci	Nainštalovať aktualizáciu
+Zavřít program a pokračovat	Zavrieť program a pokračovať
+Zrušit	Zrušiť
+Instalace nebyla předaná.	Inštalácia nebola odovzdaná.
+Instalátor čeká na uzavření aplikace…	Inštalátor čaká na zatvorenie aplikácie…
+Předání je potvrzené. Případné odmítnutí zavření ponechá aplikaci otevřenou; pomocník potom ukončí čekání bez spuštění instalace.	Odovzdanie je potvrdené. Prípadné odmietnutie zatvorenia ponechá aplikáciu otvorenú; pomocník potom ukončí čakanie bez spustenia inštalácie.
+Výsledek předání není známý. Instalaci neopakujte, dokud neověříte stav předchozího požadavku.	Výsledok odovzdania nie je známy. Inštaláciu neopakujte, kým neoveríte stav predchádzajúcej požiadavky.
+Náhled platí ještě {0} s.	Náhľad platí ešte {0} s.
+Platnost náhledu vypršela. Zavřete dialog a připravte nový náhled.	Platnosť náhľadu vypršala. Zatvorte dialóg a pripravte nový náhľad.
+Místní balíčky jsou ověřené.	Miestne balíky sú overené.
+Toto sestavení nemá nastaveného důvěryhodného vydavatele aktualizací.	Táto zostava nemá nastaveného dôveryhodného vydavateľa aktualizácií.
+Původ balíčku nebo instalace nebyl ověřen.	Pôvod balíka alebo inštalácie nebol overený.
+Požadavek neodpovídá připravenému plánu.	Požiadavka nezodpovedá pripravenému plánu.
+Cache dosáhla svého limitu.	Cache dosiahla svoj limit.
+Předchozí operace nebo stav instalace brání pokračování.	Predchádzajúca operácia alebo stav inštalácie bráni pokračovaniu.
+Chybí požadovaný ověřený balíček. Pro návrat je nutný také instalátor současné verze.	Chýba požadovaný overený balík. Na návrat je potrebný aj inštalátor súčasnej verzie.
+Soubor nebo záznam aktualizace není dostupný.	Súbor alebo záznam aktualizácie nie je dostupný.
+Program zůstal otevřený; instalace nebyla spuštěná.	Program zostal otvorený; inštalácia nebola spustená.
+Instalátor neskončil úspěšně.	Inštalátor neskončil úspešne.
+Výsledek instalace nebyl ověřený.	Výsledok inštalácie nebol overený.
+Předchozí aktualizační požadavek ještě není uzavřený.	Predchádzajúca aktualizačná požiadavka ešte nie je uzavretá.
+Výsledek předchozí operace není známý.	Výsledok predchádzajúcej operácie nie je známy.
+Zatím není zaznamenaná žádná aktualizace.	Zatiaľ nie je zaznamenaná žiadna aktualizácia.
+Instalátor je připravený v cache.	Inštalátor je pripravený v cache.
+Existuje připravený plán.	Existuje pripravený plán.
+Pomocník čeká na uzavření programu.	Pomocník čaká na zatvorenie programu.
+Instalace nemá potvrzený konečný výsledek.	Inštalácia nemá potvrdený konečný výsledok.
+Poslední změna verze byla ověřená.	Posledná zmena verzie bola overená.
+Předchozí požadavek byl odmítnutý.	Predchádzajúca požiadavka bola odmietnutá.
+Program zůstal otevřený a čekání skončilo.	Program zostal otvorený a čakanie skončilo.
+Poslední instalace selhala.	Posledná inštalácia zlyhala.
+Poslední výsledek nebyl ověřený.	Posledný výsledok nebol overený.
+Předchozí stav vyžaduje ověření; instalace se neopakuje automaticky.	Predchádzajúci stav vyžaduje overenie; inštalácia sa neopakuje automaticky.
+Neověřená verze	Neoverená verzia
+Lze připravit opravu z ověřeného původního instalátoru. Samotný výběr nic neinstaluje.	Možno pripraviť opravu z overeného pôvodného inštalátora. Samotný výber nič neinštaluje.
+Původní aktualizační pomocník ještě běží. Obnova zatím není povolená.	Pôvodný aktualizačný pomocník ešte beží. Obnova zatiaľ nie je povolená.
+Původní instalátor ještě běží. Vyčkejte na jeho ukončení.	Pôvodný inštalátor ešte beží. Počkajte na jeho ukončenie.
+Nelze ověřit, zda předchozí instalátor skončil. Soubory zůstávají zachované.	Nemožno overiť, či predchádzajúci inštalátor skončil. Súbory zostávajú zachované.
+Chybí ověřený instalátor původní verze. Přidejte jej do místních balíčků a obnovte přehled.	Chýba overený inštalátor pôvodnej verzie. Pridajte ho do miestnych balíkov a obnovte prehľad.
+Záznam není ověřený pro tuto složku aplikace.	Záznam nie je overený pre tento priečinok aplikácie.
+Tuto operaci už vyřešila jiná ověřená obnova.	Túto operáciu už vyriešila iná overená obnova.
+Starý záznam neobsahuje životnost instalátoru. V tomto spuštění Windows nelze prokázat jeho ukončení.	Starý záznam neobsahuje životnosť inštalátora. V tomto spustení Windows nemožno preukázať jeho ukončenie.
+Neznámá verze	Neznáma verzia
+Aktivní	Aktívne
+Připojeno	Pripojené
+Připojování	Pripája sa
+Stínový provoz	Tieňová relácia
+Odpojeno	Odpojené
+Nečinná	Nečinné
+Naslouchá	Načúva
+Resetována	Resetované
+Mimo provoz	Mimo prevádzky
+Inicializace	Inicializácia
+Neznámý	Neznámy
+Zpráva od {0} – {1:g}	Správa od {0} – {1:g}
+Opravdu chcete odpojit vybrané uživatele?	Naozaj chcete odpojiť vybratých používateľov?
+Odpojit uživatele	Odpojiť používateľa
+Chcete pokračovat?	Chcete pokračovať?
+Pokud odhlásíte uživatele, může dojít ke ztrátě jeho neuložených dat.	Ak odhlásite používateľa, môže dôjsť k strate jeho neuložených údajov.
+Odhlásit uživatele	Odhlásiť používateľa
+Uživatele {0} (id relace={1}) se nepodařilo odpojit.	Používateľa {0} (ID relácie={1}) sa nepodarilo odpojiť.
+Uživatele {0} (id relace={1}) se nepodařilo odhlásit.	Používateľa {0} (ID relácie={1}) sa nepodarilo odhlásiť.
+Zprávu uživateli (SessionId={0}) nelze odeslat.	Správu používateľovi (SessionId={0}) nemožno odoslať.
+Přístup byl odepřen. K dokončení této úlohy potřebujete oprávnění správce. Zavřete NKS Task Manager, pak ho spusťte znovu jako správce a zkuste to znovu.	Prístup bol odmietnutý. Na dokončenie tejto úlohy potrebujete oprávnenia správcu. Zatvorte NKS Task Manager, potom ho spustite znova ako správca a skúste to znova.
+Část údajů chybí	Časť údajov chýba
+Dotaz dokončen	Dotaz dokončený
+Přístup zamítnut	Prístup zamietnutý
+Nepodporováno	Nepodporované
+Cíl už neodpovídá původnímu procesu	Cieľ už nezodpovedá pôvodnému procesu
+Dosažen limit čtení	Dosiahnutý limit čítania
+Požadavek nebylo možné přijmout	Požiadavku nebolo možné prijať
+Údaj není dostupný	Údaj nie je dostupný
+Dotaz skončil chybou	Dotaz skončil chybou
+Zatím nespuštěno	Zatiaľ nespustené
+Spouští se	Spúšťa sa
+Záznam běží	Záznam beží
+Zastavuje se	Zastavuje sa
+Záznam zastavený	Záznam zastavený
+Předchozí relace není uklizená	Predchádzajúca relácia nie je uprataná
+Zastavení překročilo limit	Zastavenie prekročilo limit
+Úklid nebyl potvrzený	Upratovanie nebolo potvrdené
+Chyba záznamu	Chyba záznamu
+Požadavek nedokončený · Windows {0}	Požiadavka nedokončená · Windows {0}
+ověřený dotaz	overený dotaz
+potvrzená změna	potvrdená zmena
+žádost o zavření	žiadosť o zatvorenie
+žádost o ukončení	žiadosť o ukončenie
+přijatý nativní požadavek	prijatá natívna požiadavka
+odmítnuto	odmietnuté
+změna identity	zmena identity
+již skončeno	už skončené
+neověřeno	neoverené
+nedostupný	nedostupný
+platný	platný
+přístup odmítnut	prístup odmietnutý
+nepodporované	nepodporované
+měřicí okno není uložené	okno merania nie je uložené
+měřicí okno {0}	okno merania {0}
+okamžitý odečet	okamžitý odpočet
+měřicí okno tohoto vzorku je nedostupné	okno merania tejto vzorky je nedostupné
+měřicí okno zdroj neuvádí	okno merania zdroj neuvádza
+uložený název je zkrácený ze {0} znaků	uložený názov je skrátený z {0} znakov
+Původní PID: {0}	Pôvodný PID: {0}
+Druh generace: {0} · hodnota {1}	Druh generácie: {0} · hodnota {1}
+Původní Created100ns: {0}	Pôvodné Created100ns: {0}
+Čas pozorování: {0} · monotónní {1} ns	Čas pozorovania: {0} · monotónny {1} ns
+Pracovní sada: {0} B · {1}	Pracovná množina: {0} B · {1}
+Soukromé bajty: {0} B · {1}	Súkromné bajty: {0} B · {1}
+Procesové I/O čtení: {0} · {1}	Procesové I/O čítanie: {0} · {1}
+Procesové I/O zápis: {0} · {1} · {2}	Procesové I/O zápis: {0} · {1} · {2}
+Vzorek byl při přijetí opožděný nebo označený jako zastaralý.	Vzorka bola pri prijatí oneskorená alebo označená ako zastaraná.
+Uložená normalizace CPU: {0} · dělitel {1}	Uložená normalizácia CPU: {0} · deliteľ {1}
+Tato knihovna čtení CPU čidel nepodporuje	Táto knižnica nepodporuje čítanie snímačov CPU
+Změnu čtení CPU čidel knihovna nepotvrdila	Knižnica nepotvrdila zmenu čítania snímačov CPU
+Vypnuto; žádné dotazy na čidla	Vypnuté; žiadne dotazy na snímače
+Sběr je pozastavený; aktuální teplota není dostupná	Zber je pozastavený; aktuálna teplota nie je dostupná
+Čtení prostředků selhalo; aktuální teplota není dostupná	Čítanie prostriedkov zlyhalo; aktuálna teplota nie je dostupná
+Čeká na aktuální sběr prostředků	Čaká na aktuálny zber prostriedkov
+Čeká na odpověď po zapnutí CPU čidel	Čaká na odpoveď po zapnutí snímačov CPU
+Externí program s čidly neběží nebo není dostupný	Externý program so snímačmi nebeží alebo nie je dostupný
+Externí program neposkytl použitelné údaje z čidel	Externý program neposkytol použiteľné údaje zo snímačov
+Externí program neposkytuje podporované teplotní čidlo CPU	Externý program neposkytuje podporovaný teplotný snímač CPU
+Čeká na první odpověď externího programu s čidly	Čaká na prvú odpoveď externého programu so snímačmi
+Stav CPU čidel	Stav snímačov CPU
+zastaralý nebo nejistý vzorek	zastaraná alebo neistá vzorka
+Teplota · {0}	Teplota · {0}
+Čidla · {0}	Snímače · {0}
+Teplota z čidel	Teplota zo snímačov
+Číst teplotu CPU z již spuštěného programu kompatibilního s LibreHardwareMonitor (127.0.0.1:8085).	Čítať teplotu CPU z už spusteného programu kompatibilného s LibreHardwareMonitor (127.0.0.1:8085).
+Tato aplikace jej neinstaluje ani nespouští a identitu externího zdroje neověřuje.	Táto aplikácia ho neinštaluje ani nespúšťa a identitu externého zdroja neoveruje.
+Čte se místní HTTP API kompatibilní s LibreHardwareMonitor na 127.0.0.1:8085, GET /metrics. Poskytovatel a jeho čidla musí být již spuštěné samostatně. Aplikace nic neinstaluje ani nespouští. Identita poskytovatele není ověřena; jiný port nebo staré API nejsou podporované.	Číta sa miestne HTTP API kompatibilné s LibreHardwareMonitor na 127.0.0.1:8085, GET /metrics. Poskytovateľ a jeho snímače musia byť už spustené samostatne. Aplikácia nič neinštaluje ani nespúšťa. Identita poskytovateľa nie je overená; iný port alebo staré API nie sú podporované.
+Podrobnosti čidel	Podrobnosti snímačov
+Stav se nepodařilo přečíst	Stav sa nepodarilo prečítať
+Nenastaveno	Nenastavené
+Nastaveno na tuto instalaci	Nastavené na túto inštaláciu
+Nastaveno na jinou instalaci NKS (stará cesta)	Nastavené na inú inštaláciu NKS (stará cesta)
+Nastaveno na jiný program	Nastavené na iný program
+Vypnutím se obnoví původní program.	Vypnutím sa obnoví pôvodný program.
+Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto se nebude obnovovat; vypnutím se registrace jen odstraní.	Pôvodný program chýba alebo ho môžu meniť aj bežní používatelia, preto sa nebude obnovovať; vypnutím sa registrácia len odstráni.
+Vypnutím se registrace odstraní a Správce úloh Windows se spouští jako dříve.	Vypnutím sa registrácia odstráni a Správca úloh Windows sa spúšťa ako predtým.
+Správce úloh Windows se spouští jako dříve.	Správca úloh Windows sa spúšťa ako predtým.
+Příkaz: {0}	Príkaz: {0}
+Zapnutím se cesta opraví na tuto instalaci.	Zapnutím sa cesta opraví na túto inštaláciu.
+Zapnutím se tento příkaz uloží a přepíše; vypnutím se obnoví. Cizí registraci NKS sama nevypíná.	Zapnutím sa tento príkaz uloží a prepíše; vypnutím sa obnoví. Cudziu registráciu NKS sama nevypína.
+Registrace Správce úloh Windows byla změněna.	Registrácia Správcu úloh Windows bola zmenená.
+Nic se nezměnilo, registrace už byla v požadovaném stavu.	Nič sa nezmenilo, registrácia už bola v požadovanom stave.
+Správce úloh je nastaven na jiný program než NKS. Registrace zůstala beze změny.	Správca úloh je nastavený na iný program než NKS. Registrácia zostala bez zmeny.
+Změna registrace skončila chybou.	Zmena registrácie skončila chybou.
+Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto nebyl obnoven a registrace byla jen odstraněna.	Pôvodný program chýba alebo ho môžu meniť aj bežní používatelia, preto nebol obnovený a registrácia bola len odstránená.
+Změna se mohla částečně provést.	Zmena sa mohla čiastočne vykonať.
+Nahradit Správce úloh Windows…	Nahradiť Správcu úloh Windows…
+nelze přečíst	nemožno prečítať
+Stav náhrady Správce úloh nelze přečíst: {0}	Stav náhrady Správcu úloh nemožno prečítať: {0}
+Ctrl+Shift+Esc, Ctrl+Alt+Del → Správce úloh, hlavní panel, Win+X a Win+R taskmgr pak otevřou NKS Task Manager.	Ctrl+Shift+Esc, Ctrl+Alt+Del → Správca úloh, panel úloh, Win+X a Win+R taskmgr potom otvoria NKS Task Manager.
+Systémový soubor se nemění, zabezpečená obrazovka Windows zůstává stejná.	Systémový súbor sa nemení, zabezpečená obrazovka Windows zostáva rovnaká.
+Stav: {0}	Stav: {0}
+Vlastní proces ještě není v seznamu s ověřenou identitou. Zkuste to za chvíli.	Vlastný proces ešte nie je v zozname s overenou identitou. Skúste to o chvíľu.
+Změna platí pro celý počítač a vyžaduje správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí zvýšeně.	Zmena platí pre celý počítač a vyžaduje správcu: nasleduje UAC a vlastné potvrdenie. Po zapnutí pobeží NKS s právami správcu vždy, keď sa Správca úloh spustí so zvýšenými právami.
+Nahradit Správce úloh Windows	Nahradiť Správcu úloh Windows
+Zapnout…	Zapnúť…
+Vypnout (obnovit předchozí)…	Vypnúť (obnoviť predchádzajúci)…
+Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik rozbalí procesy.	Aplikácie podľa overených okien a počet ich procesov. Šípka alebo dvojklik rozbalí procesy.
+Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.	Súčet CPU všetkých procesov aplikácie. ≥ označuje známu časť, keď niektorý proces nemá aktuálnu vzorku.
+Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky.	Súčet pracovných množín všetkých procesov aplikácie. Presné hodnoty v MB sú v popise bunky.
+Součet čtení a zápisu všech procesů aplikace.	Súčet čítania a zápisu všetkých procesov aplikácie.
+Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	Odoslané a prijaté bajty TCP/UDP. Meria sa len počas vlastného záznamu ETW so správcom.
+Aplikace	Aplikácie
+Aplikace a jejich procesy	Aplikácie a ich procesy
+Pracovní sada všech procesů	Pracovná množina všetkých procesov
+Okna:	Okná:
+Pracovní sada	Pracovná množina
+Přetečení součtu	Pretečenie súčtu
+Měření nedostupné	Meranie nedostupné
+Proces a ověření potomci: {0} procesů.	Proces a overení potomkovia: {0} procesov.
+Neúplné členství: některé vztahy nebo identity nelze ověřit.	Neúplné členstvo: niektoré vzťahy alebo identity nemožno overiť.
+Známé aktuální vzorky: CPU {1}/{0}, RAM {2}/{0}, privátní paměť {3}/{0}, čtení {4}/{0}, zápis {5}/{0}, síť {6}/{0}.	Známe aktuálne vzorky: CPU {1}/{0}, RAM {2}/{0}, súkromná pamäť {3}/{0}, čítanie {4}/{0}, zápis {5}/{0}, sieť {6}/{0}.
+≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.	≥ označuje známu časť neúplného súčtu. Zdieľané stránky RAM môžu byť započítané opakovane.
+Přetečený součet je nedostupný.	Pretečený súčet je nedostupný.
+Proces byl ukončen; hodnoty již nejsou aktuální.	Proces bol ukončený; hodnoty už nie sú aktuálne.
+Procesový inventář je zastaralý.	Procesový inventár je zastaraný.
+Vlastní hodnoty PID {0}, bez potomků.	Vlastné hodnoty PID {0}, bez potomkov.
+Ukončeno	Ukončené
+Síť od začátku záznamu ETW:	Sieť od začiatku záznamu ETW:
+Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu.	Čas nie je vybraný. Shift+kliknutie alebo Shift+Enter vyberie dva konce intervalu.
+Vybraný čas {0} je mimo zobrazenou historii tohoto grafu.	Vybraný čas {0} je mimo zobrazenej histórie tohto grafu.
+Bez vzorku	Bez vzorky
+5 nejvytíženějších z {0}	5 najvyťaženejších z {0}
+{0} s zpět	pred {0} s
+připnuto	pripnuté
+kliknutím připnout	kliknutím pripnúť
+Zdroj primárního vzorku: {0}	Zdroj primárnej vzorky: {0}
+Čas: {0}	Čas: {0}
+Úsek: {0} – {1} · {2}	Úsek: {0} – {1} · {2}
+První konec: {0} · Shift+klik nebo Shift+Enter vybere druhý.	Prvý koniec: {0} · Shift+kliknutie alebo Shift+Enter vyberie druhý.
+Cílový soubor už existuje. Vyberte nový název; dump se nikdy nepřepisuje.	Cieľový súbor už existuje. Vyberte nový názov; výpis sa nikdy neprepisuje.
+Dump ukládejte na místní disk s písmenem jednotky.	Výpis ukladajte na miestny disk s písmenom jednotky.
+Cesta dumpu obsahuje nepovolený název.	Cesta výpisu obsahuje nepovolený názov.
+Dump neodpovídá vlastnímu dočasnému souboru.	Výpis nezodpovedá vlastnému dočasnému súboru.
+Velikost dumpu neodpovídá výsledku pracovníka.	Veľkosť výpisu nezodpovedá výsledku pracovníka.
+Dump je uložený, ale záznam obnovy zůstal zachovaný: {0}	Výpis je uložený, ale záznam obnovy zostal zachovaný: {0}
+Dump nelze uložit přes odkaz nebo přesměrovaný adresář.	Výpis nemožno uložiť cez odkaz alebo presmerovaný priečinok.
+Cesta dumpu je příliš dlouhá.	Cesta výpisu je príliš dlhá.
+Vlastní dočasný soubor se nepodařilo odstranit: {0} (Windows {1}).	Vlastný dočasný súbor sa nepodarilo odstrániť: {0} (Windows {1}).
+První vzorek	Prvá vzorka
+Chybí oprávnění	Chýba oprávnenie
+Mezera	Medzera
+Sbalit	Zbaliť
+Rozbalit	Rozbaliť
+Zobrazit odpojené adaptéry	Zobraziť odpojené adaptéry
+Zobrazit pomocná/virtuální rozhraní	Zobraziť pomocné/virtuálne rozhrania
+Pohled sítě je změněný, ale volbu se nepodařilo uložit pro příští spuštění.	Zobrazenie siete je zmenené, ale voľbu sa nepodarilo uložiť na ďalšie spustenie.
+Proces	Proces
+Soukromá paměť	Súkromná pamäť
+Čtení I/O	Čítanie I/O
+Zápis I/O	Zápis I/O
+Síť	Sieť
+Vznik: {0}	Vznik: {0}
+Konec: {0}	Koniec: {0}
+Délka neurčena	Dĺžka neurčená
+Název není dostupný	Názov nie je dostupný
+PID nelze určit	PID nemožno určiť
+Boot + PID + CreateTime ze zdroje	Boot + PID + CreateTime zo zdroja
+Neověřený samostatný záznam	Neoverený samostatný záznam
+Procesor	Procesor
+Paměť	Pamäť
+Disk	Disk
+Grafická karta	Grafická karta
+Jiná akce služeb nebo její ukončování ještě probíhá.	Iná akcia služieb alebo jej ukončovanie ešte prebieha.
+Plán byl zrušen. Změna nebyla odeslána.	Plán bol zrušený. Zmena nebola odoslaná.
+Potvrzený stav	Potvrdený stav
+Částečný nebo odmítnutý výsledek	Čiastočný alebo odmietnutý výsledok
+Čekání bylo zrušeno. SCM mohl požadavek přijmout; výsledek není známý.	Čakanie bolo zrušené. SCM mohol požiadavku prijať; výsledok nie je známy.
+Vypršel čas čekání na pracovníka. Rozpracovaný stav nemusí být konečný.	Vypršal čas čakania na pracovníka. Rozpracovaný stav nemusí byť konečný.
+Neověřený záznam nelze měnit.	Neoverený záznam nemožno meniť.
+Záznam bez souboru byl odstraněn. Žádný datový soubor se neměnil.	Záznam bez súboru bol odstránený. Žiadny dátový súbor sa nemenil.
+Ověřený dočasný soubor a jeho záznam byly odstraněny.	Overený dočasný súbor a jeho záznam boli odstránené.
+Stav transakce neumožňuje požadovanou změnu. Soubor zůstane zachovaný.	Stav transakcie neumožňuje požadovanú zmenu. Súbor zostane zachovaný.
+Velikost nebo SHA-256 nesouhlasí s hotovým dumpem. Soubor ani záznam se nebudou měnit.	Veľkosť alebo SHA-256 nesúhlasí s hotovým výpisom. Súbor ani záznam sa nebudú meniť.
+Již uložený dump byl ověřen. Odstranil se pouze dokončený záznam obnovy.	Už uložený výpis bol overený. Odstránil sa iba dokončený záznam obnovy.
+Hotový dump byl ověřen a uložen bez přepsání existujícího souboru.	Hotový výpis bol overený a uložený bez prepísania existujúceho súboru.
+Identita dočasného souboru nebyla zapsaná. Soubor se nebude hledat ani měnit.	Identita dočasného súboru nebola zapísaná. Súbor sa nebude hľadať ani meniť.
+Soubor překračuje limit ověřování.	Súbor prekračuje limit overovania.
+Zapsaný hotový dump; SHA-256 se ověří před dokončením.	Zapísaný hotový výpis; SHA-256 sa overí pred dokončením.
+Nedokončený dočasný soubor s ověřenou identitou.	Nedokončený dočasný súbor s overenou identitou.
+Cílový soubor nemá uložený důkaz dokončení. Zůstane zachovaný.	Cieľový súbor nemá uložený dôkaz dokončenia. Zostane zachovaný.
+Velikost souboru překračuje limit ověřování.	Veľkosť súboru prekračuje limit overovania.
+Stejný soubor už má finální název. Lze ověřit jen dokončení záznamu.	Rovnaký súbor už má finálny názov. Možno overiť len dokončenie záznamu.
+Dočasný ani cílový soubor nejsou přítomné. Lze potvrzeně odstranit jen záznam.	Dočasný ani cieľový súbor nie sú prítomné. Potvrdene možno odstrániť len záznam.
+Bezpečnou změnu nelze ověřit.	Bezpečnú zmenu nemožno overiť.
+Předchozí čtení nebo obnova ještě probíhá.	Predchádzajúce čítanie alebo obnova ešte prebieha.
+Záznam obnovy je poškozený. Soubor ani záznam se nebudou měnit.	Záznam obnovy je poškodený. Súbor ani záznam sa nebudú meniť.
+CPU sets vyžadují jeden proces a ověřený náhled.	CPU sets vyžadujú jeden proces a overený náhľad.
+Výběr CPU sets je příliš velký nebo obsahuje opakované ID.	Výber CPU sets je príliš veľký alebo obsahuje opakované ID.
+Neplatný otisk náhledu CPU sets.	Neplatný odtlačok náhľadu CPU sets.
+Chybí ověřený otisk náhledu CPU sets.	Chýba overený odtlačok náhľadu CPU sets.
+Pracovník vrátil neplatný typ nebo délku odpovědi CPU sets.	Pracovník vrátil neplatný typ alebo dĺžku odpovede CPU sets.
+Chybí úplná odpověď CPU sets.	Chýba úplná odpoveď CPU sets.
+Neplatné délky nebo příznaky CPU sets.	Neplatné dĺžky alebo príznaky CPU sets.
+Neplatný stav nedostupných CPU sets.	Neplatný stav nedostupných CPU sets.
+CPU sets nejsou vázané na ověřený proces.	CPU sets nie sú viazané na overený proces.
+Neplatný nebo opakovaný logický procesor v CPU sets.	Neplatný alebo opakovaný logický procesor v CPU sets.
+Neplatný výchozí výběr CPU sets.	Neplatný predvolený výber CPU sets.
+Proces po změně CPU sets nemá potvrzenou životnost.	Proces po zmene CPU sets nemá potvrdenú životnosť.
+Zpětné čtení CPU sets nepotvrdilo počet vybraných procesorů.	Spätné čítanie CPU sets nepotvrdilo počet vybraných procesorov.
+Zpětné čtení CPU sets nepotvrdilo požadovaný výběr.	Spätné čítanie CPU sets nepotvrdilo požadovaný výber.
+Požadavek úklidu se nesmí opakovat.	Požiadavka upratovania sa nesmie opakovať.
+Platnost náhledu úklidu vypršela.	Platnosť náhľadu upratovania vypršala.
+Přijetí úklidu nebylo potvrzené.	Prijatie upratovania nebolo potvrdené.
+Chybí konečný výsledek úklidu.	Chýba konečný výsledok upratovania.
+Pracovník dokončil odpověď; výsledek jednotlivých položek je uveden níže.	Pracovník dokončil odpoveď; výsledok jednotlivých položiek je uvedený nižšie.
+proces	proces
+procesy	procesy
+procesů	procesov
+rozbaleno	rozbalené
+sbaleno	zbalené

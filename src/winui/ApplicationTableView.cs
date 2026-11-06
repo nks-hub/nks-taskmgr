@@ -27,11 +27,11 @@ public sealed partial class MainWindow
     {
         appsPane.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); appsPane.RowDefinitions.Add(new RowDefinition());
         string[] tips = [
-            "Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik rozbalí procesy.", "",
-            "Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.",
-            "Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky.",
-            "Součet čtení a zápisu všech procesů aplikace.", "Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem."];
-        appsHeader = GroupHeader("Aplikace", tips, appHeaders, column => {
+            Loc.T("Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik rozbalí procesy."), "",
+            Loc.T("Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek."),
+            Loc.T("Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky."),
+            Loc.T("Součet čtení a zápisu všech procesů aplikace."), Loc.T("Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.")];
+        appsHeader = GroupHeader(Loc.T("Aplikace"), tips, appHeaders, column => {
             appSortDescending = appSortColumn == column ? !appSortDescending : column >= 2; appSortColumn = column; RefreshAppTable();
         });
         appsHeader.ColumnDefinitions[1].Width = new GridLength(0);
@@ -51,7 +51,7 @@ public sealed partial class MainWindow
             if (args.Key == VirtualKey.Right) expandedApps.Add(key); else expandedApps.Remove(key);
             RefreshAppTable(); args.Handled = true;
         };
-        AutomationProperties.SetName(appsList, "Aplikace a jejich procesy"); AutomationProperties.SetAutomationId(appsList, "applications-list");
+        AutomationProperties.SetName(appsList, Loc.T("Aplikace a jejich procesy")); AutomationProperties.SetAutomationId(appsList, "applications-list");
         Grid.SetRow(appsList, 1); appsPane.Children.Add(appsList);
     }
 
@@ -80,7 +80,7 @@ public sealed partial class MainWindow
             appsHeader.ColumnDefinitions[^1].Width = new GridLength(network ? GroupColumns[^1] : 0);
             appItems.Sync([]);
         }
-        UpdateGroupHeader(appHeaders, "Aplikace", appSortColumn, appSortDescending);
+        UpdateGroupHeader(appHeaders, Loc.T("Aplikace"), appSortColumn, appSortDescending);
         var groups = model.Applications.Visible.ToList();
         var lines = groups.Select(AppGroupLine).ToList();
         lines.Sort((a, b) => GroupLine.Compare(a, b, appSortColumn, appSortDescending));
@@ -127,11 +127,11 @@ public sealed partial class MainWindow
         string windows = string.Join("\n", group.Windows.Where(window => window.Title.Length > 0).Take(8).Select(window => "• " + GlobalObjectSearchText.Flat(window.Title, 120)));
         line.Set(expanded ? "⌄" : "›", $"{name} ({group.Members.Length})", "",
             cpu.Length == 0 ? "—" : partial(cpu.Length) + Display.Number(cpuValue, " %"),
-            live.Length == 0 ? "—" : partial(live.Length) + Display.Bytes(working), MemoryTip("Pracovní sada všech procesů", working, privateBytes),
+            live.Length == 0 ? "—" : partial(live.Length) + Display.Bytes(working), MemoryTip(Loc.T("Pracovní sada všech procesů"), working, privateBytes),
             diskKnown == 0 ? "—" : partial(diskKnown) + Display.Number(disk / 1048576, " MiB/s"),
             traffic.NetworkText(live.Length, live.Length != group.Members.Length),
-            name + " · " + group.Summary + (windows.Length > 0 ? "\nOkna:\n" + windows : ""),
-            $"{name}, {Plural(group.Members.Length, "proces", "procesy", "procesů")}, {(expanded ? "rozbaleno" : "sbaleno")}");
+            name + " · " + group.Summary + (windows.Length > 0 ? "\n" + Loc.T("Okna:") + "\n" + windows : ""),
+            $"{name}, {Plural(group.Members.Length, Loc.T("proces"), Loc.T("procesy"), Loc.T("procesů"))}, {(expanded ? Loc.T("rozbaleno") : Loc.T("sbaleno"))}");
         line.SetSort(name, cpu.Length == 0 ? -1 : cpuValue, working, diskKnown == 0 ? -1 : disk, traffic.SortValue);
         return line;
     }
@@ -142,7 +142,7 @@ public sealed partial class MainWindow
             appProcessItems[row.Key] = line = new GroupLine(group, row, row);
         }
         string disk = DiskText(row, out double diskValue);
-        line.Set("", row.Name, "", row.CpuText, Display.Bytes(row.WorkingBytes), MemoryTip("Pracovní sada", row.WorkingBytes, row.PrivateBytes),
+        line.Set("", row.Name, "", row.CpuText, Display.Bytes(row.WorkingBytes), MemoryTip(Loc.T("Pracovní sada"), row.WorkingBytes, row.PrivateBytes),
             disk, row.NetworkText, $"{row.Name} · PID {row.PidText}", $"{row.Name}, PID {row.PidText}");
         line.SetSort(row.Name, row.Cpu.State == SampleState.Valid ? row.Cpu.Value : -1, row.WorkingBytes, diskValue, row.Network.SortValue);
         return line;

@@ -1,0 +1,492 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Procesy, CPU a paměť	Processes, CPU and memory
+Základní výpis a systémová měření.	Basic listing and system measurements.
+Část chráněných podrobností může zůstat nepřístupná.	Some protected details may remain inaccessible.
+Další ovladač se nepoužívá.	No additional driver is used.
+Síťové adaptéry	Network adapters
+Čtení provozu a rychlosti linky.	Reads traffic and link speed.
+Zvýšení práv nenahradí chybějící čítač adaptéru.	Elevation does not replace a missing adapter counter.
+Údaje poskytuje síťový ovladač Windows.	The data comes from the Windows network driver.
+Diskové čítače	Disk counters
+Čtení dostupných systémových čítačů.	Reads the available system counters.
+Rozsah závisí také na zařízení a jeho zásadách.	The scope also depends on the device and its policies.
+Používá se stávající úložný ovladač.	The existing storage driver is used.
+Vytížení GPU	GPU utilization
+Dostupné grafické čítače lze číst bez zvýšení práv.	Available graphics counters can be read without elevation.
+Oprávnění sama nezajistí podporu virtuálního adaptéru.	Permissions alone do not add support for a virtual adapter.
+Čítače musí poskytovat grafický ovladač.	The counters must come from the graphics driver.
+Teplota GPU	GPU temperature
+Čtení podporovaného senzoru grafického adaptéru.	Reads a supported sensor of the graphics adapter.
+Zamítnutý přístup a nepodporovaný senzor jsou různé stavy.	Denied access and an unsupported sensor are different states.
+Senzor musí poskytovat grafický ovladač.	The sensor must come from the graphics driver.
+CPU, RAM a základní deska	CPU, RAM and motherboard
+Čtení údajů, které vystavuje Windows a firmware.	Reads data exposed by Windows and the firmware.
+Chybějící údaj firmwaru může zůstat nedostupný.	A value missing from the firmware may stay unavailable.
+Další ovladač se pro tyto údaje nepoužívá.	No additional driver is used for this data.
+UPS	UPS
+Čtení údajů standardního systémového rozhraní.	Reads data from the standard system interface.
+Záleží na připojeném zařízení a jeho rozhraní.	Depends on the connected device and its interface.
+Používá se stávající ovladač zařízení.	The existing device driver is used.
+Stavy a konfigurace služeb	Service states and configuration
+Čtení služeb dostupných aktuálnímu účtu.	Reads the services available to the current account.
+Záleží na oprávněních nastavených u konkrétní služby.	Depends on the permissions set on each service.
+Používá se správce služeb Windows, bez dalšího ovladače.	The Windows service manager is used, with no additional driver.
+Vlákna procesu	Process threads
+Dostupnost závisí na právech ke konkrétnímu cíli.	Availability depends on the rights to the specific target.
+Některé chráněné cíle zůstanou omezené.	Some protected targets stay restricted.
+Dotaz běží v odděleném uživatelském pracovníku.	The query runs in a separate user worker.
+Moduly procesu	Process modules
+Čtení seznamu vybraného procesu při dostupných právech.	Reads the list of the selected process when rights allow.
+Zvýšení práv nemusí zpřístupnit chráněný proces.	Elevation may not give access to a protected process.
+Mapa paměti procesu	Process memory map
+Čtení rozložení při dostupném přístupu k cíli.	Reads the layout when the target is accessible.
+Rozsah se posuzuje pro konkrétní cíl.	The scope is assessed for each target.
+Jde o mapu oblastí, bez úprav jejich obsahu.	This is a map of regions; their content is not modified.
+Otevřené objekty procesu	Open process objects
+Čtení dostupného výpisu handle vybraného procesu.	Reads the available handle list of the selected process.
+Některé systémové cíle mohou dotaz odmítnout.	Some system targets may refuse the query.
+Typ a název objektu	Object type and name
+Vyžaduje právo duplikovat handle cílového procesu.	Requires the right to duplicate handles of the target process.
+Přístup se vyhodnocuje pro konkrétní objekt.	Access is evaluated for each object.
+Blokující dotaz je oddělený do pracovního procesu.	A blocking query is isolated in a worker process.
+Podpis souboru modulu	Module file signature
+Ověření čitelného vybraného souboru na disku.	Verifies the selected file on disk if it is readable.
+Oprávnění mohou pomoci s přístupem k souboru.	Permissions can help with access to the file.
+Používá se místní ověření podpisu a katalogů.	Local signature and catalog verification is used.
+Procesy pro hledání objektů	Processes for object search
+Výpis vlastníků s ověřitelnou životností.	Lists owners whose lifetime can be verified.
+Nedostupní vlastníci se hlásí jako omezení výpisu.	Unavailable owners are reported as a listing limitation.
+Události procesů ETW	ETW process events
+Spuštění vlastní relace se vyžádá až v okně událostí; Windows může přístup odmítnout.	Starting its own session is requested only in the events window; Windows may deny access.
+Dostupnost určuje oprávnění k systémové relaci. Aplikace práva automaticky nezvyšuje.	Availability depends on permission for the system session. The app does not elevate automatically.
+Používá se systémový zdroj událostí; žádný další ovladač se neinstaluje.	The system event source is used; no additional driver is installed.
+Akce nad živým procesem	Actions on a running process
+Každý cíl se ověřuje na stejném handlu. Běžný pomocník pracuje jen s procesy stejného účtu a relace.	Each target is verified on the same handle. The standard helper works only with processes of the same account and session.
+Podepsaná varianta vyžaduje výslovné zvýšení a potvrzení správce. Odmítá systémovou či cizí relaci, kritické a chráněné cíle; bez důvěryhodného podpisu se nespustí.	The signed variant requires explicit elevation and administrator confirmation. It refuses the system or another session and critical or protected targets; it does not start without a trusted signature.
+Používají se dostupná uživatelská rozhraní Windows, bez dalšího ovladače.	The available Windows user-mode interfaces are used, with no additional driver.
+Dumpy procesů	Process dumps
+Čtení paměti vybraného procesu x64 nebo WOW64 až po potvrzení. Soubor může obsahovat citlivé údaje.	Reads the memory of the selected x64 or WOW64 process only after confirmation. The file may contain sensitive data.
+Přístup se posuzuje pro konkrétní cíl; tato cesta práva nemění.	Access is assessed for each target; this path does not change rights.
+Používá se systémové rozhraní Windows bez dalšího ovladače.	The Windows system interface is used, with no additional driver.
+Ovládání služeb	Service control
+Právo určuje konkrétní služba. Závislé služby se zastaví jen podle výslovně schváleného plánu.	Each service decides the rights. Dependent services are stopped only according to an explicitly approved plan.
+Více práv nezaručuje možnost ovládat chráněnou systémovou službu.	More rights do not guarantee control of a protected system service.
+Používá se správce služeb Windows bez dalšího ovladače.	The Windows service manager is used, with no additional driver.
+Teplota CPU	CPU temperature
+Volitelné čtení již běžícího místního HTTP API kompatibilního s LibreHardwareMonitor (127.0.0.1:8085). Výchozí stav je vypnutý.	Optional reading of an already running local HTTP API compatible with LibreHardwareMonitor (127.0.0.1:8085). Off by default.
+Zvýšení práv samo nepřidá zdroj měření; aplikace je nevyžaduje.	Elevation alone does not add a measurement source; the app does not require it.
+Aplikace ovladač ani poskytovatele neinstaluje a nespouští. Čte publikované CPU vzorky s časem; identita poskytovatele není ověřena.	The app neither installs nor starts a driver or provider. It reads published CPU samples with timestamps; the provider's identity is not verified.
+Aktuální dostupnost měření a výsledky posledních operací. Změna oprávnění není automatická.	Current availability of measurements and results of the latest operations. Permissions do not change automatically.
+Zatím bez údaje	No data yet
+{0}\nBěžný účet: {1}\nZvýšená práva: {2}\nOvladač / zdroj: {3}	{0}\nStandard account: {1}\nElevated: {2}\nDriver / source: {3}
+Sběr skončil chybou	Collection failed
+Čeká na vzorek	Waiting for a sample
+Zastaralá data	Stale data
+Pozastaveno, poslední vzorek	Paused, last sample
+Systémový vzorek je dostupný	System sample available
+Čeká na systémové údaje	Waiting for system data
+Windows poskytl {0} údajů	Windows provided {0} values
+Zatím bez hlášení zařízení	No device report yet
+Zatím nevyžádáno	Not requested yet
+Čtení služeb skončilo chybou	Reading services failed
+Zastaralý výpis	Stale listing
+{0} stavů · {1} konfigurací · {2} konfigurací zamítnuto	{0} states · {1} configurations · {2} configurations denied
+Zatím bez adaptéru či vzorku	No adapter or sample yet
+platný údaj	valid value
+první vzorek	first sample
+přístup zamítnut	access denied
+nepodporováno	unsupported
+zastaralé	stale
+chyba	error
+mezera	gap
+nedostupné	unavailable
+Režim oprávnění procesu se nepodařilo zjistit.	The process permission mode could not be determined.
+Tento proces běží se zvýšenými právy. Dostupnost jednotlivých funkcí vychází z uvedených skutečných výsledků.	This process runs elevated. The availability of each feature is based on the actual results shown.
+Tento proces běží bez zvýšených práv. Ke spuštění nepoužívá další ovladač.	This process runs without elevation. It uses no additional driver to run.
+{0} zařízení	{0} devices
+{0} logických procesorů	{0} logical processors
+{0} GiB celkem	{0} GiB total
+virtuální síťové rozhraní	virtual network interface
+Grafy logických procesorů:	Logical processor graphs:
+Využití	Utilization
+Použito	In use
+Aktivní čas	Active time
+Příjem	Receive
+Příjem ↓	Receive ↓
+Odesílání ↑	Send ↑
+Stránkovací soubor (swap)	Page file (swap)
+Zastaralé údaje	Stale data
+Použitý swap	Swap in use
+Historie {0} · {1} vzorků · zobrazeno {2} s	History {0} · {1} samples · showing {2} s
+Logické procesory	Logical processors
+Procesy	Processes
+Doba sběru	Collection time
+Vlákna	Threads
+Instalováno	Installed
+Fyzická paměť	Physical memory
+Dostupná paměť	Available memory
+Potvrzeno / limit	Committed / limit
+Stránkovaný fond	Paged pool
+Nestránkovaný fond	Non-paged pool
+V mezipaměti	Cached
+Maximum swapu	Swap peak
+Dostupnost	Availability
+Stav	Status
+Zastaralé	Stale
+Odesílání	Send
+Přijato od spuštění	Received since start
+Odesláno od spuštění	Sent since start
+Počítáno od	Counted since
+Fyzické adaptéry od spuštění	Physical adapters since start
+Čtení	Read
+Zápis	Write
+Vyhrazená paměť	Dedicated memory
+Sdílená paměť	Shared memory
+Kapacita VRAM	VRAM capacity
+Limit sdílené paměti	Shared memory limit
+Enginy	Engines
+Celkové vytížení	Overall utilization
+Nejvytíženější engine	Busiest engine
+Rezervováno hardwarem	Hardware reserved
+Logický procesor {0}:{1}	Logical processor {0}:{1}
+Logické procesory · měření nedostupné	Logical processors · measurement unavailable
+Načítání…	Loading…
+Ověřuji dostupnost aktualizací	Checking for available updates
+Načítám přehled místních instalačních balíčků.	Loading the list of local installation packages.
+Novou verzi nainstalujte ručně jejím instalátorem po zavření aplikace.	Install the new version manually with its installer after closing the app.
+Načíst balíčky	Load packages
+Přidat instalátor…	Add installer…
+Vyčistit cache…	Clean up cache…
+Nainstalovat vybraný…	Install selected…
+Vrátit předchozí verzi…	Roll back to previous version…
+Obnovit nedokončenou instalaci…	Recover unfinished installation…
+Zrušit dotaz	Cancel request
+Zavřít	Close
+Aktualizace · NKS Task Manager	Updates · NKS Task Manager
+Aktualizace a návrat verze	Updates and version rollback
+Aktuální sestavení: {0}	Current build: {0}
+Vyberte podepsaný instalátor. Ověřená instalace i přenosná kopie zachovají svůj režim. Nastavení mimo soubory aplikace se nepřepisuje.	Choose a signed installer. A verified installation and a portable copy both keep their mode. Settings outside the app files are not overwritten.
+Balíčky se bez něj neověřují ani nespouštějí.	Without it, packages are neither verified nor run.
+Nedokončené instalace	Unfinished installations
+Ověřené instalační balíčky v místní cache	Verified installation packages in the local cache
+Nejdříve zobrazí náhled odstranitelné cache. Balíčky potřebné pro návrat a nejasné záznamy zůstanou zachované.	Shows a preview of the removable cache first. Packages needed for rollback and unclear records are kept.
+Nejasné výsledky instalace v této složce	Unclear installation results in this folder
+Toto sestavení používá ruční aktualizace.	This build uses manual updates.
+Aktualizace přímo z aplikace nejsou pro toto sestavení dostupné.	In-app updates are not available for this build.
+Ruční aktualizace	Manual updates
+Složka aplikace: {0}	App folder: {0}
+Aktualizace přes aplikaci není dostupná.	Updating through the app is not available.
+Přehled balíčků se nepodařilo načíst.	The package list could not be loaded.
+Výsledek předání není potvrzený. Neopakujte instalaci, dokud neověříte její stav.	The handoff result is not confirmed. Do not repeat the installation until you have checked its state.
+Výsledek úklidu není potvrzený. Po skončení pomocníka načtěte přehled znovu.	The cleanup result is not confirmed. Reload the list after the helper finishes.
+Načítání bylo zrušené. Přehled můžete načíst znovu.	Loading was cancelled. You can load the list again.
+Operace nebyla dokončená. Podrobnosti jsou uvedené níže; načtení můžete zopakovat.	The operation did not finish. Details are shown below; you can try loading again.
+Předání nemá potvrzený výsledek.	The handoff has no confirmed result.
+Úklid nemá potvrzený výsledek.	The cleanup has no confirmed result.
+Operace byla zrušena.	The operation was cancelled.
+Operaci nelze dokončit.	The operation cannot be completed.
+Aplikace zůstává otevřená. Neopakujte instalaci; po skončení pomocníka znovu otevřete přehled a ověřte jeho stav.	The app stays open. Do not repeat the installation; after the helper finishes, open the list again and check its state.
+Část souborů už mohla být odstraněná. Po skončení pomocníka načtěte aktuální přehled; úklid se neopakuje automaticky.	Some files may already have been removed. Load the current list after the helper finishes; the cleanup is not repeated automatically.
+Ověřuji místní balíčky…	Verifying local packages…
+Nová instalace začne až po kontrole plánu, vašem potvrzení a skutečném zavření této aplikace.	A new installation starts only after the plan is checked, you confirm it, and this app has actually closed.
+Ověřuji a ukládám vybraný instalátor…	Verifying and saving the selected installer…
+Instalátor nebyl přidán.	The installer was not added.
+Instalátor je uložený. Samotné přidání balíčku nic neinstaluje.	The installer is saved. Adding a package does not install anything by itself.
+současná verze	current version
+předchozí verze	previous version
+připravený balíček	prepared package
+Žádné místní instalační balíčky	No local installation packages
+Přehled balíčků není dostupný	Package list unavailable
+Přidejte instalátor od nastaveného vydavatele. Nejdříve se ověří; samotné přidání nic neinstaluje.	Add an installer from the configured publisher. It is verified first; adding it does not install anything.
+Registrovaná instalace	Registered installation
+Přenosná kopie	Portable copy
+Režim složky není ověřený	Folder mode not verified
+lze připravit obnovu	recovery can be prepared
+obnova zatím není ověřená	recovery not verified yet
+Připravuji ověřený plán…	Preparing a verified plan…
+Plán nebyl připraven.	The plan was not prepared.
+Současná verze: {0}	Current version: {0}
+Vybraná verze: {0}	Selected version: {0}
+Uložený návrat po změně: {0}	Saved rollback after the change: {0}
+Cílová instalace: {0}	Target installation: {0}
+Zůstane přenosná kopie. Nevytváří se registrace odinstalátoru ani zástupci aplikace.	It stays a portable copy. No uninstaller registration or app shortcuts are created.
+Zůstane instalace pro aktuálního uživatele.	It stays an installation for the current user.
+Znovu se nainstaluje ověřená původní verze. Dřívější nejasný výsledek se považuje za vyřešený až po dokončení a ověření nové instalace.	The verified original version is installed again. The earlier unclear result counts as resolved only after the new installation finishes and is verified.
+Po potvrzení se tento program zavře a otevře se ověřený instalátor. Pomocník vyčká na skutečný zánik procesu. Pokud program zůstane otevřený, instalace se po 30 sekundách nespustí. Nastavení mimo instalační složku se nepřepisuje.	After you confirm, this program closes and the verified installer opens. The helper waits until the process has actually exited. If the program stays open, the installation does not start after 30 seconds. Settings outside the installation folder are not overwritten.
+Obnovit nedokončenou instalaci	Recover unfinished installation
+Vrátit předchozí verzi	Roll back to previous version
+Nainstalovat aktualizaci	Install update
+Zavřít program a pokračovat	Close program and continue
+Zrušit	Cancel
+Instalace nebyla předaná.	The installation was not handed off.
+Instalátor čeká na uzavření aplikace…	The installer is waiting for the app to close…
+Předání je potvrzené. Případné odmítnutí zavření ponechá aplikaci otevřenou; pomocník potom ukončí čekání bez spuštění instalace.	The handoff is confirmed. If closing is refused, the app stays open; the helper then stops waiting without starting the installation.
+Výsledek předání není známý. Instalaci neopakujte, dokud neověříte stav předchozího požadavku.	The handoff result is unknown. Do not repeat the installation until you have checked the state of the previous request.
+Náhled platí ještě {0} s.	The preview is valid for another {0} s.
+Platnost náhledu vypršela. Zavřete dialog a připravte nový náhled.	The preview has expired. Close the dialog and prepare a new preview.
+Místní balíčky jsou ověřené.	Local packages are verified.
+Toto sestavení nemá nastaveného důvěryhodného vydavatele aktualizací.	This build has no trusted update publisher configured.
+Původ balíčku nebo instalace nebyl ověřen.	The origin of the package or installation was not verified.
+Požadavek neodpovídá připravenému plánu.	The request does not match the prepared plan.
+Cache dosáhla svého limitu.	The cache has reached its limit.
+Předchozí operace nebo stav instalace brání pokračování.	A previous operation or the installation state prevents continuing.
+Chybí požadovaný ověřený balíček. Pro návrat je nutný také instalátor současné verze.	The required verified package is missing. Rolling back also needs the installer of the current version.
+Soubor nebo záznam aktualizace není dostupný.	The update file or record is not available.
+Program zůstal otevřený; instalace nebyla spuštěná.	The program stayed open; the installation was not started.
+Instalátor neskončil úspěšně.	The installer did not finish successfully.
+Výsledek instalace nebyl ověřený.	The installation result was not verified.
+Předchozí aktualizační požadavek ještě není uzavřený.	The previous update request is not closed yet.
+Výsledek předchozí operace není známý.	The result of the previous operation is unknown.
+Zatím není zaznamenaná žádná aktualizace.	No update has been recorded yet.
+Instalátor je připravený v cache.	The installer is ready in the cache.
+Existuje připravený plán.	A prepared plan exists.
+Pomocník čeká na uzavření programu.	The helper is waiting for the program to close.
+Instalace nemá potvrzený konečný výsledek.	The installation has no confirmed final result.
+Poslední změna verze byla ověřená.	The last version change was verified.
+Předchozí požadavek byl odmítnutý.	The previous request was rejected.
+Program zůstal otevřený a čekání skončilo.	The program stayed open and waiting ended.
+Poslední instalace selhala.	The last installation failed.
+Poslední výsledek nebyl ověřený.	The last result was not verified.
+Předchozí stav vyžaduje ověření; instalace se neopakuje automaticky.	The previous state needs to be checked; the installation is not repeated automatically.
+Neověřená verze	Unverified version
+Lze připravit opravu z ověřeného původního instalátoru. Samotný výběr nic neinstaluje.	A repair can be prepared from the verified original installer. Selecting it does not install anything.
+Původní aktualizační pomocník ještě běží. Obnova zatím není povolená.	The original update helper is still running. Recovery is not allowed yet.
+Původní instalátor ještě běží. Vyčkejte na jeho ukončení.	The original installer is still running. Wait until it finishes.
+Nelze ověřit, zda předchozí instalátor skončil. Soubory zůstávají zachované.	It cannot be verified whether the previous installer has finished. The files are kept.
+Chybí ověřený instalátor původní verze. Přidejte jej do místních balíčků a obnovte přehled.	The verified installer of the original version is missing. Add it to the local packages and refresh the list.
+Záznam není ověřený pro tuto složku aplikace.	The record is not verified for this app folder.
+Tuto operaci už vyřešila jiná ověřená obnova.	Another verified recovery has already resolved this operation.
+Starý záznam neobsahuje životnost instalátoru. V tomto spuštění Windows nelze prokázat jeho ukončení.	The old record does not contain the installer lifetime. Its exit cannot be proven during this Windows session.
+Neznámá verze	Unknown version
+Aktivní	Active
+Připojeno	Connected
+Připojování	Connecting
+Stínový provoz	Shadowing
+Odpojeno	Disconnected
+Nečinná	Idle
+Naslouchá	Listening
+Resetována	Reset
+Mimo provoz	Down
+Inicializace	Initializing
+Neznámý	Unknown
+Zpráva od {0} – {1:g}	Message from {0} – {1:g}
+Opravdu chcete odpojit vybrané uživatele?	Are you sure you want to disconnect the selected users?
+Odpojit uživatele	Disconnect user
+Chcete pokračovat?	Do you want to continue?
+Pokud odhlásíte uživatele, může dojít ke ztrátě jeho neuložených dat.	If you sign out the user, their unsaved data might be lost.
+Odhlásit uživatele	Sign out user
+Uživatele {0} (id relace={1}) se nepodařilo odpojit.	Unable to disconnect user {0} (session id={1}).
+Uživatele {0} (id relace={1}) se nepodařilo odhlásit.	Unable to sign out user {0} (session id={1}).
+Zprávu uživateli (SessionId={0}) nelze odeslat.	Unable to send the message to the user (SessionId={0}).
+Přístup byl odepřen. K dokončení této úlohy potřebujete oprávnění správce. Zavřete NKS Task Manager, pak ho spusťte znovu jako správce a zkuste to znovu.	Access is denied. You need administrator permission to complete this task. Close NKS Task Manager, run it again as administrator and try again.
+Část údajů chybí	Some data is missing
+Dotaz dokončen	Query completed
+Přístup zamítnut	Access denied
+Nepodporováno	Not supported
+Cíl už neodpovídá původnímu procesu	The target no longer matches the original process
+Dosažen limit čtení	Read limit reached
+Požadavek nebylo možné přijmout	The request could not be accepted
+Údaj není dostupný	Value unavailable
+Dotaz skončil chybou	Query failed
+Zatím nespuštěno	Not started yet
+Spouští se	Starting
+Záznam běží	Recording
+Zastavuje se	Stopping
+Záznam zastavený	Recording stopped
+Předchozí relace není uklizená	The previous session is not cleaned up
+Zastavení překročilo limit	Stopping exceeded the limit
+Úklid nebyl potvrzený	Cleanup not confirmed
+Chyba záznamu	Recording error
+Požadavek nedokončený · Windows {0}	Request not completed · Windows {0}
+ověřený dotaz	verified query
+potvrzená změna	confirmed change
+žádost o zavření	close request
+žádost o ukončení	end request
+přijatý nativní požadavek	accepted native request
+odmítnuto	refused
+změna identity	identity changed
+již skončeno	already exited
+neověřeno	unverified
+nedostupný	unavailable
+platný	valid
+přístup odmítnut	access denied
+nepodporované	unsupported
+měřicí okno není uložené	measurement window not stored
+měřicí okno {0}	measurement window {0}
+okamžitý odečet	instant reading
+měřicí okno tohoto vzorku je nedostupné	measurement window of this sample is unavailable
+měřicí okno zdroj neuvádí	the source does not report the measurement window
+uložený název je zkrácený ze {0} znaků	stored name is truncated from {0} characters
+Původní PID: {0}	Original PID: {0}
+Druh generace: {0} · hodnota {1}	Generation kind: {0} · value {1}
+Původní Created100ns: {0}	Original Created100ns: {0}
+Čas pozorování: {0} · monotónní {1} ns	Observed at: {0} · monotonic {1} ns
+Pracovní sada: {0} B · {1}	Working set: {0} B · {1}
+Soukromé bajty: {0} B · {1}	Private bytes: {0} B · {1}
+Procesové I/O čtení: {0} · {1}	Process I/O read: {0} · {1}
+Procesové I/O zápis: {0} · {1} · {2}	Process I/O write: {0} · {1} · {2}
+Vzorek byl při přijetí opožděný nebo označený jako zastaralý.	The sample arrived late or was marked as stale.
+Uložená normalizace CPU: {0} · dělitel {1}	Stored CPU normalization: {0} · divisor {1}
+Tato knihovna čtení CPU čidel nepodporuje	This library does not support reading CPU sensors
+Změnu čtení CPU čidel knihovna nepotvrdila	The library did not confirm the change to CPU sensor reading
+Vypnuto; žádné dotazy na čidla	Off; no sensor queries
+Sběr je pozastavený; aktuální teplota není dostupná	Collection is paused; current temperature is unavailable
+Čtení prostředků selhalo; aktuální teplota není dostupná	Reading resources failed; current temperature is unavailable
+Čeká na aktuální sběr prostředků	Waiting for current resource collection
+Čeká na odpověď po zapnutí CPU čidel	Waiting for a response after enabling CPU sensors
+Externí program s čidly neběží nebo není dostupný	The external sensor program is not running or not available
+Externí program neposkytl použitelné údaje z čidel	The external program did not provide usable sensor data
+Externí program neposkytuje podporované teplotní čidlo CPU	The external program does not provide a supported CPU temperature sensor
+Čeká na první odpověď externího programu s čidly	Waiting for the first response from the external sensor program
+Stav CPU čidel	CPU sensor status
+zastaralý nebo nejistý vzorek	stale or uncertain sample
+Teplota · {0}	Temperature · {0}
+Čidla · {0}	Sensors · {0}
+Teplota z čidel	Sensor temperature
+Číst teplotu CPU z již spuštěného programu kompatibilního s LibreHardwareMonitor (127.0.0.1:8085).	Read the CPU temperature from an already running program compatible with LibreHardwareMonitor (127.0.0.1:8085).
+Tato aplikace jej neinstaluje ani nespouští a identitu externího zdroje neověřuje.	This app neither installs nor starts it and does not verify the identity of the external source.
+Čte se místní HTTP API kompatibilní s LibreHardwareMonitor na 127.0.0.1:8085, GET /metrics. Poskytovatel a jeho čidla musí být již spuštěné samostatně. Aplikace nic neinstaluje ani nespouští. Identita poskytovatele není ověřena; jiný port nebo staré API nejsou podporované.	Reads a local HTTP API compatible with LibreHardwareMonitor at 127.0.0.1:8085, GET /metrics. The provider and its sensors must already be running separately. The app installs and starts nothing. The provider's identity is not verified; another port or the old API is not supported.
+Podrobnosti čidel	Sensor details
+Stav se nepodařilo přečíst	Status could not be read
+Nenastaveno	Not set
+Nastaveno na tuto instalaci	Set to this installation
+Nastaveno na jinou instalaci NKS (stará cesta)	Set to another NKS installation (old path)
+Nastaveno na jiný program	Set to another program
+Vypnutím se obnoví původní program.	Turning it off restores the original program.
+Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto se nebude obnovovat; vypnutím se registrace jen odstraní.	The original program is missing or standard users can change it, so it will not be restored; turning it off only removes the registration.
+Vypnutím se registrace odstraní a Správce úloh Windows se spouští jako dříve.	Turning it off removes the registration and Windows Task Manager starts as before.
+Správce úloh Windows se spouští jako dříve.	Windows Task Manager starts as before.
+Příkaz: {0}	Command: {0}
+Zapnutím se cesta opraví na tuto instalaci.	Turning it on corrects the path to this installation.
+Zapnutím se tento příkaz uloží a přepíše; vypnutím se obnoví. Cizí registraci NKS sama nevypíná.	Turning it on saves and replaces this command; turning it off restores it. NKS does not turn off a foreign registration on its own.
+Registrace Správce úloh Windows byla změněna.	The Windows Task Manager registration was changed.
+Nic se nezměnilo, registrace už byla v požadovaném stavu.	Nothing changed; the registration was already in the requested state.
+Správce úloh je nastaven na jiný program než NKS. Registrace zůstala beze změny.	Task Manager is set to a program other than NKS. The registration was left unchanged.
+Změna registrace skončila chybou.	Changing the registration failed.
+Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto nebyl obnoven a registrace byla jen odstraněna.	The original program is missing or standard users can change it, so it was not restored and the registration was only removed.
+Změna se mohla částečně provést.	The change may have been partly applied.
+Nahradit Správce úloh Windows…	Replace Windows Task Manager…
+nelze přečíst	cannot be read
+Stav náhrady Správce úloh nelze přečíst: {0}	The Task Manager replacement state cannot be read: {0}
+Ctrl+Shift+Esc, Ctrl+Alt+Del → Správce úloh, hlavní panel, Win+X a Win+R taskmgr pak otevřou NKS Task Manager.	Ctrl+Shift+Esc, Ctrl+Alt+Del → Task Manager, the taskbar, Win+X and Win+R taskmgr will then open NKS Task Manager.
+Systémový soubor se nemění, zabezpečená obrazovka Windows zůstává stejná.	No system file is changed; the Windows secure screen stays the same.
+Stav: {0}	Status: {0}
+Vlastní proces ještě není v seznamu s ověřenou identitou. Zkuste to za chvíli.	This app's own process is not yet listed with a verified identity. Try again in a moment.
+Změna platí pro celý počítač a vyžaduje správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí zvýšeně.	The change applies to the whole computer and requires an administrator: UAC and a confirmation follow. Once on, NKS runs with administrator rights whenever Task Manager starts elevated.
+Nahradit Správce úloh Windows	Replace Windows Task Manager
+Zapnout…	Turn on…
+Vypnout (obnovit předchozí)…	Turn off (restore previous)…
+Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik rozbalí procesy.	Apps by verified windows and the number of their processes. An arrow or double-click expands the processes.
+Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.	Total CPU of all the app's processes. ≥ marks the known part when a process has no current sample.
+Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky.	Total working set of all the app's processes. Exact values in MB are in the cell tooltip.
+Součet čtení a zápisu všech procesů aplikace.	Total reads and writes of all the app's processes.
+Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	TCP/UDP bytes sent and received. Measured only during the app's own ETW recording as administrator.
+Aplikace	Apps
+Aplikace a jejich procesy	Apps and their processes
+Pracovní sada všech procesů	Working set of all processes
+Okna:	Windows:
+Pracovní sada	Working set
+Přetečení součtu	Total overflow
+Měření nedostupné	Measurement unavailable
+Proces a ověření potomci: {0} procesů.	Process and verified descendants: {0} processes.
+Neúplné členství: některé vztahy nebo identity nelze ověřit.	Incomplete membership: some relationships or identities cannot be verified.
+Známé aktuální vzorky: CPU {1}/{0}, RAM {2}/{0}, privátní paměť {3}/{0}, čtení {4}/{0}, zápis {5}/{0}, síť {6}/{0}.	Known current samples: CPU {1}/{0}, RAM {2}/{0}, private memory {3}/{0}, read {4}/{0}, write {5}/{0}, network {6}/{0}.
+≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.	≥ marks the known part of an incomplete total. Shared RAM pages may be counted more than once.
+Přetečený součet je nedostupný.	An overflowed total is unavailable.
+Proces byl ukončen; hodnoty již nejsou aktuální.	The process has ended; the values are no longer current.
+Procesový inventář je zastaralý.	The process inventory is stale.
+Vlastní hodnoty PID {0}, bez potomků.	Own values of PID {0}, without descendants.
+Ukončeno	Ended
+Síť od začátku záznamu ETW:	Network since the ETW recording started:
+Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu.	No time selected. Shift+click or Shift+Enter selects the two ends of an interval.
+Vybraný čas {0} je mimo zobrazenou historii tohoto grafu.	The selected time {0} is outside the history shown in this graph.
+Bez vzorku	No sample
+5 nejvytíženějších z {0}	Top 5 of {0}
+{0} s zpět	{0} s ago
+připnuto	pinned
+kliknutím připnout	click to pin
+Zdroj primárního vzorku: {0}	Primary sample source: {0}
+Čas: {0}	Time: {0}
+Úsek: {0} – {1} · {2}	Interval: {0} – {1} · {2}
+První konec: {0} · Shift+klik nebo Shift+Enter vybere druhý.	First end: {0} · Shift+click or Shift+Enter selects the second.
+Cílový soubor už existuje. Vyberte nový název; dump se nikdy nepřepisuje.	The target file already exists. Choose a new name; a dump is never overwritten.
+Dump ukládejte na místní disk s písmenem jednotky.	Save the dump to a local disk with a drive letter.
+Cesta dumpu obsahuje nepovolený název.	The dump path contains a disallowed name.
+Dump neodpovídá vlastnímu dočasnému souboru.	The dump does not match the app's own temporary file.
+Velikost dumpu neodpovídá výsledku pracovníka.	The dump size does not match the worker's result.
+Dump je uložený, ale záznam obnovy zůstal zachovaný: {0}	The dump is saved, but the recovery record was kept: {0}
+Dump nelze uložit přes odkaz nebo přesměrovaný adresář.	A dump cannot be saved through a link or redirected folder.
+Cesta dumpu je příliš dlouhá.	The dump path is too long.
+Vlastní dočasný soubor se nepodařilo odstranit: {0} (Windows {1}).	The app's own temporary file could not be removed: {0} (Windows {1}).
+První vzorek	First sample
+Chybí oprávnění	Missing permission
+Mezera	Gap
+Sbalit	Collapse
+Rozbalit	Expand
+Zobrazit odpojené adaptéry	Show disconnected adapters
+Zobrazit pomocná/virtuální rozhraní	Show auxiliary/virtual interfaces
+Pohled sítě je změněný, ale volbu se nepodařilo uložit pro příští spuštění.	The network view changed, but the choice could not be saved for the next start.
+Proces	Process
+Soukromá paměť	Private memory
+Čtení I/O	I/O read
+Zápis I/O	I/O write
+Síť	Network
+Vznik: {0}	Started: {0}
+Konec: {0}	Ended: {0}
+Délka neurčena	Duration unknown
+Název není dostupný	Name unavailable
+PID nelze určit	PID cannot be determined
+Boot + PID + CreateTime ze zdroje	Boot + PID + CreateTime from the source
+Neověřený samostatný záznam	Unverified standalone record
+Procesor	Processor
+Paměť	Memory
+Disk	Disk
+Grafická karta	Graphics card
+Jiná akce služeb nebo její ukončování ještě probíhá.	Another service action or its shutdown is still in progress.
+Plán byl zrušen. Změna nebyla odeslána.	The plan was cancelled. The change was not sent.
+Potvrzený stav	Confirmed state
+Částečný nebo odmítnutý výsledek	Partial or rejected result
+Čekání bylo zrušeno. SCM mohl požadavek přijmout; výsledek není známý.	Waiting was cancelled. The SCM may have accepted the request; the result is unknown.
+Vypršel čas čekání na pracovníka. Rozpracovaný stav nemusí být konečný.	Timed out waiting for the worker. The intermediate state may not be final.
+Neověřený záznam nelze měnit.	An unverified record cannot be changed.
+Záznam bez souboru byl odstraněn. Žádný datový soubor se neměnil.	The record without a file was removed. No data file was changed.
+Ověřený dočasný soubor a jeho záznam byly odstraněny.	The verified temporary file and its record were removed.
+Stav transakce neumožňuje požadovanou změnu. Soubor zůstane zachovaný.	The transaction state does not allow the requested change. The file is kept.
+Velikost nebo SHA-256 nesouhlasí s hotovým dumpem. Soubor ani záznam se nebudou měnit.	The size or SHA-256 does not match the finished dump. Neither the file nor the record will be changed.
+Již uložený dump byl ověřen. Odstranil se pouze dokončený záznam obnovy.	The already saved dump was verified. Only the completed recovery record was removed.
+Hotový dump byl ověřen a uložen bez přepsání existujícího souboru.	The finished dump was verified and saved without overwriting an existing file.
+Identita dočasného souboru nebyla zapsaná. Soubor se nebude hledat ani měnit.	The identity of the temporary file was not recorded. The file will not be searched for or changed.
+Soubor překračuje limit ověřování.	The file exceeds the verification limit.
+Zapsaný hotový dump; SHA-256 se ověří před dokončením.	Finished dump written; SHA-256 is verified before completion.
+Nedokončený dočasný soubor s ověřenou identitou.	Unfinished temporary file with a verified identity.
+Cílový soubor nemá uložený důkaz dokončení. Zůstane zachovaný.	The target file has no stored proof of completion. It is kept.
+Velikost souboru překračuje limit ověřování.	The file size exceeds the verification limit.
+Stejný soubor už má finální název. Lze ověřit jen dokončení záznamu.	The same file already has its final name. Only completing the record can be verified.
+Dočasný ani cílový soubor nejsou přítomné. Lze potvrzeně odstranit jen záznam.	Neither the temporary nor the target file is present. Only the record can be removed with confirmation.
+Bezpečnou změnu nelze ověřit.	A safe change cannot be verified.
+Předchozí čtení nebo obnova ještě probíhá.	A previous read or recovery is still in progress.
+Záznam obnovy je poškozený. Soubor ani záznam se nebudou měnit.	The recovery record is damaged. Neither the file nor the record will be changed.
+CPU sets vyžadují jeden proces a ověřený náhled.	CPU sets require one process and a verified preview.
+Výběr CPU sets je příliš velký nebo obsahuje opakované ID.	The CPU set selection is too large or contains a repeated ID.
+Neplatný otisk náhledu CPU sets.	Invalid CPU set preview fingerprint.
+Chybí ověřený otisk náhledu CPU sets.	The verified CPU set preview fingerprint is missing.
+Pracovník vrátil neplatný typ nebo délku odpovědi CPU sets.	The worker returned an invalid CPU set response type or length.
+Chybí úplná odpověď CPU sets.	The complete CPU set response is missing.
+Neplatné délky nebo příznaky CPU sets.	Invalid CPU set lengths or flags.
+Neplatný stav nedostupných CPU sets.	Invalid state of unavailable CPU sets.
+CPU sets nejsou vázané na ověřený proces.	The CPU sets are not bound to a verified process.
+Neplatný nebo opakovaný logický procesor v CPU sets.	Invalid or repeated logical processor in the CPU sets.
+Neplatný výchozí výběr CPU sets.	Invalid default CPU set selection.
+Proces po změně CPU sets nemá potvrzenou životnost.	The process has no confirmed lifetime after the CPU set change.
+Zpětné čtení CPU sets nepotvrdilo počet vybraných procesorů.	Reading the CPU sets back did not confirm the number of selected processors.
+Zpětné čtení CPU sets nepotvrdilo požadovaný výběr.	Reading the CPU sets back did not confirm the requested selection.
+Požadavek úklidu se nesmí opakovat.	The cleanup request must not be repeated.
+Platnost náhledu úklidu vypršela.	The cleanup preview has expired.
+Přijetí úklidu nebylo potvrzené.	Acceptance of the cleanup was not confirmed.
+Chybí konečný výsledek úklidu.	The final cleanup result is missing.
+Pracovník dokončil odpověď; výsledek jednotlivých položek je uveden níže.	The worker completed its response; the result of each item is shown below.
+proces	process
+procesy	processes
+procesů	processes
+rozbaleno	expanded
+sbaleno	collapsed

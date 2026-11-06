@@ -45,7 +45,7 @@ public sealed partial class GroupLine : INotifyPropertyChanged
 
     public Visibility ChevronVisibility => IsGroup ? Visibility.Visible : Visibility.Collapsed;
     public Visibility ChevronSpacerVisibility => IsGroup ? Visibility.Collapsed : Visibility.Visible;
-    public string ChevronName => Chevron == "⌄" ? "Sbalit" : "Rozbalit";
+    public string ChevronName => Chevron == "⌄" ? Loc.T("Sbalit") : Loc.T("Rozbalit");
 
     public void ChevronClick(object sender, RoutedEventArgs args) { if (IsGroup) Toggle?.Invoke(this); }
 

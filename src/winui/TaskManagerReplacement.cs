@@ -8,11 +8,11 @@ namespace NksTaskMgr.WinUI;
 /// <summary>Czech texts for the Windows Task Manager replacement; pure so the mapping can be checked without a window.</summary>
 internal static class ReplacementText
 {
-    internal static string Title(ReplacementState state) => state.Error != 0 ? "Stav se nepodařilo přečíst" : state.Status switch {
-        ReplacementStatus.NotRegistered => "Nenastaveno",
-        ReplacementStatus.ThisInstall => "Nastaveno na tuto instalaci",
-        ReplacementStatus.OtherNks => "Nastaveno na jinou instalaci NKS (stará cesta)",
-        _ => "Nastaveno na jiný program"
+    internal static string Title(ReplacementState state) => state.Error != 0 ? Loc.T("Stav se nepodařilo přečíst") : state.Status switch {
+        ReplacementStatus.NotRegistered => Loc.T("Nenastaveno"),
+        ReplacementStatus.ThisInstall => Loc.T("Nastaveno na tuto instalaci"),
+        ReplacementStatus.OtherNks => Loc.T("Nastaveno na jinou instalaci NKS (stará cesta)"),
+        _ => Loc.T("Nastaveno na jiný program")
     };
 
     internal static string Detail(ReplacementState state)
@@ -20,14 +20,14 @@ internal static class ReplacementText
         if (state.Error != 0) return "Windows " + state.Error + " (0x" + state.Error.ToString("X8") + ").";
         string command = Printable(state.Debugger);
         string restore = state.HasBackup
-            ? state.BackupRestorable ? "Vypnutím se obnoví původní program."
-                : "Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto se nebude obnovovat; vypnutím se registrace jen odstraní."
-            : "Vypnutím se registrace odstraní a Správce úloh Windows se spouští jako dříve.";
+            ? state.BackupRestorable ? Loc.T("Vypnutím se obnoví původní program.")
+                : Loc.T("Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto se nebude obnovovat; vypnutím se registrace jen odstraní.")
+            : Loc.T("Vypnutím se registrace odstraní a Správce úloh Windows se spouští jako dříve.");
         return state.Status switch {
-            ReplacementStatus.NotRegistered => "Správce úloh Windows se spouští jako dříve.",
-            ReplacementStatus.ThisInstall => "Příkaz: " + command + "\n" + restore,
-            ReplacementStatus.OtherNks => "Příkaz: " + command + "\nZapnutím se cesta opraví na tuto instalaci. " + restore,
-            _ => "Příkaz: " + command + "\nZapnutím se tento příkaz uloží a přepíše; vypnutím se obnoví. Cizí registraci NKS sama nevypíná."
+            ReplacementStatus.NotRegistered => Loc.T("Správce úloh Windows se spouští jako dříve."),
+            ReplacementStatus.ThisInstall => Loc.F("Příkaz: {0}", command) + "\n" + restore,
+            ReplacementStatus.OtherNks => Loc.F("Příkaz: {0}", command) + "\n" + Loc.T("Zapnutím se cesta opraví na tuto instalaci.") + " " + restore,
+            _ => Loc.F("Příkaz: {0}", command) + "\n" + Loc.T("Zapnutím se tento příkaz uloží a přepíše; vypnutím se obnoví. Cizí registraci NKS sama nevypíná.")
         };
     }
 
@@ -35,14 +35,14 @@ internal static class ReplacementText
     internal static string Result(ProcessActionResult result)
     {
         string text = result.Outcome switch {
-            ProcessActionOutcome.Applied => "Registrace Správce úloh Windows byla změněna.",
-            ProcessActionOutcome.Inspected => "Nic se nezměnilo, registrace už byla v požadovaném stavu.",
-            ProcessActionOutcome.Refused => "Správce úloh je nastaven na jiný program než NKS. Registrace zůstala beze změny.",
-            _ => "Změna registrace skončila chybou."
+            ProcessActionOutcome.Applied => Loc.T("Registrace Správce úloh Windows byla změněna."),
+            ProcessActionOutcome.Inspected => Loc.T("Nic se nezměnilo, registrace už byla v požadovaném stavu."),
+            ProcessActionOutcome.Refused => Loc.T("Správce úloh je nastaven na jiný program než NKS. Registrace zůstala beze změny."),
+            _ => Loc.T("Změna registrace skončila chybou.")
         };
         if (result.Outcome == ProcessActionOutcome.Applied && result.Reason == ProcessActionReason.ProtectionUnverifiable)
-            text += " Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto nebyl obnoven a registrace byla jen odstraněna.";
-        if (result.Outcome == ProcessActionOutcome.Error && result.Flags.HasFlag(ProcessActionFlags.MayHaveApplied)) text += " Změna se mohla částečně provést.";
+            text += " " + Loc.T("Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto nebyl obnoven a registrace byla jen odstraněna.");
+        if (result.Outcome == ProcessActionOutcome.Error && result.Flags.HasFlag(ProcessActionFlags.MayHaveApplied)) text += " " + Loc.T("Změna se mohla částečně provést.");
         return text;
     }
 
@@ -57,7 +57,7 @@ public sealed partial class MainWindow
 
     private void AddReplacementMenu(MenuFlyout menu)
     {
-        var item = new MenuFlyoutItem { Text = "Nahradit Správce úloh Windows…" };
+        var item = new MenuFlyoutItem { Text = Loc.T("Nahradit Správce úloh Windows…") };
         AutomationProperties.SetAutomationId(item, "taskmgr-replacement");
         item.Click += async (_, _) => await ShowReplacementAsync();
         menu.Items.Add(new MenuFlyoutSeparator()); menu.Items.Add(item);
@@ -68,7 +68,7 @@ public sealed partial class MainWindow
         try {
             var state = NativeReplacement.Read(Environment.ProcessPath ?? "");
             return ReplacementText.Title(state) + (state.Status is ReplacementStatus.NotRegistered || state.Error != 0 ? "" : " · " + state.Debugger);
-        } catch (NativeMonitorException) { return "nelze přečíst"; }
+        } catch (NativeMonitorException) { return Loc.T("nelze přečíst"); }
     }
 
     private async Task ShowReplacementAsync()
@@ -80,7 +80,7 @@ public sealed partial class MainWindow
             string path = Environment.ProcessPath ?? "";
             ReplacementState? state = null;
             try { state = await Task.Run(() => NativeReplacement.Read(path)); }
-            catch (NativeMonitorException error) { footer.Text = "Stav náhrady Správce úloh nelze přečíst: " + error.Message; return; }
+            catch (NativeMonitorException error) { footer.Text = Loc.F("Stav náhrady Správce úloh nelze přečíst: {0}", error.Message); return; }
             if (processActionsClosed) return;
             var own = model.Processes.FirstOrDefault(row => row.Key.Pid == Environment.ProcessId);
             bool identity = own is not null && model.IsCurrent(own) && !own.Stale && !own.Key.Boot.IsEmpty
@@ -92,19 +92,19 @@ public sealed partial class MainWindow
             bool canDisable = trusted && identity && readable && state.Status is ReplacementStatus.ThisInstall or ReplacementStatus.OtherNks;
 
             var content = new StackPanel { Spacing = 10, MinWidth = 320 };
-            content.Children.Add(ActionText("Ctrl+Shift+Esc, Ctrl+Alt+Del → Správce úloh, hlavní panel, Win+X a Win+R taskmgr pak otevřou NKS Task Manager. "
-                + "Systémový soubor se nemění, zabezpečená obrazovka Windows zůstává stejná."));
-            content.Children.Add(ActionText("Stav: " + ReplacementText.Title(state), 0xe9eef0));
+            content.Children.Add(ActionText(Loc.T("Ctrl+Shift+Esc, Ctrl+Alt+Del → Správce úloh, hlavní panel, Win+X a Win+R taskmgr pak otevřou NKS Task Manager.")
+                + " " + Loc.T("Systémový soubor se nemění, zabezpečená obrazovka Windows zůstává stejná.")));
+            content.Children.Add(ActionText(Loc.F("Stav: {0}", ReplacementText.Title(state)), 0xe9eef0));
             content.Children.Add(ActionText(ReplacementText.Detail(state)));
             if (!trusted) content.Children.Add(ActionText(ElevationBrokerClient.Status(0xe04e0001)));
-            else if (!identity) content.Children.Add(ActionText("Vlastní proces ještě není v seznamu s ověřenou identitou. Zkuste to za chvíli."));
+            else if (!identity) content.Children.Add(ActionText(Loc.T("Vlastní proces ještě není v seznamu s ověřenou identitou. Zkuste to za chvíli.")));
             if (!installed) content.Children.Add(ActionText(ElevationBrokerClient.Status(0xe04e0004)));
-            content.Children.Add(ActionText("Změna platí pro celý počítač a vyžaduje správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí zvýšeně."));
+            content.Children.Add(ActionText(Loc.T("Změna platí pro celý počítač a vyžaduje správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí zvýšeně.")));
 
-            var dialog = ActionDialog("Nahradit Správce úloh Windows", content);
-            dialog.PrimaryButtonText = "Zapnout…"; dialog.IsPrimaryButtonEnabled = canEnable;
-            dialog.SecondaryButtonText = "Vypnout (obnovit předchozí)…"; dialog.IsSecondaryButtonEnabled = canDisable;
-            dialog.CloseButtonText = "Zavřít"; dialog.DefaultButton = ContentDialogButton.Close;
+            var dialog = ActionDialog(Loc.T("Nahradit Správce úloh Windows"), content);
+            dialog.PrimaryButtonText = Loc.T("Zapnout…"); dialog.IsPrimaryButtonEnabled = canEnable;
+            dialog.SecondaryButtonText = Loc.T("Vypnout (obnovit předchozí)…"); dialog.IsSecondaryButtonEnabled = canDisable;
+            dialog.CloseButtonText = Loc.T("Zavřít"); dialog.DefaultButton = ContentDialogButton.Close;
             processActionDialog = dialog;
             var choice = await dialog.ShowAsync(); processActionDialog = null;
             if (choice == ContentDialogResult.None || processActionsClosed || own is null) return;

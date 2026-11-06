@@ -33,7 +33,7 @@ internal static class ListAccessibility
     }
 
     private static string Kind(ResourceKind kind) => kind switch {
-        ResourceKind.Cpu => "Procesor", ResourceKind.Memory => "Paměť", ResourceKind.Disk => "Disk", ResourceKind.Gpu => "Grafická karta", _ => "Síť" };
+        ResourceKind.Cpu => Loc.T("Procesor"), ResourceKind.Memory => Loc.T("Paměť"), ResourceKind.Disk => Loc.T("Disk"), ResourceKind.Gpu => Loc.T("Grafická karta"), _ => Loc.T("Síť") };
 
     /// <summary>Names each container after its resource; the name follows the row when the container is recycled or the title is published later.</summary>
     internal static void NameResourceItems(ListViewBase list)

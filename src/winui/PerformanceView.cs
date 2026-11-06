@@ -26,16 +26,16 @@ public sealed partial class MainWindow
         if (resourceChanged && root.ActualWidth > 0) ResizePerformanceLayout(root.ActualWidth);
         long now = model.Paused ? Math.Max(model.ProcessTime, model.ResourceTime) : NativeMonitor.MonotonicNowNs;
         uint color = Display.ResourceColor(resource.Kind);
-        resourceCount.Text = model.Resources.Count + " zařízení";
+        resourceCount.Text = Loc.F("{0} zařízení", model.Resources.Count);
         resourceTitle.Text = resource.Title;
-        resourceDescription.Text = resource.Kind == ResourceKind.Cpu ? model.LogicalProcessors + " logických procesorů"
+        resourceDescription.Text = resource.Kind == ResourceKind.Cpu ? Loc.F("{0} logických procesorů", model.LogicalProcessors)
             : resource.Kind == ResourceKind.Memory && model.Memory.State == SampleState.Valid
-                ? Display.Number(model.Memory.PhysicalBytes / 1073741824d, " GiB celkem") : resource.Description;
+                ? Loc.F("{0} GiB celkem", Display.Number(model.Memory.PhysicalBytes / 1073741824d, "")) : resource.Description;
         var measurement = model.MeasurementFor(resource, false);
-        if (resource.IsVirtualNetwork) resourceDescription.Text += " · virtuální síťové rozhraní";
+        if (resource.IsVirtualNetwork) resourceDescription.Text += " · " + Loc.T("virtuální síťové rozhraní");
         string context = MeasurementText.Describe(measurement, resource.Primary, resource.Stale);
         if (resource.Kind == ResourceKind.Cpu && cpuMode > 0)
-            context += "\n\nGrafy logických procesorů:\n" + MeasurementText.DescribeFormat(model.MeasurementFor(resource, true));
+            context += "\n\n" + Loc.T("Grafy logických procesorů:") + "\n" + MeasurementText.DescribeFormat(model.MeasurementFor(resource, true));
         ToolTipService.SetToolTip(resourceDescription, context);
         AutomationProperties.SetHelpText(resourceDescription, context);
         bool valid = !resource.Stale && resource.Primary.State == SampleState.Valid;
@@ -51,8 +51,8 @@ public sealed partial class MainWindow
         for (int i = 0; i < cpuButtons.Count; ++i) SelectChoice(cpuButtons[i], cpuMode == i);
         SelectChoice(scaleChoice, scaleChoice.IsChecked == true);
         resourceEyebrow.Text = resource.Kind switch {
-            ResourceKind.Cpu => "Využití", ResourceKind.Memory => "Použito", ResourceKind.Disk => "Aktivní čas",
-            ResourceKind.Gpu => "Využití", _ => "Příjem"
+            ResourceKind.Cpu => Loc.T("Využití"), ResourceKind.Memory => Loc.T("Použito"), ResourceKind.Disk => Loc.T("Aktivní čas"),
+            ResourceKind.Gpu => Loc.T("Využití"), _ => Loc.T("Příjem")
         };
         bool cpu = resource.Kind == ResourceKind.Cpu, memory = resource.Kind == ResourceKind.Memory, gpu = resource.Kind == ResourceKind.Gpu;
         cpuModes.Visibility = cpu ? Visibility.Visible : Visibility.Collapsed;
@@ -61,8 +61,8 @@ public sealed partial class MainWindow
         gpuPanel.Visibility = gpu ? Visibility.Visible : Visibility.Collapsed;
         if (gpu) RefreshGpu(resource, now);
         if (chart.Visibility == Visibility.Visible) {
-            chart.Configure(resource.Kind == ResourceKind.Network ? "Příjem ↓" : resource.Title,
-                memory ? ChartUnit.Bytes : resource.Kind == ResourceKind.Network ? ChartUnit.BitsPerSecond : ChartUnit.Percent, secondName: "Odesílání ↑");
+            chart.Configure(resource.Kind == ResourceKind.Network ? Loc.T("Příjem ↓") : resource.Title,
+                memory ? ChartUnit.Bytes : resource.Kind == ResourceKind.Network ? ChartUnit.BitsPerSecond : ChartUnit.Percent, secondName: Loc.T("Odesílání ↑"));
             double limit = resource.Kind == ResourceKind.Network ? scaleChoice.IsChecked == true ? ChartView.ScaleMaximum(resource.Maximum(now, rangeSeconds), double.MaxValue) : Math.Max(resource.Capacity, 1_000_000)
                 : resource.Kind == ResourceKind.Memory ? Math.Max(1, resource.Capacity) : 100;
             chart.Set(resource.History, resource.Kind == ResourceKind.Network ? resource.Upload : null, now, rangeSeconds, limit, color,
@@ -73,14 +73,14 @@ public sealed partial class MainWindow
         if (cpu && cpuMode > 0) RefreshProcessors(now);
         pageFile.Visibility = pageFileTitle.Visibility = memory ? Visibility.Visible : Visibility.Collapsed;
         if (memory) {
-            pageFileTitle.Text = "Stránkovací soubor (swap)   " + (resource.Stale ? "Zastaralé údaje" : model.Memory.PageFileState == SampleState.Valid
+            pageFileTitle.Text = Loc.T("Stránkovací soubor (swap)") + "   " + (resource.Stale ? Loc.T("Zastaralé údaje") : model.Memory.PageFileState == SampleState.Valid
                 ? Display.Number(model.Memory.PageFileUsedBytes / 1073741824d, " / ") + Display.Number(model.Memory.PageFileBytes / 1073741824d, " GiB")
                 : Display.Metric(new Metric { State = model.Memory.PageFileState }, string.Empty));
-            pageFile.Configure("Použitý swap", ChartUnit.Bytes);
+            pageFile.Configure(Loc.T("Použitý swap"), ChartUnit.Bytes);
             pageFile.Set(model.PageFile, null, now, rangeSeconds, Math.Max(1, model.Memory.PageFileBytes), 0xdfaf76, autoScale: scaleChoice.IsChecked == true);
         }
         double duration = resource.History.Count == 0 ? 0 : (resource.History.LastTime - resource.History.FirstTime) / 1_000_000_000d;
-        retained.Text = "Historie " + Display.Number(duration, " s") + " · " + resource.History.Count + " vzorků · zobrazeno " + rangeSeconds + " s";
+        retained.Text = Loc.F("Historie {0} · {1} vzorků · zobrazeno {2} s", Display.Number(duration, " s"), resource.History.Count, rangeSeconds);
         string nextFacts = resource.Id + ":" + (memory ? model.Memory.State.ToString() : "") + ":" + string.Join('|', resource.HardwareFacts.Keys);
         if (factsKey != nextFacts) {
             diskDetailsExpanded = diskDetailsResource == resource.Id && diskDetails?.IsExpanded == true;
@@ -100,56 +100,56 @@ public sealed partial class MainWindow
         }
         if (cpu) {
             Hardware(model.CpuModel);
-            Fact("Logické procesory", model.LogicalProcessors.ToString()); Fact("Procesy", model.Processes.Count.ToString());
-            Fact("Doba sběru", Display.Number(model.CollectionMs, " ms")); Fact("Vlákna", model.Processes.Sum(row => (long)row.Threads).ToString());
+            Fact(Loc.T("Logické procesory"), model.LogicalProcessors.ToString()); Fact(Loc.T("Procesy"), model.Processes.Count.ToString());
+            Fact(Loc.T("Doba sběru"), Display.Number(model.CollectionMs, " ms")); Fact(Loc.T("Vlákna"), model.Processes.Sum(row => (long)row.Threads).ToString());
         } else if (memory && model.Memory.State == SampleState.Valid) {
-            Hardware((model.Memory.InstalledBytes > 0 ? "Instalováno " : "Fyzická paměť ")
+            Hardware((model.Memory.InstalledBytes > 0 ? Loc.T("Instalováno") : Loc.T("Fyzická paměť")) + " "
                 + Display.Number((model.Memory.InstalledBytes > 0 ? model.Memory.InstalledBytes : model.Memory.PhysicalBytes) / 1073741824d, " GiB"));
-            Fact("Dostupná paměť", Display.Number(model.Memory.AvailableBytes / 1073741824d, " GiB"));
-            Fact("Potvrzeno / limit", Display.Number(model.Memory.CommittedBytes / 1073741824d, " / ") + Display.Number(model.Memory.CommitLimitBytes / 1073741824d, " GiB"));
-            Fact("Stránkovaný fond", Display.Number(model.Memory.PagedPoolBytes / 1073741824d, " GiB"));
-            Fact("Nestránkovaný fond", Display.Number(model.Memory.NonpagedPoolBytes / 1073741824d, " GiB"));
-            Fact("V mezipaměti", Display.Number(model.Memory.CacheBytes / 1073741824d, " GiB"));
-            Fact("Maximum swapu", model.Memory.PageFileState == SampleState.Valid ? Display.Number(model.Memory.PageFilePeakBytes / 1073741824d, " GiB")
+            Fact(Loc.T("Dostupná paměť"), Display.Number(model.Memory.AvailableBytes / 1073741824d, " GiB"));
+            Fact(Loc.T("Potvrzeno / limit"), Display.Number(model.Memory.CommittedBytes / 1073741824d, " / ") + Display.Number(model.Memory.CommitLimitBytes / 1073741824d, " GiB"));
+            Fact(Loc.T("Stránkovaný fond"), Display.Number(model.Memory.PagedPoolBytes / 1073741824d, " GiB"));
+            Fact(Loc.T("Nestránkovaný fond"), Display.Number(model.Memory.NonpagedPoolBytes / 1073741824d, " GiB"));
+            Fact(Loc.T("V mezipaměti"), Display.Number(model.Memory.CacheBytes / 1073741824d, " GiB"));
+            Fact(Loc.T("Maximum swapu"), model.Memory.PageFileState == SampleState.Valid ? Display.Number(model.Memory.PageFilePeakBytes / 1073741824d, " GiB")
                 : Display.Metric(new Metric { State = model.Memory.PageFileState }, string.Empty));
         } else if (memory) {
-            Fact("Dostupnost", Display.Metric(new Metric { State = model.Memory.State }, string.Empty));
+            Fact(Loc.T("Dostupnost"), Display.Metric(new Metric { State = model.Memory.State }, string.Empty));
         } else {
             Hardware(resource.Description);
-            Fact("Stav", resource.Status.Length > 0 ? resource.Status : resource.Value);
+            Fact(Loc.T("Stav"), resource.Status.Length > 0 ? resource.Status : resource.Value);
             if (resource.Kind == ResourceKind.Network) {
-                Fact("Příjem", resource.Stale ? "Zastaralé" : Display.Metric(resource.Primary, " Mbit/s", 1_000_000));
-                Fact("Odesílání", resource.Stale ? "Zastaralé" : Display.Metric(resource.Secondary, " Mbit/s", 1_000_000));
+                Fact(Loc.T("Příjem"), resource.Stale ? Loc.T("Zastaralé") : Display.Metric(resource.Primary, " Mbit/s", 1_000_000));
+                Fact(Loc.T("Odesílání"), resource.Stale ? Loc.T("Zastaralé") : Display.Metric(resource.Secondary, " Mbit/s", 1_000_000));
                 NetworkTotals? since = model.NetworkTransfers.TryGetValue(resource.Id, out var own) ? own : null;
-                Fact("Přijato od spuštění", NetworkTotal(since, true, resource.Stale));
-                Fact("Odesláno od spuštění", NetworkTotal(since, false, resource.Stale));
-                Fact("Počítáno od", since is { State: SampleState.Valid, StartedAtUnixNs: > 0 } start
-                    ? DateTimeOffset.FromUnixTimeMilliseconds(start.StartedAtUnixNs / 1_000_000).LocalDateTime.ToString("d. M. yyyy H:mm:ss") : "nedostupné");
-                Fact("Fyzické adaptéry od spuštění", resource.Stale ? "Zastaralé" : model.PhysicalNetworkTotals() is { State: SampleState.Valid } physical
-                    ? "↓ " + Display.Bytes(physical.ReceivedBytes) + " · ↑ " + Display.Bytes(physical.SentBytes) : "nedostupné");
+                Fact(Loc.T("Přijato od spuštění"), NetworkTotal(since, true, resource.Stale));
+                Fact(Loc.T("Odesláno od spuštění"), NetworkTotal(since, false, resource.Stale));
+                Fact(Loc.T("Počítáno od"), since is { State: SampleState.Valid, StartedAtUnixNs: > 0 } start
+                    ? DateTimeOffset.FromUnixTimeMilliseconds(start.StartedAtUnixNs / 1_000_000).LocalDateTime.ToString(Loc.Language == "cs" ? "d. M. yyyy H:mm:ss" : "G", Loc.Culture) : Loc.T("nedostupné"));
+                Fact(Loc.T("Fyzické adaptéry od spuštění"), resource.Stale ? Loc.T("Zastaralé") : model.PhysicalNetworkTotals() is { State: SampleState.Valid } physical
+                    ? "↓ " + Display.Bytes(physical.ReceivedBytes) + " · ↑ " + Display.Bytes(physical.SentBytes) : Loc.T("nedostupné"));
             } else if (resource.Kind == ResourceKind.Disk) {
-                Fact("Čtení", resource.Stale ? "Zastaralé" : Display.Metric(resource.Secondary, " MiB/s", 1048576)); Fact("Zápis", resource.Stale ? "Zastaralé" : Display.Metric(resource.Tertiary, " MiB/s", 1048576));
+                Fact(Loc.T("Čtení"), resource.Stale ? Loc.T("Zastaralé") : Display.Metric(resource.Secondary, " MiB/s", 1048576)); Fact(Loc.T("Zápis"), resource.Stale ? Loc.T("Zastaralé") : Display.Metric(resource.Tertiary, " MiB/s", 1048576));
                 RefreshDiskFacts(resource, Fact);
             } else {
-                Fact("Vyhrazená paměť", Display.Metric(resource.Secondary, " MiB", 1048576)); Fact("Sdílená paměť", Display.Metric(resource.Tertiary, " MiB", 1048576));
-                Fact("Kapacita VRAM", Display.Number(resource.Capacity / 1073741824, " GiB"));
-                Fact("Limit sdílené paměti", Display.Number(resource.Gpu!.SharedCapacity / 1073741824, " GiB"));
-                Fact("Enginy", resource.Gpu.Engines.Count.ToString());
-                Fact("Teplota GPU", resource.Stale ? "Zastaralé" : Display.Metric(resource.Gpu.Temperature, " °C"));
-                Fact("Celkové vytížení", "Nejvytíženější engine");
+                Fact(Loc.T("Vyhrazená paměť"), Display.Metric(resource.Secondary, " MiB", 1048576)); Fact(Loc.T("Sdílená paměť"), Display.Metric(resource.Tertiary, " MiB", 1048576));
+                Fact(Loc.T("Kapacita VRAM"), Display.Number(resource.Capacity / 1073741824, " GiB"));
+                Fact(Loc.T("Limit sdílené paměti"), Display.Number(resource.Gpu!.SharedCapacity / 1073741824, " GiB"));
+                Fact(Loc.T("Enginy"), resource.Gpu.Engines.Count.ToString());
+                Fact(Loc.T("Teplota GPU"), resource.Stale ? Loc.T("Zastaralé") : Display.Metric(resource.Gpu.Temperature, " °C"));
+                Fact(Loc.T("Celkové vytížení"), Loc.T("Nejvytíženější engine"));
             }
         }
         foreach (var fact in resource.HardwareFacts) {
             if (resource.Kind != ResourceKind.Disk && (!cpu || fact.Key == "Fyzická jádra" || fact.Key == "Patice" || fact.Key.StartsWith("Mezipaměť", StringComparison.Ordinal))) Fact(fact.Key, fact.Value);
         }
         if (memory && model.Memory.State == SampleState.Valid && model.Memory.InstalledBytes >= model.Memory.PhysicalBytes)
-            Fact("Rezervováno hardwarem", Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));
+            Fact(Loc.T("Rezervováno hardwarem"), Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));
         ArrangePerformanceFacts();
         RefreshConsumers(cpu, memory, color);
     }
 
-    private static string NetworkTotal(NetworkTotals? value, bool received, bool stale) => stale ? "Zastaralé"
-        : value is { State: SampleState.Valid } total ? Display.Bytes(received ? total.ReceivedBytes : total.SentBytes) : "nedostupné";
+    private static string NetworkTotal(NetworkTotals? value, bool received, bool stale) => stale ? Loc.T("Zastaralé")
+        : value is { State: SampleState.Valid } total ? Display.Bytes(received ? total.ReceivedBytes : total.SentBytes) : Loc.T("nedostupné");
 
     private void RefreshProcessors(long now)
     {
@@ -170,8 +170,8 @@ public sealed partial class MainWindow
             for (int i = 0; i < keys.Length; ++i) {
                 if (cpuMode == 2) break;
                 var core = new ChartView { Height = coreHeight, Timeline = performanceTimeline };
-                core.Configure($"Logický procesor {keys[i].Group}:{keys[i].Index}", showAxes: false, interactive: cpuMode == 1);
-                AutomationProperties.SetName(core, $"Logický procesor {keys[i].Group}:{keys[i].Index}");
+                core.Configure(Loc.F("Logický procesor {0}:{1}", keys[i].Group, keys[i].Index), showAxes: false, interactive: cpuMode == 1);
+                AutomationProperties.SetName(core, Loc.F("Logický procesor {0}:{1}", keys[i].Group, keys[i].Index));
                 coreCharts.Add(keys[i], core);
                 FrameworkElement child = core;
                 if (cpuMode == 1) {
@@ -185,7 +185,7 @@ public sealed partial class MainWindow
         }
         if (cpuMode == 2 && keys.Length == 0) {
             coreOverlay.SetOverlays([]);
-            coreOverlay.Configure("Logické procesory · měření nedostupné");
+            coreOverlay.Configure(Loc.T("Logické procesory · měření nedostupné"));
             coreOverlay.Set(null, null, now, rangeSeconds, 100, 0x80c5c0);
             return;
         }

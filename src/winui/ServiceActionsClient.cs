@@ -15,7 +15,7 @@ internal sealed class ServiceActionsClient : IDisposable
         Func<ServiceActionPlan, CancellationToken, Task<uint[]?>> confirmation, IProgress<ServiceActionItem[]>? progress, CancellationToken cancellation)
     {
         lock (sync) ObjectDisposedException.ThrowIf(disposed, this);
-        if (Interlocked.CompareExchange(ref pending, 1, 0) != 0) throw new IOException("Jiná akce služeb nebo její ukončování ještě probíhá.");
+        if (Interlocked.CompareExchange(ref pending, 1, 0) != 0) throw new IOException(Loc.T("Jiná akce služeb nebo její ukončování ještě probíhá."));
         var session = new ServiceActionsSession(); ServiceActionPlan? plan = null;
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellation, lifetime.Token);
         using var stop = linked.Token.Register(session.Cancel);
@@ -28,17 +28,17 @@ internal sealed class ServiceActionsClient : IDisposable
                 using var confirmStop = CancellationTokenSource.CreateLinkedTokenSource(linked.Token, confirmTime.Token);
                 using var abort = confirmStop.Token.Register(session.Cancel);
                 approved = await confirmation(plan, confirmStop.Token);
-                if (approved is null || confirmStop.IsCancellationRequested) return Interrupted(plan, session, ServiceActionStatus.Cancelled, "Plán byl zrušen. Změna nebyla odeslána.");
+                if (approved is null || confirmStop.IsCancellationRequested) return Interrupted(plan, session, ServiceActionStatus.Cancelled, Loc.T("Plán byl zrušen. Změna nebyla odeslána."));
             }
             var result = await TimedAsync(token => Task.Run(() => session.ApplyAsync(plan, approved, progress, token)), TimeSpan.FromSeconds(30), session, linked.Token);
             int confirmed = result.Items.Count(item => item.Outcome is ServiceActionOutcome.Confirmed or ServiceActionOutcome.AlreadyDesired);
-            CapabilityReports.ObserveServiceAction((result.Status == ServiceActionStatus.Ok ? "Potvrzený stav" : "Částečný nebo odmítnutý výsledek")
+            CapabilityReports.ObserveServiceAction((result.Status == ServiceActionStatus.Ok ? Loc.T("Potvrzený stav") : Loc.T("Částečný nebo odmítnutý výsledek"))
                 + ": " + confirmed + "/" + result.Items.Length + ", " + ServiceActionsProtocol.StatusText(result.Status) + ".");
             return result;
         } catch (ServiceActionException error) { return Interrupted(plan, session, error.Status, error.Message, error.Error); }
         catch (TimeoutException error) { return Interrupted(plan, session, ServiceActionStatus.Timeout, error.Message, 1460); }
         catch (OperationCanceledException) { return Interrupted(plan, session, ServiceActionStatus.Cancelled,
-            session.ApplySent ? "Čekání bylo zrušeno. SCM mohl požadavek přijmout; výsledek není známý." : "Plán byl zrušen. Změna nebyla odeslána.", 1223); }
+            session.ApplySent ? Loc.T("Čekání bylo zrušeno. SCM mohl požadavek přijmout; výsledek není známý.") : Loc.T("Plán byl zrušen. Změna nebyla odeslána."), 1223); }
         catch (Exception error) when (error is IOException or InvalidDataException or Win32Exception or ObjectDisposedException) {
             return Interrupted(plan, session, ServiceActionStatus.Error, error.Message);
         } finally {
@@ -54,7 +54,7 @@ internal sealed class ServiceActionsClient : IDisposable
         _ = work.ContinueWith(task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         try { return await work.WaitAsync(linked.Token); }
         catch (OperationCanceledException error) when (deadline.IsCancellationRequested && !cancellation.IsCancellationRequested) {
-            throw new TimeoutException("Vypršel čas čekání na pracovníka. Rozpracovaný stav nemusí být konečný.", error);
+            throw new TimeoutException(Loc.T("Vypršel čas čekání na pracovníka. Rozpracovaný stav nemusí být konečný."), error);
         }
     }
     private static ServiceActionsBatch Interrupted(ServiceActionPlan? plan, ServiceActionsSession session, ServiceActionStatus status, string message, uint error = 0)

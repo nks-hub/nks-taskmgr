@@ -24,7 +24,7 @@ internal sealed partial class ProcessDumpFile : IDisposable
             fileName = PrepareDirectories(path);
             try {
                 using var existing = OpenRelative(directories[^1], fileName, 0x100080, 7, 1, 0x00200060, 0);
-                throw new IOException("Cílový soubor už existuje. Vyberte nový název; dump se nikdy nepřepisuje.");
+                throw new IOException(Loc.T("Cílový soubor už existuje. Vyberte nový název; dump se nikdy nepřepisuje."));
             } catch (Win32Exception error) when (error.NativeErrorCode is 2 or 3) { }
             string id = Guid.NewGuid().ToString("N"), temporaryName = ".nks-dump-" + id + ".tmp";
             Temporary = ParentPath + temporaryName;
@@ -39,10 +39,10 @@ internal sealed partial class ProcessDumpFile : IDisposable
     {
         path = Path.GetFullPath(path);
         if (path.Length is < 4 or > 32720 || path[1] != ':' || path[2] != '\\' || !char.IsAsciiLetter(path[0]))
-            throw new ArgumentException("Dump ukládejte na místní disk s písmenem jednotky.");
+            throw new ArgumentException(Loc.T("Dump ukládejte na místní disk s písmenem jednotky."));
         var parts = path[3..].Split('\\');
         if (parts.Any(part => part.Length == 0 || part.EndsWith('.') || part.EndsWith(' ') || part.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0))
-            throw new ArgumentException("Cesta dumpu obsahuje nepovolený název.");
+            throw new ArgumentException(Loc.T("Cesta dumpu obsahuje nepovolený název."));
         uint directoryAccess = 0x1000a0u;
         var root = CreateFile("\\\\?\\" + path[..3], directoryAccess, 1, 0, 3, 0x02200000, 0);
         if (root.IsInvalid) { root.Dispose(); throw LastError(); }
@@ -60,10 +60,10 @@ internal sealed partial class ProcessDumpFile : IDisposable
     {
         cancellation.ThrowIfCancellationRequested();
         if (result.State != ProcessDumpState.Captured || result.FileId != Identity || ReadIdentity(Handle) != Identity)
-            throw new InvalidDataException("Dump neodpovídá vlastnímu dočasnému souboru.");
+            throw new InvalidDataException(Loc.T("Dump neodpovídá vlastnímu dočasnému souboru."));
         if (!GetFileSizeEx(Handle, out long size)) throw LastError();
         if (size <= 0 || (ulong)size != result.FileBytes || (ulong)size > ProcessDumpProtocol.MaximumFileBytes)
-            throw new InvalidDataException("Velikost dumpu neodpovídá výsledku pracovníka.");
+            throw new InvalidDataException(Loc.T("Velikost dumpu neodpovídá výsledku pracovníka."));
         Journal?.Ready(result);
         var basic = new byte[40];
         BinaryPrimitives.WriteUInt32LittleEndian(basic.AsSpan(32), 0x2000);
@@ -74,7 +74,7 @@ internal sealed partial class ProcessDumpFile : IDisposable
         published = true;
         string? warning = null;
         try { Journal?.Remove(); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception) { warning = "Dump je uložený, ale záznam obnovy zůstal zachovaný: " + error.Message; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception) { warning = Loc.F("Dump je uložený, ale záznam obnovy zůstal zachovaný: {0}", error.Message); }
         return result with { SavedPath = Destination.StartsWith("\\\\?\\", StringComparison.Ordinal) ? Destination[4..] : Destination, RecoveryWarning = warning };
     }
 
@@ -95,7 +95,7 @@ internal sealed partial class ProcessDumpFile : IDisposable
         var bytes = stackalloc byte[8];
         if (!GetFileInformationByHandleEx(directory, 9, bytes, 8)) throw LastError();
         uint attributes = BinaryPrimitives.ReadUInt32LittleEndian(new ReadOnlySpan<byte>(bytes, 4));
-        if ((attributes & 0x410) != 0x10) throw new IOException("Dump nelze uložit přes odkaz nebo přesměrovaný adresář.");
+        if ((attributes & 0x410) != 0x10) throw new IOException(Loc.T("Dump nelze uložit přes odkaz nebo přesměrovaný adresář."));
     }
     private static unsafe DumpFileIdentity ReadIdentity(SafeFileHandle file)
     {
@@ -108,7 +108,7 @@ internal sealed partial class ProcessDumpFile : IDisposable
     {
         uint length = GetFinalPathNameByHandle(file, null, 0, 0);
         if (length == 0) throw LastError();
-        if (length > 32760) throw new IOException("Cesta dumpu je příliš dlouhá.");
+        if (length > 32760) throw new IOException(Loc.T("Cesta dumpu je příliš dlouhá."));
         var chars = new char[length];
         fixed (char* text = chars) {
             uint written = GetFinalPathNameByHandle(file, text, length, 0);
@@ -129,7 +129,7 @@ internal sealed partial class ProcessDumpFile : IDisposable
         Handle.Dispose();
         try { if (cleanupError == 0 && !published && !preserve) Journal?.Remove(); }
         finally { for (int i = directories.Count - 1; i >= 0; --i) directories[i].Dispose(); }
-        if (cleanupError != 0) throw new IOException("Vlastní dočasný soubor se nepodařilo odstranit: " + Temporary + " (Windows " + cleanupError + ").");
+        if (cleanupError != 0) throw new IOException(Loc.F("Vlastní dočasný soubor se nepodařilo odstranit: {0} (Windows {1}).", Temporary, cleanupError));
     }
 
     [StructLayout(LayoutKind.Sequential)]

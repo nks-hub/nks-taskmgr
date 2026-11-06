@@ -11,10 +11,10 @@ internal static class UserSessionText
     internal const int AccessDenied = 5;
 
     internal static string State(SessionConnectState state) => state switch {
-        SessionConnectState.Active => "Aktivní", SessionConnectState.Connected => "Připojeno", SessionConnectState.ConnectQuery => "Připojování",
-        SessionConnectState.Shadow => "Stínový provoz", SessionConnectState.Disconnected => "Odpojeno", SessionConnectState.Idle => "Nečinná",
-        SessionConnectState.Listen => "Naslouchá", SessionConnectState.Reset => "Resetována", SessionConnectState.Down => "Mimo provoz",
-        SessionConnectState.Init => "Inicializace", _ => "Neznámý"
+        SessionConnectState.Active => Loc.T("Aktivní"), SessionConnectState.Connected => Loc.T("Připojeno"), SessionConnectState.ConnectQuery => Loc.T("Připojování"),
+        SessionConnectState.Shadow => Loc.T("Stínový provoz"), SessionConnectState.Disconnected => Loc.T("Odpojeno"), SessionConnectState.Idle => Loc.T("Nečinná"),
+        SessionConnectState.Listen => Loc.T("Naslouchá"), SessionConnectState.Reset => Loc.T("Resetována"), SessionConnectState.Down => Loc.T("Mimo provoz"),
+        SessionConnectState.Init => Loc.T("Inicializace"), _ => Loc.T("Neznámý")
     };
 
     /// <summary>Native row title 37023 „%1 (%2!d!)“: account and process count.</summary>
@@ -34,23 +34,23 @@ internal static class UserSessionText
     };
 
     /// <summary>Native 37220 „Zpráva od %1 – %2“.</summary>
-    internal static string MessageTitle(string sender, DateTime time) => $"Zpráva od {sender} – {time:g}";
+    internal static string MessageTitle(string sender, DateTime time) => Loc.F("Zpráva od {0} – {1:g}", sender, time);
 
     /// <summary>Title, explanation and confirm button of the native confirmation dialogs.</summary>
     internal static (string Title, string Content, string Confirm) Confirmation(UserSessionAction action) => action == UserSessionAction.Disconnect
-        ? ("Opravdu chcete odpojit vybrané uživatele?", "", "Odpojit uživatele")
-        : ("Chcete pokračovat?", "Pokud odhlásíte uživatele, může dojít ke ztrátě jeho neuložených dat.", "Odhlásit uživatele");
+        ? (Loc.T("Opravdu chcete odpojit vybrané uživatele?"), "", Loc.T("Odpojit uživatele"))
+        : (Loc.T("Chcete pokračovat?"), Loc.T("Pokud odhlásíte uživatele, může dojít ke ztrátě jeho neuložených dat."), Loc.T("Odhlásit uživatele"));
 
     /// <summary>Native 37214 and 37221; access denied adds 37245 and the meaning of 37244.</summary>
     internal static string Failure(UserSessionAction action, string user, uint session, int error)
     {
         string head = action switch {
-            UserSessionAction.Disconnect => $"Uživatele {user} (id relace={session}) se nepodařilo odpojit.",
-            UserSessionAction.Logoff => $"Uživatele {user} (id relace={session}) se nepodařilo odhlásit.",
-            _ => $"Zprávu uživateli (SessionId={session}) nelze odeslat."
+            UserSessionAction.Disconnect => Loc.F("Uživatele {0} (id relace={1}) se nepodařilo odpojit.", user, session),
+            UserSessionAction.Logoff => Loc.F("Uživatele {0} (id relace={1}) se nepodařilo odhlásit.", user, session),
+            _ => Loc.F("Zprávu uživateli (SessionId={0}) nelze odeslat.", session)
         };
         return head + "\n" + (error == AccessDenied
-            ? "Přístup byl odepřen. K dokončení této úlohy potřebujete oprávnění správce. Zavřete NKS Task Manager, pak ho spusťte znovu jako správce a zkuste to znovu."
+            ? Loc.T("Přístup byl odepřen. K dokončení této úlohy potřebujete oprávnění správce. Zavřete NKS Task Manager, pak ho spusťte znovu jako správce a zkuste to znovu.")
             : $"Windows {error} (0x{error:X8}): {new Win32Exception(error).Message}");
     }
 

@@ -20,7 +20,7 @@ internal static partial class ProcessActionsProtocol
         bool query = request.Command == ProcessActionCommand.QueryCpuSets;
         if (request.Targets.Length != 1 || request.Argument != 0 || request.Group != 0
             || (query ? request.CpuSets is not null : request.CpuSets is null))
-            throw new ArgumentException("CPU sets vyžadují jeden proces a ověřený náhled.", nameof(request));
+            throw new ArgumentException(Loc.T("CPU sets vyžadují jeden proces a ověřený náhled."), nameof(request));
         var basis = Request(request with { Command = ProcessActionCommand.Query, CpuSets = null });
         if (query) {
             BinaryPrimitives.WriteUInt16LittleEndian(basis.AsSpan(6), (ushort)request.Command);
@@ -29,13 +29,13 @@ internal static partial class ProcessActionsProtocol
         var selection = request.CpuSets!;
         var ids = selection.Ids.ToArray();
         if (ids.Length > MaximumCpuSets || ids.Distinct().Count() != ids.Length)
-            throw new ArgumentException("Výběr CPU sets je příliš velký nebo obsahuje opakované ID.", nameof(request));
+            throw new ArgumentException(Loc.T("Výběr CPU sets je příliš velký nebo obsahuje opakované ID."), nameof(request));
         Array.Sort(ids);
         byte[] baseline;
         try { baseline = Convert.FromHexString(selection.Baseline); }
-        catch (FormatException error) { throw new ArgumentException("Neplatný otisk náhledu CPU sets.", nameof(request), error); }
+        catch (FormatException error) { throw new ArgumentException(Loc.T("Neplatný otisk náhledu CPU sets."), nameof(request), error); }
         if (baseline.Length != 32 || !baseline.Any(value => value != 0))
-            throw new ArgumentException("Chybí ověřený otisk náhledu CPU sets.", nameof(request));
+            throw new ArgumentException(Loc.T("Chybí ověřený otisk náhledu CPU sets."), nameof(request));
         var bytes = new byte[112 + 32 + ids.Length * 4];
         basis.CopyTo(bytes, 0);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(6), (ushort)request.Command);
@@ -53,26 +53,26 @@ internal static partial class ProcessActionsProtocol
             ProcessActionFrame.Rejected or ProcessActionFrame.Failed => count == 0 && bytes == 0,
             _ => false
         };
-        if (!valid) throw Invalid("Pracovník vrátil neplatný typ nebo délku odpovědi CPU sets.");
+        if (!valid) throw Invalid(Loc.T("Pracovník vrátil neplatný typ nebo délku odpovědi CPU sets."));
         return checked((int)bytes);
     }
 
     private static ProcessCpuSetsSnapshot CpuSetsSnapshot(ReadOnlySpan<byte> payload, ProcessActionResult result, ReadOnlySpan<byte> request)
     {
-        if (payload.Length < 48) throw Invalid("Chybí úplná odpověď CPU sets.");
+        if (payload.Length < 48) throw Invalid(Loc.T("Chybí úplná odpověď CPU sets."));
         uint count = UInt(payload, 32), defaults = UInt(payload, 36), flags = UInt(payload, 40);
         if (flags > 1 || UInt(payload, 44) != 0 || count > MaximumCpuSets || defaults > count
             || payload.Length != 48 + count * 32 + defaults * 4)
-            throw Invalid("Neplatné délky nebo příznaky CPU sets.");
+            throw Invalid(Loc.T("Neplatné délky nebo příznaky CPU sets."));
         bool hasBaseline = false;
         foreach (byte value in payload[..32]) hasBaseline |= value != 0;
         if (flags == 0) {
             if (count != 0 || defaults != 0 || hasBaseline || result.Outcome is ProcessActionOutcome.Inspected or ProcessActionOutcome.Applied)
-                throw Invalid("Neplatný stav nedostupných CPU sets.");
+                throw Invalid(Loc.T("Neplatný stav nedostupných CPU sets."));
             return new(false, "", Array.AsReadOnly(Array.Empty<ProcessCpuSet>()), Array.AsReadOnly(Array.Empty<uint>()));
         }
         if (count == 0 || !hasBaseline || !result.Flags.HasFlag(ProcessActionFlags.IdentityVerified))
-            throw Invalid("CPU sets nejsou vázané na ověřený proces.");
+            throw Invalid(Loc.T("CPU sets nejsou vázané na ověřený proces."));
         var rows = new ProcessCpuSet[count];
         var ids = new HashSet<uint>();
         for (int i = 0; i < rows.Length; ++i) {
@@ -80,22 +80,22 @@ internal static partial class ProcessActionsProtocol
             var cpu = new ProcessCpuSet(UInt(row, 0), UInt(row, 4), UInt(row, 8), UInt(row, 12), UInt(row, 16), UInt(row, 20), UInt(row, 24), UInt(row, 28));
             if (!ids.Add(cpu.Id) || cpu.Group > ushort.MaxValue || cpu.LogicalProcessor >= 64
                 || cpu.Core > byte.MaxValue || cpu.Numa > byte.MaxValue || cpu.LastLevelCache > byte.MaxValue || cpu.Efficiency > byte.MaxValue || (cpu.Flags & ~15u) != 0)
-                throw Invalid("Neplatný nebo opakovaný logický procesor v CPU sets.");
+                throw Invalid(Loc.T("Neplatný nebo opakovaný logický procesor v CPU sets."));
             rows[i] = cpu;
         }
         var selected = new uint[defaults];
         int start = checked(48 + rows.Length * 32);
         for (int i = 0; i < selected.Length; ++i) {
             uint id = UInt(payload, start + i * 4);
-            if (!ids.Contains(id) || i > 0 && id <= selected[i - 1]) throw Invalid("Neplatný výchozí výběr CPU sets.");
+            if (!ids.Contains(id) || i > 0 && id <= selected[i - 1]) throw Invalid(Loc.T("Neplatný výchozí výběr CPU sets."));
             selected[i] = id;
         }
         if (result.Outcome == ProcessActionOutcome.Applied) {
-            if (!result.Flags.HasFlag(ProcessActionFlags.AliveAfter)) throw Invalid("Proces po změně CPU sets nemá potvrzenou životnost.");
+            if (!result.Flags.HasFlag(ProcessActionFlags.AliveAfter)) throw Invalid(Loc.T("Proces po změně CPU sets nemá potvrzenou životnost."));
             uint expected = checked((uint)ULong(request, 40));
-            if (defaults != expected || request.Length != 144 + expected * 4) throw Invalid("Zpětné čtení CPU sets nepotvrdilo počet vybraných procesorů.");
+            if (defaults != expected || request.Length != 144 + expected * 4) throw Invalid(Loc.T("Zpětné čtení CPU sets nepotvrdilo počet vybraných procesorů."));
             for (int i = 0; i < selected.Length; ++i)
-                if (selected[i] != UInt(request, 144 + i * 4)) throw Invalid("Zpětné čtení CPU sets nepotvrdilo požadovaný výběr.");
+                if (selected[i] != UInt(request, 144 + i * 4)) throw Invalid(Loc.T("Zpětné čtení CPU sets nepotvrdilo požadovaný výběr."));
         }
         return new(true, Convert.ToHexString(payload[..32]), Array.AsReadOnly(rows), Array.AsReadOnly(selected));
     }

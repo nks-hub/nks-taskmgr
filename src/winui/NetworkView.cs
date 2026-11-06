@@ -20,10 +20,10 @@ public sealed partial class MainWindow
     private void AddNetworkItems(MenuFlyout menu)
     {
         if (menu.Items.Count > 0) menu.Items.Add(new MenuFlyoutSeparator());
-        var disconnected = new ToggleMenuFlyoutItem { Text = "Zobrazit odpojené adaptéry", IsChecked = model.NetworkFilters.ShowDisconnected };
+        var disconnected = new ToggleMenuFlyoutItem { Text = Loc.T("Zobrazit odpojené adaptéry"), IsChecked = model.NetworkFilters.ShowDisconnected };
         AutomationProperties.SetAutomationId(disconnected, "context-network-disconnected");
         disconnected.Click += (_, _) => { if (view == DesktopView.Performance) ChangeNetworkFilters(model.NetworkFilters with { ShowDisconnected = disconnected.IsChecked }); };
-        var auxiliary = new ToggleMenuFlyoutItem { Text = "Zobrazit pomocná/virtuální rozhraní", IsChecked = model.NetworkFilters.ShowAuxiliary };
+        var auxiliary = new ToggleMenuFlyoutItem { Text = Loc.T("Zobrazit pomocná/virtuální rozhraní"), IsChecked = model.NetworkFilters.ShowAuxiliary };
         AutomationProperties.SetAutomationId(auxiliary, "context-network-auxiliary");
         auxiliary.Click += (_, _) => { if (view == DesktopView.Performance) ChangeNetworkFilters(model.NetworkFilters with { ShowAuxiliary = auxiliary.IsChecked }); };
         menu.Items.Add(disconnected); menu.Items.Add(auxiliary);
@@ -35,7 +35,7 @@ public sealed partial class MainWindow
         model.SetNetworkFilters(value);
         resourceList.SelectedItem = NetworkResourceFilter.SelectionAfterFilter(model.Resources, previous);
         RefreshPerformance();
-        if (!NetworkViewPreference.Save(value)) footer.Text = "Pohled sítě je změněný, ale volbu se nepodařilo uložit pro příští spuštění.";
+        if (!NetworkViewPreference.Save(value)) footer.Text = Loc.T("Pohled sítě je změněný, ale volbu se nepodařilo uložit pro příští spuštění.");
     }
 }
 

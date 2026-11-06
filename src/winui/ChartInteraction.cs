@@ -103,30 +103,30 @@ public sealed partial class ChartView
     private void UpdateCursor()
     {
         if (cursorTime is not { } time) {
-            HideCursor(); AutomationProperties.SetHelpText(this, "Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu."); return;
+            HideCursor(); AutomationProperties.SetHelpText(this, Loc.T("Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu.")); return;
         }
         if (canvas.ActualWidth <= 0) { HideCursor(); return; }
         double fraction = (time - (double)renderedAt + seconds * 1_000_000_000d) / (seconds * 1_000_000_000d);
         if (fraction < 0 || fraction > 1) {
-            HideCursor(); AutomationProperties.SetHelpText(this, "Vybraný čas " + Clock(time) + " je mimo zobrazenou historii tohoto grafu."); return;
+            HideCursor(); AutomationProperties.SetHelpText(this, Loc.F("Vybraný čas {0} je mimo zobrazenou historii tohoto grafu.", Clock(time))); return;
         }
         var sample = series?.At(time);
-        string Value((long Time, Metric Value)? item) => item is null ? "Bez vzorku" : item.Value.Value.State == SampleState.Valid ? Format(item.Value.Value.Value) : Display.Metric(item.Value.Value, "");
+        string Value((long Time, Metric Value)? item) => item is null ? Loc.T("Bez vzorku") : item.Value.Value.State == SampleState.Valid ? Format(item.Value.Value.Value) : Display.Metric(item.Value.Value, "");
         string text = primaryName + ": " + Value(sample);
         if (secondary is not null) text += "\n" + secondaryName + ": " + Value(secondary.At(time));
         if (overlays.Count > 0) {
             var readings = overlays.Select(item => (item.Name, Sample: item.History.At(time))).Append((primaryName, sample))
                 .OrderByDescending(item => item.Item2?.Value.State == SampleState.Valid ? item.Item2.Value.Value.Value : -1).Take(5);
             text = string.Join("\n", readings.Select(item => item.Item1 + ": " + Value(item.Item2)));
-            if (overlays.Count >= 5) text += "\n5 nejvytíženějších z " + (overlays.Count + 1);
+            if (overlays.Count >= 5) text += "\n" + Loc.F("5 nejvytíženějších z {0}", overlays.Count + 1);
         }
-        text += "\n" + Display.Number(Math.Max(0, (now - (sample?.Time ?? time)) / 1_000_000_000d), " s zpět") + (pinned ? " · připnuto" : " · kliknutím připnout");
-        if (sample is { } observed) text += "\nZdroj primárního vzorku: " + MeasurementText.Source(observed.Value.Source);
-        text += "\nČas: " + Clock(sample?.Time ?? time);
+        text += "\n" + Loc.F("{0} s zpět", Display.Number(Math.Max(0, (now - (sample?.Time ?? time)) / 1_000_000_000d), "")) + " · " + (pinned ? Loc.T("připnuto") : Loc.T("kliknutím připnout"));
+        if (sample is { } observed) text += "\n" + Loc.F("Zdroj primárního vzorku: {0}", MeasurementText.Source(observed.Value.Source));
+        text += "\n" + Loc.F("Čas: {0}", Clock(sample?.Time ?? time));
         if (EffectiveTimeline.Interval is { } range)
-            text += "\nÚsek: " + Clock(range.StartNs) + " – " + Clock(range.EndNs) + " · " + Display.Number(range.DurationNs / 1_000_000_000d, " s");
+            text += "\n" + Loc.F("Úsek: {0} – {1} · {2}", Clock(range.StartNs), Clock(range.EndNs), Display.Number(range.DurationNs / 1_000_000_000d, " s"));
         else if (EffectiveTimeline.State.RangeAnchorNs is { } anchor)
-            text += "\nPrvní konec: " + Clock(anchor) + " · Shift+klik nebo Shift+Enter vybere druhý.";
+            text += "\n" + Loc.F("První konec: {0} · Shift+klik nebo Shift+Enter vybere druhý.", Clock(anchor));
         AutomationProperties.SetHelpText(this, text);
         double x = fraction * canvas.ActualWidth;
         cursor.X1 = cursor.X2 = x; cursor.Y1 = 0; cursor.Y2 = canvas.ActualHeight;
@@ -134,7 +134,7 @@ public sealed partial class ChartView
         if (!EffectiveTimeline.IsSource(timelineOwner) && FocusState != FocusState.Keyboard) { readout.Visibility = Visibility.Collapsed; return; }
         bool compact = canvas.ActualHeight < 140;
         reading.Text = compact ? primaryName + ": " + Value(sample)
-            + (secondary is null ? "" : " · " + secondaryName + ": " + Value(secondary.At(time))) + (pinned ? " · připnuto" : "") : text;
+            + (secondary is null ? "" : " · " + secondaryName + ": " + Value(secondary.At(time))) + (pinned ? " · " + Loc.T("připnuto") : "") : text;
         reading.MaxLines = compact ? secondary is null ? 1 : 2 : 6; reading.FontSize = 11;
         reading.TextTrimming = TextTrimming.CharacterEllipsis;
         readout.Padding = compact ? new Thickness(4, 1, 4, 1) : new Thickness(8, 5, 8, 5);

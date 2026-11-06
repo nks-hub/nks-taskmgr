@@ -14,16 +14,16 @@ public sealed partial class ProcessEventRow
         Lifetime = entry;
         var observation = (entry.Start ?? entry.Stop)!.Value;
         Source = observation.Event; frequency = observation.Frequency; boot = observation.Boot;
-        StartedText = "Vznik: " + ProcessLifetimeText.Time(entry.Start);
-        EndedText = "Konec: " + ProcessLifetimeText.Time(entry.Stop);
-        DurationText = entry.DurationSeconds is { } duration ? duration.ToString("N3", CultureInfo.GetCultureInfo("cs-CZ")) + " s" : "Délka neurčena";
+        StartedText = Loc.F("Vznik: {0}", ProcessLifetimeText.Time(entry.Start));
+        EndedText = Loc.F("Konec: {0}", ProcessLifetimeText.Time(entry.Stop));
+        DurationText = entry.DurationSeconds is { } duration ? duration.ToString("N3", Loc.Culture) + " s" : Loc.T("Délka neurčena");
         TimeText = StartedText + " · " + EndedText;
         KindText = ProcessLifetimeText.State(entry);
         string name = entry.Start?.Event.ImageName ?? "";
         if (name.Length == 0) name = entry.Stop?.Event.ImageName ?? "";
-        NameText = name.Length == 0 ? "Název není dostupný" : GlobalObjectSearchText.Flat(name, 256);
-        TargetText = Source.Pid == 0 ? "PID nelze určit" : "PID " + Source.Pid.ToString(CultureInfo.InvariantCulture);
-        IdentityText = (entry.Key is not null ? "Boot + PID + CreateTime ze zdroje" : "Neověřený samostatný záznam")
+        NameText = name.Length == 0 ? Loc.T("Název není dostupný") : GlobalObjectSearchText.Flat(name, 256);
+        TargetText = Source.Pid == 0 ? Loc.T("PID nelze určit") : "PID " + Source.Pid.ToString(CultureInfo.InvariantCulture);
+        IdentityText = (entry.Key is not null ? Loc.T("Boot + PID + CreateTime ze zdroje") : Loc.T("Neověřený samostatný záznam"))
             + ProcessLifetimeText.Issues(entry);
         EstimatedBytes = 2048 + 2 * ((entry.Start?.Event.ImageName.Length ?? 0) + (entry.Stop?.Event.ImageName.Length ?? 0)
             + NameText.Length + TargetText.Length + TimeText.Length + KindText.Length + IdentityText.Length + StartedText.Length + EndedText.Length + DurationText.Length);
