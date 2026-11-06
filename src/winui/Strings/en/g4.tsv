@@ -70,15 +70,15 @@ zastaralý	stale
 chyba	error
 nedostupný	unavailable
 Úklid záznamu nebyl potvrzený: {0}	Capture cleanup was not confirmed: {0}
-Zastavení a dočtení záznamu nebylo potvrzené	Stopping and draining the capture was not confirmed
+Zastavení a dočtení záznamu nebylo potvrzené	Stopping and reading the rest of the recording was not confirmed
 Ponechat otevřené	Keep open
 Zavřít i tak	Close anyway
 Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu.	Cleanup of the own ETW session or reading its remaining events could not be confirmed. The session may keep recording and unread events may be lost on close. You can keep the window open and try stopping again.
 Záznam není spuštěný	Capture is not running
 Spouštím vlastní relaci	Starting own session
-Záznam běží	Capture is running
+Záznam běží	Recording
 Zastavuji vlastní relaci	Stopping own session
-Záznam zastavený	Capture stopped
+Záznam zastavený	Recording stopped
 Přístup k ETW byl zamítnutý; aplikace pokračuje bez něj	Access to ETW was denied; the app continues without it
 Zdroj ETW není na tomto systému podporovaný	The ETW source is not supported on this system
 Předchozí relace se ještě uklízí	The previous session is still being cleaned up
@@ -144,7 +144,7 @@ Podpis souboru zatím není ověřený.	The file signature has not been verified
 {0} × 100 ns od 1601-01-01	{0} × 100 ns since 1601-01-01
 První vzorek	First sample
 Chybí oprávnění	Missing permission
-Nepodporováno	Unsupported
+Nepodporováno	Not supported
 Zastaralé	Stale
 Mezera	Gap
 Chyba dotazu	Query error
@@ -160,7 +160,7 @@ Dotaz překročil datový limit; neúplná data se nezobrazují.	The query excee
 Pracovník ohlásil chybu dotazu.	The worker reported a query error.
 Konec oblasti: 0x{0}	Region end: 0x{0}
 Velikost: {0} B	Size: {0} B
-Stav: {0}	State: {0}
+Stav: {0}	Status: {0}
 Typ: {0}	Type: {0}
 Ochrana: {0}	Protection: {0}
 Pro tento stav není určena	Not defined for this state
@@ -183,7 +183,7 @@ Bez přístupu	No access
 Čtení	Read
 Čtení / zápis	Read / write
 Kopie při zápisu	Copy on write
-Spuštění	Execute
+Spuštění	Startup
 Spuštění / čtení	Execute / read
 Spuštění / čtení / zápis	Execute / read / write
 Spuštění / kopie při zápisu	Execute / copy on write

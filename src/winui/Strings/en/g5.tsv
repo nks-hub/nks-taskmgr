@@ -11,7 +11,7 @@ PROCESOR	PROCESSOR
 Procesor	Processor
 Načítám…	Loading…
 Auto měřítko	Auto scale
-Pokračovat	Resume
+Pokračovat	Continue
 Hledat (Ctrl+F)	Search (Ctrl+F)
 Jednotlivé prostředky systému	Individual system resources
 Živé procesy	Live processes
@@ -92,15 +92,15 @@ Druh identity procesu se mezi snímky liší.	The kind of process identity diffe
 Snímek procesů není úplný nebo aktuální.	The process snapshot is incomplete or not current.
 Pracovní sada	Working set
 Soukromá paměť	Private memory
-Čtení I/O	I/O reads
-Zápis I/O	I/O writes
+Čtení I/O	I/O read
+Zápis I/O	I/O write
 Vlákna	Threads
 Popisovače	Handles
 % počítače	% of computer
 Platné	Valid
 První vzorek	First sample
 Nedostupné	Unavailable
-Chybí oprávnění	Access denied
+Chybí oprávnění	Missing permission
 Nepodporováno	Not supported
 Zastaralé	Stale
 Chyba	Error
@@ -173,7 +173,7 @@ Nastaví prioritu plánování času CPU u vybraných procesů. Priorita reáln�
 Omezí proces na vybrané logické procesory v jediné skupině.	Limits the process to the selected logical processors in a single group.
 Nastaví výchozí výběr logických procesorů i napříč skupinami. Výslovné volby jednotlivých vláken a pevná afinita mají přednost. Potvrzení nastavení není důkaz, na kterém procesoru se vlákno skutečně spustilo.	Sets the default choice of logical processors, also across groups. Explicit choices of individual threads and hard affinity take precedence. Confirming the setting does not prove which processor a thread actually ran on.
 Odpověď {0} · {1}	Response {0} · {1}
-Výsledek není známý. Akce se mohla provést.	The result is unknown. The action may have been performed.
+Výsledek není známý. Akce se mohla provést.	The result is unknown. The action may have been carried out.
 Pracovník požadavek nepřijal; akce nebyla provedena.	The worker did not accept the request; the action was not performed.
 Aktuální stav: {0}	Current state: {0}
 Nastavení bylo načteno.	The settings were read.
@@ -276,7 +276,7 @@ kontext měření nedostupný	measurement context unavailable
 měřicí okno {0}	measurement window {0}
 okamžitý odečet	instant reading
 měřicí okno zatím nedostupné	measurement window not available yet
-měřicí okno zdroj neuvádí	source does not report a measurement window
+měřicí okno zdroj neuvádí	the source does not report the measurement window
 Zastaralá data	Stale data
 Platný vzorek	Valid sample
 Stav: {0}\nZdroj: {1}	State: {0}\nSource: {1}
@@ -335,7 +335,7 @@ Pouze služby se společným hlášeným PID	Only services with a shared reporte
 Služby se stejným nenulovým PID hlášeným správcem služeb. Kombinuje se s filtrem stavu a hledáním.	Services with the same non-zero PID reported by the Service Control Manager. Combines with the status filter and search.
 Služba	Service
 Stav	Status
-Spouštění	Startup
+Spouštění	Startup type
 Účet	Account
 Systémové služby	System services
 Společný PID ({0})	Shared PID ({0})

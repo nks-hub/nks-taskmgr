@@ -18,7 +18,7 @@ Jednotlivé prostředky systému	Jednotlivé prostriedky systému
 Hledat název procesu nebo PID	Hľadať názov procesu alebo PID
 Po spuštění	Spúšťanie
 Uživatelé	Používatelia
-Spuštění	Spúšťanie
+Spuštění	Spustenie
 Všechny procesy	Všetky procesy
 Aktivní	Aktívne
 Strom	Strom
@@ -90,7 +90,7 @@ Snímky pocházejí z různých spuštění systému.	Snímky pochádzajú z rô
 Životnost procesu není spolehlivě ověřená.	Životnosť procesu nie je spoľahlivo overená.
 Druh identity procesu se mezi snímky liší.	Druh identity procesu sa medzi snímkami líši.
 Snímek procesů není úplný nebo aktuální.	Snímka procesov nie je úplná alebo aktuálna.
-Pracovní sada	Pracovná súprava
+Pracovní sada	Pracovná množina
 Soukromá paměť	Súkromná pamäť
 Čtení I/O	Čítanie I/O
 Zápis I/O	Zápis I/O
@@ -273,11 +273,11 @@ Boot: {0}	Spustenie systému: {0}
 Generace: {0} · {1}	Generácia: {0} · {1}
 Název a typ patří pozorovanému duplikátu. Číselná hodnota handle mohla být od výpisu znovu použita. Objekty nelze zavírat ani měnit.	Názov a typ patria pozorovanému duplikátu. Číselná hodnota handle mohla byť od výpisu znova použitá. Objekty nemožno zatvárať ani meniť.
 kontext měření nedostupný	kontext merania nedostupný
-měřicí okno {0}	meracie okno {0}
+měřicí okno {0}	okno merania {0}
 okamžitý odečet	okamžitý odpočet
 měřicí okno zatím nedostupné	meracie okno zatiaľ nedostupné
-měřicí okno zdroj neuvádí	meracie okno zdroj neuvádza
-Zastaralá data	Zastarané dáta
+měřicí okno zdroj neuvádí	okno merania zdroj neuvádza
+Zastaralá data	Zastarané údaje
 Platný vzorek	Platná vzorka
 Stav: {0}\nZdroj: {1}	Stav: {0}\nZdroj: {1}
 Kontext měření není dostupný.	Kontext merania nie je dostupný.
@@ -335,8 +335,8 @@ Pouze služby se společným hlášeným PID	Iba služby so spoločným hlásen�
 Služby se stejným nenulovým PID hlášeným správcem služeb. Kombinuje se s filtrem stavu a hledáním.	Služby s rovnakým nenulovým PID hláseným správcom služieb. Kombinuje sa s filtrom stavu a hľadaním.
 Služba	Služba
 Stav	Stav
-Spouštění	Spúšťanie
-Účet	Konto
+Spouštění	Typ spustenia
+Účet	Účet
 Systémové služby	Systémové služby
 Společný PID ({0})	Spoločný PID ({0})
 Žádná služba neodpovídá filtru.	Žiadna služba nezodpovedá filtru.

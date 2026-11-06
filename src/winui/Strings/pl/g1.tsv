@@ -111,7 +111,7 @@ Handly procesu	Dojścia procesu
 Zjistit aktuální typ a název duplikovaného objektu	Ustal bieżący typ i nazwę zduplikowanego obiektu
 Filtrovat pouze již načtené výsledky	Filtruj tylko już wczytane wyniki
 Stav nebo vlastnost načtených výsledků	Stan lub właściwość wczytanych wyników
-Vše	Wszystko
+Vše	Wszystkie
 Potvrzené	Zatwierdzone
 Rezervované	Zarezerwowane
 Volné	Wolne
@@ -266,7 +266,7 @@ Historie je nedostupná	Historia jest niedostępna
 Historie: {0:N0} neuchovaných vzorků, {1:N0} chyb	Historia: niezachowane próbki: {0:N0}, błędy: {1:N0}
  · ukončeno	 · zakończony
  · zastaralé	 · nieaktualne
-Ukončeno	Zakończony
+Ukončeno	Zakończono
 Zastaralé	Nieaktualne
 PID {0} · ukončeno	PID {0} · zakończony
 PID {0} · {1} vláken	PID {0} · wątki: {1}
@@ -274,7 +274,7 @@ Načítám…	Wczytywanie…
 Celkové využití procesoru; otevřít graf procesoru.	Całkowite użycie procesora; otwórz wykres procesora.
 Použitá a celková fyzická paměť; otevřít graf paměti.	Używana i całkowita pamięć fizyczna; otwórz wykres pamięci.
 Disky · maximum	Dyski · maksimum
-{0} zařízení	urządzenia: {0}
+{0} zařízení	Urządzenia: {0}
 Aktivita disků právě není dostupná.	Aktywność dysków jest teraz niedostępna.
 Nejvyšší aktuální aktivita: {0} · {1}	Najwyższa bieżąca aktywność: {0} · {1}
 Síť	Sieć
@@ -308,7 +308,7 @@ Jednorázově	Jednorazowo
 Zakázáno {0}	Wyłączone {0}
 Spustí se jednou při příštím přihlášení a Windows položku pak odstraní.	Uruchomi się raz przy następnym logowaniu, a potem Windows usunie element.
 Celý počítač	Wszyscy użytkownicy
-Spuštění	Aplikacje autostartu
+Spuštění	Uruchamianie
 Obnovit	Odśwież
 Vypnout	Wyłącz
 Zapnout	Włącz
@@ -335,7 +335,7 @@ Příkaz	Polecenie
 Umístění	Lokalizacja
 Soubor nezjištěn	Nie ustalono pliku
 Ověřuji podpis…	Weryfikowanie podpisu…
-Nezjištěno	Nieznane
+Nezjištěno	Nie ustalono
 Podepsáno	Podpisane
 Bez podpisu	Bez podpisu
 Neplatný podpis	Nieprawidłowy podpis
@@ -353,14 +353,14 @@ Automaticky (odloženě)	Automatyczny (opóźnione uruchomienie)
 Automaticky (?)	Automatyczny (?)
 Automaticky	Automatyczny
 Ručně	Ręczny
-Neznámé	Nieznany
+Neznámé	Nieznane
 Zastaveno	Zatrzymana
 Spouští se	Uruchamianie
 Zastavuje se	Zatrzymywanie
 Běží	Uruchomiona
 Obnovuje se	Wznawianie
 Pozastavuje se	Wstrzymywanie
-Pozastaveno	Wstrzymana
+Pozastaveno	Wstrzymano
 Neznámý stav {0}	Nieznany stan {0}
 Chybí oprávnění (5)	Brak uprawnień (5)
 Nedostupné ({0})	Niedostępne ({0})

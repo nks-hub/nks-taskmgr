@@ -258,7 +258,7 @@ Záznam není ověřený pro tuto složku aplikace.	Wpis nie jest zweryfikowany 
 Tuto operaci už vyřešila jiná ověřená obnova.	Tę operację rozwiązała już inna zweryfikowana naprawa.
 Starý záznam neobsahuje životnost instalátoru. V tomto spuštění Windows nelze prokázat jeho ukončení.	Stary wpis nie zawiera czasu życia instalatora. W tym uruchomieniu systemu Windows nie można udowodnić jego zakończenia.
 Neznámá verze	Nieznana wersja
-Aktivní	Aktywny
+Aktivní	Aktywne
 Připojeno	Połączony
 Připojování	Łączenie
 Stínový provoz	Monitorowanie
@@ -380,7 +380,7 @@ Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik
 Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.	Suma CPU wszystkich procesów aplikacji. ≥ oznacza znaną część, gdy któryś proces nie ma bieżącej próbki.
 Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky.	Suma zestawów roboczych wszystkich procesów aplikacji. Dokładne wartości w MB są w etykiecie komórki.
 Součet čtení a zápisu všech procesů aplikace.	Suma odczytów i zapisów wszystkich procesów aplikacji.
-Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	Wysłane i odebrane bajty TCP/UDP. Mierzone tylko podczas własnego rejestrowania ETW z uprawnieniami administratora.
+Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	Bajty TCP/UDP wysłane i odebrane. Mierzone tylko podczas własnego przechwytywania ETW jako administrator.
 Aplikace	Aplikacje
 Aplikace a jejich procesy	Aplikacje i ich procesy
 Pracovní sada všech procesů	Zestaw roboczy wszystkich procesów

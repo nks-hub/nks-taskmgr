@@ -308,7 +308,7 @@ Jednorázově	Run once
 Zakázáno {0}	Disabled {0}
 Spustí se jednou při příštím přihlášení a Windows položku pak odstraní.	Runs once at the next sign-in, then Windows removes the item.
 Celý počítač	All users
-Spuštění	Startup apps
+Spuštění	Startup
 Obnovit	Refresh
 Vypnout	Disable
 Zapnout	Enable
@@ -335,7 +335,7 @@ Příkaz	Command
 Umístění	Location
 Soubor nezjištěn	File not determined
 Ověřuji podpis…	Verifying signature…
-Nezjištěno	Unknown
+Nezjištěno	Not determined
 Podepsáno	Signed
 Bez podpisu	Unsigned
 Neplatný podpis	Invalid signature

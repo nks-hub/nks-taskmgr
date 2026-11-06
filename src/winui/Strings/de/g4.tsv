@@ -70,7 +70,7 @@ zastaralý	veraltet
 chyba	Fehler
 nedostupný	nicht verfügbar
 Úklid záznamu nebyl potvrzený: {0}	Bereinigung der Aufzeichnung wurde nicht bestätigt: {0}
-Zastavení a dočtení záznamu nebylo potvrzené	Beenden und Auslesen der Aufzeichnung wurde nicht bestätigt
+Zastavení a dočtení záznamu nebylo potvrzené	Das Beenden und vollständige Auslesen der Aufzeichnung wurde nicht bestätigt
 Ponechat otevřené	Geöffnet lassen
 Zavřít i tak	Trotzdem schließen
 Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu.	Die Bereinigung der eigenen ETW-Sitzung oder das Auslesen ihrer Ereignisse konnte nicht bestätigt werden. Die Sitzung kann weiter aufzeichnen, und beim Schließen können noch nicht gelesene Ereignisse verloren gehen. Sie können das Fenster geöffnet lassen und das Beenden erneut versuchen.
@@ -142,8 +142,8 @@ Výsledek Windows: 0x{0}	Windows-Ergebnis: 0x{0}
 Načteno: {0}	Geladen: {0}
 Podpis souboru zatím není ověřený.	Die Dateisignatur wurde noch nicht geprüft.
 {0} × 100 ns od 1601-01-01	{0} × 100 ns seit 1601-01-01
-První vzorek	Erste Stichprobe
-Chybí oprávnění	Fehlende Berechtigung
+První vzorek	Erster Messwert
+Chybí oprávnění	Berechtigung fehlt
 Nepodporováno	Nicht unterstützt
 Zastaralé	Veraltet
 Mezera	Lücke
@@ -183,7 +183,7 @@ Bez přístupu	Kein Zugriff
 Čtení	Lesen
 Čtení / zápis	Lesen / Schreiben
 Kopie při zápisu	Kopieren beim Schreiben
-Spuštění	Ausführen
+Spuštění	Start
 Spuštění / čtení	Ausführen / Lesen
 Spuštění / čtení / zápis	Ausführen / Lesen / Schreiben
 Spuštění / kopie při zápisu	Ausführen / Kopieren beim Schreiben
@@ -251,7 +251,7 @@ Závislost {0}	Abhängigkeit {0}
 záp.	Schreiben
 Čas ETW nedostupný	ETW-Zeit nicht verfügbar
 {0} B pozorováno · {1} událostí · {2} B/s v okně 1 s	{0} B beobachtet · {1} Ereignisse · {2} B/s im 1-s-Fenster
-PID nelze určit	PID kann nicht ermittelt werden
+PID nelze určit	PID nicht bestimmbar
 fyzické I/O	physische E/A
 Částečné · korelace PID/času · životnost nepotvrzená	Teilweise · PID/Zeit-Korrelation · Lebensdauer unbestätigt
 Pozorovaná podmnožina · PID z události, generace z nepřerušené evidence	Beobachtete Teilmenge · PID aus dem Ereignis, Generation aus lückenloser Erfassung

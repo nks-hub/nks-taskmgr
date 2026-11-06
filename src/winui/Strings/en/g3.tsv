@@ -74,7 +74,7 @@ Rozhraní	Interface
 Kapacita disku	Disk capacity
 Bez kritického upozornění	No critical warning
 Chyby média	Media errors
-Chybí oprávnění	Permission missing
+Chybí oprávnění	Missing permission
 Disk předpovídá selhání	The disk predicts a failure
 Nepodporováno ovladačem	Not supported by the driver
 Nečistá vypnutí	Unsafe shutdowns
@@ -168,7 +168,7 @@ Zastavení bylo potvrzeno při pozorování.	The stop was confirmed by observati
 Spuštění bylo potvrzeno při pozorování.	The start was confirmed by observation.
 Pozorování	Observation
 Zastavení	Stop
-Spuštění	Start
+Spuštění	Startup
 Ukončení služby	Service exit
 Vlastní návratový kód služby {0} (0x{1}).	Service-specific exit code {0} (0x{1}).
 Správce služeb mohl část požadavků přijmout.	The Service Control Manager may have accepted some of the requests.
@@ -190,7 +190,7 @@ Odstranit uvedené soubory	Remove listed files
 Odstraňuji potvrzené položky…	Removing confirmed items…
 Přehled balíčků se po úklidu změnil.	The package overview changed after the cleanup.
 Před další operací načtěte aktuální přehled.	Load the current overview before the next operation.
-Úklid nemá potvrzený výsledek.	The cleanup result is not confirmed.
+Úklid nemá potvrzený výsledek.	The cleanup has no confirmed result.
 Úklid nebyl dokončený.	Cleanup did not finish.
 Úklid dokončen.	Cleanup finished.
 Úklid skončil s omezením.	Cleanup finished with limitations.

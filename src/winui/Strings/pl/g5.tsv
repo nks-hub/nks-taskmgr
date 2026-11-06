@@ -11,14 +11,14 @@ PROCESOR	PROCESOR
 Procesor	Procesor
 Načítám…	Wczytywanie…
 Auto měřítko	Skala automatyczna
-Pokračovat	Wznów
+Pokračovat	Kontynuuj
 Hledat (Ctrl+F)	Szukaj (Ctrl+F)
 Jednotlivé prostředky systému	Poszczególne zasoby systemu
 Živé procesy	Procesy na żywo
 Hledat název procesu nebo PID	Szukaj nazwy procesu lub PID
 Po spuštění	Aplikacje autostartu
 Uživatelé	Użytkownicy
-Spuštění	Autostart
+Spuštění	Uruchamianie
 Všechny procesy	Wszystkie procesy
 Aktivní	Aktywne
 Strom	Drzewo
@@ -92,8 +92,8 @@ Druh identity procesu se mezi snímky liší.	Rodzaj tożsamości procesu różn
 Snímek procesů není úplný nebo aktuální.	Migawka procesów jest niepełna lub nieaktualna.
 Pracovní sada	Zestaw roboczy
 Soukromá paměť	Pamięć prywatna
-Čtení I/O	Odczyty we/wy
-Zápis I/O	Zapisy we/wy
+Čtení I/O	Odczyt We/Wy
+Zápis I/O	Zapis We/Wy
 Vlákna	Wątki
 Popisovače	Dojścia
 % počítače	% komputera
@@ -143,7 +143,7 @@ Provést	Wykonaj
 Zrušit	Anuluj
 Čekám na výsledek pracovníka. Zrušení čekání nevrátí již provedenou akci.	Oczekiwanie na wynik procesu pomocniczego. Anulowanie oczekiwania nie cofnie już wykonanej akcji.
 Výslovně žádáte zvýšení práv. Následuje UAC (nejvýše 90 s) a vlastní potvrzení správce (60 s); samotná akce má limit 5 s. Nepotvrzený požadavek se automaticky neopakuje.	Jawnie żądasz podwyższenia uprawnień. Nastąpi UAC (najwyżej 90 s) i własne potwierdzenie administratora (60 s); sama akcja ma limit 5 s. Niepotwierdzone żądanie nie jest automatycznie powtarzane.
-Zrušit čekání	Przerwij oczekiwanie
+Zrušit čekání	Anuluj oczekiwanie
 Čekání bylo zrušeno nebo se změnil vybraný proces.	Oczekiwanie zostało anulowane lub wybrany proces się zmienił.
 Výsledek není známý. Akce se mohla provést. {0}	Wynik jest nieznany. Akcja mogła zostać wykonana. {0}
 Zavřít	Zamknij
@@ -160,7 +160,7 @@ Pozastavit proces	Wstrzymaj proces
 Obnovit běh procesu	Wznów proces
 Změnit prioritu	Ustaw priorytet
 Afinita procesorů	Koligacja procesorów
-Výchozí CPU sets	Domyślne CPU sets
+Výchozí CPU sets	Domyślne zestawy CPU
 Zavřít handle v procesu	Zamknij dojście w procesie
 Správce úloh Windows	Menedżer zadań Windows
 Nastavení procesu	Ustawienia procesu
@@ -309,7 +309,7 @@ poměr rozdílů čítačů	stosunek różnic liczników
 určuje poskytovatel	określa dostawca
 Uložit snímek	Zapisz migawkę
 Náhled exportu JSON	Podgląd eksportu JSON
-{0} zařízení	{0} urządzeń
+{0} zařízení	Urządzenia: {0}
 zařízení nedostupná	urządzenia niedostępne
 zařízení čekají na vzorek	urządzenia czekają na próbkę
 {0} procesů · {1} · {2:g}	{0} procesów · {1} · {2:g}
@@ -335,13 +335,13 @@ Pouze služby se společným hlášeným PID	Tylko usługi ze wspólnym zgłoszo
 Služby se stejným nenulovým PID hlášeným správcem služeb. Kombinuje se s filtrem stavu a hledáním.	Usługi z tym samym niezerowym PID zgłoszonym przez menedżera sterowania usługami. Łączy się z filtrem stanu i wyszukiwaniem.
 Služba	Usługa
 Stav	Stan
-Spouštění	Uruchamianie
+Spouštění	Typ uruchomienia
 Účet	Konto
 Systémové služby	Usługi systemowe
 Společný PID ({0})	Wspólny PID ({0})
 Žádná služba neodpovídá filtru.	Żadna usługa nie pasuje do filtru.
 {0} · {1} služeb · stáří {2}	{0} · {1} usług · wiek {2}
-Klient aktualizací nemá ověřenou životnost.	Klient aktualizacji nie ma zweryfikowanego czasu życia.
+Klient aktualizací nemá ověřenou životnost.	Klient aktualizacji nie ma zweryfikowanego okresu życia.
 Podepsaný pracovník tento ruční úklid neposkytuje. Úklid nebyl potvrzen.	Podpisany proces pomocniczy nie zapewnia tego ręcznego czyszczenia. Czyszczenie nie zostało potwierdzone.
 Součty úklidu překračují číselný rozsah.	Sumy czyszczenia przekraczają zakres liczbowy.
 Výsledek mazání nebyl doručen; neopakujte požadavek naslepo.	Wynik usuwania nie został dostarczony; nie powtarzaj żądania na ślepo.
@@ -370,7 +370,7 @@ Instalátor ohlásil chybu	Instalator zgłosił błąd
 Ověření instalace selhalo	Weryfikacja instalacji nie powiodła się
 Jiná aktualizace probíhá	Trwa inna aktualizacja
 Výsledek není známý	Wynik jest nieznany
-Využití	Użycie
+Využití	Wykorzystanie
 Odesílání	Wysyłanie
 {0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.	{0}. Strzałki przechodzą przez historię, Enter przypina czas. Shift i kliknięcie lub Shift i Enter wybierają dwa końce przedziału. Escape czyści zaznaczenie.
 nyní	teraz

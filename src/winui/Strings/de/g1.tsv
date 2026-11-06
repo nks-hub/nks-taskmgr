@@ -308,7 +308,7 @@ Jednorázově	Einmalig
 Zakázáno {0}	Deaktiviert {0}
 Spustí se jednou při příštím přihlášení a Windows položku pak odstraní.	Wird bei der nächsten Anmeldung einmal ausgeführt, danach entfernt Windows den Eintrag.
 Celý počítač	Alle Benutzer
-Spuštění	Autostart
+Spuštění	Start
 Obnovit	Aktualisieren
 Vypnout	Deaktivieren
 Zapnout	Aktivieren
@@ -335,7 +335,7 @@ Příkaz	Befehl
 Umístění	Speicherort
 Soubor nezjištěn	Datei nicht ermittelt
 Ověřuji podpis…	Signatur wird überprüft…
-Nezjištěno	Unbekannt
+Nezjištěno	Nicht ermittelt
 Podepsáno	Signiert
 Bez podpisu	Nicht signiert
 Neplatný podpis	Ungültige Signatur

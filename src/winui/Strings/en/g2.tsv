@@ -95,7 +95,7 @@ Zatím bez adaptéru či vzorku	No adapter or sample yet
 platný údaj	valid value
 první vzorek	first sample
 přístup zamítnut	access denied
-nepodporováno	unsupported
+nepodporováno	not supported
 zastaralé	stale
 chyba	error
 mezera	gap
@@ -380,7 +380,7 @@ Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik
 Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.	Total CPU of all the app's processes. ≥ marks the known part when a process has no current sample.
 Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky.	Total working set of all the app's processes. Exact values in MB are in the cell tooltip.
 Součet čtení a zápisu všech procesů aplikace.	Total reads and writes of all the app's processes.
-Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	TCP/UDP bytes sent and received. Measured only during the app's own ETW recording as administrator.
+Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	TCP/UDP bytes sent and received. Measured only during this app's own ETW capture as administrator.
 Aplikace	Apps
 Aplikace a jejich procesy	Apps and their processes
 Pracovní sada všech procesů	Working set of all processes
@@ -434,7 +434,7 @@ Síť	Network
 Vznik: {0}	Started: {0}
 Konec: {0}	Ended: {0}
 Délka neurčena	Duration unknown
-Název není dostupný	Name unavailable
+Název není dostupný	Name not available
 PID nelze určit	PID cannot be determined
 Boot + PID + CreateTime ze zdroje	Boot + PID + CreateTime from the source
 Neověřený samostatný záznam	Unverified standalone record

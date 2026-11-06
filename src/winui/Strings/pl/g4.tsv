@@ -70,15 +70,15 @@ zastaralý	nieaktualny
 chyba	błąd
 nedostupný	niedostępny
 Úklid záznamu nebyl potvrzený: {0}	Uprzątnięcie przechwytywania nie zostało potwierdzone: {0}
-Zastavení a dočtení záznamu nebylo potvrzené	Zatrzymanie i doczytanie przechwytywania nie zostało potwierdzone
+Zastavení a dočtení záznamu nebylo potvrzené	Nie potwierdzono zatrzymania i odczytania reszty zapisu
 Ponechat otevřené	Pozostaw otwarte
 Zavřít i tak	Zamknij mimo to
 Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu.	Nie udało się potwierdzić uprzątnięcia własnej sesji ETW ani doczytania jej zdarzeń. Sesja może nadal rejestrować, a przy zamknięciu mogą zostać utracone jeszcze nieodczytane zdarzenia. Możesz pozostawić okno otwarte i spróbować zatrzymać ponownie.
 Záznam není spuštěný	Przechwytywanie nie jest uruchomione
 Spouštím vlastní relaci	Uruchamianie własnej sesji
-Záznam běží	Przechwytywanie trwa
+Záznam běží	Rejestrowanie trwa
 Zastavuji vlastní relaci	Zatrzymywanie własnej sesji
-Záznam zastavený	Przechwytywanie zatrzymane
+Záznam zastavený	Rejestrowanie zatrzymane
 Přístup k ETW byl zamítnutý; aplikace pokračuje bez něj	Odmówiono dostępu do ETW; aplikacja działa dalej bez niego
 Zdroj ETW není na tomto systému podporovaný	Źródło ETW nie jest obsługiwane w tym systemie
 Předchozí relace se ještě uklízí	Poprzednia sesja jest jeszcze sprzątana
@@ -146,7 +146,7 @@ První vzorek	Pierwsza próbka
 Chybí oprávnění	Brak uprawnień
 Nepodporováno	Nieobsługiwane
 Zastaralé	Nieaktualne
-Mezera	Luka
+Mezera	Przerwa
 Chyba dotazu	Błąd zapytania
 Nedostupné	Niedostępne
 32bitový proces (WOW64)	Proces 32-bitowy (WOW64)
@@ -183,7 +183,7 @@ Bez přístupu	Brak dostępu
 Čtení	Odczyt
 Čtení / zápis	Odczyt / zapis
 Kopie při zápisu	Kopiowanie przy zapisie
-Spuštění	Wykonanie
+Spuštění	Uruchamianie
 Spuštění / čtení	Wykonanie / odczyt
 Spuštění / čtení / zápis	Wykonanie / odczyt / zapis
 Spuštění / kopie při zápisu	Wykonanie / kopiowanie przy zapisie
@@ -199,7 +199,7 @@ Proces už není aktuální. Handle nebyl zavřen.	Proces nie jest już aktualny
 Zavírám handle a čekám na výsledek pracovníka…	Zamykanie dojścia i oczekiwanie na wynik procesu pomocniczego…
 Výsledek není známý. Handle mohl být zavřen.	Wynik jest nieznany. Dojście mogło zostać zamknięte.
 Pracovník požadavek nepřijal. Handle nebyl zavřen.	Proces pomocniczy nie przyjął żądania. Dojście nie zostało zamknięte.
-Čekání bylo zrušeno.	Oczekiwanie zostało anulowane.
+Čekání bylo zrušeno.	Oczekiwanie anulowano.
 Výsledek zavření handle	Wynik zamknięcia dojścia
 Rozumím, že proces může spadnout nebo přijít o data.	Rozumiem, że proces może ulec awarii lub utracić dane.
 Zavřít handle v cizím procesu	Zamknij dojście w innym procesie
@@ -300,7 +300,7 @@ Identita není ověřená. Událost se nepáruje podle PID, názvu ani blízkéh
 {0} s mezi skutečnými QPC událostmi.	{0} s między rzeczywistymi zdarzeniami QPC.
 Délka není dostupná: chybí jednoznačný pár, společná platná frekvence QPC nebo správné časové pořadí.	Czas trwania niedostępny: brak jednoznacznej pary, wspólnej prawidłowej częstotliwości QPC lub poprawnej kolejności czasowej.
 Záznam {0} · oddělená část {1}	Przechwytywanie {0} · segment {1}
-Vznik	Początek
+Vznik	Uruchomienie
 Konec	Koniec
 Délka: {0}	Czas trwania: {0}
 Stav zachytávání při sestavení řádku: {0}	Stan przechwytywania podczas tworzenia wiersza: {0}
@@ -334,7 +334,7 @@ Neplatný nebo duplicitní handle.	Nieprawidłowe lub zduplikowane dojście.
 Pozorování patří jinému handle.	Obserwacja dotyczy innego dojścia.
 Neplatný stav názvu, typu nebo otisku objektu.	Nieprawidłowy stan nazwy, typu lub odcisku obiektu.
 Neplatná nebo duplicitní identita vlastníka.	Nieprawidłowa lub zduplikowana tożsamość właściciela.
-Výsledek obsahuje data mimo rámec.	Wynik zawiera dane poza ramką.
+Výsledek obsahuje data mimo rámec.	Wynik zawiera dane spoza ramki.
 (název nedostupný)	(nazwa niedostępna)
 ochrana 0x{0}	ochrona 0x{0}
 Vlákno	Wątek

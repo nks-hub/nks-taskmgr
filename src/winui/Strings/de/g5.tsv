@@ -18,7 +18,7 @@ Jednotlivé prostředky systému	Einzelne Systemressourcen
 Hledat název procesu nebo PID	Prozessname oder PID suchen
 Po spuštění	Autostart
 Uživatelé	Benutzer
-Spuštění	Autostart
+Spuštění	Start
 Všechny procesy	Alle Prozesse
 Aktivní	Aktiv
 Strom	Struktur
@@ -91,16 +91,16 @@ Snímky pocházejí z různých spuštění systému.	Die Momentaufnahmen stamme
 Druh identity procesu se mezi snímky liší.	Die Art der Prozessidentität unterscheidet sich zwischen den Momentaufnahmen.
 Snímek procesů není úplný nebo aktuální.	Die Prozessmomentaufnahme ist unvollständig oder nicht aktuell.
 Pracovní sada	Arbeitssatz
-Soukromá paměť	Privater Arbeitsspeicher
-Čtení I/O	E/A-Lesevorgänge
-Zápis I/O	E/A-Schreibvorgänge
+Soukromá paměť	Privater Speicher
+Čtení I/O	E/A-Lesen
+Zápis I/O	E/A-Schreiben
 Vlákna	Threads
 Popisovače	Handles
 % počítače	% des Computers
 Platné	Gültig
-První vzorek	Erste Stichprobe
+První vzorek	Erster Messwert
 Nedostupné	Nicht verfügbar
-Chybí oprávnění	Keine Berechtigung
+Chybí oprávnění	Berechtigung fehlt
 Nepodporováno	Nicht unterstützt
 Zastaralé	Veraltet
 Chyba	Fehler
@@ -276,7 +276,7 @@ kontext měření nedostupný	Messkontext nicht verfügbar
 měřicí okno {0}	Messfenster {0}
 okamžitý odečet	Momentanwert
 měřicí okno zatím nedostupné	Messfenster noch nicht verfügbar
-měřicí okno zdroj neuvádí	Quelle gibt kein Messfenster an
+měřicí okno zdroj neuvádí	die Quelle gibt kein Messfenster an
 Zastaralá data	Veraltete Daten
 Platný vzorek	Gültige Stichprobe
 Stav: {0}\nZdroj: {1}	Status: {0}\nQuelle: {1}
@@ -341,7 +341,7 @@ Systémové služby	Systemdienste
 Společný PID ({0})	Gemeinsame PID ({0})
 Žádná služba neodpovídá filtru.	Kein Dienst entspricht dem Filter.
 {0} · {1} služeb · stáří {2}	{0} · {1} Dienste · Alter {2}
-Klient aktualizací nemá ověřenou životnost.	Der Aktualisierungsclient hat keine überprüfte Lebensdauer.
+Klient aktualizací nemá ověřenou životnost.	Der Updateclient hat keine überprüfte Lebensdauer.
 Podepsaný pracovník tento ruční úklid neposkytuje. Úklid nebyl potvrzen.	Der signierte Hilfsprozess bietet diese manuelle Bereinigung nicht an. Die Bereinigung wurde nicht bestätigt.
 Součty úklidu překračují číselný rozsah.	Die Bereinigungssummen überschreiten den Zahlenbereich.
 Výsledek mazání nebyl doručen; neopakujte požadavek naslepo.	Das Löschergebnis wurde nicht zugestellt; wiederholen Sie die Anfrage nicht blind.
@@ -420,7 +420,7 @@ proces skončil nebo se změnil	Prozess beendet oder geändert
 cíl nedostupný	Ziel nicht verfügbar
 překročen limit velikosti	Größengrenze überschritten
 zrušeno nebo překročen čas	abgebrochen oder Zeit überschritten
-neplatný požadavek	ungültige Anfrage
+neplatný požadavek	ungültige Anforderung
 výsledek nepotvrzen	Ergebnis nicht bestätigt
 Dump překročil limit 60 sekund. Výsledek není potvrzený; pracovník se ukončuje a vlastní dočasný soubor se uklízí.	Das Abbild hat die Grenze von 60 Sekunden überschritten. Das Ergebnis ist nicht bestätigt; der Hilfsprozess wird beendet und die eigene temporäre Datei wird bereinigt.
 Rodičovský adresář nelze ověřit. Soubor i záznam zůstanou zachované.	Der übergeordnete Ordner kann nicht überprüft werden. Datei und Eintrag bleiben erhalten.

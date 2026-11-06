@@ -12,7 +12,7 @@ Model	Model
 Logické procesory	Procesory logiczne
 Dostupnost	Dostępność
 Windows nehlásí	Windows nie zgłasza
-Načítání…	Wczytywanie…
+Načítání…	Ładowanie…
 Údaje zatím nejsou dostupné	Dane nie są jeszcze dostępne
 Údaje RAM	Dane RAM
 Firmware nedostupný	Oprogramowanie układowe niedostępne
@@ -91,7 +91,7 @@ Zapnutí	Włączenia
 Zapsáno celkem	Łącznie zapisano
 Zdroj stavu	Źródło stanu
 Přehled	Przegląd
-Otevřít umístění	Otwórz lokalizację
+Otevřít umístění	Otwórz lokalizację pliku
 Spustit jako správce	Uruchom jako administrator
 Tento proces patří jinému uživateli nebo systému. Bez práv správce ho Windows nedovolí číst.	Ten proces należy do innego użytkownika lub systemu. Bez uprawnień administratora system Windows nie pozwala go odczytać.
 Spustit NKS znovu jako správce	Uruchom ponownie NKS jako administrator
@@ -130,7 +130,7 @@ Zrušit	Anuluj
 Plán už neodpovídá výběru, stavu nebo konfiguraci služby. Po obnovení seznamu jej vytvořte znovu.	Plan nie odpowiada już wyborowi, stanowi ani konfiguracji usługi. Utwórz go ponownie po odświeżeniu listy.
 Provádím schválený plán. Zrušení čekání nevrátí již přijaté požadavky správce služeb Windows.	Wykonywanie zatwierdzonego planu. Anulowanie oczekiwania nie cofnie żądań już przyjętych przez Menedżera sterowania usługami Windows.
 Čeká na výsledek…	Oczekiwanie na wynik…
-Zrušit čekání	Przerwij oczekiwanie
+Zrušit čekání	Anuluj oczekiwanie
 Výsledek není potvrzený. Správce služeb mohl část požadavků přijmout.	Wynik nie jest potwierdzony. Menedżer sterowania usługami mógł przyjąć część żądań.
 Změna nebyla odeslána.	Zmiana nie została wysłana.
 Zavřít	Zamknij
@@ -168,7 +168,7 @@ Zastavení bylo potvrzeno při pozorování.	Zatrzymanie zostało potwierdzone o
 Spuštění bylo potvrzeno při pozorování.	Uruchomienie zostało potwierdzone obserwacją.
 Pozorování	Obserwacja
 Zastavení	Zatrzymanie
-Spuštění	Uruchomienie
+Spuštění	Uruchamianie
 Ukončení služby	Zakończenie usługi
 Vlastní návratový kód služby {0} (0x{1}).	Własny kod zakończenia usługi {0} (0x{1}).
 Správce služeb mohl část požadavků přijmout.	Menedżer sterowania usługami mógł przyjąć część żądań.
@@ -190,7 +190,7 @@ Odstranit uvedené soubory	Usuń wymienione pliki
 Odstraňuji potvrzené položky…	Usuwanie potwierdzonych pozycji…
 Přehled balíčků se po úklidu změnil.	Przegląd pakietów zmienił się po czyszczeniu.
 Před další operací načtěte aktuální přehled.	Przed kolejną operacją wczytaj aktualny przegląd.
-Úklid nemá potvrzený výsledek.	Wynik czyszczenia nie jest potwierdzony.
+Úklid nemá potvrzený výsledek.	Czyszczenie nie ma potwierdzonego wyniku.
 Úklid nebyl dokončený.	Czyszczenie nie zostało ukończone.
 Úklid dokončen.	Czyszczenie ukończone.
 Úklid skončil s omezením.	Czyszczenie zakończone z ograniczeniami.
@@ -303,7 +303,7 @@ Sdílené stránky RAM se mohou započítat opakovaně.	Współdzielone strony R
 Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.	Wysłane i odebrane bajty TCP/UDP tylko podczas własnego nagrywania ETW w oknie Zdarzenia procesów, które wymaga administratora; w przeciwnym razie niedostępne. Wartość dotyczy zamkniętej sekundy sprzed około 5 s; ≥ oznacza, że części ruchu nie udało się przypisać.
 Řazeno podle skrytého sloupce {0} sestupně	Posortowano według ukrytej kolumny {0} malejąco
 Řazeno podle skrytého sloupce {0} vzestupně	Posortowano według ukrytej kolumny {0} rosnąco
- · ukončeno	 · zakończono
+ · ukončeno	 · zakończony
  · zastaralé	 · nieaktualne
 Rozbalit {0}	Rozwiń {0}
 Sbalit {0}	Zwiń {0}
