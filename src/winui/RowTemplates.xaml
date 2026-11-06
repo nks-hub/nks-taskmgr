@@ -31,9 +31,9 @@
           <Grid Width="64" Height="38" VerticalAlignment="Center">
             <Grid Margin="1">
               <Grid.Clip><RectangleGeometry Rect="0,0,62,36" /></Grid.Clip>
-              <Path Data="{x:Bind PreviewFill, Mode=OneWay}" Fill="{x:Bind Color}" Opacity="0.13" />
-              <Path Data="{x:Bind Preview, Mode=OneWay}" Stroke="{x:Bind Color}" StrokeThickness="1.3" />
-              <Path Data="{x:Bind UploadPreview, Mode=OneWay}" Stroke="{ThemeResource NksTransmitBrush}" StrokeThickness="1.1" />
+              <Path Data="{x:Bind local:GraphShape.ToGeometry(PreviewFill), Mode=OneWay}" Fill="{x:Bind Color}" Opacity="0.13" />
+              <Path Data="{x:Bind local:GraphShape.ToGeometry(Preview), Mode=OneWay}" Stroke="{x:Bind Color}" StrokeThickness="1.3" />
+              <Path Data="{x:Bind local:GraphShape.ToGeometry(UploadPreview), Mode=OneWay}" Stroke="{ThemeResource NksTransmitBrush}" StrokeThickness="1.1" />
             </Grid>
             <Border BorderBrush="{ThemeResource NksDividerBrush}" BorderThickness="1" />
           </Grid>

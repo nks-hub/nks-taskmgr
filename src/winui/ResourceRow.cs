@@ -33,9 +33,9 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     public HistorySeries History { get; private set; } = new();
     public HistorySeries Upload { get; private set; } = new();
     internal void AttachHistory(HistorySeries series, bool upload) { if (upload) Upload = series; else History = series; }
-    public Geometry? Preview { get; private set; }
-    public Geometry? PreviewFill { get; private set; }
-    public Geometry? UploadPreview { get; private set; }
+    public GraphShape? Preview { get; private set; }
+    public GraphShape? PreviewFill { get; private set; }
+    public GraphShape? UploadPreview { get; private set; }
     private readonly record struct PreviewState(HistorySeries History, HistorySeries? Upload, long Last, long UploadLast, double Maximum);
     private PreviewState? previewState;
     private readonly record struct PublishedState(string Title, string Description, string Status,
@@ -93,9 +93,9 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
             Kind == ResourceKind.Network ? Upload.LastTime : 0, maximum);
         bool previewChanged = previewState != state;
         if (previewChanged) {
-            Preview = History.Build(PreviewWidth, PreviewHeight, time, 60, maximum);
-            PreviewFill = History.Build(PreviewWidth, PreviewHeight, time, 60, maximum, true);
-            if (Kind == ResourceKind.Network) UploadPreview = Upload.Build(PreviewWidth, PreviewHeight, time, 60, maximum);
+            Preview = History.BuildShape(PreviewWidth, PreviewHeight, time, 60, maximum);
+            PreviewFill = History.BuildShape(PreviewWidth, PreviewHeight, time, 60, maximum, true);
+            if (Kind == ResourceKind.Network) UploadPreview = Upload.BuildShape(PreviewWidth, PreviewHeight, time, 60, maximum);
             previewState = state;
         }
         var published = new PublishedState(Title, Description, Status, MetricState(Primary), MetricState(Secondary),

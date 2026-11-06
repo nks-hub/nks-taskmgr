@@ -79,6 +79,11 @@ public static partial class WinUiChecks
         Require(mini.Figures.Count == 1 && mini.Figures[0].StartPoint.X == 32 && mini.Figures[0].StartPoint.Y == 38
             && miniPoints.Count == 1 && miniPoints[0].X == 64 && miniPoints[0].Y == 0,
             "The 64x38 resource preview changed valid endpoints or its fixed percent scale.");
+        var shape = miniature.BuildShape(64, 38, 2_000_000_000, 2, 100);
+        var ownerGeometry = GraphShape.ToGeometry(shape); var otherGeometry = GraphShape.ToGeometry(shape);
+        var owner = new Microsoft.UI.Xaml.Shapes.Path { Data = ownerGeometry };
+        var other = new Microsoft.UI.Xaml.Shapes.Path { Data = otherGeometry };
+        Require(owner.Data is not null && other.Data is not null && !ReferenceEquals(ownerGeometry, otherGeometry) && GraphShape.ToGeometry(null) is null, "A graph shape shared one geometry between two shapes.");
         App.Trace("Graph polylines passed: ordered points, valid zero, sparse and invalid gaps, closed fills");
     }
 }

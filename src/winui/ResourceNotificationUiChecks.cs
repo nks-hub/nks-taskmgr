@@ -43,8 +43,8 @@ public sealed partial class MainWindow
                 var tooltip = ToolTipService.GetToolTip(template);
                 string? description = tooltip is ToolTip control ? control.Content as string : tooltip as string;
                 Check(ReadTexts().SequenceEqual(new[] { row.Title, row.Description, row.Value }) && description == row.Description
-                    && ReferenceEquals(paths[0].Data, row.PreviewFill) && ReferenceEquals(paths[1].Data, row.Preview)
-                    && ReferenceEquals(paths[2].Data, row.UploadPreview) && ReferenceEquals(probe.ContainerFromItem(row), container),
+                    && Shows(paths[0], row.PreviewFill) && Shows(paths[1], row.Preview) && Shows(paths[2], row.UploadPreview)
+                    && !ReferenceEquals(paths[0].Data, paths[1].Data) && ReferenceEquals(probe.ContainerFromItem(row), container),
                     "The production resource template retained stale labels, tooltip or graphs, or replaced its container.");
             }
             Fresh();
@@ -73,6 +73,12 @@ public sealed partial class MainWindow
             performancePage.Children.Remove(probe);
         }
     }
+
+    private static bool Shows(Microsoft.UI.Xaml.Shapes.Path path, GraphShape? shape)
+        => shape is null ? path.Data is null
+            : path.Data is PathGeometry geometry && geometry.Figures.Count == shape.Figures.Count
+                && shape.Figures.Select((figure, i) => geometry.Figures[i].StartPoint == figure.Start
+                    && ((PolyLineSegment)geometry.Figures[i].Segments[0]).Points.Count == figure.Points.Length).All(same => same);
 
     private static IEnumerable<DependencyObject> PreviewElements(DependencyObject root)
     {
