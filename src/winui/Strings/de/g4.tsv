@@ -1,0 +1,440 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Spustit nový záznam	Neue Aufzeichnung starten
+Zastavit	Beenden
+Vymazat seznam	Liste leeren
+Spustit jako správce	Als Administrator ausführen
+Záznam není spuštěný.	Die Aufzeichnung läuft nicht.
+ETW sleduje vznik a ukončení procesů až od spuštění záznamu. Historické řádky jsou pouze pro čtení.	ETW erfasst Prozessstarts und -beendigungen erst ab dem Start der Aufzeichnung. Historische Zeilen sind schreibgeschützt.
+Filtrovat název nebo PID	Nach Name oder PID filtern
+Podržet seznam	Liste anhalten
+Sledovat konec	Neueste verfolgen
+Vyberte událost.	Wählen Sie ein Ereignis aus.
+Události procesů	Prozessereignisse
+Čítače a vysvětlení záznamu	Zähler und Erläuterung der Aufzeichnung
+Čítače záznamu, vytěsnění, rozpočet paměti a vysvětlení.	Aufzeichnungszähler, Verdrängungen, Speicherbudget und Erläuterung.
+Záznam ETW vyžaduje správce. NKS se spustí znovu jako správce po potvrzení výzvy UAC.	Die ETW-Aufzeichnung erfordert Administratorrechte. NKS wird nach Bestätigung der UAC-Abfrage als Administrator neu gestartet.
+Vznik a ukončení	Starts und Beendigungen
+Diskové a síťové přenosy	Datenträger- und Netzwerkübertragungen
+Životnosti procesů	Prozesslebensdauern
+Všechny události	Alle Ereignisse
+Vznik procesů	Prozessstarts
+Ukončení procesů	Prozessbeendigungen
+Spustit vlastní záznam ETW	Eigene ETW-Aufzeichnung starten
+Zastavit vlastní záznam ETW	Eigene ETW-Aufzeichnung beenden
+Vymazat zobrazené události	Angezeigte Ereignisse löschen
+Filtrovat zaznamenané události	Aufgezeichnete Ereignisse filtern
+Druh události	Ereignistyp
+Historické události, pouze pro čtení	Historische Ereignisse, schreibgeschützt
+Životnosti procesů nebo pozorované přenosy ETW	Prozesslebensdauern oder beobachtete ETW-Übertragungen
+Podrobnosti historické události	Details des historischen Ereignisses
+Záznam nelze spustit: {0}	Aufzeichnung kann nicht gestartet werden: {0}
+Zastavení nebylo potvrzené: {0}	Beenden wurde nicht bestätigt: {0}
+chyba Windows {0}	Windows-Fehler {0}
+Události {0}/{1} · vytěsněno v okně {2} · ztracené události ETW {3} · ztracené buffery {4} · přeplnění fronty {5} · chyby dekódování {6} · nejasné záznamy {7}	Ereignisse {0}/{1} · im Fenster verdrängt {2} · verlorene ETW-Ereignisse {3} · verlorene Puffer {4} · Warteschlangenüberläufe {5} · Dekodierfehler {6} · unklare Einträge {7}
+Životnosti {0}/{1} · vytěsněno {2} · neověřené události {3} · konflikty {4} · opožděné pořadí {5} · vynechané pořadí zdroje {6} · označení nejistoty {7}	Lebensdauern {0}/{1} · verdrängt {2} · nicht verifizierte Ereignisse {3} · Konflikte {4} · verspätete Reihenfolge {5} · ausgelassene Quellsequenz {6} · Unsicherheitsmarkierungen {7}
+Zobrazení je podržené; vytěsněno z podrženého seznamu {0}.	Die Anzeige ist angehalten; aus der angehaltenen Liste verdrängt: {0}.
+Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používají i sloupec Síť v Procesech a Uživatelích.	Nur beobachtete Teilbytes der eigenen ETW-Sitzung, nicht der gesamte Adapterverkehr oder allgemeine Prozess-E/A. TCP/UDP wird einer Generation nur bei lückenloser Lebensdauererfassung zugeordnet; während der Aufzeichnung nutzt sie auch die Spalte Netzwerk in Prozesse und Benutzer.
+Start a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří.	Start und Ende werden nur über verifizierte Boot + PID + CreateTime in derselben Aufzeichnung und demselben Quellabschnitt gepaart. Ein fehlendes Ende bedeutet nicht, dass der Prozess noch läuft. CPU und RAM werden hier nicht gemessen.
+CreateTime přímo z události s ověřeným bootem určuje historickou životnost. Ostatní řádky zůstávají neověřené.	CreateTime direkt aus einem Ereignis mit verifiziertem Boot bestimmt die historische Lebensdauer. Andere Zeilen bleiben unverifiziert.
+Žádné živé akce podle PID. Čas je relativní QPC; nové spuštění nahradí seznam. Nový základní seznam nezpřesní dřívější nejasné přenosy.	Keine Live-Aktionen nach PID. Die Zeit ist relatives QPC; eine neue Aufzeichnung ersetzt die Liste. Eine neue Basisliste präzisiert frühere unklare Übertragungen nicht.
+Přenosy tato verze nativní DLL neposkytuje; záznam vzniku a ukončení pokračuje.	Diese Version der nativen DLL liefert keine Übertragungen; die Aufzeichnung von Starts und Beendigungen läuft weiter.
+Základní seznam čeká na nové ověření po změně nebo ztrátě zdroje.	Die Basisliste wartet nach einer Änderung oder einem Verlust der Quelle auf eine neue Verifizierung.
+Relace ještě není uklizená.	Die Sitzung ist noch nicht bereinigt.
+Čtení událostí selhalo: {0}	Lesen der Ereignisse fehlgeschlagen: {0}
+Vyberte událost, životnost nebo pozorovaný přenos.	Wählen Sie ein Ereignis, eine Lebensdauer oder eine beobachtete Übertragung aus.
+Vybraný záznam už není v aktuálním seznamu nebo filtru.	Der ausgewählte Eintrag ist nicht mehr in der aktuellen Liste oder im Filter.
+Všechny životnosti	Alle Lebensdauern
+Vznik i konec	Start und Ende
+Bez konce	Ohne Ende
+Bez vzniku	Ohne Start
+Neověřené	Nicht verifiziert
+Konfliktní	Widersprüchlich
+Opožděné	Verspätet
+S mezerou	Mit Lücke
+Všechny přenosy	Alle Übertragungen
+Fyzický disk	Physischer Datenträger
+Filtrovat PID, disk, TCP, UDP nebo nejistotu	Nach PID, Datenträger, TCP, UDP oder Unsicherheit filtern
+Filtrovat název, PID nebo stav	Nach Name, PID oder Status filtern
+Vybraný podržený záznam byl vytěsněn rozpočtem uchování.	Der ausgewählte angehaltene Eintrag wurde durch das Aufbewahrungsbudget verdrängt.
+Přenosy {0}/{1} · vytěsněno v okně {2}	Übertragungen {0}/{1} · im Fenster verdrängt {2}
+Odhad uchovaných dat: jednotlivé události do 3 MiB, přenosy do 3 MiB, životnosti do 2 MiB; podržený seznam do 3 MiB navíc.	Geschätzte aufbewahrte Daten: einzelne Ereignisse bis 3 MiB, Übertragungen bis 3 MiB, Lebensdauern bis 2 MiB; angehaltene Liste zusätzlich bis 3 MiB.
+Souhrn životností a jeho počty jsou od posledního vymazání; nejde o úplnou historii systému.	Die Lebensdauerübersicht und ihre Zähler gelten seit dem letzten Leeren; es ist kein vollständiger Systemverlauf.
+Fyzický disk: {0} · síť: {1} · zdroj životností: {2} · epocha {3} · nepřiřazené události {4} / {5} B · zahozené čekající {6} · vytěsněné vzorky {7} · pozdní události {8} · zneplatnění přiřazení {9}	Physischer Datenträger: {0} · Netzwerk: {1} · Lebensdauerquelle: {2} · Epoche {3} · nicht zugeordnete Ereignisse {4} / {5} B · verworfene ausstehende {6} · verdrängte Stichproben {7} · verspätete Ereignisse {8} · ungültig gewordene Zuordnungen {9}
+Nativní sdílený rozpočet kontejnerů a rámců {0}/{1} B; paměť Windows ETW je zvlášť.	Natives gemeinsames Budget für Container und Frames {0}/{1} B; der Windows-ETW-Speicher ist separat.
+dostupný	verfügbar
+čeká na data	wartet auf Daten
+částečný proud	Teilstrom
+přístup zamítnut	Zugriff verweigert
+nepodporovaný	nicht unterstützt
+zastaralý	veraltet
+chyba	Fehler
+nedostupný	nicht verfügbar
+Úklid záznamu nebyl potvrzený: {0}	Bereinigung der Aufzeichnung wurde nicht bestätigt: {0}
+Zastavení a dočtení záznamu nebylo potvrzené	Beenden und Auslesen der Aufzeichnung wurde nicht bestätigt
+Ponechat otevřené	Geöffnet lassen
+Zavřít i tak	Trotzdem schließen
+Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu.	Die Bereinigung der eigenen ETW-Sitzung oder das Auslesen ihrer Ereignisse konnte nicht bestätigt werden. Die Sitzung kann weiter aufzeichnen, und beim Schließen können noch nicht gelesene Ereignisse verloren gehen. Sie können das Fenster geöffnet lassen und das Beenden erneut versuchen.
+Záznam není spuštěný	Die Aufzeichnung läuft nicht
+Spouštím vlastní relaci	Eigene Sitzung wird gestartet
+Záznam běží	Aufzeichnung läuft
+Zastavuji vlastní relaci	Eigene Sitzung wird beendet
+Záznam zastavený	Aufzeichnung beendet
+Přístup k ETW byl zamítnutý; aplikace pokračuje bez něj	Zugriff auf ETW wurde verweigert; die App läuft ohne ETW weiter
+Zdroj ETW není na tomto systému podporovaný	Die ETW-Quelle wird auf diesem System nicht unterstützt
+Předchozí relace se ještě uklízí	Die vorherige Sitzung wird noch bereinigt
+Zastavení překročilo časový limit	Zeitlimit beim Beenden überschritten
+Windows nepotvrdil úklid relace	Windows hat die Bereinigung der Sitzung nicht bestätigt
+Záznam skončil chybou	Aufzeichnung mit Fehler beendet
+Podrobnosti vybraného procesu	Details des ausgewählten Prozesses
+Vlákna, moduly, paměť a handly procesu	Threads, Module, Arbeitsspeicher und Handles des Prozesses
+Podrobnosti procesů jiných uživatelů a systému vyžadují práva správce.	Details zu Prozessen anderer Benutzer und des Systems erfordern Administratorrechte.
+Podrobnosti nelze otevřít	Details können nicht geöffnet werden
+Zavřít	Schließen
+Vlákna	Threads
+Moduly	Module
+Obnovit	Aktualisieren
+Zrušit	Abbrechen
+Ověřit podpis souboru	Dateisignatur prüfen
+Podrobnosti se načítají na vyžádání.	Details werden bei Bedarf geladen.
+Vyberte řádek ze seznamu.	Wählen Sie eine Zeile in der Liste aus.
+Podpis se ověřuje pouze u souboru na disku, místně a z mezipaměti certifikátů.	Die Signatur wird nur für die Datei auf dem Datenträger geprüft, lokal und aus dem Zertifikatcache.
+Podrobnosti procesu	Prozessdetails
+Vlákna nebo moduly vybraného procesu	Threads oder Module des ausgewählten Prozesses
+Údaje vybraného vlákna nebo modulu pouze pro čtení	Schreibgeschützte Daten des ausgewählten Threads oder Moduls
+Stav načítání podrobností	Ladestatus der Details
+Obnovit podrobnosti stejného procesu	Details desselben Prozesses aktualisieren
+Zrušit dotaz a ukončit jeho pracovníka	Abfrage abbrechen und ihren Hilfsprozess beenden
+Vlákna procesu	Prozessthreads
+Moduly procesu	Prozessmodule
+Ověřit podpis souboru vybraného modulu na disku	Signatur der Datei des ausgewählten Moduls auf dem Datenträger prüfen
+Proces skončil nebo jeho identita už neodpovídá. Zobrazené údaje jsou poslední načtený snímek.	Der Prozess wurde beendet oder seine Identität stimmt nicht mehr überein. Die angezeigten Daten sind die zuletzt geladene Momentaufnahme.
+Ověřuji soubor vybraného modulu na disku…	Datei des ausgewählten Moduls auf dem Datenträger wird geprüft…
+Zjišťuji aktuální typ a název vybraného objektu…	Aktueller Typ und Name des ausgewählten Objekts werden ermittelt…
+Načítám {0}…	{0} wird geladen…
+načteno {0}	geladen {0}
+některé údaje jsou nedostupné	einige Daten sind nicht verfügbar
+Dotaz byl zrušen; pracovník se ukončuje.	Die Abfrage wurde abgebrochen; der Hilfsprozess wird beendet.
+Proces už není aktuální. Poslední načtené údaje zůstávají pouze pro čtení.	Der Prozess ist nicht mehr aktuell. Die zuletzt geladenen Daten bleiben schreibgeschützt.
+Podrobnosti se nepodařilo načíst: {0}	Details konnten nicht geladen werden: {0}
+Podrobnosti zatím nebyly načtené.	Details wurden noch nicht geladen.
+Seznam je prázdný. Zkontrolujte hledání a filtr.	Die Liste ist leer. Prüfen Sie Suche und Filter.
+Základní priorita: {0}	Basispriorität: {0}
+Relativní priorita: {0}	Relative Priorität: {0}
+Vytvořeno: {0}	Erstellt: {0}
+Čas v jádře: {0}	Kernelzeit: {0}
+Čas v uživatelském režimu: {0}	Benutzermoduszeit: {0}
+Název nedostupný	Name nicht verfügbar
+Základní adresa: 0x{0}	Basisadresse: 0x{0}
+Velikost obrazu: {0} B	Imagegröße: {0} B
+Cesta: {0}	Pfad: {0}
+Nedostupná	Nicht verfügbar
+Podpis souboru na disku: {0}	Dateisignatur auf dem Datenträger: {0}
+Platný podle místního ověření Windows	Gültig laut lokaler Windows-Prüfung
+Bez podpisu	Nicht signiert
+Nedůvěryhodný nebo neplatný	Nicht vertrauenswürdig oder ungültig
+Nedostupný	Nicht verfügbar
+Zdroj: {0}	Quelle: {0}
+Vložený podpis	Eingebettete Signatur
+Katalog	Katalog
+Nezjištěn	Nicht ermittelt
+Vydavatel: {0}	Herausgeber: {0}
+Výsledek Windows: 0x{0}	Windows-Ergebnis: 0x{0}
+Načteno: {0}	Geladen: {0}
+Podpis souboru zatím není ověřený.	Die Dateisignatur wurde noch nicht geprüft.
+{0} × 100 ns od 1601-01-01	{0} × 100 ns seit 1601-01-01
+První vzorek	Erste Stichprobe
+Chybí oprávnění	Fehlende Berechtigung
+Nepodporováno	Nicht unterstützt
+Zastaralé	Veraltet
+Mezera	Lücke
+Chyba dotazu	Abfragefehler
+Nedostupné	Nicht verfügbar
+32bitový proces (WOW64)	32-Bit-Prozess (WOW64)
+64bitový proces	64-Bit-Prozess
+Bitovost nezjištěna	Bitbreite nicht ermittelt
+Chybí oprávnění k těmto podrobnostem.	Fehlende Berechtigung für diese Details.
+Tento zdroj nebo bitovost nejsou podporované.	Diese Quelle oder Bitbreite wird nicht unterstützt.
+Požadované podrobnosti nejsou dostupné.	Die angeforderten Details sind nicht verfügbar.
+Pracovník odmítl požadavek.	Der Hilfsprozess hat die Anforderung abgelehnt.
+Dotaz překročil datový limit; neúplná data se nezobrazují.	Die Abfrage hat das Datenlimit überschritten; unvollständige Daten werden nicht angezeigt.
+Pracovník ohlásil chybu dotazu.	Der Hilfsprozess hat einen Abfragefehler gemeldet.
+Konec oblasti: 0x{0}	Bereichsende: 0x{0}
+Velikost: {0} B	Größe: {0} B
+Stav: {0}	Status: {0}
+Typ: {0}	Typ: {0}
+Ochrana: {0}	Schutz: {0}
+Pro tento stav není určena	Für diesen Status nicht festgelegt
+Základní adresa alokace: {0}	Zuordnungsbasis: {0}
+Volná oblast	Freier Bereich
+Původní ochrana alokace: {0}	Ursprünglicher Zuordnungsschutz: {0}
+Hodnota handle: 0x{0}	Handle-Wert: 0x{0}
+Přístup ve snímku: 0x{0}	Zugriff in der Momentaufnahme: 0x{0}
+Typ objektu: {0} (index {1})	Objekttyp: {0} (Index {1})
+Atributy ve snímku: 0x{0}	Attribute in der Momentaufnahme: 0x{0}
+Aktuálně zachycený typ: {0}	Aktuell erfasster Typ: {0}
+Aktuálně zachycený název: {0}	Aktuell erfasster Name: {0}
+Otisk objektu: {0}	Objektfingerabdruck: {0}
+Pozorováno: {0}	Beobachtet: {0}
+Typ a název objektu zatím nebyly dotázané.	Objekttyp und -name wurden noch nicht abgefragt.
+Dotaz zachytí objekt aktuálně duplikovaný pod touto hodnotou. Po uzavření a opětovném použití handle může jít o jiný objekt než ve snímku.	Die Abfrage erfasst das Objekt, das aktuell unter diesem Wert dupliziert ist. Nachdem das Handle geschlossen und wiederverwendet wurde, kann es ein anderes Objekt als in der Momentaufnahme sein.
+Nepojmenovaný objekt	Unbenanntes Objekt
+Prázdný typ	Leerer Typ
+Bez přístupu	Kein Zugriff
+Čtení	Lesen
+Čtení / zápis	Lesen / Schreiben
+Kopie při zápisu	Kopieren beim Schreiben
+Spuštění	Ausführen
+Spuštění / čtení	Ausführen / Lesen
+Spuštění / čtení / zápis	Ausführen / Lesen / Schreiben
+Spuštění / kopie při zápisu	Ausführen / Kopieren beim Schreiben
+Neuvedena	Nicht angegeben
+Zavřít handle jako správce…	Handle als Administrator schließen…
+Zavřít handle v procesu…	Handle im Prozess schließen…
+Zavřít vybraný handle v cílovém procesu se zvýšenými právy	Ausgewähltes Handle im Zielprozess mit erhöhten Rechten schließen
+Zavřít vybraný handle v cílovém procesu	Ausgewähltes Handle im Zielprozess schließen
+Typ objektu nelze ověřit, proto handle nelze bezpečně zavřít.	Der Objekttyp kann nicht geprüft werden, daher kann das Handle nicht sicher geschlossen werden.
+Název souboru nelze přečíst, proto handle nelze bezpečně zavřít.	Der Dateiname kann nicht gelesen werden, daher kann das Handle nicht sicher geschlossen werden.
+Proces už není aktuální. Handle nebyl zavřen.	Der Prozess ist nicht mehr aktuell. Das Handle wurde nicht geschlossen.
+Čekám na UAC, potvrzení správce a výsledek…	Warten auf UAC, Administratorbestätigung und Ergebnis…
+Zavírám handle a čekám na výsledek pracovníka…	Handle wird geschlossen, warten auf das Ergebnis des Hilfsprozesses…
+Výsledek není známý. Handle mohl být zavřen.	Das Ergebnis ist unbekannt. Das Handle wurde möglicherweise geschlossen.
+Pracovník požadavek nepřijal. Handle nebyl zavřen.	Der Hilfsprozess hat die Anforderung nicht angenommen. Das Handle wurde nicht geschlossen.
+Čekání bylo zrušeno.	Das Warten wurde abgebrochen.
+Výsledek zavření handle	Ergebnis des Schließens des Handles
+Rozumím, že proces může spadnout nebo přijít o data.	Mir ist bewusst, dass der Prozess abstürzen oder Daten verlieren kann.
+Zavřít handle v cizím procesu	Handle in einem fremden Prozess schließen
+Proces o zavření neví a s handlem může dál počítat. Může spadnout, přestat fungovat nebo ztratit či poškodit neuložená data. Zavření nelze vrátit.	Der Prozess weiß nichts vom Schließen und kann weiter mit dem Handle rechnen. Er kann abstürzen, nicht mehr funktionieren oder nicht gespeicherte Daten verlieren oder beschädigen. Das Schließen kann nicht rückgängig gemacht werden.
+Těsně před zavřením se znovu ověří identita procesu a to, že pod hodnotou je objekt stejného typu a přístupu{0}{1}. Pokud se cokoli změnilo, zavření se odmítne.	Unmittelbar vor dem Schließen werden die Prozessidentität erneut geprüft und ob unter dem Wert ein Objekt desselben Typs und Zugriffs{0}{1} liegt. Hat sich etwas geändert, wird das Schließen abgelehnt.
+, se stejným názvem	, mit demselben Namen
+, se stejným otiskem	, mit demselben Fingerabdruck
+Objekt nemá název ani otisk, takže jeho totožnost s tímto řádkem prokázat nelze; ověří se jen typ a přístup.	Das Objekt hat weder Namen noch Fingerabdruck, daher lässt sich seine Identität mit dieser Zeile nicht nachweisen; nur Typ und Zugriff werden geprüft.
+Následuje UAC a vlastní potvrzení správce. Nepotvrzený požadavek se neopakuje.	Es folgen UAC und eine eigene Administratorbestätigung. Eine nicht bestätigte Anforderung wird nicht wiederholt.
+Zavřít handle	Handle schließen
+Proces: {0} · PID {1}	Prozess: {0} · PID {1}
+Handle: 0x{0} · přístup 0x{1}	Handle: 0x{0} · Zugriff 0x{1}
+Objekt: {0} · {1}	Objekt: {0} · {1}
+název nelze ověřit	Name kann nicht geprüft werden
+nepojmenovaný	unbenannt
+Otisk: {0}	Fingerabdruck: {0}
+Vyberte službu	Dienst auswählen
+Hostitelský proces	Hostprozess
+Přehled	Übersicht
+Závislosti	Abhängigkeiten
+Stav služby	Dienststatus
+Hostitel podle správce služeb	Host laut Dienststeuerungs-Manager
+Spouštění	Starttyp
+Účet	Konto
+Další služby se stejným hlášeným PID	Andere Dienste mit derselben gemeldeten PID
+Skupina	Gruppe
+Příkaz	Befehl
+Výběr v seznamu otevře konfiguraci a závislosti služby.	Eine Auswahl in der Liste öffnet Konfiguration und Abhängigkeiten des Dienstes.
+Obnovte sběr pro načtení detailu.	Setzen Sie die Erfassung fort, um Details zu laden.
+Načítám detail…	Details werden geladen…
+Bez skupiny	Keine Gruppe
+Otevřít hostitelský proces.	Hostprozess öffnen.
+Obnovte sběr pro otevření hostitele.	Setzen Sie die Erfassung fort, um den Host zu öffnen.
+Hostitele nelze ověřit: {0}	Der Host kann nicht geprüft werden: {0}
+Služba není spuštěná.	Der Dienst wird nicht ausgeführt.
+Hostitelský proces se změnil nebo data nejsou aktuální.	Der Hostprozess hat sich geändert oder die Daten sind nicht aktuell.
+Služba nehlásí žádný PID.	Der Dienst meldet keine PID.
+Živý odkaz ověřuje hostitele vybrané služby.	Der Live-Link prüft den Host des ausgewählten Dienstes.
+Živý odkaz není ověřený.	Der Live-Link ist nicht geprüft.
+Seskupení služeb vychází pouze z hlášeného PID, ne z ověřené totožnosti procesu.	Die Gruppierung der Dienste beruht nur auf der gemeldeten PID, nicht auf einer geprüften Prozessidentität.
+Detail · stáří {0}	Details · Alter {0}
+zastaralý seznam	veraltete Liste
+Potřebuje ke spuštění	Zum Starten erforderlich
+Navazující služby	Abhängige Dienste
+Žádné	Keine
+Skupina: {0}	Gruppe: {0}
+Závislost {0}	Abhängigkeit {0}
+čt.	Lesen
+záp.	Schreiben
+Čas ETW nedostupný	ETW-Zeit nicht verfügbar
+{0} B pozorováno · {1} událostí · {2} B/s v okně 1 s	{0} B beobachtet · {1} Ereignisse · {2} B/s im 1-s-Fenster
+PID nelze určit	PID kann nicht ermittelt werden
+fyzické I/O	physische E/A
+Částečné · korelace PID/času · životnost nepotvrzená	Teilweise · PID/Zeit-Korrelation · Lebensdauer unbestätigt
+Pozorovaná podmnožina · PID z události, generace z nepřerušené evidence	Beobachtete Teilmenge · PID aus dem Ereignis, Generation aus lückenloser Erfassung
+Pozorovaná podmnožina · vlastník vydávajícího vlákna při zahájení	Beobachtete Teilmenge · Besitzer des ausgebenden Threads beim Start
+Částečné · nelze přiřadit historické životnosti	Teilweise · keiner historischen Lebensdauer zuordenbar
+dřívější přiřazení odvoláno	frühere Zuordnung widerrufen
+čítač přetekl	Zähler übergelaufen
+okno není uzavřené	Fenster nicht abgeschlossen
+Kandidát podle historického PID a času; není důkaz stejné životnosti.	Kandidat nach historischer PID und Zeit; kein Nachweis derselben Lebensdauer.
+PID pochází z události TCP/UDP; generaci určila evidence vzniku a ukončení bez ztráty od výchozího seznamu procesů nebo od vzniku procesu. Zachycený provoz přesto nemusí být úplný.	Die PID stammt aus dem TCP/UDP-Ereignis; die Generation wurde durch verlustfreie Erfassung von Starts und Beendigungen seit der Basisprozessliste oder seit dem Prozessstart bestimmt. Der erfasste Verkehr kann dennoch unvollständig sein.
+INIT a dokončení téhož I/O doložily životnost vlastníka vydávajícího vlákna při zahájení. Nejde o důkaz obecného žadatele I/O; vlákno může být připojené k jinému procesu.	INIT und Abschluss derselben E/A belegten die Lebensdauer des Besitzers des ausgebenden Threads beim Start. Das ist kein Nachweis des allgemeinen E/A-Anforderers; der Thread kann an einen anderen Prozess angehängt sein.
+Životnost se nepodařilo určit; tento přenos není přiřazen současnému procesu.	Die Lebensdauer konnte nicht bestimmt werden; diese Übertragung ist keinem aktuellen Prozess zugeordnet.
+Vzorek {0} · epocha přiřazení {1}	Stichprobe {0} · Zuordnungsepoche {1}
+Pozorované bajty (přesný čítač): {0}	Beobachtete Bytes (exakter Zähler): {0}
+Počet pozorovaných událostí: {0}	Anzahl beobachteter Ereignisse: {0}
+Stav měření: {0} · stav identity: {1}	Messstatus: {0} · Identitätsstatus: {1}
+Příznaky: {0}	Flags: {0}
+Životnost vlastníka vlákna: {0} · {1}	Lebensdauer des Threadbesitzers: {0} · {1}
+Generace: {0} · {1}	Generation: {0} · {1}
+Kandidát generace: {0} · {1}	Generationskandidat: {0} · {1}
+Agregační okno QPC: [{0}, {1}) · frekvence {2}	QPC-Aggregationsfenster: [{0}, {1}) · Frequenz {2}
+Výpočetní interval: {0} ns · jednotka {1}	Berechnungsintervall: {0} ns · Einheit {1}
+Přijato (monotónní ns): {0}	Empfangen (monotone ns): {0}
+Jde pouze o události zachycené vlastní relací ETW, nikoli o celkový provoz adaptéru ani obecné procesové I/O.	Es handelt sich nur um Ereignisse, die die eigene ETW-Sitzung erfasst hat, nicht um den gesamten Adapterverkehr oder allgemeine Prozess-E/A.
+Síťový počet vychází z velikostí událostí TCP/UDP; není zárukou počtu aplikačních bajtů.	Die Netzwerkzählung beruht auf den Größen der TCP/UDP-Ereignisse; sie garantiert nicht die Anzahl der Anwendungsbytes.
+Potvrzení nového základního seznamu nezpřesní dřívější nejasné přenosy. Žádné živé akce podle PID.	Die Bestätigung einer neuen Basisliste präzisiert frühere unklare Übertragungen nicht. Keine Live-Aktionen nach PID.
+nezachyceno	nicht erfasst
+čas nedostupný	Zeit nicht verfügbar
+Konfliktní záznam	Widersprüchlicher Eintrag
+Neověřené ukončení	Nicht verifizierte Beendigung
+Neověřený vznik	Nicht verifizierter Start
+Čas nelze porovnat	Zeit nicht vergleichbar
+Vznik i konec zachycen	Start und Ende erfasst
+Vznik nezachycen	Start nicht erfasst
+Bez konce při zastavení	Kein Ende beim Beenden
+Oddělená část · bez konce	Getrennter Abschnitt · ohne Ende
+Konec zatím nezachycen	Ende noch nicht erfasst
+proud s mezerou	Strom mit Lücke
+opožděné pořadí	verspätete Reihenfolge
+rozporné události	widersprüchliche Ereignisse
+opakováno {0}	wiederholt {0}
+oddělená část zdroje	getrennter Quellabschnitt
+částečná událost	Teilereignis
+starší údaje vytěsněny	ältere Daten verdrängt
+Identita není ověřená. Událost se nepáruje podle PID, názvu ani blízkého času.	Die Identität ist nicht verifiziert. Das Ereignis wird nicht nach PID, Name oder naher Zeit gepaart.
+{0} s mezi skutečnými QPC událostmi.	{0} s zwischen tatsächlichen QPC-Ereignissen.
+Délka není dostupná: chybí jednoznačný pár, společná platná frekvence QPC nebo správné časové pořadí.	Dauer nicht verfügbar: Es fehlt ein eindeutiges Paar, eine gemeinsame gültige QPC-Frequenz oder die richtige zeitliche Reihenfolge.
+Záznam {0} · oddělená část {1}	Aufzeichnung {0} · Abschnitt {1}
+Vznik	Start
+Konec	Ende
+Délka: {0}	Dauer: {0}
+Stav zachytávání při sestavení řádku: {0}	Aufzeichnungsstatus beim Erstellen der Zeile: {0}
+Hranice propojení: změnila se frekvence QPC.	Verknüpfungsgrenze: Die QPC-Frequenz hat sich geändert.
+Hranice propojení: změnil se identifikátor bootu.	Verknüpfungsgrenze: Die Boot-Kennung hat sich geändert.
+Hranice propojení: pořadí zdroje se opakovalo nebo vrátilo zpět.	Verknüpfungsgrenze: Die Quellsequenz hat sich wiederholt oder ist zurückgesprungen.
+Hranice propojení: čítače zdroje se vrátily zpět.	Verknüpfungsgrenze: Die Quellzähler sind zurückgesprungen.
+Nezachycený konec neznamená, že proces právě běží. Osamocený konec neurčuje čas vzniku.	Ein fehlendes Ende bedeutet nicht, dass der Prozess gerade läuft. Ein einzelnes Ende bestimmt nicht die Startzeit.
+Ztráty nelze přesně umístit do intervalu. Vytěsněné řádky už nejsou k propojení; dřívější konflikt nelze vyloučit.	Verluste lassen sich nicht genau im Intervall verorten. Verdrängte Zeilen stehen nicht mehr zur Verknüpfung bereit; ein früherer Konflikt ist nicht auszuschließen.
+CPU a RAM se zde neměří. Žádné živé akce ani vyhledání současného vlastníka stejného PID.	CPU und RAM werden hier nicht gemessen. Keine Live-Aktionen und keine Suche nach dem aktuellen Besitzer derselben PID.
+{0}: událost nezachycena.	{0}: Ereignis nicht erfasst.
+{0}: {1} · QPC {2} · frekvence {3}	{0}: {1} · QPC {2} · Frequenz {3}
+Pořadí zdroje {0} · přijato monotónně {1} ns · příznaky {2}	Quellsequenz {0} · monoton empfangen {1} ns · Flags {2}
+Návratový kód: 0x{0}	Exitcode: 0x{0}
+Návratový kód není dostupný.	Exitcode ist nicht verfügbar.
+Potvrzená	Zugesichert
+Rezervovaná	Reserviert
+Volná	Frei
+Stav 0x{0}	Status 0x{0}
+Soukromá	Privat
+Mapovaná	Zugeordnet
+Obraz souboru	Image
+Neuveden	Nicht angegeben
+Typ 0x{0}	Typ 0x{0}
+typ {0} · přístup 0x{1}	Typ {0} · Zugriff 0x{1}
+PID {0}, vznik 0x{1}	PID {0}, erstellt 0x{1}
+TID {0}, vznik 0x{1}	TID {0}, erstellt 0x{1}
+svazek 0x{0}, ID souboru 0x{1}	Volume 0x{0}, Datei-ID 0x{1}
+Neplatná nebo překrývající se oblast paměti.	Ungültiger oder überlappender Speicherbereich.
+Neplatný nebo duplicitní handle.	Ungültiges oder doppeltes Handle.
+Pozorování patří jinému handle.	Die Beobachtung gehört zu einem anderen Handle.
+Neplatný stav názvu, typu nebo otisku objektu.	Ungültiger Status von Objektname, -typ oder -fingerabdruck.
+Neplatná nebo duplicitní identita vlastníka.	Ungültige oder doppelte Besitzeridentität.
+Výsledek obsahuje data mimo rámec.	Das Ergebnis enthält Daten außerhalb des Rahmens.
+(název nedostupný)	(Name nicht verfügbar)
+ochrana 0x{0}	Schutz 0x{0}
+Vlákno	Thread
+Priorita	Priorität
+Čas CPU	CPU-Zeit
+Spuštěno	Gestartet
+Modul	Modul
+Velikost	Größe
+Adresa	Adresse
+Cesta	Pfad
+Stav a typ	Status und Typ
+Ochrana	Schutz
+Handle	Handle
+Typ objektu	Objekttyp
+Přístup	Zugriff
+Skupina {0} · CPU {1} · jádro {2} · třída efektivity {3} · ID {4}	Gruppe {0} · CPU {1} · Kern {2} · Effizienzklasse {3} · ID {4}
+rezervováno jinému procesu	für einen anderen Prozess reserviert
+zaparkováno	geparkt
+Skupiny: {0} · CPU sets: {1} · nyní výslovně vybráno: {2}	Gruppen: {0} · CPU-Sets: {1} · derzeit explizit ausgewählt: {2}
+Zrušit výchozí výběr CPU sets	Standardauswahl der CPU-Sets aufheben
+Výchozí logické procesory procesu včetně čísla skupiny	Standardmäßige logische Prozessoren des Prozesses einschließlich Gruppennummer
+Zrušení výběru obnoví plánování bez výchozího omezení CPU sets. Samostatná nastavení vláken ani pevná afinita se tím nemění. Při změně topologie nebo původního výběru se požadavek odmítne a je nutný nový náhled.	Das Aufheben der Auswahl stellt die Planung ohne standardmäßige CPU-Set-Einschränkung wieder her. Separate Thread-Einstellungen und feste Affinität ändern sich dadurch nicht. Ändern sich Topologie oder ursprüngliche Auswahl, wird die Anforderung abgelehnt und eine neue Vorschau ist nötig.
+Výchozí CPU sets	Standard-CPU-Sets
+Nastavit výchozí výběr	Standardauswahl festlegen
+Požadavek: zrušit výchozí výběr CPU sets.	Anforderung: Standardauswahl der CPU-Sets aufheben.
+Vybráno: {0} · skupiny: {1}	Ausgewählt: {0} · Gruppen: {1}
+Odeberte procesory rezervované jinému procesu.	Entfernen Sie Prozessoren, die für einen anderen Prozess reserviert sind.
+Výsledek není známý. Nastavení se mohlo změnit.	Das Ergebnis ist unbekannt. Die Einstellung hat sich möglicherweise geändert.
+Pracovník požadavek nepřijal; nastavení nebylo změněno.	Der Hilfsprozess hat die Anforderung nicht angenommen; die Einstellung wurde nicht geändert.
+Výchozí výběr CPU sets byl potvrzen zpětným čtením.	Die Standardauswahl der CPU-Sets wurde durch Zurücklesen bestätigt.
+Proces nemá výchozí omezení CPU sets.	Der Prozess hat keine standardmäßige CPU-Set-Einschränkung.
+Skupina {0}: {1}	Gruppe {0}: {1}
+Jde o načtené výchozí přiřazení. Explicitní volby vláken a pevná afinita mohou jeho použití omezit.	Dies ist die gelesene Standardzuweisung. Explizite Thread-Auswahl und feste Affinität können ihre Verwendung einschränken.
+okno	Fenster
+okna	Fenster
+oken	Fenster
+proces	Prozess
+procesy	Prozesse
+procesů	Prozesse
+CPU je součet z {0} / {1} procesů.	CPU ist die Summe aus {0} / {1} Prozessen.
+Aktuální CPU této skupiny není dostupné.	Die aktuelle CPU dieser Gruppe ist nicht verfügbar.
+Paměť je součet pracovních sad.	Arbeitsspeicher ist die Summe der Arbeitssätze.
+Přehled aplikací je částečný nebo zastaralý.	Die App-Übersicht ist unvollständig oder veraltet.
+U ostatních procesů chybí aktuální měření.	Für die übrigen Prozesse fehlt eine aktuelle Messung.
+Vyžaduje oprávnění správce	Administratorrechte erforderlich
+NKS Task Manager se zavře a spustí znovu jako správce ve stejném pohledu. Windows zobrazí výzvu UAC.	NKS Task Manager wird geschlossen und in derselben Ansicht als Administrator neu gestartet. Windows zeigt eine UAC-Abfrage an.
+Spuštění jako správce selhalo	Ausführen als Administrator fehlgeschlagen
+Spustit znovu jako správce	Als Administrator neu starten
+Stav	Status
+Paměť	Arbeitsspeicher
+Disk	Datenträger
+Síť	Netzwerk
+Řadit podle: {0}	Sortieren nach: {0}
+Verze podepsaného pracovníka neodpovídá běžícímu klientovi. Dostupný je pouze přehled a výslovná obnova původní verze.	Die Version des signierten Hilfsprozesses passt nicht zum laufenden Client. Verfügbar sind nur die Übersicht und die ausdrückliche Wiederherstellung der ursprünglichen Version.
+Připravený pracovník neodpovídá schválenému plánu.	Der vorbereitete Hilfsprozess entspricht nicht dem genehmigten Plan.
+Pracovníka aktualizací nelze spustit.	Der Update-Hilfsprozess kann nicht gestartet werden.
+Ukončení odmítnutého pracovníka nelze ověřit.	Das Beenden des abgelehnten Hilfsprozesses kann nicht geprüft werden.
+Pracovník aktualizací skončil před dokončením odpovědi.	Der Update-Hilfsprozess wurde vor Abschluss der Antwort beendet.
+Data za koncem odpovědi aktualizací.	Daten nach dem Ende der Update-Antwort.
+Pracovník nepotvrdil úspěšné dokončení odpovědi.	Der Hilfsprozess hat den erfolgreichen Abschluss der Antwort nicht bestätigt.
+Skutečné ukončení pracovníka aktualizací nelze ověřit.	Das tatsächliche Beenden des Update-Hilfsprozesses kann nicht geprüft werden.
+Procesy v čase…	Prozesse im Zeitverlauf…
+Otevřít historické procesy pro vybraný čas nebo úsek	Historische Prozesse für die ausgewählte Zeit oder den Bereich öffnen
+Kliknutím na graf připněte čas. Shift+kliknutím vyberte dva konce úseku. Historický přehled neprovádí živé akce.	Klicken Sie auf das Diagramm, um eine Zeit anzuheften. Mit Umschalt+Klick wählen Sie beide Enden eines Bereichs. Die historische Übersicht führt keine Live-Aktionen aus.
+Vybraný úsek {0} · historický pohled	Ausgewählter Bereich {0} · historische Ansicht
+První hranice úseku · Shift+klik nastaví druhou.	Erste Bereichsgrenze · Umschalt+Klick setzt die zweite.
+Připnutý čas · historický pohled	Angeheftete Zeit · historische Ansicht
+Kliknutím vyberete čas · Shift vybere úsek.	Klicken wählt eine Zeit · Umschalt wählt einen Bereich.
+Pracovník neověřil přijetí požadavku před výsledkem.	Der Hilfsprozess hat die Annahme der Anforderung vor dem Ergebnis nicht bestätigt.
+Neplatná posloupnost plánů stromu.	Ungültige Abfolge von Strukturplänen.
+Chybí doložený plán stromu.	Der belegte Strukturplan fehlt.
+Pracovník odmítl požadavek až po potvrzení přijetí.	Der Hilfsprozess hat die Anforderung erst nach Bestätigung der Annahme abgelehnt.
+Pracovník vrátil data za koncem výsledku.	Der Hilfsprozess hat Daten nach dem Ende des Ergebnisses zurückgegeben.
+Pracovník skončil bez potvrzeného výsledku akce.	Der Hilfsprozess wurde ohne bestätigtes Aktionsergebnis beendet.
+Čekání bylo zrušeno. Výsledek rozpracované akce není známý.	Das Warten wurde abgebrochen. Das Ergebnis der laufenden Aktion ist unbekannt.
+Pracovník akcí skončil před dokončením odpovědi.	Der Aktions-Hilfsprozess wurde vor Abschluss der Antwort beendet.
+Pracovníka akcí nelze spustit nebo připojit (Windows {0}).	Der Aktions-Hilfsprozess kann nicht gestartet oder verbunden werden (Windows {0}).
+Pracovníka akcí se nepodařilo spustit.	Der Aktions-Hilfsprozess konnte nicht gestartet werden.
+I/O nedostupné	E/A nicht verfügbar
+Náhrada Správce úloh vyžaduje jediný cíl, volbu 1 nebo 2 a žádnou skupinu.	Das Ersetzen des Task-Managers erfordert genau ein Ziel, Option 1 oder 2 und keine Gruppe.
+Výběr CPU sets nepatří k této akci.	Eine CPU-Set-Auswahl gehört nicht zu dieser Aktion.
+Handle nepatří k této akci.	Ein Handle gehört nicht zu dieser Aktion.
+Akce vyžaduje 1 až 64 vybraných procesů.	Die Aktion erfordert 1 bis 64 ausgewählte Prozesse.
+Ukončení stromu vyžaduje jeden potvrzený kořen.	Das Beenden einer Prozessstruktur erfordert einen bestätigten Stamm.
+Afinita vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů.	Affinität erfordert einen Prozess, eine nicht leere Maske und eine Prozessorgruppe.
+Neplatná hodnota akce.	Ungültiger Aktionswert.
+Výběr obsahuje proces bez ověřitelné identity.	Die Auswahl enthält einen Prozess ohne überprüfbare Identität.
+Pracovník vrátil jiný požadavek nebo neplatnou hlavičku.	Der Hilfsprozess hat eine andere Anforderung oder einen ungültigen Header zurückgegeben.
+Pracovník vrátil neplatný typ nebo délku odpovědi.	Der Hilfsprozess hat einen ungültigen Antworttyp oder eine ungültige Antwortlänge zurückgegeben.
+Chybí konečný výsledek požadavku.	Das endgültige Ergebnis der Anforderung fehlt.
+Výsledek nepatří vybranému procesu nebo obsahuje neplatná pole.	Das Ergebnis gehört nicht zum ausgewählten Prozess oder enthält ungültige Felder.
+Zavření handle vyžaduje jeden proces, platnou hodnotu a ověřený typ objektu.	Das Schließen eines Handles erfordert einen Prozess, einen gültigen Wert und einen geprüften Objekttyp.
+Neplatný rámec procesového stromu.	Ungültiger Rahmen der Prozessstruktur.
+Plán není pokračováním potvrzeného kořene.	Der Plan setzt den bestätigten Stamm nicht fort.
+Plán obsahuje cíl bez doložené vazby na potvrzený kořen.	Der Plan enthält ein Ziel ohne belegte Verbindung zum bestätigten Stamm.
+Pracovník zaměnil již doložený cíl plánu.	Der Hilfsprozess hat ein bereits belegtes Planziel vertauscht.
+Výsledek přidal cíl mimo poslední potvrzený plán.	Das Ergebnis hat ein Ziel außerhalb des letzten bestätigten Plans hinzugefügt.
+Výsledek neodpovídá pořadí děti před rodiči.	Das Ergebnis entspricht nicht der Reihenfolge Kinder vor Eltern.
+Neplatný nebo neověřený výsledek cíle stromu.	Ungültiges oder nicht geprüftes Ergebnis eines Strukturziels.
+U zvoleného času není dostupný uchovaný procesový snímek.	Zur ausgewählten Zeit ist keine aufbewahrte Prozess-Momentaufnahme verfügbar.
+Ve zvoleném intervalu není uchovaný procesový snímek.	Im ausgewählten Intervall gibt es keine aufbewahrte Prozess-Momentaufnahme.
+Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	Die nächstgelegene tatsächlich aufbewahrte Prozess-Momentaufnahme; die Werte wurden nicht auf den Cursor hochgerechnet.
+Maximum každého řádku pochází z jediného skutečně uchovaného vzorku. Přehled obsahuje jen uchovaná pozorování vybraných procesů; nezachycené hodnoty nejsou známé.	Das Maximum jeder Zeile stammt aus einer einzigen tatsächlich aufbewahrten Stichprobe. Die Übersicht enthält nur aufbewahrte Beobachtungen ausgewählter Prozesse; nicht erfasste Werte sind unbekannt.

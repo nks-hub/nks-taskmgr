@@ -18,7 +18,7 @@ public sealed partial class ProcessDetailsRow
 
     // Table columns per row kind; the headers above the list come from Headers() for the same kind.
     public string First => Source switch {
-        ProcessThreadInfo thread => "TID " + thread.Id, ProcessModuleInfo module => module.Name.Length == 0 ? "(název nedostupný)" : module.Name,
+        ProcessThreadInfo thread => "TID " + thread.Id, ProcessModuleInfo module => module.Name.Length == 0 ? Loc.T("(název nedostupný)") : module.Name,
         ProcessMemoryRegion region => "0x" + region.BaseAddress.ToString("X16"), ProcessHandleInfo handle => "0x" + handle.Value.ToString("X"), _ => Text };
     public string Second => Source switch {
         ProcessThreadInfo thread => thread.BasePriority + (thread.PriorityState == NksTaskMgr.Native.SampleState.Valid ? " (" + thread.RelativePriority.ToString("+0;-0;0") + ")" : ""),
@@ -31,13 +31,13 @@ public sealed partial class ProcessDetailsRow
     public string Fourth => Source switch {
         ProcessThreadInfo thread => thread.TimesState == NksTaskMgr.Native.SampleState.Valid && thread.Created100ns is > 0 and <= long.MaxValue
             ? DateTime.FromFileTimeUtc((long)thread.Created100ns).ToLocalTime().ToString("d. M. HH:mm:ss") : "—",
-        ProcessModuleInfo module => module.Path, ProcessMemoryRegion region => "ochrana 0x" + region.Protection.ToString("X"), _ => "" };
+        ProcessModuleInfo module => module.Path, ProcessMemoryRegion region => Loc.F("ochrana 0x{0}", region.Protection.ToString("X")), _ => "" };
 
     internal static string[] Headers(ProcessDetailsCommand mode) => mode switch {
-        ProcessDetailsCommand.Threads => ["Vlákno", "Priorita", "Čas CPU", "Spuštěno"],
-        ProcessDetailsCommand.Modules => ["Modul", "Velikost", "Adresa", "Cesta"],
-        ProcessDetailsCommand.Memory => ["Adresa", "Velikost", "Stav a typ", "Ochrana"],
-        ProcessDetailsCommand.Handles => ["Handle", "Typ objektu", "Přístup", ""],
+        ProcessDetailsCommand.Threads => [Loc.T("Vlákno"), Loc.T("Priorita"), Loc.T("Čas CPU"), Loc.T("Spuštěno")],
+        ProcessDetailsCommand.Modules => [Loc.T("Modul"), Loc.T("Velikost"), Loc.T("Adresa"), Loc.T("Cesta")],
+        ProcessDetailsCommand.Memory => [Loc.T("Adresa"), Loc.T("Velikost"), Loc.T("Stav a typ"), Loc.T("Ochrana")],
+        ProcessDetailsCommand.Handles => [Loc.T("Handle"), Loc.T("Typ objektu"), Loc.T("Přístup"), ""],
         _ => ["", "", "", ""]
     };
 }

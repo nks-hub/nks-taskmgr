@@ -23,7 +23,7 @@ internal static class ProcessTreeActionsProtocol
             ProcessActionFrame.TreeResults => count is > 0 and <= 256 && bytes == 64 + count * 176 && UInt(header, 44) == 0,
             _ => false
         };
-        return valid ? checked((int)bytes) : throw Invalid("Neplatný rámec procesového stromu.");
+        return valid ? checked((int)bytes) : throw Invalid(Loc.T("Neplatný rámec procesového stromu."));
     }
 
     internal static ProcessTreeActionsPlan Plan(ReadOnlySpan<byte> payload, ReadOnlySpan<byte> request,
@@ -34,7 +34,7 @@ internal static class ProcessTreeActionsProtocol
             || !payload.Slice(8, 48).SequenceEqual(request.Slice(64, 48))
             || previous is not null && (ordinal != previous.Ordinal + (final ? 0u : 1u) || count < previous.Nodes.Length || passes < previous.Passes)
             || previous is not null && ((ProcessTreeActionsFlags)flags & previous.Flags) != previous.Flags
-            || previous is null && (final || ordinal != 1)) throw Invalid("Plán není pokračováním potvrzeného kořene.");
+            || previous is null && (final || ordinal != 1)) throw Invalid(Loc.T("Plán není pokračováním potvrzeného kořene."));
         var nodes = new ProcessTreeActionsNode[count]; var keys = new HashSet<ProcessKey>(); var executions = new HashSet<uint>();
         var rootBoot = new BootIdentifier(ULong(request, 64), ULong(request, 72));
         for (int i = 0; i < count; ++i) {
@@ -48,19 +48,19 @@ internal static class ProcessTreeActionsProtocol
                 || i == 0 && (parent != uint.MaxValue || depth != 0 || !row[..48].SequenceEqual(request.Slice(64, 48)))
                 || i > 0 && (parent >= i || depth != nodes[parent].Depth + 1 || target.Created100ns < nodes[parent].Target.Created100ns || key.Pid == nodes[parent].Target.Key.Pid)
                 || i > 0 && key.Kind == GenerationKind.CreationTime && key.Generation != target.Created100ns)
-                throw Invalid("Plán obsahuje cíl bez doložené vazby na potvrzený kořen.");
+                throw Invalid(Loc.T("Plán obsahuje cíl bez doložené vazby na potvrzený kořen."));
             nodes[i] = new(target, parent, depth, execution);
             if (previous is not null && i < previous.Nodes.Length) {
                 var old = previous.Nodes[i];
                 if (old.Target != target || old.Parent != parent || old.Depth != depth || old.Execution != 0 && old.Execution != execution)
-                    throw Invalid("Pracovník zaměnil již doložený cíl plánu.");
+                    throw Invalid(Loc.T("Pracovník zaměnil již doložený cíl plánu."));
             }
         }
-        if (final && previous!.Nodes.Length != count) throw Invalid("Výsledek přidal cíl mimo poslední potvrzený plán.");
+        if (final && previous!.Nodes.Length != count) throw Invalid(Loc.T("Výsledek přidal cíl mimo poslední potvrzený plán."));
         foreach (var node in nodes.Skip(1)) {
             var parent = nodes[node.Parent];
             if (node.Execution != 0 && parent.Execution != 0 && node.Execution >= parent.Execution)
-                throw Invalid("Výsledek neodpovídá pořadí děti před rodiči.");
+                throw Invalid(Loc.T("Výsledek neodpovídá pořadí děti před rodiči."));
         }
         return new(ordinal, (ProcessTreeActionsFlags)flags, passes, UInt(payload, 60), nodes);
     }
@@ -89,7 +89,7 @@ internal static class ProcessTreeActionsProtocol
                 || outcome == ProcessActionOutcome.TerminationRequested && (flags & mutation) != mutation
                 || flags.HasFlag(ProcessActionFlags.MayHaveApplied) != (node.Execution != 0)
                 || outcome == ProcessActionOutcome.NotPerformed && (node.Execution != 0 || flags.HasFlag(ProcessActionFlags.MayHaveApplied)))
-                throw Invalid("Neplatný nebo neověřený výsledek cíle stromu.");
+                throw Invalid(Loc.T("Neplatný nebo neověřený výsledek cíle stromu."));
             results[i] = new(node.Target, ULong(row, 40), outcome, reason, UInt(row, 56), unchecked((int)UInt(row, 60)), flags,
                 UInt(row, 68), ULong(row, 72), ULong(row, 80), UInt(row, 88), UInt(row, 92), UInt(row, 96), 0, 0);
         }

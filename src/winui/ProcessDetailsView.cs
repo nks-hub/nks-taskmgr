@@ -21,9 +21,9 @@ public sealed partial class MainWindow
     {
         processDetailsButton.Width = 35; processDetailsButton.Padding = new Thickness(0); processDetailsButton.IsEnabled = false;
         processDetailsButton.Content = UiIcon.Create("processes", 0x95a4ad, 19);
-        AutomationProperties.SetName(processDetailsButton, "Podrobnosti vybraného procesu");
+        AutomationProperties.SetName(processDetailsButton, Loc.T("Podrobnosti vybraného procesu"));
         AutomationProperties.SetAutomationId(processDetailsButton, "process-details");
-        ToolTipService.SetToolTip(processDetailsButton, "Vlákna, moduly, paměť a handly procesu");
+        ToolTipService.SetToolTip(processDetailsButton, Loc.T("Vlákna, moduly, paměť a handly procesu"));
         processDetailsButton.Click += async (_, _) => {
             if (SelectedProcess is not { } row || !CanReadDetails(row)) return;
             try {
@@ -32,7 +32,7 @@ public sealed partial class MainWindow
                     var window = new ProcessDetailsView(processDetailsClient, row.Key, row.Name, () => model.IsCurrent(row),
                         row.Created100ns, ExecuteActionRequestAsync, () => model.IsCurrent(row) ? row : null,
                         pid => model.Processes.FirstOrDefault(process => process.Key.Pid == pid)?.Name);
-                    window.RequestElevation = () => _ = OfferRestartElevatedAsync("Podrobnosti procesů jiných uživatelů a systému vyžadují práva správce.");
+                    window.RequestElevation = () => _ = OfferRestartElevatedAsync(Loc.T("Podrobnosti procesů jiných uživatelů a systému vyžadují práva správce."));
                     processDetailsWindow = window;
                     window.Closed += (_, _) => { if (ReferenceEquals(processDetailsWindow, window)) processDetailsWindow = null; };
                 }
@@ -40,8 +40,8 @@ public sealed partial class MainWindow
             }
             catch (Exception error) when (error is Win32Exception or COMException or InvalidOperationException) {
                 processDetailsWindow?.Close(); processDetailsWindow = null;
-                await new ContentDialog { Title = "Podrobnosti nelze otevřít", Content = error.Message,
-                    CloseButtonText = "Zavřít", XamlRoot = root.XamlRoot }.ShowAsync();
+                await new ContentDialog { Title = Loc.T("Podrobnosti nelze otevřít"), Content = error.Message,
+                    CloseButtonText = Loc.T("Zavřít"), XamlRoot = root.XamlRoot }.ShowAsync();
             }
         };
         Closed += (_, _) => { processDetailsWindow?.Close(); processDetailsClient.Dispose(); };
@@ -59,19 +59,19 @@ public sealed partial class MainWindow
 
 internal sealed partial class ProcessDetailsView : Window
 {
-    private static readonly CultureInfo Czech = CultureInfo.GetCultureInfo("cs-CZ");
+    private static readonly CultureInfo Czech = Loc.Culture;
     private readonly ProcessDetailsClient client;
     private readonly Func<bool> isCurrent;
     private readonly Grid layout = new() { Padding = new Thickness(16), RowSpacing = 10, Background = Display.Brush(0x171d21) };
     private readonly Grid body = new() { ColumnSpacing = 12, RowSpacing = 8 };
-    private readonly Button threads = Command("Vlákna"), modules = Command("Moduly"), refresh = Command("Obnovit"), cancel = Command("Zrušit"), verify = Command("Ověřit podpis souboru");
-    private readonly TextBlock title = Label("", 18), state = Label("Podrobnosti se načítají na vyžádání.", 12), count = Label("", 12);
+    private readonly Button threads = Command(Loc.T("Vlákna")), modules = Command(Loc.T("Moduly")), refresh = Command(Loc.T("Obnovit")), cancel = Command(Loc.T("Zrušit")), verify = Command(Loc.T("Ověřit podpis souboru"));
+    private readonly TextBlock title = Label("", 18), state = Label(Loc.T("Podrobnosti se načítají na vyžádání."), 12), count = Label("", 12);
     private readonly TextBox detail = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
-        FontFamily = UiTypography.Font, FontSize = 12, MinHeight = 0, Text = "Vyberte řádek ze seznamu." };
+        FontFamily = UiTypography.Font, FontSize = 12, MinHeight = 0, Text = Loc.T("Vyberte řádek ze seznamu.") };
     private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
     private readonly ProcessDetailsTemplates templates = new();
     private readonly Grid inspector = new() { RowSpacing = 8 };
-    private readonly TextBlock signatureNote = Label("Podpis se ověřuje pouze u souboru na disku, místně a z mezipaměti certifikátů.", 11);
+    private readonly TextBlock signatureNote = Label(Loc.T("Podpis se ověřuje pouze u souboru na disku, místně a z mezipaměti certifikátů."), 11);
     private ProcessDetailsSnapshot? threadSnapshot, moduleSnapshot;
     private ModuleSignatureInfo? signature;
     private DateTimeOffset? signatureTime;
@@ -86,7 +86,7 @@ internal sealed partial class ProcessDetailsView : Window
     {
         this.client = client; Key = key; this.isCurrent = isCurrent;
         this.created100ns = created100ns; this.executeAction = executeAction; processName = Flat(name);
-        Title = "Podrobnosti procesu · NKS Task Manager";
+        Title = Loc.T("Podrobnosti procesu") + " · NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.ResizeDip(1100, 780);
         Appearance.Attach(this, layout);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
@@ -120,13 +120,13 @@ internal sealed partial class ProcessDetailsView : Window
         signatureNote.TextWrapping = TextWrapping.Wrap; inspector.Children.Add(signatureNote); Grid.SetRow(signatureNote, 2); body.Children.Add(inspector);
         Grid.SetRow(body, 4); layout.Children.Add(body); Grid.SetRow(count, 5); layout.Children.Add(count);
         Grid.SetRow(overview, 3); Grid.SetRowSpan(overview, 2); layout.Children.Add(overview);
-        Identify(list, "process-details-list", "Vlákna nebo moduly vybraného procesu");
-        Identify(detail, "process-details-selection", "Údaje vybraného vlákna nebo modulu pouze pro čtení");
-        Identify(state, "process-details-status", "Stav načítání podrobností");
-        Identify(refresh, "process-details-refresh", "Obnovit podrobnosti stejného procesu");
-        Identify(cancel, "process-details-cancel", "Zrušit dotaz a ukončit jeho pracovníka");
-        Identify(threads, "process-details-threads", "Vlákna procesu"); Identify(modules, "process-details-modules", "Moduly procesu");
-        Identify(verify, "process-details-signature", "Ověřit podpis souboru vybraného modulu na disku");
+        Identify(list, "process-details-list", Loc.T("Vlákna nebo moduly vybraného procesu"));
+        Identify(detail, "process-details-selection", Loc.T("Údaje vybraného vlákna nebo modulu pouze pro čtení"));
+        Identify(state, "process-details-status", Loc.T("Stav načítání podrobností"));
+        Identify(refresh, "process-details-refresh", Loc.T("Obnovit podrobnosti stejného procesu"));
+        Identify(cancel, "process-details-cancel", Loc.T("Zrušit dotaz a ukončit jeho pracovníka"));
+        Identify(threads, "process-details-threads", Loc.T("Vlákna procesu")); Identify(modules, "process-details-modules", Loc.T("Moduly procesu"));
+        Identify(verify, "process-details-signature", Loc.T("Ověřit podpis souboru vybraného modulu na disku"));
         threads.Click += async (_, _) => await SelectModeAsync(ProcessDetailsCommand.Threads);
         modules.Click += async (_, _) => await SelectModeAsync(ProcessDetailsCommand.Modules);
         refresh.Click += async (_, _) => await ReadAsync(mode);
@@ -180,7 +180,7 @@ internal sealed partial class ProcessDetailsView : Window
         verify.IsEnabled = current && !busy && SelectedModule is { Path.Length: > 0 };
         observeObject.IsEnabled = current && !busy && SelectedHandle is not null;
         observeObject.Visibility = mode == ProcessDetailsCommand.Handles ? Visibility.Visible : Visibility.Collapsed;
-        if (!current) { operation?.Cancel(); state.Text = "Proces skončil nebo jeho identita už neodpovídá. Zobrazené údaje jsou poslední načtený snímek."; }
+        if (!current) { operation?.Cancel(); state.Text = Loc.T("Proces skončil nebo jeho identita už neodpovídá. Zobrazené údaje jsou poslední načtený snímek."); }
         threads.Background = Display.Brush(!showingOverview && mode == ProcessDetailsCommand.Threads ? 0x28343bu : 0x1d252au);
         modules.Background = Display.Brush(!showingOverview && mode == ProcessDetailsCommand.Modules ? 0x28343bu : 0x1d252au);
         memory.Background = Display.Brush(!showingOverview && mode == ProcessDetailsCommand.Memory ? 0x28343bu : 0x1d252au);
@@ -200,8 +200,8 @@ internal sealed partial class ProcessDetailsView : Window
         if (closed || operation is not null) return;
         if (targetChanged || !isCurrent()) { UpdateAvailability(); return; }
         using var current = new CancellationTokenSource(); operation = current; UpdateAvailability();
-        state.Text = command switch { ProcessDetailsCommand.Signature => "Ověřuji soubor vybraného modulu na disku…",
-            ProcessDetailsCommand.HandleInfo => "Zjišťuji aktuální typ a název vybraného objektu…", _ => "Načítám " + ModeName(command) + "…" };
+        state.Text = command switch { ProcessDetailsCommand.Signature => Loc.T("Ověřuji soubor vybraného modulu na disku…"),
+            ProcessDetailsCommand.HandleInfo => Loc.T("Zjišťuji aktuální typ a název vybraného objektu…"), _ => Loc.F("Načítám {0}…", ModeName(command)) };
         try {
             var snapshot = await (command switch {
                 ProcessDetailsCommand.Memory => client.ReadMemoryAsync(Key, current.Token),
@@ -229,11 +229,11 @@ internal sealed partial class ProcessDetailsView : Window
                 }
                 mode = command; ShowRows();
             }
-            state.Text = Architecture(snapshot.Architecture) + " · načteno " + snapshot.ReceivedAt.LocalDateTime.ToString("HH:mm:ss", Czech)
-                + (snapshot.PartialMetrics ? " · některé údaje jsou nedostupné" : "");
-        } catch (OperationCanceledException) { if (!closed) state.Text = isCurrent() && !targetChanged ? "Dotaz byl zrušen; pracovník se ukončuje." : "Proces už není aktuální. Poslední načtené údaje zůstávají pouze pro čtení."; }
+            state.Text = Architecture(snapshot.Architecture) + " · " + Loc.F("načteno {0}", snapshot.ReceivedAt.LocalDateTime.ToString("HH:mm:ss", Czech))
+                + (snapshot.PartialMetrics ? " · " + Loc.T("některé údaje jsou nedostupné") : "");
+        } catch (OperationCanceledException) { if (!closed) state.Text = isCurrent() && !targetChanged ? Loc.T("Dotaz byl zrušen; pracovník se ukončuje.") : Loc.T("Proces už není aktuální. Poslední načtené údaje zůstávají pouze pro čtení."); }
         catch (Exception error) when (error is IOException or InvalidDataException or Win32Exception or TimeoutException or ArgumentException or ObjectDisposedException) {
-            if (!closed) state.Text = "Podrobnosti se nepodařilo načíst: " + error.Message;
+            if (!closed) state.Text = Loc.F("Podrobnosti se nepodařilo načíst: {0}", error.Message);
         } finally { operation = null; if (!closed) UpdateAvailability(); }
     }
 
@@ -247,30 +247,30 @@ internal sealed partial class ProcessDetailsView : Window
     private void UpdateDetail()
     {
         if (SelectedRow is null) {
-            detail.Text = SnapshotFor(mode) is null ? "Podrobnosti zatím nebyly načtené."
-                : list.Items.Count == 0 ? "Seznam je prázdný. Zkontrolujte hledání a filtr." : "Vyberte řádek ze seznamu.";
+            detail.Text = SnapshotFor(mode) is null ? Loc.T("Podrobnosti zatím nebyly načtené.")
+                : list.Items.Count == 0 ? Loc.T("Seznam je prázdný. Zkontrolujte hledání a filtr.") : Loc.T("Vyberte řádek ze seznamu.");
             return;
         }
         if (UpdateObjectDetail()) return;
         var text = new StringBuilder();
         if (SelectedRow is ProcessThreadInfo thread) {
             text.Append("TID ").Append(thread.Id.ToString(Czech)).AppendLine().AppendLine();
-            text.Append("Základní priorita: ").Append(thread.BasePriority.ToString(Czech)).AppendLine();
-            text.Append("Relativní priorita: ").Append(thread.PriorityState == SampleState.Valid ? thread.RelativePriority.ToString(Czech) : MetricState(thread.PriorityState, thread.PriorityError)).AppendLine();
-            text.Append("Vytvořeno: ").Append(thread.TimesState == SampleState.Valid ? FileTime(thread.Created100ns) : MetricState(thread.TimesState, thread.TimesError)).AppendLine();
-            text.Append("Čas v jádře: ").Append(Time(thread.Kernel100ns, thread.TimesState, thread.TimesError)).AppendLine();
-            text.Append("Čas v uživatelském režimu: ").Append(Time(thread.User100ns, thread.TimesState, thread.TimesError));
+            text.Append(Loc.F("Základní priorita: {0}", thread.BasePriority.ToString(Czech))).AppendLine();
+            text.Append(Loc.F("Relativní priorita: {0}", thread.PriorityState == SampleState.Valid ? thread.RelativePriority.ToString(Czech) : MetricState(thread.PriorityState, thread.PriorityError))).AppendLine();
+            text.Append(Loc.F("Vytvořeno: {0}", thread.TimesState == SampleState.Valid ? FileTime(thread.Created100ns) : MetricState(thread.TimesState, thread.TimesError))).AppendLine();
+            text.Append(Loc.F("Čas v jádře: {0}", Time(thread.Kernel100ns, thread.TimesState, thread.TimesError))).AppendLine();
+            text.Append(Loc.F("Čas v uživatelském režimu: {0}", Time(thread.User100ns, thread.TimesState, thread.TimesError)));
         } else if (SelectedModule is { } module) {
-            text.Append(module.Name.Length == 0 ? "Název nedostupný" : module.Name).AppendLine().AppendLine().Append("Základní adresa: 0x").Append(module.BaseAddress.ToString("X16", Czech)).AppendLine();
-            text.Append("Velikost obrazu: ").Append(module.ImageSize.ToString("N0", Czech)).Append(" B").AppendLine();
-            text.Append("Cesta: ").Append(module.Path.Length == 0 ? "Nedostupná" : module.Path).AppendLine().AppendLine();
+            text.Append(module.Name.Length == 0 ? Loc.T("Název nedostupný") : module.Name).AppendLine().AppendLine().Append(Loc.F("Základní adresa: 0x{0}", module.BaseAddress.ToString("X16", Czech))).AppendLine();
+            text.Append(Loc.F("Velikost obrazu: {0} B", module.ImageSize.ToString("N0", Czech))).AppendLine();
+            text.Append(Loc.F("Cesta: {0}", module.Path.Length == 0 ? Loc.T("Nedostupná") : module.Path)).AppendLine().AppendLine();
             if (signature is not null && string.Equals(signature.Path, module.Path, StringComparison.OrdinalIgnoreCase)) {
-                text.Append("Podpis souboru na disku: ").Append(signature.State switch { ModuleSignatureState.Valid => "Platný podle místního ověření Windows", ModuleSignatureState.Unsigned => "Bez podpisu", ModuleSignatureState.Untrusted => "Nedůvěryhodný nebo neplatný", _ => "Nedostupný" }).AppendLine();
-                text.Append("Zdroj: ").Append(signature.Source switch { ModuleSignatureSource.Embedded => "Vložený podpis", ModuleSignatureSource.Catalog => "Katalog", _ => "Nezjištěn" }).AppendLine();
-                text.Append("Vydavatel: ").Append(signature.Publisher.Length == 0 ? "Nedostupný" : signature.Publisher).AppendLine();
-                text.Append("Výsledek Windows: 0x").Append(unchecked((uint)signature.TrustCode).ToString("X8", Czech)).AppendLine();
-                text.Append("Načteno: ").Append(signatureTime?.LocalDateTime.ToString("g", Czech));
-            } else text.Append("Podpis souboru zatím není ověřený.");
+                text.Append(Loc.F("Podpis souboru na disku: {0}", signature.State switch { ModuleSignatureState.Valid => Loc.T("Platný podle místního ověření Windows"), ModuleSignatureState.Unsigned => Loc.T("Bez podpisu"), ModuleSignatureState.Untrusted => Loc.T("Nedůvěryhodný nebo neplatný"), _ => Loc.T("Nedostupný") })).AppendLine();
+                text.Append(Loc.F("Zdroj: {0}", signature.Source switch { ModuleSignatureSource.Embedded => Loc.T("Vložený podpis"), ModuleSignatureSource.Catalog => Loc.T("Katalog"), _ => Loc.T("Nezjištěn") })).AppendLine();
+                text.Append(Loc.F("Vydavatel: {0}", signature.Publisher.Length == 0 ? Loc.T("Nedostupný") : signature.Publisher)).AppendLine();
+                text.Append(Loc.F("Výsledek Windows: 0x{0}", unchecked((uint)signature.TrustCode).ToString("X8", Czech))).AppendLine();
+                text.Append(Loc.F("Načteno: {0}", signatureTime?.LocalDateTime.ToString("g", Czech)));
+            } else text.Append(Loc.T("Podpis souboru zatím není ověřený."));
         }
         detail.Text = text.ToString();
     }
@@ -282,17 +282,17 @@ internal sealed partial class ProcessDetailsView : Window
             try { return DateTime.FromFileTimeUtc((long)value).ToString("yyyy-MM-dd HH:mm:ss.fff 'UTC'", Czech); }
             catch (ArgumentOutOfRangeException) { }
         }
-        return value.ToString(Czech) + " × 100 ns od 1601-01-01";
+        return Loc.F("{0} × 100 ns od 1601-01-01", value.ToString(Czech));
     }
     private static string MetricState(SampleState state, uint error) => (state switch {
-        SampleState.First => "První vzorek", SampleState.AccessDenied => "Chybí oprávnění", SampleState.Unsupported => "Nepodporováno",
-        SampleState.Stale => "Zastaralé", SampleState.Gap => "Mezera", SampleState.Error => "Chyba dotazu", _ => "Nedostupné"
+        SampleState.First => Loc.T("První vzorek"), SampleState.AccessDenied => Loc.T("Chybí oprávnění"), SampleState.Unsupported => Loc.T("Nepodporováno"),
+        SampleState.Stale => Loc.T("Zastaralé"), SampleState.Gap => Loc.T("Mezera"), SampleState.Error => Loc.T("Chyba dotazu"), _ => Loc.T("Nedostupné")
     }) + (error == 0 ? "" : " (Windows " + error.ToString(Czech) + ")");
-    private static string Architecture(ProcessArchitecture value) => value switch { ProcessArchitecture.X86 => "32bitový proces (WOW64)", ProcessArchitecture.X64 => "64bitový proces", ProcessArchitecture.Arm64 => "ARM64", _ => "Bitovost nezjištěna" };
+    private static string Architecture(ProcessArchitecture value) => value switch { ProcessArchitecture.X86 => Loc.T("32bitový proces (WOW64)"), ProcessArchitecture.X64 => Loc.T("64bitový proces"), ProcessArchitecture.Arm64 => "ARM64", _ => Loc.T("Bitovost nezjištěna") };
     private static string ErrorText(ProcessDetailsSnapshot snapshot) => (snapshot.Architecture == ProcessArchitecture.Unknown ? "" : Architecture(snapshot.Architecture) + " · ") + (snapshot.State switch {
-        ProcessDetailsState.AccessDenied => "Chybí oprávnění k těmto podrobnostem.", ProcessDetailsState.Unsupported => "Tento zdroj nebo bitovost nejsou podporované.",
-        ProcessDetailsState.Unavailable => "Požadované podrobnosti nejsou dostupné.", ProcessDetailsState.InvalidRequest => "Pracovník odmítl požadavek.",
-        ProcessDetailsState.LimitExceeded => "Dotaz překročil datový limit; neúplná data se nezobrazují.", _ => "Pracovník ohlásil chybu dotazu."
+        ProcessDetailsState.AccessDenied => Loc.T("Chybí oprávnění k těmto podrobnostem."), ProcessDetailsState.Unsupported => Loc.T("Tento zdroj nebo bitovost nejsou podporované."),
+        ProcessDetailsState.Unavailable => Loc.T("Požadované podrobnosti nejsou dostupné."), ProcessDetailsState.InvalidRequest => Loc.T("Pracovník odmítl požadavek."),
+        ProcessDetailsState.LimitExceeded => Loc.T("Dotaz překročil datový limit; neúplná data se nezobrazují."), _ => Loc.T("Pracovník ohlásil chybu dotazu.")
     }) + (snapshot.Error == 0 ? "" : " Windows " + snapshot.Error.ToString(Czech) + ".")
         + (snapshot.NtStatus == 0 ? "" : " NT 0x" + unchecked((uint)snapshot.NtStatus).ToString("X8", Czech) + ".");
 }

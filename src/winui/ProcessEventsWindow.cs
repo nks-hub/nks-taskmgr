@@ -14,16 +14,16 @@ internal sealed partial class ProcessEventsWindow : Window
     private const int MaximumRows = 10000;
     private const int MaximumEstimatedBytes = 3 * 1024 * 1024;
     private readonly Grid layout = new() { Padding = new Thickness(16), RowSpacing = 8, Background = Display.Brush(0x171d21) };
-    private readonly Button start = Command("Spustit nový záznam"), stop = Command("Zastavit"), clear = Command("Vymazat seznam"), elevate = Command("Spustit jako správce");
+    private readonly Button start = Command(Loc.T("Spustit nový záznam")), stop = Command(Loc.T("Zastavit")), clear = Command(Loc.T("Vymazat seznam")), elevate = Command(Loc.T("Spustit jako správce"));
     /// <summary>Set by the main window: restarts the application elevated so ETW capture can start.</summary>
     internal Action? RequestElevation { get; set; }
-    private readonly TextBlock status = Text("Záznam není spuštěný."), counters = Text(""), notice = Text("ETW sleduje vznik a ukončení procesů až od spuštění záznamu. Historické řádky jsou pouze pro čtení.");
-    private readonly TextBox search = new() { PlaceholderText = "Filtrovat název nebo PID", MinWidth = 180, MinHeight = 32 };
+    private readonly TextBlock status = Text(Loc.T("Záznam není spuštěný.")), counters = Text(""), notice = Text(Loc.T("ETW sleduje vznik a ukončení procesů až od spuštění záznamu. Historické řádky jsou pouze pro čtení."));
+    private readonly TextBox search = new() { PlaceholderText = Loc.T("Filtrovat název nebo PID"), MinWidth = 180, MinHeight = 32 };
     private readonly ComboBox kinds = new() { Width = 175, MinHeight = 32 };
     private readonly ComboBox modes = new() { Width = 205, MinHeight = 32 };
-    private readonly CheckBox hold = new() { Content = "Podržet seznam" }, follow = new() { Content = "Sledovat konec", IsChecked = true };
+    private readonly CheckBox hold = new() { Content = Loc.T("Podržet seznam") }, follow = new() { Content = Loc.T("Sledovat konec"), IsChecked = true };
     private readonly ListView list = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
-    private readonly TextBox detail = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, FontSize = 12, Text = "Vyberte událost." };
+    private readonly TextBox detail = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, FontSize = 12, Text = Loc.T("Vyberte událost.") };
     private readonly List<ProcessEventRow> retained = [];
     private readonly ProcessEventRows visible = [];
     private readonly ProcessTrafficRows trafficRows = new();
@@ -53,7 +53,7 @@ internal sealed partial class ProcessEventsWindow : Window
     internal ProcessEventsWindow(Func<(long Time, BootIdentifier Boot, SampleState State)> currentProcesses)
     {
         this.currentProcesses = currentProcesses;
-        Title = "Události procesů · NKS Task Manager";
+        Title = Loc.T("Události procesů") + " · NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
         AppWindow.ResizeDip(1120, 780); Appearance.Attach(this, layout);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), new GridLength(155) })
@@ -66,14 +66,14 @@ internal sealed partial class ProcessEventsWindow : Window
         foreach (var text in new[] { counters, notice }) { text.TextWrapping = TextWrapping.Wrap; text.IsTextSelectionEnabled = true; information.Children.Add(text); }
         var details = new Button { Content = "ⓘ", Width = 32, Height = 28, MinHeight = 0, Padding = new Thickness(0), FontSize = 14, Background = Display.Brush(0x1d252a),
             Flyout = new Flyout { Content = new ScrollViewer { Content = information, MaxHeight = 360, Padding = new Thickness(0, 0, 16, 0) } } };
-        AutomationProperties.SetName(details, "Čítače a vysvětlení záznamu"); AutomationProperties.SetAutomationId(details, "events-info");
-        ToolTipService.SetToolTip(details, "Čítače záznamu, vytěsnění, rozpočet paměti a vysvětlení.");
+        AutomationProperties.SetName(details, Loc.T("Čítače a vysvětlení záznamu")); AutomationProperties.SetAutomationId(details, "events-info");
+        ToolTipService.SetToolTip(details, Loc.T("Čítače záznamu, vytěsnění, rozpočet paměti a vysvětlení."));
         status.TextTrimming = TextTrimming.CharacterEllipsis; status.VerticalAlignment = VerticalAlignment.Center; status.IsTextSelectionEnabled = true;
         var messages = new Grid { ColumnSpacing = 6 };
         messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         elevate.Height = 28; elevate.Visibility = Visibility.Collapsed;
-        ToolTipService.SetToolTip(elevate, "Záznam ETW vyžaduje správce. NKS se spustí znovu jako správce po potvrzení výzvy UAC.");
+        ToolTipService.SetToolTip(elevate, Loc.T("Záznam ETW vyžaduje správce. NKS se spustí znovu jako správce po potvrzení výzvy UAC."));
         AutomationProperties.SetAutomationId(elevate, "events-elevate");
         elevate.Click += (_, _) => RequestElevation?.Invoke();
         messages.Children.Add(status); messages.Children.Add(details); Grid.SetColumn(details, 1);
@@ -82,11 +82,11 @@ internal sealed partial class ProcessEventsWindow : Window
         var filters = new Grid { ColumnSpacing = 8 };
         filters.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         filters.ColumnDefinitions.Add(new ColumnDefinition()); filters.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        foreach (var name in new[] { "Vznik a ukončení", "Diskové a síťové přenosy", "Životnosti procesů" }) modes.Items.Add(name);
+        foreach (var name in new[] { Loc.T("Vznik a ukončení"), Loc.T("Diskové a síťové přenosy"), Loc.T("Životnosti procesů") }) modes.Items.Add(name);
         modes.SelectedIndex = 0;
         filters.Children.Add(modes); filters.Children.Add(search); filters.Children.Add(kinds);
         Grid.SetColumn(search, 1); Grid.SetColumn(kinds, 2); Grid.SetRow(filters, 2); layout.Children.Add(filters);
-        foreach (var name in new[] { "Všechny události", "Vznik procesů", "Ukončení procesů" }) kinds.Items.Add(name);
+        foreach (var name in new[] { Loc.T("Všechny události"), Loc.T("Vznik procesů"), Loc.T("Ukončení procesů") }) kinds.Items.Add(name);
         kinds.SelectedIndex = 0;
         list.ItemTemplate = (DataTemplate)templates["ProcessEvent"]; list.ItemsSource = visible;
         var style = new Style { TargetType = typeof(ListViewItem) };
@@ -107,11 +107,11 @@ internal sealed partial class ProcessEventsWindow : Window
         };
         AppWindow.Closing += OnClosing;
         Closed += (_, _) => { closed = true; timer.Stop(); filterTimer.Stop(); monitor?.Dispose(); monitor = null; ProcessNetwork.Clear(); };
-        Identify(start, "events-start", "Spustit vlastní záznam ETW"); Identify(stop, "events-stop", "Zastavit vlastní záznam ETW");
-        Identify(clear, "events-clear", "Vymazat zobrazené události"); Identify(search, "events-filter", "Filtrovat zaznamenané události");
-        Identify(kinds, "events-kind", "Druh události"); Identify(list, "events-list", "Historické události, pouze pro čtení");
-        Identify(modes, "events-mode", "Životnosti procesů nebo pozorované přenosy ETW");
-        Identify(detail, "events-detail", "Podrobnosti historické události"); UpdateCommands();
+        Identify(start, "events-start", Loc.T("Spustit vlastní záznam ETW")); Identify(stop, "events-stop", Loc.T("Zastavit vlastní záznam ETW"));
+        Identify(clear, "events-clear", Loc.T("Vymazat zobrazené události")); Identify(search, "events-filter", Loc.T("Filtrovat zaznamenané události"));
+        Identify(kinds, "events-kind", Loc.T("Druh události")); Identify(list, "events-list", Loc.T("Historické události, pouze pro čtení"));
+        Identify(modes, "events-mode", Loc.T("Životnosti procesů nebo pozorované přenosy ETW"));
+        Identify(detail, "events-detail", Loc.T("Podrobnosti historické události")); UpdateCommands();
     }
 
     private void StartCapture()
@@ -123,13 +123,13 @@ internal sealed partial class ProcessEventsWindow : Window
             state = ProcessEventMonitorState.Starting; monitor.Start();
             ClearRows(); lifetimes.BeginCapture(++captureEpoch); resyncVersion = 0; resyncAfter = 0; originQpc = 0; hasOrigin = false;
             timer.Start(); ReadBatch();
-        } catch (Exception error) when (InteropError(error)) { status.Text = "Záznam nelze spustit: " + error.Message; }
+        } catch (Exception error) when (InteropError(error)) { status.Text = Loc.F("Záznam nelze spustit: {0}", error.Message); }
     }
 
     private void StopCapture()
     {
         try { monitor?.Stop(); ReadBatch(); }
-        catch (Exception error) when (InteropError(error)) { status.Text = "Zastavení nebylo potvrzené: " + error.Message; }
+        catch (Exception error) when (InteropError(error)) { status.Text = Loc.F("Zastavení nebylo potvrzené: {0}", error.Message); }
     }
 
     private int ReadBatch()
@@ -156,38 +156,35 @@ internal sealed partial class ProcessEventsWindow : Window
             dirty |= lifetimes.ObserveBatch(info, events, originQpc);
             int trafficCount = ReadTraffic(frame, info);
             PruneHeldRows();
-            status.Text = StateText(state) + (info.Win32Error != 0 ? " · chyba Windows " + info.Win32Error : "");
+            status.Text = StateText(state) + (info.Win32Error != 0 ? " · " + Loc.F("chyba Windows {0}", info.Win32Error) : "");
             var elevation = state == ProcessEventMonitorState.AccessDenied && !MainWindow.RunningElevated && RequestElevation is not null ? Visibility.Visible : Visibility.Collapsed;
             if (elevate.Visibility != elevation) elevate.Visibility = elevation;
-            counters.Text = "Události " + retained.Count + "/" + MaximumRows + " · vytěsněno v okně " + trimmed
-                + " · ztracené události ETW " + info.ProviderEventsLost + " · ztracené buffery " + info.ProviderBuffersLost
-                + " · přeplnění fronty " + info.QueueDropped + " · chyby dekódování " + info.DecodeErrors + " · nejasné záznamy " + info.Ambiguous;
+            counters.Text = Loc.F("Události {0}/{1} · vytěsněno v okně {2} · ztracené události ETW {3} · ztracené buffery {4} · přeplnění fronty {5} · chyby dekódování {6} · nejasné záznamy {7}",
+                retained.Count, MaximumRows, trimmed, info.ProviderEventsLost, info.ProviderBuffersLost, info.QueueDropped, info.DecodeErrors, info.Ambiguous);
             counters.Text += TrafficCounters();
-            counters.Text += "\nŽivotnosti " + lifetimes.Count + "/" + ProcessLifetimeStore.MaximumRows + " · vytěsněno " + lifetimes.Trimmed
-                + " · neověřené události " + lifetimes.Unverified + " · konflikty " + lifetimes.Conflicts + " · opožděné pořadí " + lifetimes.Late
-                + " · vynechané pořadí zdroje " + lifetimes.MissingSequences + " · označení nejistoty " + lifetimes.GapBoundaries;
-            if (hold.IsChecked == true) counters.Text += "\nZobrazení je podržené; vytěsněno z podrženého seznamu " + heldTrimmed + ".";
+            counters.Text += "\n" + Loc.F("Životnosti {0}/{1} · vytěsněno {2} · neověřené události {3} · konflikty {4} · opožděné pořadí {5} · vynechané pořadí zdroje {6} · označení nejistoty {7}",
+                lifetimes.Count, ProcessLifetimeStore.MaximumRows, lifetimes.Trimmed, lifetimes.Unverified, lifetimes.Conflicts, lifetimes.Late, lifetimes.MissingSequences, lifetimes.GapBoundaries);
+            if (hold.IsChecked == true) counters.Text += "\n" + Loc.F("Zobrazení je podržené; vytěsněno z podrženého seznamu {0}.", heldTrimmed);
             notice.Text = TrafficMode
-                ? "Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používají i sloupec Síť v Procesech a Uživatelích."
-                : LifetimeMode ? "Start a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří."
-                : "CreateTime přímo z události s ověřeným bootem určuje historickou životnost. Ostatní řádky zůstávají neověřené.";
-            notice.Text += " Žádné živé akce podle PID. Čas je relativní QPC; nové spuštění nahradí seznam."
-                + " Nový základní seznam nezpřesní dřívější nejasné přenosy.";
-            if (!trafficSupported) notice.Text += " Přenosy tato verze nativní DLL neposkytuje; záznam vzniku a ukončení pokračuje.";
+                ? Loc.T("Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používají i sloupec Síť v Procesech a Uživatelích.")
+                : LifetimeMode ? Loc.T("Start a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří.")
+                : Loc.T("CreateTime přímo z události s ověřeným bootem určuje historickou životnost. Ostatní řádky zůstávají neověřené.");
+            notice.Text += " " + Loc.T("Žádné živé akce podle PID. Čas je relativní QPC; nové spuštění nahradí seznam. Nový základní seznam nezpřesní dřívější nejasné přenosy.");
+            if (!trafficSupported) notice.Text += " " + Loc.T("Přenosy tato verze nativní DLL neposkytuje; záznam vzniku a ukončení pokračuje.");
             if ((batchFlags & 1) != 0) {
                 if (resyncVersion != info.ResyncVersion) { resyncVersion = info.ResyncVersion; resyncAfter = NativeMonitor.MonotonicNowNs; }
                 var current = currentProcesses();
                 if (info.BootState == SampleState.Valid && current.State == SampleState.Valid && current.Boot == info.Boot && current.Time > resyncAfter)
                     monitor.AcknowledgeResync(info.ResyncVersion);
-                else notice.Text += " Základní seznam čeká na nové ověření po změně nebo ztrátě zdroje.";
+                else notice.Text += " " + Loc.T("Základní seznam čeká na nové ověření po změně nebo ztrátě zdroje.");
             }
-            if ((batchFlags & 2) != 0) notice.Text += " Relace ještě není uklizená.";
+            if ((batchFlags & 2) != 0) notice.Text += " " + Loc.T("Relace ještě není uklizená.");
             if (dirty && hold.IsChecked != true) RefreshRows();
             UpdateCommands();
             uiCheckBatch?.Invoke(info, events.Length, trafficCount);
             return events.Length + trafficCount;
         } catch (Exception error) when (InteropError(error)) {
-            timer.Stop(); ProcessNetwork.Clear(); status.Text = "Čtení událostí selhalo: " + error.Message; return -1;
+            timer.Stop(); ProcessNetwork.Clear(); status.Text = Loc.F("Čtení událostí selhalo: {0}", error.Message); return -1;
         }
     }
 
@@ -197,7 +194,7 @@ internal sealed partial class ProcessEventsWindow : Window
         refreshing = true;
         try { visible.Apply([]); list.SelectedItem = null; }
         finally { refreshing = false; }
-        estimatedBytes = 0; trimmed = heldTrimmed = 0; dirty = false; detail.Text = "Vyberte událost, životnost nebo pozorovaný přenos.";
+        estimatedBytes = 0; trimmed = heldTrimmed = 0; dirty = false; detail.Text = Loc.T("Vyberte událost, životnost nebo pozorovaný přenos.");
     }
 
     private IEnumerable<ProcessEventRow> ModeRows => LifetimeMode ? lifetimes.Values : TrafficMode ? trafficRows.Values : retained;
@@ -216,8 +213,8 @@ internal sealed partial class ProcessEventsWindow : Window
         try {
             visible.Apply(values); list.SelectedItem = replacement; dirty = false;
             if (replacement is not null) detail.Text = replacement.Detail;
-            else if (hadSelection) detail.Text = "Vybraný záznam už není v aktuálním seznamu nebo filtru.";
-            else detail.Text = "Vyberte událost, životnost nebo pozorovaný přenos.";
+            else if (hadSelection) detail.Text = Loc.T("Vybraný záznam už není v aktuálním seznamu nebo filtru.");
+            else detail.Text = Loc.T("Vyberte událost, životnost nebo pozorovaný přenos.");
         } finally { refreshing = false; }
         if (follow.IsChecked == true && !hadSelection && values.Length > 0) list.ScrollIntoView(values[^1]);
     }
@@ -230,10 +227,10 @@ internal sealed partial class ProcessEventsWindow : Window
             if (list.SelectedItem is ProcessEventRow selected) selections[selected.Mode] = selected.SelectionIdentity;
             queries[shownMode] = search.Text; kindFilters[shownMode] = Math.Max(0, kinds.SelectedIndex); shownMode = modes.SelectedIndex;
             kinds.Items.Clear();
-            foreach (var name in LifetimeMode ? new[] { "Všechny životnosti", "Vznik i konec", "Bez konce", "Bez vzniku", "Neověřené", "Konfliktní", "Opožděné", "S mezerou" }
-                : TrafficMode ? new[] { "Všechny přenosy", "Fyzický disk", "TCP", "UDP" } : new[] { "Všechny události", "Vznik procesů", "Ukončení procesů" }) kinds.Items.Add(name);
+            foreach (var name in LifetimeMode ? new[] { Loc.T("Všechny životnosti"), Loc.T("Vznik i konec"), Loc.T("Bez konce"), Loc.T("Bez vzniku"), Loc.T("Neověřené"), Loc.T("Konfliktní"), Loc.T("Opožděné"), Loc.T("S mezerou") }
+                : TrafficMode ? new[] { Loc.T("Všechny přenosy"), Loc.T("Fyzický disk"), "TCP", "UDP" } : new[] { Loc.T("Všechny události"), Loc.T("Vznik procesů"), Loc.T("Ukončení procesů") }) kinds.Items.Add(name);
             kinds.SelectedIndex = kindFilters[shownMode]; search.Text = queries[shownMode];
-            search.PlaceholderText = TrafficMode ? "Filtrovat PID, disk, TCP, UDP nebo nejistotu" : "Filtrovat název, PID nebo stav";
+            search.PlaceholderText = TrafficMode ? Loc.T("Filtrovat PID, disk, TCP, UDP nebo nejistotu") : Loc.T("Filtrovat název, PID nebo stav");
             list.ItemTemplate = (DataTemplate)templates[LifetimeMode ? "ProcessLifetime" : "ProcessEvent"];
         } finally { changingMode = false; }
         RefreshRows(true);
@@ -252,7 +249,7 @@ internal sealed partial class ProcessEventsWindow : Window
         try {
             visible.Apply(remaining);
             list.SelectedItem = selected is not null && remaining.Contains(selected) ? selected : null;
-            if (selected is not null && list.SelectedItem is null) { selections.Remove(modes.SelectedIndex); detail.Text = "Vybraný podržený záznam byl vytěsněn rozpočtem uchování."; }
+            if (selected is not null && list.SelectedItem is null) { selections.Remove(modes.SelectedIndex); detail.Text = Loc.T("Vybraný podržený záznam byl vytěsněn rozpočtem uchování."); }
         } finally { refreshing = false; }
     }
 
@@ -273,22 +270,20 @@ internal sealed partial class ProcessEventsWindow : Window
 
     private string TrafficCounters()
     {
-        string text = "\nPřenosy " + trafficRows.Count + "/" + ProcessTrafficRows.MaximumRows + " · vytěsněno v okně " + trafficRows.Trimmed
-            + "\nOdhad uchovaných dat: jednotlivé události do 3 MiB, přenosy do 3 MiB, životnosti do 2 MiB; podržený seznam do 3 MiB navíc."
-            + " Souhrn životností a jeho počty jsou od posledního vymazání; nejde o úplnou historii systému.";
+        string text = "\n" + Loc.F("Přenosy {0}/{1} · vytěsněno v okně {2}", trafficRows.Count, ProcessTrafficRows.MaximumRows, trafficRows.Trimmed)
+            + "\n" + Loc.T("Odhad uchovaných dat: jednotlivé události do 3 MiB, přenosy do 3 MiB, životnosti do 2 MiB; podržený seznam do 3 MiB navíc.")
+            + " " + Loc.T("Souhrn životností a jeho počty jsou od posledního vymazání; nejde o úplnou historii systému.");
         if (trafficInfo is not { } t) return text;
-        return text + "\nFyzický disk: " + SampleText(t.DiskState) + " · síť: " + SampleText(t.NetworkState)
-            + " · zdroj životností: " + SampleText(t.IdentityProviderState) + " · epocha " + t.AttributionEpoch
-            + " · nepřiřazené události " + t.UnknownEvents + " / " + t.UnknownBytes + " B"
-            + " · zahozené čekající " + t.PendingDropped + " · vytěsněné vzorky " + t.EvictedSamples
-            + " · pozdní události " + t.LateEvents + " · zneplatnění přiřazení " + t.IdentityConflicts
-            + "\nNativní sdílený rozpočet kontejnerů a rámců " + t.BudgetBytesUsed + "/" + t.BudgetLimit + " B; paměť Windows ETW je zvlášť.";
+        return text + "\n" + Loc.F("Fyzický disk: {0} · síť: {1} · zdroj životností: {2} · epocha {3} · nepřiřazené události {4} / {5} B · zahozené čekající {6} · vytěsněné vzorky {7} · pozdní události {8} · zneplatnění přiřazení {9}",
+                SampleText(t.DiskState), SampleText(t.NetworkState), SampleText(t.IdentityProviderState), t.AttributionEpoch,
+                t.UnknownEvents, t.UnknownBytes, t.PendingDropped, t.EvictedSamples, t.LateEvents, t.IdentityConflicts)
+            + "\n" + Loc.F("Nativní sdílený rozpočet kontejnerů a rámců {0}/{1} B; paměť Windows ETW je zvlášť.", t.BudgetBytesUsed, t.BudgetLimit);
     }
 
     private static string SampleText(SampleState value) => value switch {
-        SampleState.Valid => "dostupný", SampleState.First => "čeká na data", SampleState.Gap => "částečný proud",
-        SampleState.AccessDenied => "přístup zamítnut", SampleState.Unsupported => "nepodporovaný",
-        SampleState.Stale => "zastaralý", SampleState.Error => "chyba", _ => "nedostupný"
+        SampleState.Valid => Loc.T("dostupný"), SampleState.First => Loc.T("čeká na data"), SampleState.Gap => Loc.T("částečný proud"),
+        SampleState.AccessDenied => Loc.T("přístup zamítnut"), SampleState.Unsupported => Loc.T("nepodporovaný"),
+        SampleState.Stale => Loc.T("zastaralý"), SampleState.Error => Loc.T("chyba"), _ => Loc.T("nedostupný")
     };
 
     private void UpdateCommands()
@@ -323,7 +318,7 @@ internal sealed partial class ProcessEventsWindow : Window
             } while (Stopwatch.GetElapsedTime(began) < TimeSpan.FromSeconds(5));
             return false;
         } catch (Exception error) when (InteropError(error)) {
-            status.Text = "Úklid záznamu nebyl potvrzený: " + error.Message; return false;
+            status.Text = Loc.F("Úklid záznamu nebyl potvrzený: {0}", error.Message); return false;
         }
     }
 
@@ -346,8 +341,8 @@ internal sealed partial class ProcessEventsWindow : Window
         bool clean = await StopForCloseAsync();
         if (closed) return;
         if (!clean) {
-            var dialog = new ContentDialog { XamlRoot = layout.XamlRoot, Title = "Zastavení a dočtení záznamu nebylo potvrzené", CloseButtonText = "Ponechat otevřené",
-                PrimaryButtonText = "Zavřít i tak", Content = "Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu." };
+            var dialog = new ContentDialog { XamlRoot = layout.XamlRoot, Title = Loc.T("Zastavení a dočtení záznamu nebylo potvrzené"), CloseButtonText = Loc.T("Ponechat otevřené"),
+                PrimaryButtonText = Loc.T("Zavřít i tak"), Content = Loc.T("Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu.") };
             Appearance.Dialog(dialog);
             try { clean = await dialog.ShowAsync() == ContentDialogResult.Primary; }
             catch (InvalidOperationException) { clean = false; }
@@ -356,12 +351,12 @@ internal sealed partial class ProcessEventsWindow : Window
     }
 
     private static string StateText(ProcessEventMonitorState value) => value switch {
-        ProcessEventMonitorState.Idle => "Záznam není spuštěný", ProcessEventMonitorState.Starting => "Spouštím vlastní relaci",
-        ProcessEventMonitorState.Running => "Záznam běží", ProcessEventMonitorState.Stopping => "Zastavuji vlastní relaci",
-        ProcessEventMonitorState.Stopped => "Záznam zastavený", ProcessEventMonitorState.AccessDenied => "Přístup k ETW byl zamítnutý; aplikace pokračuje bez něj",
-        ProcessEventMonitorState.Unsupported => "Zdroj ETW není na tomto systému podporovaný", ProcessEventMonitorState.Busy => "Předchozí relace se ještě uklízí",
-        ProcessEventMonitorState.StopTimedOut => "Zastavení překročilo časový limit", ProcessEventMonitorState.CleanupFailed => "Windows nepotvrdil úklid relace",
-        _ => "Záznam skončil chybou"
+        ProcessEventMonitorState.Idle => Loc.T("Záznam není spuštěný"), ProcessEventMonitorState.Starting => Loc.T("Spouštím vlastní relaci"),
+        ProcessEventMonitorState.Running => Loc.T("Záznam běží"), ProcessEventMonitorState.Stopping => Loc.T("Zastavuji vlastní relaci"),
+        ProcessEventMonitorState.Stopped => Loc.T("Záznam zastavený"), ProcessEventMonitorState.AccessDenied => Loc.T("Přístup k ETW byl zamítnutý; aplikace pokračuje bez něj"),
+        ProcessEventMonitorState.Unsupported => Loc.T("Zdroj ETW není na tomto systému podporovaný"), ProcessEventMonitorState.Busy => Loc.T("Předchozí relace se ještě uklízí"),
+        ProcessEventMonitorState.StopTimedOut => Loc.T("Zastavení překročilo časový limit"), ProcessEventMonitorState.CleanupFailed => Loc.T("Windows nepotvrdil úklid relace"),
+        _ => Loc.T("Záznam skončil chybou")
     };
     private static bool InteropError(Exception error) => error is IOException or InvalidDataException or NativeMonitorException or EntryPointNotFoundException or DllNotFoundException
         or BadImageFormatException or InvalidOperationException or ArgumentException;

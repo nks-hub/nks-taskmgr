@@ -12,7 +12,7 @@ public sealed partial class MainWindow
 {
     // Name, Stav, CPU, Paměť, Disk, Síť — shared by Users and Applications so both tables line up the same way.
     internal static readonly double[] GroupColumns = [0, 96, 64, 96, 88, 88];
-    private static readonly string[] GroupColumnNames = ["", "Stav", "CPU", "Paměť", "Disk", "Síť"];
+    private static readonly string[] GroupColumnNames = ["", Loc.T("Stav"), "CPU", Loc.T("Paměť"), Loc.T("Disk"), Loc.T("Síť")];
 
     /// <summary>Builds the clickable column header of a grouped table; a click sorts by that column, numbers largest first.</summary>
     private static Grid GroupHeader(string firstName, string[] tips, List<(Button Button, TextBlock Text)> headers, Action<int> sort)
@@ -27,7 +27,7 @@ public sealed partial class MainWindow
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = i >= 2 ? HorizontalAlignment.Right : HorizontalAlignment.Left };
             int column = i;
             button.Click += (_, _) => sort(column);
-            ToolTipService.SetToolTip(button, tips[i]); AutomationProperties.SetName(button, "Řadit podle: " + name);
+            ToolTipService.SetToolTip(button, tips[i]); AutomationProperties.SetName(button, Loc.F("Řadit podle: {0}", name));
             Grid.SetColumn(button, i); header.Children.Add(button); headers.Add((button, text));
         }
         return header;

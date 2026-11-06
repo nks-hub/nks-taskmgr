@@ -30,11 +30,11 @@ internal sealed partial class ProcessActionsSession : IDisposable
             bool accepted = ProcessActionsProtocol.Frame(header) == ProcessActionFrame.Accepted;
             if (accepted) await output.ReadExactlyAsync(header, cancellation).ConfigureAwait(false);
             else if (ProcessActionsProtocol.Frame(header) is ProcessActionFrame.Results or ProcessActionFrame.CpuSets)
-                throw new InvalidDataException("Pracovník neověřil přijetí požadavku před výsledkem.");
+                throw new InvalidDataException(Loc.T("Pracovník neověřil přijetí požadavku před výsledkem."));
             bool tree = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(6)) == (ushort)ProcessActionCommand.TerminateTree;
             int plans = 0;
             while (tree && ProcessActionsProtocol.Frame(header) == ProcessActionFrame.TreePlan) {
-                if (!accepted || ++plans > 3) throw new InvalidDataException("Neplatná posloupnost plánů stromu.");
+                if (!accepted || ++plans > 3) throw new InvalidDataException(Loc.T("Neplatná posloupnost plánů stromu."));
                 var bytes = new byte[ProcessActionsProtocol.PayloadLength(header, request)];
                 await output.ReadExactlyAsync(bytes, cancellation).ConfigureAwait(false);
                 var plan = ProcessTreeActionsProtocol.Plan(bytes, request, checked((int)System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(12))), TreePlan, false);
@@ -44,23 +44,23 @@ internal sealed partial class ProcessActionsSession : IDisposable
             var payload = new byte[ProcessActionsProtocol.PayloadLength(header, request)];
             await output.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
             var result = tree && ProcessActionsProtocol.Frame(header) == ProcessActionFrame.TreeResults
-                ? ProcessTreeActionsProtocol.Results(header, payload, request, TreePlan ?? throw new InvalidDataException("Chybí doložený plán stromu."))
+                ? ProcessTreeActionsProtocol.Results(header, payload, request, TreePlan ?? throw new InvalidDataException(Loc.T("Chybí doložený plán stromu.")))
                 : ProcessActionsProtocol.Response(header, payload, request) with { Accepted = accepted, Tree = TreePlan };
             if (accepted && result.Frame == ProcessActionFrame.Rejected)
-                throw new InvalidDataException("Pracovník odmítl požadavek až po potvrzení přijetí.");
+                throw new InvalidDataException(Loc.T("Pracovník odmítl požadavek až po potvrzení přijetí."));
             var end = new byte[1];
             if (await output.ReadAsync(end, cancellation).ConfigureAwait(false) != 0)
-                throw new InvalidDataException("Pracovník vrátil data za koncem výsledku.");
+                throw new InvalidDataException(Loc.T("Pracovník vrátil data za koncem výsledku."));
             await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
             if (process.ExitCode != 0 && result.Frame is ProcessActionFrame.Results or ProcessActionFrame.TreeResults or ProcessActionFrame.CpuSets)
-                throw new IOException("Pracovník skončil bez potvrzeného výsledku akce.");
+                throw new IOException(Loc.T("Pracovník skončil bez potvrzeného výsledku akce."));
             return result;
         } catch (Exception error) when (cancellation.IsCancellationRequested && error is IOException or InvalidDataException or ObjectDisposedException or Win32Exception) {
-            throw new OperationCanceledException("Čekání bylo zrušeno. Výsledek rozpracované akce není známý.", error, cancellation);
+            throw new OperationCanceledException(Loc.T("Čekání bylo zrušeno. Výsledek rozpracované akce není známý."), error, cancellation);
         } catch (EndOfStreamException error) {
-            throw new IOException("Pracovník akcí skončil před dokončením odpovědi.", error);
+            throw new IOException(Loc.T("Pracovník akcí skončil před dokončením odpovědi."), error);
         } catch (Win32Exception error) {
-            throw new IOException("Pracovníka akcí nelze spustit nebo připojit (Windows " + error.NativeErrorCode + ").", error);
+            throw new IOException(Loc.F("Pracovníka akcí nelze spustit nebo připojit (Windows {0}).", error.NativeErrorCode), error);
         } finally {
             Cancel();
             Process? process;
@@ -90,7 +90,7 @@ internal sealed partial class ProcessActionsSession : IDisposable
                     RedirectStandardInput = true, RedirectStandardOutput = true, StandardInputEncoding = new UTF8Encoding(false)
                 };
                 start.ArgumentList.Add("--stdio");
-                child = Process.Start(start) ?? throw new IOException("Pracovníka akcí se nepodařilo spustit.");
+                child = Process.Start(start) ?? throw new IOException(Loc.T("Pracovníka akcí se nepodařilo spustit."));
                 if (!AssignProcessToJobObject(ownedJob, child.SafeHandle)) throw new Win32Exception(Marshal.GetLastPInvokeError());
                 trusted?.VerifyProcess(child);
                 return child;

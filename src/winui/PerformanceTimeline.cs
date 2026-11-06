@@ -7,7 +7,7 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class MainWindow
 {
     private readonly SharedChartTimeline performanceTimeline = new();
-    private readonly Button historicalProcessesButton = Button("Procesy v čase…");
+    private readonly Button historicalProcessesButton = Button(Loc.T("Procesy v čase…"));
     private readonly TextBlock timelineSelection = Label("", 11, 0x95a4ad);
     private readonly Grid performanceTimelinePanel = new() { ColumnSpacing = 8, Margin = new Thickness(0, 6, 0, 0) };
     private HistoricalProcessesWindow? historicalProcessesWindow;
@@ -23,9 +23,9 @@ public sealed partial class MainWindow
         timelineSelection.VerticalAlignment = VerticalAlignment.Center;
         historicalProcessesButton.Height = 25; historicalProcessesButton.Padding = new Thickness(8, 0, 8, 0);
         historicalProcessesButton.BorderThickness = new Thickness(0); historicalProcessesButton.CornerRadius = new CornerRadius(3);
-        AutomationProperties.SetName(historicalProcessesButton, "Otevřít historické procesy pro vybraný čas nebo úsek");
+        AutomationProperties.SetName(historicalProcessesButton, Loc.T("Otevřít historické procesy pro vybraný čas nebo úsek"));
         AutomationProperties.SetAutomationId(historicalProcessesButton, "historical-processes");
-        ToolTipService.SetToolTip(historicalProcessesButton, "Kliknutím na graf připněte čas. Shift+kliknutím vyberte dva konce úseku. Historický přehled neprovádí živé akce.");
+        ToolTipService.SetToolTip(historicalProcessesButton, Loc.T("Kliknutím na graf připněte čas. Shift+kliknutím vyberte dva konce úseku. Historický přehled neprovádí živé akce."));
         historicalProcessesButton.Click += (_, _) => OpenHistoricalProcesses();
         performanceTimeline.Changed += PerformanceTimelineChanged;
         panel.Children.Add(timelineSelection);
@@ -45,10 +45,10 @@ public sealed partial class MainWindow
         var state = performanceTimeline.State;
         historicalProcessesButton.IsEnabled = state.IsPinned && state.CursorTimeNs is not null || performanceTimeline.Interval is not null;
         timelineSelection.Text = performanceTimeline.Interval is { } interval
-            ? "Vybraný úsek " + Display.Number(interval.DurationNs / 1_000_000_000d, " s") + " · historický pohled"
-            : state.RangeAnchorNs is not null ? "První hranice úseku · Shift+klik nastaví druhou."
-            : state.IsPinned ? "Připnutý čas · historický pohled"
-            : "Kliknutím vyberete čas · Shift vybere úsek.";
+            ? Loc.F("Vybraný úsek {0} · historický pohled", Display.Number(interval.DurationNs / 1_000_000_000d, " s"))
+            : state.RangeAnchorNs is not null ? Loc.T("První hranice úseku · Shift+klik nastaví druhou.")
+            : state.IsPinned ? Loc.T("Připnutý čas · historický pohled")
+            : Loc.T("Kliknutím vyberete čas · Shift vybere úsek.");
     }
 
     private void OpenHistoricalProcesses()

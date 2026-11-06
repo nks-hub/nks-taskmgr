@@ -29,7 +29,7 @@ public sealed partial class ProcessHistoryRow
         Sample = sample; NameText = sample.Name; PidText = sample.Key.Pid.ToString();
         CpuText = Display.Metric(sample.Cpu, " %"); MemoryText = sample.MemoryState == SampleState.Valid ? Display.Number(sample.WorkingBytes / 1048576d, " MiB", 1) : ProcessHistoryText.State(sample.MemoryState);
         IoText = ProcessHistoryRanking.Score(sample, ProcessHistoryMetric.Io) is var io && double.IsFinite(io)
-            ? Display.Number(io / 1048576d, " MiB/s", 2) : "I/O nedostupné";
+            ? Display.Number(io / 1048576d, " MiB/s", 2) : Loc.T("I/O nedostupné");
         TimeText = ProcessHistoryText.Time(sample.TimeNs, sample.WallTimeUnixNs);
     }
     public string NameText { get; }

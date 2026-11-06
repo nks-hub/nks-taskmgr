@@ -9,7 +9,7 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly TextBlock serviceTitle = DetailLabel("Vyberte službu", 16), serviceName = DetailLabel("", 10), serviceDescription = DetailLabel("", 11);
+    private readonly TextBlock serviceTitle = DetailLabel(Loc.T("Vyberte službu"), 16), serviceName = DetailLabel("", 10), serviceDescription = DetailLabel("", 11);
     private readonly TextBlock serviceState = DetailLabel("", 11), serviceStartup = DetailLabel("", 11), serviceAccount = DetailLabel("", 11);
     private readonly TextBlock serviceGroup = DetailLabel("", 11), serviceCommand = DetailLabel("", 11), serviceDetailNote = DetailLabel("", 10);
     private readonly TextBlock serviceReportedHost = DetailLabel("", 11), serviceHostIdentityNote = DetailLabel("", 10);
@@ -17,7 +17,7 @@ public sealed partial class MainWindow
     private readonly ObservableCollection<ServiceRow> serviceHostPeers = [];
     private readonly ListView serviceHostPeerList = new() { SelectionMode = ListViewSelectionMode.None, IsItemClickEnabled = true,
         MaxHeight = 220, Padding = new Thickness(0), BorderThickness = new Thickness(0), HorizontalContentAlignment = HorizontalAlignment.Stretch };
-    private readonly Button serviceHost = Button("Hostitelský proces →"), serviceOverviewTab = Button("Přehled"), serviceDependenciesTab = Button("Závislosti");
+    private readonly Button serviceHost = Button(Loc.T("Hostitelský proces") + " →"), serviceOverviewTab = Button(Loc.T("Přehled")), serviceDependenciesTab = Button(Loc.T("Závislosti"));
     private readonly StackPanel serviceOverview = new() { Spacing = 16 }, serviceDependencies = new() { Spacing = 8 };
     private readonly StackPanel serviceTabs = new() { Orientation = Orientation.Horizontal, Spacing = 3 };
     private readonly List<(Button Button, string Name)> dependencyButtons = [];
@@ -45,9 +45,9 @@ public sealed partial class MainWindow
         serviceOverviewTab.Click += (_, _) => { dependenciesSelected = false; RefreshServiceDetail(); };
         serviceDependenciesTab.Click += (_, _) => { dependenciesSelected = true; RefreshServiceDetail(); }; content.Children.Add(serviceTabs);
         void Fact(string label, TextBlock value) { var group = new StackPanel { Spacing = 6 }; group.Children.Add(DetailLabel(label, 9)); group.Children.Add(value); serviceOverview.Children.Add(group); }
-        Fact("Stav služby", serviceState); Fact("Hostitel podle správce služeb", serviceReportedHost);
-        Fact("Spouštění", serviceStartup); Fact("Účet", serviceAccount);
-        serviceSharedHost.Children.Add(DetailLabel("Další služby se stejným hlášeným PID", 11));
+        Fact(Loc.T("Stav služby"), serviceState); Fact(Loc.T("Hostitel podle správce služeb"), serviceReportedHost);
+        Fact(Loc.T("Spouštění"), serviceStartup); Fact(Loc.T("Účet"), serviceAccount);
+        serviceSharedHost.Children.Add(DetailLabel(Loc.T("Další služby se stejným hlášeným PID"), 11));
         serviceHostPeerList.ItemsSource = serviceHostPeers;
         serviceHostPeerList.ItemTemplate = serviceHostTemplates["ServiceHostPeerTemplate"] as DataTemplate;
         var peerStyle = new Style { TargetType = typeof(ListViewItem) };
@@ -60,10 +60,10 @@ public sealed partial class MainWindow
             if (args.ClickedItem is ServiceRow peer && servicesModel?.Selected is { Pid: > 0 } selected
                 && peer.Pid == selected.Pid && ReferenceEquals(servicesModel.Find(peer.Name), peer)) SelectRelatedService(peer.Name);
         };
-        AutomationProperties.SetName(serviceHostPeerList, "Další služby se stejným hlášeným PID");
+        AutomationProperties.SetName(serviceHostPeerList, Loc.T("Další služby se stejným hlášeným PID"));
         AutomationProperties.SetAutomationId(serviceHostPeerList, "services-host-peers");
         serviceSharedHost.Children.Add(serviceHostPeerList); serviceOverview.Children.Add(serviceSharedHost);
-        Fact("Skupina", serviceGroup); Fact("Příkaz", serviceCommand);
+        Fact(Loc.T("Skupina"), serviceGroup); Fact(Loc.T("Příkaz"), serviceCommand);
         content.Children.Add(serviceOverview); content.Children.Add(serviceDependencies); content.Children.Add(serviceDetailNote); serviceDetailScroll.Content = content;
     }
     private void OpenServiceHost()
@@ -77,41 +77,41 @@ public sealed partial class MainWindow
         var row = servicesModel?.Selected; var detail = servicesModel?.Detail;
         if (row is null) detail = null;
         ResizeServices();
-        serviceTitle.Text = row?.Title ?? "Vyberte službu"; serviceName.Text = row?.Name ?? "";
-        serviceDescription.Text = row is null ? "Výběr v seznamu otevře konfiguraci a závislosti služby." : detail is null
-            ? servicesModel!.DetailError.Length > 0 ? servicesModel.DetailError : model.Paused ? "Obnovte sběr pro načtení detailu." : "Načítám detail…"
+        serviceTitle.Text = row?.Title ?? Loc.T("Vyberte službu"); serviceName.Text = row?.Name ?? "";
+        serviceDescription.Text = row is null ? Loc.T("Výběr v seznamu otevře konfiguraci a závislosti služby.") : detail is null
+            ? servicesModel!.DetailError.Length > 0 ? servicesModel.DetailError : model.Paused ? Loc.T("Obnovte sběr pro načtení detailu.") : Loc.T("Načítám detail…")
             : detail.DescriptionError != 0 ? ServiceText.Error(detail.DescriptionError) : detail.Description;
         var config = detail?.Config ?? row?.Config;
         serviceState.Text = row is null ? "—" : detail is not null && detail.StatusError != 0 ? ServiceText.Error(detail.StatusError) : ServiceText.State(detail?.State ?? row.State);
         serviceStartup.Text = config?.Startup ?? "—";
         serviceAccount.Text = config is null ? "—" : config.Error != 0 ? ServiceText.Error(config.Error) : config.Account;
-        serviceGroup.Text = config is null ? "—" : config.Error != 0 ? ServiceText.Error(config.Error) : config.Group.Length == 0 ? "Bez skupiny" : config.Group;
+        serviceGroup.Text = config is null ? "—" : config.Error != 0 ? ServiceText.Error(config.Error) : config.Group.Length == 0 ? Loc.T("Bez skupiny") : config.Group;
         serviceCommand.Text = config is null ? "—" : config.Error != 0 ? ServiceText.Error(config.Error) : config.Command;
         serviceHost.IsEnabled = servicesModel?.Host(model) is not null;
         serviceHost.Visibility = serviceTabs.Visibility = row is null ? Visibility.Collapsed : Visibility.Visible;
-        string hostHint = serviceHost.IsEnabled ? "Otevřít hostitelský proces." : model.Paused ? "Obnovte sběr pro otevření hostitele."
-            : detail?.HostError > 0 ? "Hostitele nelze ověřit: " + ServiceText.Error(detail.HostError)
-            : row?.State != 4 ? "Služba není spuštěná." : "Hostitelský proces se změnil nebo data nejsou aktuální.";
+        string hostHint = serviceHost.IsEnabled ? Loc.T("Otevřít hostitelský proces.") : model.Paused ? Loc.T("Obnovte sběr pro otevření hostitele.")
+            : detail?.HostError > 0 ? Loc.F("Hostitele nelze ověřit: {0}", ServiceText.Error(detail.HostError))
+            : row?.State != 4 ? Loc.T("Služba není spuštěná.") : Loc.T("Hostitelský proces se změnil nebo data nejsou aktuální.");
         ToolTipService.SetToolTip(serviceHost, hostHint); AutomationProperties.SetHelpText(serviceHost, hostHint);
         serviceReportedHost.Text = row?.HostSummary ?? "—";
-        serviceHostIdentityNote.Text = row is null ? "" : row.Pid == 0 ? "Služba nehlásí žádný PID."
-            : (serviceHost.IsEnabled ? "Živý odkaz ověřuje hostitele vybrané služby." : "Živý odkaz není ověřený. " + hostHint)
-                + " Seskupení služeb vychází pouze z hlášeného PID, ne z ověřené totožnosti procesu.";
+        serviceHostIdentityNote.Text = row is null ? "" : row.Pid == 0 ? Loc.T("Služba nehlásí žádný PID.")
+            : (serviceHost.IsEnabled ? Loc.T("Živý odkaz ověřuje hostitele vybrané služby.") : Loc.T("Živý odkaz není ověřený.") + " " + hostHint)
+                + " " + Loc.T("Seskupení služeb vychází pouze z hlášeného PID, ne z ověřené totožnosti procesu.");
         RefreshReportedHostServices(row);
         serviceOverview.Visibility = row is not null && !dependenciesSelected ? Visibility.Visible : Visibility.Collapsed;
         serviceDependencies.Visibility = row is not null && dependenciesSelected ? Visibility.Visible : Visibility.Collapsed;
         serviceOverviewTab.Background = Display.Brush(dependenciesSelected ? 0x1d252au : 0x28343bu);
         serviceDependenciesTab.Background = Display.Brush(dependenciesSelected ? 0x28343bu : 0x1d252au);
         serviceDetailNote.Text = row is null ? "" : servicesModel!.DetailError.Length > 0 ? servicesModel.DetailError : detail is null ? ""
-            : "Detail · stáří " + Display.Number((NksTaskMgr.Native.NativeMonitor.MonotonicNowNs - detail.Time) / 1_000_000_000d, " s")
-                + (servicesModel.Stale ? " · zastaralý seznam" : "");
+            : Loc.F("Detail · stáří {0}", Display.Number((NksTaskMgr.Native.NativeMonitor.MonotonicNowNs - detail.Time) / 1_000_000_000d, " s"))
+                + (servicesModel.Stale ? " · " + Loc.T("zastaralý seznam") : "");
         var dependencies = config?.Dependencies ?? []; var dependents = detail?.Dependents ?? [];
         uint dependencyError = config?.Error ?? 232, dependentError = detail?.DependentsError ?? 232;
         if (dependencySelection != (row?.Name ?? "") || dependencyError != shownDependencyError || dependentError != shownDependentError
             || !shownDependencies.SequenceEqual(dependencies) || !shownDependents.SequenceEqual(dependents)) {
             dependencySelection = row?.Name ?? ""; shownDependencies = dependencies; shownDependents = dependents;
             shownDependencyError = dependencyError; shownDependentError = dependentError; serviceDependencies.Children.Clear(); dependencyButtons.Clear();
-            AddDependencies("Potřebuje ke spuštění", dependencies, dependencyError); AddDependencies("Navazující služby", dependents, dependentError);
+            AddDependencies(Loc.T("Potřebuje ke spuštění"), dependencies, dependencyError); AddDependencies(Loc.T("Navazující služby"), dependents, dependentError);
         }
         foreach (var (button, name) in dependencyButtons) button.IsEnabled = !name.StartsWith('+') && servicesModel?.Find(name) is not null;
     }
@@ -119,11 +119,11 @@ public sealed partial class MainWindow
     {
         serviceDependencies.Children.Add(DetailLabel(heading, 11));
         if (error != 0) { serviceDependencies.Children.Add(DetailLabel(ServiceText.Error(error), 10)); return; }
-        if (names.Length == 0) { serviceDependencies.Children.Add(DetailLabel("Žádné", 10)); return; }
+        if (names.Length == 0) { serviceDependencies.Children.Add(DetailLabel(Loc.T("Žádné"), 10)); return; }
         foreach (string name in names) {
-            var button = Button(name.StartsWith('+') ? "Skupina: " + name[1..] : name + " →");
+            var button = Button(name.StartsWith('+') ? Loc.F("Skupina: {0}", name[1..]) : name + " →");
             button.HorizontalAlignment = HorizontalAlignment.Stretch; button.HorizontalContentAlignment = HorizontalAlignment.Left;
-            AutomationProperties.SetName(button, "Závislost " + name);
+            AutomationProperties.SetName(button, Loc.F("Závislost {0}", name));
             button.Click += (_, _) => {
                 if (!name.StartsWith('+')) SelectRelatedService(name);
             };

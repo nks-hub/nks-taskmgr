@@ -1,0 +1,440 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Spustit nový záznam	Start new capture
+Zastavit	Stop
+Vymazat seznam	Clear list
+Spustit jako správce	Run as administrator
+Záznam není spuštěný.	Capture is not running.
+ETW sleduje vznik a ukončení procesů až od spuštění záznamu. Historické řádky jsou pouze pro čtení.	ETW tracks process starts and exits only from the moment capture starts. Historical rows are read-only.
+Filtrovat název nebo PID	Filter by name or PID
+Podržet seznam	Hold list
+Sledovat konec	Follow latest
+Vyberte událost.	Select an event.
+Události procesů	Process events
+Čítače a vysvětlení záznamu	Capture counters and explanation
+Čítače záznamu, vytěsnění, rozpočet paměti a vysvětlení.	Capture counters, evictions, memory budget and explanation.
+Záznam ETW vyžaduje správce. NKS se spustí znovu jako správce po potvrzení výzvy UAC.	ETW capture requires an administrator. NKS restarts as administrator after you confirm the UAC prompt.
+Vznik a ukončení	Starts and exits
+Diskové a síťové přenosy	Disk and network transfers
+Životnosti procesů	Process lifetimes
+Všechny události	All events
+Vznik procesů	Process starts
+Ukončení procesů	Process exits
+Spustit vlastní záznam ETW	Start own ETW capture
+Zastavit vlastní záznam ETW	Stop own ETW capture
+Vymazat zobrazené události	Clear shown events
+Filtrovat zaznamenané události	Filter captured events
+Druh události	Event type
+Historické události, pouze pro čtení	Historical events, read-only
+Životnosti procesů nebo pozorované přenosy ETW	Process lifetimes or observed ETW transfers
+Podrobnosti historické události	Historical event details
+Záznam nelze spustit: {0}	Capture cannot start: {0}
+Zastavení nebylo potvrzené: {0}	Stop was not confirmed: {0}
+chyba Windows {0}	Windows error {0}
+Události {0}/{1} · vytěsněno v okně {2} · ztracené události ETW {3} · ztracené buffery {4} · přeplnění fronty {5} · chyby dekódování {6} · nejasné záznamy {7}	Events {0}/{1} · evicted in window {2} · lost ETW events {3} · lost buffers {4} · queue overflows {5} · decoding errors {6} · ambiguous records {7}
+Životnosti {0}/{1} · vytěsněno {2} · neověřené události {3} · konflikty {4} · opožděné pořadí {5} · vynechané pořadí zdroje {6} · označení nejistoty {7}	Lifetimes {0}/{1} · evicted {2} · unverified events {3} · conflicts {4} · late order {5} · skipped source sequence {6} · uncertainty marks {7}
+Zobrazení je podržené; vytěsněno z podrženého seznamu {0}.	The view is on hold; evicted from the held list: {0}.
+Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používají i sloupec Síť v Procesech a Uživatelích.	Only the observed partial bytes of the own ETW session, not total adapter traffic or general process I/O. TCP/UDP is assigned to a generation only with uninterrupted lifetime tracking; during capture the Network column in Processes and Users uses it too.
+Start a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří.	Start and end are paired only via verified Boot + PID + CreateTime within the same capture and source segment. A missing end does not mean the process is still running. CPU and RAM are not measured here.
+CreateTime přímo z události s ověřeným bootem určuje historickou životnost. Ostatní řádky zůstávají neověřené.	CreateTime taken directly from an event with a verified boot determines the historical lifetime. Other rows remain unverified.
+Žádné živé akce podle PID. Čas je relativní QPC; nové spuštění nahradí seznam. Nový základní seznam nezpřesní dřívější nejasné přenosy.	No live actions by PID. Time is relative QPC; a new capture replaces the list. A new baseline list does not refine earlier ambiguous transfers.
+Přenosy tato verze nativní DLL neposkytuje; záznam vzniku a ukončení pokračuje.	This version of the native DLL does not provide transfers; start and exit capture continues.
+Základní seznam čeká na nové ověření po změně nebo ztrátě zdroje.	The baseline list is waiting for new verification after a source change or loss.
+Relace ještě není uklizená.	The session has not been cleaned up yet.
+Čtení událostí selhalo: {0}	Reading events failed: {0}
+Vyberte událost, životnost nebo pozorovaný přenos.	Select an event, lifetime or observed transfer.
+Vybraný záznam už není v aktuálním seznamu nebo filtru.	The selected record is no longer in the current list or filter.
+Všechny životnosti	All lifetimes
+Vznik i konec	Start and end
+Bez konce	No end
+Bez vzniku	No start
+Neověřené	Unverified
+Konfliktní	Conflicting
+Opožděné	Late
+S mezerou	With gap
+Všechny přenosy	All transfers
+Fyzický disk	Physical disk
+Filtrovat PID, disk, TCP, UDP nebo nejistotu	Filter by PID, disk, TCP, UDP or uncertainty
+Filtrovat název, PID nebo stav	Filter by name, PID or status
+Vybraný podržený záznam byl vytěsněn rozpočtem uchování.	The selected held record was evicted by the retention budget.
+Přenosy {0}/{1} · vytěsněno v okně {2}	Transfers {0}/{1} · evicted in window {2}
+Odhad uchovaných dat: jednotlivé události do 3 MiB, přenosy do 3 MiB, životnosti do 2 MiB; podržený seznam do 3 MiB navíc.	Estimated retained data: individual events up to 3 MiB, transfers up to 3 MiB, lifetimes up to 2 MiB; the held list up to 3 MiB extra.
+Souhrn životností a jeho počty jsou od posledního vymazání; nejde o úplnou historii systému.	The lifetime summary and its counts are since the last clear; this is not a complete system history.
+Fyzický disk: {0} · síť: {1} · zdroj životností: {2} · epocha {3} · nepřiřazené události {4} / {5} B · zahozené čekající {6} · vytěsněné vzorky {7} · pozdní události {8} · zneplatnění přiřazení {9}	Physical disk: {0} · network: {1} · lifetime source: {2} · epoch {3} · unassigned events {4} / {5} B · dropped pending {6} · evicted samples {7} · late events {8} · invalidated assignments {9}
+Nativní sdílený rozpočet kontejnerů a rámců {0}/{1} B; paměť Windows ETW je zvlášť.	Native shared container and frame budget {0}/{1} B; Windows ETW memory is separate.
+dostupný	available
+čeká na data	waiting for data
+částečný proud	partial stream
+přístup zamítnut	access denied
+nepodporovaný	unsupported
+zastaralý	stale
+chyba	error
+nedostupný	unavailable
+Úklid záznamu nebyl potvrzený: {0}	Capture cleanup was not confirmed: {0}
+Zastavení a dočtení záznamu nebylo potvrzené	Stopping and draining the capture was not confirmed
+Ponechat otevřené	Keep open
+Zavřít i tak	Close anyway
+Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu.	Cleanup of the own ETW session or reading its remaining events could not be confirmed. The session may keep recording and unread events may be lost on close. You can keep the window open and try stopping again.
+Záznam není spuštěný	Capture is not running
+Spouštím vlastní relaci	Starting own session
+Záznam běží	Capture is running
+Zastavuji vlastní relaci	Stopping own session
+Záznam zastavený	Capture stopped
+Přístup k ETW byl zamítnutý; aplikace pokračuje bez něj	Access to ETW was denied; the app continues without it
+Zdroj ETW není na tomto systému podporovaný	The ETW source is not supported on this system
+Předchozí relace se ještě uklízí	The previous session is still being cleaned up
+Zastavení překročilo časový limit	Stopping timed out
+Windows nepotvrdil úklid relace	Windows did not confirm the session cleanup
+Záznam skončil chybou	Capture ended with an error
+Podrobnosti vybraného procesu	Details of the selected process
+Vlákna, moduly, paměť a handly procesu	Process threads, modules, memory and handles
+Podrobnosti procesů jiných uživatelů a systému vyžadují práva správce.	Details of processes of other users and the system require administrator rights.
+Podrobnosti nelze otevřít	Details cannot be opened
+Zavřít	Close
+Vlákna	Threads
+Moduly	Modules
+Obnovit	Refresh
+Zrušit	Cancel
+Ověřit podpis souboru	Verify file signature
+Podrobnosti se načítají na vyžádání.	Details are loaded on demand.
+Vyberte řádek ze seznamu.	Select a row in the list.
+Podpis se ověřuje pouze u souboru na disku, místně a z mezipaměti certifikátů.	The signature is verified only for the file on disk, locally and from the certificate cache.
+Podrobnosti procesu	Process details
+Vlákna nebo moduly vybraného procesu	Threads or modules of the selected process
+Údaje vybraného vlákna nebo modulu pouze pro čtení	Read-only data of the selected thread or module
+Stav načítání podrobností	Details loading status
+Obnovit podrobnosti stejného procesu	Refresh details of the same process
+Zrušit dotaz a ukončit jeho pracovníka	Cancel the query and end its worker
+Vlákna procesu	Process threads
+Moduly procesu	Process modules
+Ověřit podpis souboru vybraného modulu na disku	Verify the on-disk file signature of the selected module
+Proces skončil nebo jeho identita už neodpovídá. Zobrazené údaje jsou poslední načtený snímek.	The process has ended or its identity no longer matches. The shown data is the last loaded snapshot.
+Ověřuji soubor vybraného modulu na disku…	Verifying the selected module's file on disk…
+Zjišťuji aktuální typ a název vybraného objektu…	Querying the current type and name of the selected object…
+Načítám {0}…	Loading {0}…
+načteno {0}	loaded {0}
+některé údaje jsou nedostupné	some data is unavailable
+Dotaz byl zrušen; pracovník se ukončuje.	The query was canceled; the worker is ending.
+Proces už není aktuální. Poslední načtené údaje zůstávají pouze pro čtení.	The process is no longer current. The last loaded data stays read-only.
+Podrobnosti se nepodařilo načíst: {0}	Details could not be loaded: {0}
+Podrobnosti zatím nebyly načtené.	Details have not been loaded yet.
+Seznam je prázdný. Zkontrolujte hledání a filtr.	The list is empty. Check the search and filter.
+Základní priorita: {0}	Base priority: {0}
+Relativní priorita: {0}	Relative priority: {0}
+Vytvořeno: {0}	Created: {0}
+Čas v jádře: {0}	Kernel time: {0}
+Čas v uživatelském režimu: {0}	User mode time: {0}
+Název nedostupný	Name unavailable
+Základní adresa: 0x{0}	Base address: 0x{0}
+Velikost obrazu: {0} B	Image size: {0} B
+Cesta: {0}	Path: {0}
+Nedostupná	Unavailable
+Podpis souboru na disku: {0}	File signature on disk: {0}
+Platný podle místního ověření Windows	Valid according to local Windows verification
+Bez podpisu	Unsigned
+Nedůvěryhodný nebo neplatný	Untrusted or invalid
+Nedostupný	Unavailable
+Zdroj: {0}	Source: {0}
+Vložený podpis	Embedded signature
+Katalog	Catalog
+Nezjištěn	Not determined
+Vydavatel: {0}	Publisher: {0}
+Výsledek Windows: 0x{0}	Windows result: 0x{0}
+Načteno: {0}	Loaded: {0}
+Podpis souboru zatím není ověřený.	The file signature has not been verified yet.
+{0} × 100 ns od 1601-01-01	{0} × 100 ns since 1601-01-01
+První vzorek	First sample
+Chybí oprávnění	Missing permission
+Nepodporováno	Unsupported
+Zastaralé	Stale
+Mezera	Gap
+Chyba dotazu	Query error
+Nedostupné	Unavailable
+32bitový proces (WOW64)	32-bit process (WOW64)
+64bitový proces	64-bit process
+Bitovost nezjištěna	Bitness not determined
+Chybí oprávnění k těmto podrobnostem.	Missing permission for these details.
+Tento zdroj nebo bitovost nejsou podporované.	This source or bitness is not supported.
+Požadované podrobnosti nejsou dostupné.	The requested details are not available.
+Pracovník odmítl požadavek.	The worker rejected the request.
+Dotaz překročil datový limit; neúplná data se nezobrazují.	The query exceeded the data limit; incomplete data is not shown.
+Pracovník ohlásil chybu dotazu.	The worker reported a query error.
+Konec oblasti: 0x{0}	Region end: 0x{0}
+Velikost: {0} B	Size: {0} B
+Stav: {0}	State: {0}
+Typ: {0}	Type: {0}
+Ochrana: {0}	Protection: {0}
+Pro tento stav není určena	Not defined for this state
+Základní adresa alokace: {0}	Allocation base: {0}
+Volná oblast	Free region
+Původní ochrana alokace: {0}	Original allocation protection: {0}
+Hodnota handle: 0x{0}	Handle value: 0x{0}
+Přístup ve snímku: 0x{0}	Access in snapshot: 0x{0}
+Typ objektu: {0} (index {1})	Object type: {0} (index {1})
+Atributy ve snímku: 0x{0}	Attributes in snapshot: 0x{0}
+Aktuálně zachycený typ: {0}	Currently captured type: {0}
+Aktuálně zachycený název: {0}	Currently captured name: {0}
+Otisk objektu: {0}	Object fingerprint: {0}
+Pozorováno: {0}	Observed: {0}
+Typ a název objektu zatím nebyly dotázané.	The object type and name have not been queried yet.
+Dotaz zachytí objekt aktuálně duplikovaný pod touto hodnotou. Po uzavření a opětovném použití handle může jít o jiný objekt než ve snímku.	The query captures the object currently duplicated under this value. After the handle is closed and reused, it may be a different object than in the snapshot.
+Nepojmenovaný objekt	Unnamed object
+Prázdný typ	Empty type
+Bez přístupu	No access
+Čtení	Read
+Čtení / zápis	Read / write
+Kopie při zápisu	Copy on write
+Spuštění	Execute
+Spuštění / čtení	Execute / read
+Spuštění / čtení / zápis	Execute / read / write
+Spuštění / kopie při zápisu	Execute / copy on write
+Neuvedena	Not specified
+Zavřít handle jako správce…	Close handle as administrator…
+Zavřít handle v procesu…	Close handle in process…
+Zavřít vybraný handle v cílovém procesu se zvýšenými právy	Close the selected handle in the target process with elevated rights
+Zavřít vybraný handle v cílovém procesu	Close the selected handle in the target process
+Typ objektu nelze ověřit, proto handle nelze bezpečně zavřít.	The object type cannot be verified, so the handle cannot be closed safely.
+Název souboru nelze přečíst, proto handle nelze bezpečně zavřít.	The file name cannot be read, so the handle cannot be closed safely.
+Proces už není aktuální. Handle nebyl zavřen.	The process is no longer current. The handle was not closed.
+Čekám na UAC, potvrzení správce a výsledek…	Waiting for UAC, administrator confirmation and the result…
+Zavírám handle a čekám na výsledek pracovníka…	Closing the handle and waiting for the worker's result…
+Výsledek není známý. Handle mohl být zavřen.	The result is unknown. The handle may have been closed.
+Pracovník požadavek nepřijal. Handle nebyl zavřen.	The worker did not accept the request. The handle was not closed.
+Čekání bylo zrušeno.	Waiting was canceled.
+Výsledek zavření handle	Handle close result
+Rozumím, že proces může spadnout nebo přijít o data.	I understand the process may crash or lose data.
+Zavřít handle v cizím procesu	Close a handle in another process
+Proces o zavření neví a s handlem může dál počítat. Může spadnout, přestat fungovat nebo ztratit či poškodit neuložená data. Zavření nelze vrátit.	The process does not know about the close and may keep using the handle. It may crash, stop working, or lose or corrupt unsaved data. The close cannot be undone.
+Těsně před zavřením se znovu ověří identita procesu a to, že pod hodnotou je objekt stejného typu a přístupu{0}{1}. Pokud se cokoli změnilo, zavření se odmítne.	Right before closing, the process identity is checked again, and that the value still holds an object of the same type and access{0}{1}. If anything changed, the close is refused.
+, se stejným názvem	, with the same name
+, se stejným otiskem	, with the same fingerprint
+Objekt nemá název ani otisk, takže jeho totožnost s tímto řádkem prokázat nelze; ověří se jen typ a přístup.	The object has neither a name nor a fingerprint, so its identity with this row cannot be proven; only type and access are verified.
+Následuje UAC a vlastní potvrzení správce. Nepotvrzený požadavek se neopakuje.	UAC and the app's own administrator confirmation follow. An unconfirmed request is not repeated.
+Zavřít handle	Close handle
+Proces: {0} · PID {1}	Process: {0} · PID {1}
+Handle: 0x{0} · přístup 0x{1}	Handle: 0x{0} · access 0x{1}
+Objekt: {0} · {1}	Object: {0} · {1}
+název nelze ověřit	name cannot be verified
+nepojmenovaný	unnamed
+Otisk: {0}	Fingerprint: {0}
+Vyberte službu	Select a service
+Hostitelský proces	Host process
+Přehled	Overview
+Závislosti	Dependencies
+Stav služby	Service status
+Hostitel podle správce služeb	Host according to the Service Control Manager
+Spouštění	Startup type
+Účet	Account
+Další služby se stejným hlášeným PID	Other services with the same reported PID
+Skupina	Group
+Příkaz	Command
+Výběr v seznamu otevře konfiguraci a závislosti služby.	Selecting an item in the list opens the service configuration and dependencies.
+Obnovte sběr pro načtení detailu.	Resume collection to load details.
+Načítám detail…	Loading details…
+Bez skupiny	No group
+Otevřít hostitelský proces.	Open the host process.
+Obnovte sběr pro otevření hostitele.	Resume collection to open the host.
+Hostitele nelze ověřit: {0}	The host cannot be verified: {0}
+Služba není spuštěná.	The service is not running.
+Hostitelský proces se změnil nebo data nejsou aktuální.	The host process changed or the data is not current.
+Služba nehlásí žádný PID.	The service reports no PID.
+Živý odkaz ověřuje hostitele vybrané služby.	The live link verifies the host of the selected service.
+Živý odkaz není ověřený.	The live link is not verified.
+Seskupení služeb vychází pouze z hlášeného PID, ne z ověřené totožnosti procesu.	Service grouping is based only on the reported PID, not on a verified process identity.
+Detail · stáří {0}	Details · age {0}
+zastaralý seznam	stale list
+Potřebuje ke spuštění	Required to start
+Navazující služby	Dependent services
+Žádné	None
+Skupina: {0}	Group: {0}
+Závislost {0}	Dependency {0}
+čt.	read
+záp.	write
+Čas ETW nedostupný	ETW time unavailable
+{0} B pozorováno · {1} událostí · {2} B/s v okně 1 s	{0} B observed · {1} events · {2} B/s in a 1 s window
+PID nelze určit	PID cannot be determined
+fyzické I/O	physical I/O
+Částečné · korelace PID/času · životnost nepotvrzená	Partial · PID/time correlation · lifetime unconfirmed
+Pozorovaná podmnožina · PID z události, generace z nepřerušené evidence	Observed subset · PID from the event, generation from uninterrupted tracking
+Pozorovaná podmnožina · vlastník vydávajícího vlákna při zahájení	Observed subset · owner of the issuing thread at start
+Částečné · nelze přiřadit historické životnosti	Partial · cannot be assigned to a historical lifetime
+dřívější přiřazení odvoláno	earlier assignment revoked
+čítač přetekl	counter overflowed
+okno není uzavřené	window not closed
+Kandidát podle historického PID a času; není důkaz stejné životnosti.	Candidate by historical PID and time; not proof of the same lifetime.
+PID pochází z události TCP/UDP; generaci určila evidence vzniku a ukončení bez ztráty od výchozího seznamu procesů nebo od vzniku procesu. Zachycený provoz přesto nemusí být úplný.	The PID comes from the TCP/UDP event; the generation was determined by start and exit tracking without loss since the baseline process list or since the process started. The captured traffic may still be incomplete.
+INIT a dokončení téhož I/O doložily životnost vlastníka vydávajícího vlákna při zahájení. Nejde o důkaz obecného žadatele I/O; vlákno může být připojené k jinému procesu.	INIT and completion of the same I/O confirmed the lifetime of the issuing thread's owner at start. This is not proof of the general I/O requester; the thread may be attached to another process.
+Životnost se nepodařilo určit; tento přenos není přiřazen současnému procesu.	The lifetime could not be determined; this transfer is not assigned to a current process.
+Vzorek {0} · epocha přiřazení {1}	Sample {0} · assignment epoch {1}
+Pozorované bajty (přesný čítač): {0}	Observed bytes (exact counter): {0}
+Počet pozorovaných událostí: {0}	Observed events: {0}
+Stav měření: {0} · stav identity: {1}	Measurement state: {0} · identity state: {1}
+Příznaky: {0}	Flags: {0}
+Životnost vlastníka vlákna: {0} · {1}	Thread owner lifetime: {0} · {1}
+Generace: {0} · {1}	Generation: {0} · {1}
+Kandidát generace: {0} · {1}	Generation candidate: {0} · {1}
+Agregační okno QPC: [{0}, {1}) · frekvence {2}	QPC aggregation window: [{0}, {1}) · frequency {2}
+Výpočetní interval: {0} ns · jednotka {1}	Calculation interval: {0} ns · unit {1}
+Přijato (monotónní ns): {0}	Received (monotonic ns): {0}
+Jde pouze o události zachycené vlastní relací ETW, nikoli o celkový provoz adaptéru ani obecné procesové I/O.	These are only events captured by the own ETW session, not total adapter traffic or general process I/O.
+Síťový počet vychází z velikostí událostí TCP/UDP; není zárukou počtu aplikačních bajtů.	The network count is based on TCP/UDP event sizes; it does not guarantee the number of application bytes.
+Potvrzení nového základního seznamu nezpřesní dřívější nejasné přenosy. Žádné živé akce podle PID.	Confirming a new baseline list does not refine earlier ambiguous transfers. No live actions by PID.
+nezachyceno	not captured
+čas nedostupný	time unavailable
+Konfliktní záznam	Conflicting record
+Neověřené ukončení	Unverified exit
+Neověřený vznik	Unverified start
+Čas nelze porovnat	Time cannot be compared
+Vznik i konec zachycen	Start and end captured
+Vznik nezachycen	Start not captured
+Bez konce při zastavení	No end at stop
+Oddělená část · bez konce	Separate segment · no end
+Konec zatím nezachycen	End not captured yet
+proud s mezerou	stream with gap
+opožděné pořadí	late order
+rozporné události	conflicting events
+opakováno {0}	repeated {0}
+oddělená část zdroje	separate source segment
+částečná událost	partial event
+starší údaje vytěsněny	older data evicted
+Identita není ověřená. Událost se nepáruje podle PID, názvu ani blízkého času.	Identity is not verified. The event is not paired by PID, name or nearby time.
+{0} s mezi skutečnými QPC událostmi.	{0} s between actual QPC events.
+Délka není dostupná: chybí jednoznačný pár, společná platná frekvence QPC nebo správné časové pořadí.	Duration unavailable: there is no unambiguous pair, common valid QPC frequency or correct time order.
+Záznam {0} · oddělená část {1}	Capture {0} · segment {1}
+Vznik	Start
+Konec	End
+Délka: {0}	Duration: {0}
+Stav zachytávání při sestavení řádku: {0}	Capture state when the row was built: {0}
+Hranice propojení: změnila se frekvence QPC.	Link boundary: the QPC frequency changed.
+Hranice propojení: změnil se identifikátor bootu.	Link boundary: the boot identifier changed.
+Hranice propojení: pořadí zdroje se opakovalo nebo vrátilo zpět.	Link boundary: the source sequence repeated or went back.
+Hranice propojení: čítače zdroje se vrátily zpět.	Link boundary: the source counters went back.
+Nezachycený konec neznamená, že proces právě běží. Osamocený konec neurčuje čas vzniku.	A missing end does not mean the process is running now. A lone end does not determine the start time.
+Ztráty nelze přesně umístit do intervalu. Vytěsněné řádky už nejsou k propojení; dřívější konflikt nelze vyloučit.	Losses cannot be placed exactly in the interval. Evicted rows are no longer available for linking; an earlier conflict cannot be ruled out.
+CPU a RAM se zde neměří. Žádné živé akce ani vyhledání současného vlastníka stejného PID.	CPU and RAM are not measured here. No live actions and no lookup of the current owner of the same PID.
+{0}: událost nezachycena.	{0}: event not captured.
+{0}: {1} · QPC {2} · frekvence {3}	{0}: {1} · QPC {2} · frequency {3}
+Pořadí zdroje {0} · přijato monotónně {1} ns · příznaky {2}	Source sequence {0} · received monotonic {1} ns · flags {2}
+Návratový kód: 0x{0}	Exit code: 0x{0}
+Návratový kód není dostupný.	Exit code is not available.
+Potvrzená	Committed
+Rezervovaná	Reserved
+Volná	Free
+Stav 0x{0}	State 0x{0}
+Soukromá	Private
+Mapovaná	Mapped
+Obraz souboru	Image
+Neuveden	Not specified
+Typ 0x{0}	Type 0x{0}
+typ {0} · přístup 0x{1}	type {0} · access 0x{1}
+PID {0}, vznik 0x{1}	PID {0}, created 0x{1}
+TID {0}, vznik 0x{1}	TID {0}, created 0x{1}
+svazek 0x{0}, ID souboru 0x{1}	volume 0x{0}, file ID 0x{1}
+Neplatná nebo překrývající se oblast paměti.	Invalid or overlapping memory region.
+Neplatný nebo duplicitní handle.	Invalid or duplicate handle.
+Pozorování patří jinému handle.	The observation belongs to a different handle.
+Neplatný stav názvu, typu nebo otisku objektu.	Invalid object name, type or fingerprint state.
+Neplatná nebo duplicitní identita vlastníka.	Invalid or duplicate owner identity.
+Výsledek obsahuje data mimo rámec.	The result contains data outside the frame.
+(název nedostupný)	(name unavailable)
+ochrana 0x{0}	protection 0x{0}
+Vlákno	Thread
+Priorita	Priority
+Čas CPU	CPU time
+Spuštěno	Started
+Modul	Module
+Velikost	Size
+Adresa	Address
+Cesta	Path
+Stav a typ	State and type
+Ochrana	Protection
+Handle	Handle
+Typ objektu	Object type
+Přístup	Access
+Skupina {0} · CPU {1} · jádro {2} · třída efektivity {3} · ID {4}	Group {0} · CPU {1} · core {2} · efficiency class {3} · ID {4}
+rezervováno jinému procesu	reserved for another process
+zaparkováno	parked
+Skupiny: {0} · CPU sets: {1} · nyní výslovně vybráno: {2}	Groups: {0} · CPU sets: {1} · explicitly selected now: {2}
+Zrušit výchozí výběr CPU sets	Clear default CPU sets selection
+Výchozí logické procesory procesu včetně čísla skupiny	Default logical processors of the process including group number
+Zrušení výběru obnoví plánování bez výchozího omezení CPU sets. Samostatná nastavení vláken ani pevná afinita se tím nemění. Při změně topologie nebo původního výběru se požadavek odmítne a je nutný nový náhled.	Clearing the selection restores scheduling without a default CPU sets restriction. Separate thread settings and hard affinity do not change. If the topology or the original selection changes, the request is refused and a new preview is needed.
+Výchozí CPU sets	Default CPU sets
+Nastavit výchozí výběr	Set default selection
+Požadavek: zrušit výchozí výběr CPU sets.	Request: clear the default CPU sets selection.
+Vybráno: {0} · skupiny: {1}	Selected: {0} · groups: {1}
+Odeberte procesory rezervované jinému procesu.	Remove processors reserved for another process.
+Výsledek není známý. Nastavení se mohlo změnit.	The result is unknown. The setting may have changed.
+Pracovník požadavek nepřijal; nastavení nebylo změněno.	The worker did not accept the request; the setting was not changed.
+Výchozí výběr CPU sets byl potvrzen zpětným čtením.	The default CPU sets selection was confirmed by reading it back.
+Proces nemá výchozí omezení CPU sets.	The process has no default CPU sets restriction.
+Skupina {0}: {1}	Group {0}: {1}
+Jde o načtené výchozí přiřazení. Explicitní volby vláken a pevná afinita mohou jeho použití omezit.	This is the default assignment that was read. Explicit thread choices and hard affinity can limit its use.
+okno	window
+okna	windows
+oken	windows
+proces	process
+procesy	processes
+procesů	processes
+CPU je součet z {0} / {1} procesů.	CPU is the sum of {0} / {1} processes.
+Aktuální CPU této skupiny není dostupné.	Current CPU of this group is unavailable.
+Paměť je součet pracovních sad.	Memory is the sum of working sets.
+Přehled aplikací je částečný nebo zastaralý.	The apps overview is partial or stale.
+U ostatních procesů chybí aktuální měření.	Other processes have no current measurement.
+Vyžaduje oprávnění správce	Administrator rights required
+NKS Task Manager se zavře a spustí znovu jako správce ve stejném pohledu. Windows zobrazí výzvu UAC.	NKS Task Manager closes and restarts as administrator in the same view. Windows shows a UAC prompt.
+Spuštění jako správce selhalo	Running as administrator failed
+Spustit znovu jako správce	Restart as administrator
+Stav	Status
+Paměť	Memory
+Disk	Disk
+Síť	Network
+Řadit podle: {0}	Sort by: {0}
+Verze podepsaného pracovníka neodpovídá běžícímu klientovi. Dostupný je pouze přehled a výslovná obnova původní verze.	The signed worker's version does not match the running client. Only the overview and an explicit restore of the original version are available.
+Připravený pracovník neodpovídá schválenému plánu.	The prepared worker does not match the approved plan.
+Pracovníka aktualizací nelze spustit.	The update worker cannot be started.
+Ukončení odmítnutého pracovníka nelze ověřit.	The exit of the rejected worker cannot be verified.
+Pracovník aktualizací skončil před dokončením odpovědi.	The update worker exited before completing the response.
+Data za koncem odpovědi aktualizací.	Data after the end of the update response.
+Pracovník nepotvrdil úspěšné dokončení odpovědi.	The worker did not confirm successful completion of the response.
+Skutečné ukončení pracovníka aktualizací nelze ověřit.	The actual exit of the update worker cannot be verified.
+Procesy v čase…	Processes over time…
+Otevřít historické procesy pro vybraný čas nebo úsek	Open historical processes for the selected time or range
+Kliknutím na graf připněte čas. Shift+kliknutím vyberte dva konce úseku. Historický přehled neprovádí živé akce.	Click the graph to pin a time. Shift+click to select both ends of a range. The historical overview performs no live actions.
+Vybraný úsek {0} · historický pohled	Selected range {0} · historical view
+První hranice úseku · Shift+klik nastaví druhou.	First range boundary · Shift+click sets the second.
+Připnutý čas · historický pohled	Pinned time · historical view
+Kliknutím vyberete čas · Shift vybere úsek.	Click to select a time · Shift selects a range.
+Pracovník neověřil přijetí požadavku před výsledkem.	The worker did not confirm accepting the request before the result.
+Neplatná posloupnost plánů stromu.	Invalid sequence of tree plans.
+Chybí doložený plán stromu.	The confirmed tree plan is missing.
+Pracovník odmítl požadavek až po potvrzení přijetí.	The worker rejected the request after confirming acceptance.
+Pracovník vrátil data za koncem výsledku.	The worker returned data after the end of the result.
+Pracovník skončil bez potvrzeného výsledku akce.	The worker exited without a confirmed action result.
+Čekání bylo zrušeno. Výsledek rozpracované akce není známý.	Waiting was canceled. The result of the action in progress is unknown.
+Pracovník akcí skončil před dokončením odpovědi.	The action worker exited before completing the response.
+Pracovníka akcí nelze spustit nebo připojit (Windows {0}).	The action worker cannot be started or connected (Windows {0}).
+Pracovníka akcí se nepodařilo spustit.	The action worker could not be started.
+I/O nedostupné	I/O unavailable
+Náhrada Správce úloh vyžaduje jediný cíl, volbu 1 nebo 2 a žádnou skupinu.	Replacing Task Manager requires a single target, option 1 or 2 and no group.
+Výběr CPU sets nepatří k této akci.	A CPU sets selection does not belong to this action.
+Handle nepatří k této akci.	A handle does not belong to this action.
+Akce vyžaduje 1 až 64 vybraných procesů.	The action requires 1 to 64 selected processes.
+Ukončení stromu vyžaduje jeden potvrzený kořen.	Ending a process tree requires one confirmed root.
+Afinita vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů.	Affinity requires one process, a non-empty mask and one processor group.
+Neplatná hodnota akce.	Invalid action value.
+Výběr obsahuje proces bez ověřitelné identity.	The selection contains a process without a verifiable identity.
+Pracovník vrátil jiný požadavek nebo neplatnou hlavičku.	The worker returned a different request or an invalid header.
+Pracovník vrátil neplatný typ nebo délku odpovědi.	The worker returned an invalid response type or length.
+Chybí konečný výsledek požadavku.	The final result of the request is missing.
+Výsledek nepatří vybranému procesu nebo obsahuje neplatná pole.	The result does not belong to the selected process or contains invalid fields.
+Zavření handle vyžaduje jeden proces, platnou hodnotu a ověřený typ objektu.	Closing a handle requires one process, a valid value and a verified object type.
+Neplatný rámec procesového stromu.	Invalid process tree frame.
+Plán není pokračováním potvrzeného kořene.	The plan does not continue the confirmed root.
+Plán obsahuje cíl bez doložené vazby na potvrzený kořen.	The plan contains a target without a proven link to the confirmed root.
+Pracovník zaměnil již doložený cíl plánu.	The worker swapped an already confirmed plan target.
+Výsledek přidal cíl mimo poslední potvrzený plán.	The result added a target outside the last confirmed plan.
+Výsledek neodpovídá pořadí děti před rodiči.	The result does not follow the children-before-parents order.
+Neplatný nebo neověřený výsledek cíle stromu.	Invalid or unverified result of a tree target.
+U zvoleného času není dostupný uchovaný procesový snímek.	No retained process snapshot is available at the selected time.
+Ve zvoleném intervalu není uchovaný procesový snímek.	There is no retained process snapshot in the selected interval.
+Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	The nearest actually retained process snapshot; values were not interpolated to the cursor.
+Maximum každého řádku pochází z jediného skutečně uchovaného vzorku. Přehled obsahuje jen uchovaná pozorování vybraných procesů; nezachycené hodnoty nejsou známé.	Each row's maximum comes from a single actually retained sample. The overview contains only retained observations of selected processes; uncaptured values are unknown.

@@ -23,10 +23,10 @@ internal sealed partial class UpdateWorkerProcess
         try {
             var role = PublisherTrust.RequireRole(image, "NKS Task Manager Update Worker", "nks-update-worker.exe");
             if (!compatibleRelease && role.ProductVersion != currentVersion)
-                throw new UpdateException(UpdateStatus.Rejected, "Verze podepsaného pracovníka neodpovídá běžícímu klientovi. Dostupný je pouze přehled a výslovná obnova původní verze.");
+                throw new UpdateException(UpdateStatus.Rejected, Loc.T("Verze podepsaného pracovníka neodpovídá běžícímu klientovi. Dostupný je pouze přehled a výslovná obnova původní verze."));
             if (plan is not null && (image.Identity != plan.StageHelperFileId || image.Length != plan.StageHelperBytes
                 || !CryptographicOperations.FixedTimeEquals(image.Hash(UpdateProtocol.MaximumPackageBytes, cancellation), UpdateProtocol.ParseHash(plan.StageHelperSha256))))
-                throw new InvalidDataException("Připravený pracovník neodpovídá schválenému plánu.");
+                throw new InvalidDataException(Loc.T("Připravený pracovník neodpovídá schválenému plánu."));
             if (plan is null && killOnClientExit) {
                 job = CreateJobObject(0, 0);
                 if (job.IsInvalid) throw new Win32Exception(Marshal.GetLastPInvokeError());
@@ -40,7 +40,7 @@ internal sealed partial class UpdateWorkerProcess
                 RedirectStandardInput = true, RedirectStandardOutput = true
             };
             start.ArgumentList.Add("--stdio");
-            child = Process.Start(start) ?? throw new IOException("Pracovníka aktualizací nelze spustit.");
+            child = Process.Start(start) ?? throw new IOException(Loc.T("Pracovníka aktualizací nelze spustit."));
             if (job is not null && !AssignProcessToJobObject(job, child.SafeHandle)) throw new Win32Exception(Marshal.GetLastPInvokeError());
             image.VerifyProcess(child); cancellation.ThrowIfCancellationRequested();
             return new(child, image, job, role.ProductVersion);
@@ -50,7 +50,7 @@ internal sealed partial class UpdateWorkerProcess
                 TryKill(child);
                 try { child.WaitForExit(); }
                 catch (Exception error) when (error is Win32Exception or InvalidOperationException) {
-                    throw new UpdatePeerUnresolvedException("Ukončení odmítnutého pracovníka nelze ověřit.", error);
+                    throw new UpdatePeerUnresolvedException(Loc.T("Ukončení odmítnutého pracovníka nelze ověřit."), error);
                 }
                 child.Dispose(); image.Dispose();
             }
@@ -83,16 +83,16 @@ internal sealed partial class UpdateWorkerProcess
             await process.StandardOutput.BaseStream.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
             return (header, payload);
         } catch (EndOfStreamException error) {
-            throw new IOException("Pracovník aktualizací skončil před dokončením odpovědi.", error);
+            throw new IOException(Loc.T("Pracovník aktualizací skončil před dokončením odpovědi."), error);
         }
     }
     internal Task EndAsync(UpdateResponse response, CancellationToken cancellation) => EndCleanupAsync(response.Status, cancellation);
     internal async Task EndCleanupAsync(UpdateStatus status, CancellationToken cancellation)
     {
         var extra = new byte[1];
-        if (await process.StandardOutput.BaseStream.ReadAsync(extra, cancellation).ConfigureAwait(false) != 0) throw new InvalidDataException("Data za koncem odpovědi aktualizací.");
+        if (await process.StandardOutput.BaseStream.ReadAsync(extra, cancellation).ConfigureAwait(false) != 0) throw new InvalidDataException(Loc.T("Data za koncem odpovědi aktualizací."));
         await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
-        if (status == UpdateStatus.Ok && process.ExitCode != 0) throw new IOException("Pracovník nepotvrdil úspěšné dokončení odpovědi.");
+        if (status == UpdateStatus.Ok && process.ExitCode != 0) throw new IOException(Loc.T("Pracovník nepotvrdil úspěšné dokončení odpovědi."));
     }
     internal void Cancel()
     {
@@ -103,7 +103,7 @@ internal sealed partial class UpdateWorkerProcess
         if (kill) Cancel();
         try { await process.WaitForExitAsync().ConfigureAwait(false); }
         catch (Exception error) when (error is Win32Exception or InvalidOperationException) {
-            throw new UpdatePeerUnresolvedException("Skutečné ukončení pracovníka aktualizací nelze ověřit.", error);
+            throw new UpdatePeerUnresolvedException(Loc.T("Skutečné ukončení pracovníka aktualizací nelze ověřit."), error);
         }
         job?.Dispose(); job = null; process.Dispose(); image.Dispose();
     }

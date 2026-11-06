@@ -38,9 +38,9 @@ public sealed partial class MainWindow
     {
         if (RunningElevated) return false;
         var dialog = Appearance.Dialog(new ContentDialog {
-            Title = "Vyžaduje oprávnění správce", XamlRoot = root.XamlRoot,
-            Content = ServiceActionText(reason + "\nNKS Task Manager se zavře a spustí znovu jako správce ve stejném pohledu. Windows zobrazí výzvu UAC.", 0xe9eef0),
-            PrimaryButtonText = "Spustit jako správce", CloseButtonText = "Zrušit", DefaultButton = ContentDialogButton.Primary
+            Title = Loc.T("Vyžaduje oprávnění správce"), XamlRoot = root.XamlRoot,
+            Content = ServiceActionText(reason + "\n" + Loc.T("NKS Task Manager se zavře a spustí znovu jako správce ve stejném pohledu. Windows zobrazí výzvu UAC."), 0xe9eef0),
+            PrimaryButtonText = Loc.T("Spustit jako správce"), CloseButtonText = Loc.T("Zrušit"), DefaultButton = ContentDialogButton.Primary
         });
         return await dialog.ShowAsync() == ContentDialogResult.Primary && RestartElevated();
     }
@@ -48,14 +48,14 @@ public sealed partial class MainWindow
     private async Task ShowElevationFailureAsync(string message)
     {
         await Appearance.Dialog(new ContentDialog {
-            Title = "Spuštění jako správce selhalo", XamlRoot = root.XamlRoot, Content = ServiceActionText(message, 0xe9eef0), CloseButtonText = "Zavřít"
+            Title = Loc.T("Spuštění jako správce selhalo"), XamlRoot = root.XamlRoot, Content = ServiceActionText(message, 0xe9eef0), CloseButtonText = Loc.T("Zavřít")
         }).ShowAsync();
     }
 
     private void AddElevationMenu(MenuFlyout menu)
     {
         if (RunningElevated) return;
-        var item = new MenuFlyoutItem { Text = "Spustit znovu jako správce", Icon = new FontIcon { Glyph = "" } };
+        var item = new MenuFlyoutItem { Text = Loc.T("Spustit znovu jako správce"), Icon = new FontIcon { Glyph = "" } };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(item, "restart-elevated");
         item.Click += (_, _) => RestartElevated();
         menu.Items.Add(new MenuFlyoutSeparator()); menu.Items.Add(item);

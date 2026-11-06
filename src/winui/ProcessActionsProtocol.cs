@@ -50,18 +50,18 @@ internal static partial class ProcessActionsProtocol
         if (request.Command == ProcessActionCommand.TaskManager) {
             // The single target is the requesting GUI; the broker takes the path from its verified image, never from the request.
             if (request.Targets.Length != 1 || request.Argument is not (1 or 2) || request.Group != 0 || request.CpuSets is not null)
-                throw new ArgumentException("Náhrada Správce úloh vyžaduje jediný cíl, volbu 1 nebo 2 a žádnou skupinu.", nameof(request));
-        } else if (request.CpuSets is not null) throw new ArgumentException("Výběr CPU sets nepatří k této akci.", nameof(request));
-        if (request.Handle is not null) throw new ArgumentException("Handle nepatří k této akci.", nameof(request));
+                throw new ArgumentException(Loc.T("Náhrada Správce úloh vyžaduje jediný cíl, volbu 1 nebo 2 a žádnou skupinu."), nameof(request));
+        } else if (request.CpuSets is not null) throw new ArgumentException(Loc.T("Výběr CPU sets nepatří k této akci."), nameof(request));
+        if (request.Handle is not null) throw new ArgumentException(Loc.T("Handle nepatří k této akci."), nameof(request));
         if (request.Command != ProcessActionCommand.TaskManager && (ushort)request.Command > (ushort)ProcessActionCommand.TerminateTree || request.Targets.Length is < 1 or > 64)
-            throw new ArgumentException("Akce vyžaduje 1 až 64 vybraných procesů.", nameof(request));
+            throw new ArgumentException(Loc.T("Akce vyžaduje 1 až 64 vybraných procesů."), nameof(request));
         if (request.Command == ProcessActionCommand.TerminateTree && request.Targets.Length != 1)
-            throw new ArgumentException("Ukončení stromu vyžaduje jeden potvrzený kořen.", nameof(request));
+            throw new ArgumentException(Loc.T("Ukončení stromu vyžaduje jeden potvrzený kořen."), nameof(request));
         if (request.Command == ProcessActionCommand.Affinity) {
             if (request.Targets.Length != 1 || request.Argument == 0 || request.Group > ushort.MaxValue)
-                throw new ArgumentException("Afinita vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů.", nameof(request));
+                throw new ArgumentException(Loc.T("Afinita vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů."), nameof(request));
         } else if (request.Command != ProcessActionCommand.TaskManager && (request.Group != 0 || (request.Command == ProcessActionCommand.Priority
-            ? !PriorityAllowed(request.Argument) : request.Argument != 0))) throw new ArgumentException("Neplatná hodnota akce.", nameof(request));
+            ? !PriorityAllowed(request.Argument) : request.Argument != 0))) throw new ArgumentException(Loc.T("Neplatná hodnota akce."), nameof(request));
         var bytes = new byte[64 + 48 * request.Targets.Length];
         BinaryPrimitives.WriteUInt32LittleEndian(bytes, Magic);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(4), 1);
@@ -77,7 +77,7 @@ internal static partial class ProcessActionsProtocol
             if (key.Boot.IsEmpty || key.Pid == 0 || key.Kind is not (GenerationKind.CreationTime or GenerationKind.SequenceNumber)
                 || key.Generation == 0 || target.Created100ns == 0 || !keys.Add(key)
                 || request.Command != ProcessActionCommand.CloseWindows && target.Window != 0)
-                throw new ArgumentException("Výběr obsahuje proces bez ověřitelné identity.", nameof(request));
+                throw new ArgumentException(Loc.T("Výběr obsahuje proces bez ověřitelné identity."), nameof(request));
             Write(bytes, at, key.Boot.Low); Write(bytes, at + 8, key.Boot.High); Write(bytes, at + 16, key.Pid);
             Write(bytes, at + 20, (uint)key.Kind); Write(bytes, at + 24, key.Generation);
             Write(bytes, at + 32, target.Created100ns); Write(bytes, at + 40, target.Window);
@@ -89,7 +89,7 @@ internal static partial class ProcessActionsProtocol
     {
         if (header.Length != 64 || request.Length < 112 || UInt(header, 0) != Magic || !header[..8].SequenceEqual(request[..8])
             || !header.Slice(16, 24).SequenceEqual(request.Slice(16, 24)) || ULong(header, 48) != 0 || ULong(header, 56) != 0)
-            throw Invalid("Pracovník vrátil jiný požadavek nebo neplatnou hlavičku.");
+            throw Invalid(Loc.T("Pracovník vrátil jiný požadavek nebo neplatnou hlavičku."));
         uint bytes = UInt(header, 8), count = UInt(header, 12); var frame = Frame(header);
         if (BinaryPrimitives.ReadUInt16LittleEndian(request[6..]) is (ushort)ProcessActionCommand.QueryCpuSets or (ushort)ProcessActionCommand.CpuSets)
             return CpuSetsPayloadLength(header, frame, bytes, count);
@@ -98,7 +98,7 @@ internal static partial class ProcessActionsProtocol
         if ((uint)frame > (uint)ProcessActionFrame.Failed || bytes > 112 * 64
             || (frame is ProcessActionFrame.Accepted or ProcessActionFrame.Results
                 ? count != UInt(request, 12) || UInt(header, 44) != 0 || bytes != (frame == ProcessActionFrame.Accepted ? 0 : count * 112)
-                : count != 0 || bytes != 0)) throw Invalid("Pracovník vrátil neplatný typ nebo délku odpovědi.");
+                : count != 0 || bytes != 0)) throw Invalid(Loc.T("Pracovník vrátil neplatný typ nebo délku odpovědi."));
         return (int)bytes;
     }
 
@@ -107,7 +107,7 @@ internal static partial class ProcessActionsProtocol
     internal static ProcessActionsBatch Response(ReadOnlySpan<byte> header, ReadOnlySpan<byte> payload, ReadOnlySpan<byte> request)
     {
         if (PayloadLength(header, request) != payload.Length || Frame(header) == ProcessActionFrame.Accepted)
-            throw Invalid("Chybí konečný výsledek požadavku.");
+            throw Invalid(Loc.T("Chybí konečný výsledek požadavku."));
         var frame = Frame(header); var command = (ProcessActionCommand)BinaryPrimitives.ReadUInt16LittleEndian(request[6..]);
         var rows = frame is ProcessActionFrame.Results or ProcessActionFrame.CpuSets ? new ProcessActionResult[UInt(header, 12)] : [];
         for (int i = 0; i < rows.Length; ++i) {
@@ -145,7 +145,7 @@ internal static partial class ProcessActionsProtocol
                 || outcome == ProcessActionOutcome.Applied && command == ProcessActionCommand.Terminate && !flags.HasFlag(ProcessActionFlags.ExitedAfter)
                 || flags.HasFlag(ProcessActionFlags.EffectConfirmed) && outcome != ProcessActionOutcome.Applied
                 || command != ProcessActionCommand.CloseWindows && (UInt(row, 100) != 0 || UInt(row, 104) != 0))
-                throw Invalid("Výsledek nepatří vybranému procesu nebo obsahuje neplatná pole.");
+                throw Invalid(Loc.T("Výsledek nepatří vybranému procesu nebo obsahuje neplatná pole."));
             var key = new ProcessKey(new(ULong(row, 0), ULong(row, 8)), UInt(row, 16), (GenerationKind)UInt(row, 20), ULong(row, 24));
             var target = new ProcessActionTarget(key, ULong(row, 32), ULong(expected, 40));
             rows[i] = new(target, ULong(row, 40), outcome, reason, UInt(row, 56), unchecked((int)UInt(row, 60)), flags,
@@ -163,7 +163,7 @@ internal static partial class ProcessActionsProtocol
             || handle.Value == 0 || (handle.Value & 3) != 0 || handle.Value >= 0xfffffff0 || handle.Type.Length is < 1 or > 128
             || handle.Name is { Length: > 32767 } || handle.Type.Contains('\0') || handle.Name?.Contains('\0') == true
             || !ProcessDetailsProtocol.FingerprintValid(handle.Fingerprint, handle.Type))
-            throw new ArgumentException("Zavření handle vyžaduje jeden proces, platnou hodnotu a ověřený typ objektu.", nameof(request));
+            throw new ArgumentException(Loc.T("Zavření handle vyžaduje jeden proces, platnou hodnotu a ověřený typ objektu."), nameof(request));
         var basis = Request(request with { Command = ProcessActionCommand.Query, Handle = null });
         string text = handle.Type + handle.Name;
         var bytes = new byte[112 + 48 + text.Length * 2];
