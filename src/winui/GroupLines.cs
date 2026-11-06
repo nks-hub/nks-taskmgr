@@ -3,6 +3,8 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Controls;
 using Windows.UI.Text;
 
 namespace NksTaskMgr.WinUI;
@@ -35,6 +37,8 @@ public sealed partial class GroupLine : INotifyPropertyChanged
     public string Network { get; private set; } = "";
     public string Tip { get; private set; } = "";
     internal string Accessible { get; private set; } = "";
+    /// <summary>The list container currently showing this line; its screen reader name follows state changes.</summary>
+    internal ListViewItem? Container { get; set; }
     internal string SortName { get; private set; } = "";
     internal double CpuValue { get; private set; }
     internal double MemoryValue { get; private set; }
@@ -60,7 +64,9 @@ public sealed partial class GroupLine : INotifyPropertyChanged
         Update(Disk, disk, value => Disk = value, nameof(Disk));
         Update(Network, network, value => Network = value, nameof(Network));
         Update(Tip, tip, value => Tip = value, nameof(Tip));
+        if (Accessible == accessible) return;
         Accessible = accessible;
+        if (Container is { } item && ReferenceEquals(item.Content, this)) AutomationProperties.SetName(item, accessible);
     }
 
     internal void SetSort(string name, double cpu, double memory, double disk, double network)

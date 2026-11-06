@@ -51,7 +51,7 @@ public sealed partial class MainWindow
         list.ItemContainerStyle = style;
         list.ContainerContentChanging += (_, args) => {
             if (args.InRecycleQueue || args.Item is not GroupLine line) return;
-            AutomationProperties.SetName(args.ItemContainer, line.Accessible);
+            AutomationProperties.SetName(args.ItemContainer, line.Accessible); line.Container = args.ItemContainer as ListViewItem;
             if (args.ItemContainer.ContentTemplateRoot is Grid grid && grid.ColumnDefinitions.Count == GroupColumns.Length)
                 grid.ColumnDefinitions[^1].Width = new GridLength(networkShown() ? GroupColumns[^1] : 0);
         };
