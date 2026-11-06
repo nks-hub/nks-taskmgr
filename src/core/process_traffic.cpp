@@ -13,6 +13,8 @@ bool add(std::uint64_t& value, std::uint64_t amount = 1) {
 constexpr std::int64_t reorderDelayNs = 2'000'000'000;
 // Loss polling (1 s) and the reorder delay bound when a committed network window can still be revoked.
 constexpr std::int64_t settledWindows = 10;
+// Pending entries searched for a same-PID merge target; bounds the per-event cost at about 14 000 events/s.
+constexpr std::size_t mergeScan = 64;
 bool attributed(ProcessTrafficAttribution value) {
     return value == ProcessTrafficAttribution::issuingThreadOwner || value == ProcessTrafficAttribution::direct;
 }
@@ -43,17 +45,25 @@ void ProcessTrafficStore::observe(ProcessTrafficObservation observation, const E
     drain(observation.observedAtNs, identities);
     if (epoch != info.attributionEpoch) { dropped(observation); return; }
     observation.firstQpc = observation.qpc; observation.operations = 1;
-    // Consecutive sends of one PID in one window share an entry, so a burst does not overflow the queue and reset attribution.
-    // shortcut: only the newest entry merges; interleaved bursts of several PIDs still use one entry per event.
-    if (observation.source != ProcessTrafficSource::physicalDisk && !pending.empty()) {
-        auto& back = pending.back();
-        if (back.source == observation.source && back.direction == observation.direction && back.pidOrTid == observation.pidOrTid
-            && back.ipv6 == observation.ipv6 && back.qpc <= observation.qpc && back.firstQpc / frequency == observation.qpc / frequency
-            && back.bytes <= UINT32_MAX - observation.bytes && back.operations < UINT32_MAX
-            && identities.processOwnerAt(back.pidOrTid, back.firstQpc).creationTime == identities.processOwnerAt(observation.pidOrTid, observation.qpc).creationTime) {
-            back.bytes += observation.bytes; back.qpc = observation.qpc; ++back.operations;
-            back.observedAtNs = (std::max)(back.observedAtNs, observation.observedAtNs);
-            return;
+    // Sends of one PID in one window share its newest entry, so bursts of several interleaved processes do not overflow the
+    // queue and reset attribution. The same owner at both ends proves one generation held the PID for the whole span.
+    if (observation.source != ProcessTrafficSource::physicalDisk) {
+        const auto window = observation.qpc / frequency;
+        std::size_t scanned = 0;
+        for (auto it = pending.rbegin(); it != pending.rend() && scanned < mergeScan; ++it, ++scanned) {
+            auto& entry = *it;
+            if (entry.source == ProcessTrafficSource::physicalDisk) continue;
+            if (entry.qpc / frequency < window) break;
+            if (entry.source != observation.source || entry.direction != observation.direction || entry.pidOrTid != observation.pidOrTid
+                || entry.ipv6 != observation.ipv6) continue;
+            if (entry.qpc <= observation.qpc && entry.firstQpc / frequency == window
+                && entry.bytes <= UINT32_MAX - observation.bytes && entry.operations < UINT32_MAX
+                && identities.processOwnerAt(entry.pidOrTid, entry.firstQpc).creationTime == identities.processOwnerAt(observation.pidOrTid, observation.qpc).creationTime) {
+                entry.bytes += observation.bytes; entry.qpc = observation.qpc; ++entry.operations;
+                entry.observedAtNs = (std::max)(entry.observedAtNs, observation.observedAtNs);
+                return;
+            }
+            break;
         }
     }
     if (pending.size() == maximumPending) { invalidate(false); dropped(observation); return; }
@@ -220,7 +230,11 @@ bool ProcessTrafficStore::commit(const ProcessTrafficObservation& observation, E
     sample.observedAtNs = (std::max)(sample.observedAtNs, observation.observedAtNs);
     sample.measurement.observedAtNs = sample.observedAtNs;
     sample.observedBytesPerSecond = static_cast<double>(sample.observedBytes);
-    if ((observation.firstQpc >= 0 ? observation.firstQpc : observation.qpc) < newestQpc) { sample.flags |= trafficLate; add(info.lateEvents); }
+    // Samples are 1 s windows, so only data for a window older than the newest committed one is late; a merged entry may end
+    // after another PID's entry from the same window.
+    if (newestQpc >= 0 && (observation.firstQpc >= 0 ? observation.firstQpc : observation.qpc) / frequency < newestQpc / frequency) {
+        sample.flags |= trafficLate; add(info.lateEvents);
+    }
     newestQpc = (std::max)(newestQpc, observation.qpc); stored.dirty = true;
     if (unknown) { add(info.unknownEvents, observation.operations); add(info.unknownBytes, observation.bytes); }
     return true;
