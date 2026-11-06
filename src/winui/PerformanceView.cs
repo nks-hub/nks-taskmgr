@@ -90,7 +90,7 @@ public sealed partial class MainWindow
         void Fact(string name, string value) {
             if (factValues.TryGetValue(name, out var existing)) { if (existing.Text != value) existing.Text = value; return; }
             var block = new StackPanel { Spacing = 1 };
-            var caption = Label(name, 10, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; block.Children.Add(caption);
+            var caption = Label(Loc.T(name), 10, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; block.Children.Add(caption);
             var text = Label(value, 13, 0xe9eef0); text.TextWrapping = TextWrapping.Wrap; block.Children.Add(text);
             performanceFacts.Children.Add(block); performanceFactCells.Add(block); factValues.Add(name, text);
         }
