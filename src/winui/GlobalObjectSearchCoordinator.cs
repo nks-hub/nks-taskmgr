@@ -72,13 +72,12 @@ internal sealed class GlobalObjectSearchCoordinator(ProcessDetailsClient client)
                             ++state.ObjectsExamined;
                             try {
                                 var info = await client.ReadHandleInfoAsync(owner.Key, handle.Value, linked.Token).ConfigureAwait(false);
+                                // A refused handle (for example a non-duplicable EtwRegistration) answers normally; only
+                                // transport failures below count towards abandoning the owner.
                                 if (info.State != ProcessDetailsState.Ok || info.HandleInfo is not { } observation) {
-                                    state.Partial = true; ++state.ObjectsSkipped;
+                                    state.Partial = true; ++state.ObjectsSkipped; consecutiveFailures = 0;
                                     if (info.State == ProcessDetailsState.TargetChanged) { ended = true; break; }
                                     if (info.State == ProcessDetailsState.LimitExceeded) limited = true; else unavailable = true;
-                                    if (++consecutiveFailures >= 3) {
-                                        limited = true; state.ObjectsSkipped += count - i - 1; break;
-                                    }
                                     await FlushAsync(false, linked.Token).ConfigureAwait(false);
                                     continue;
                                 }
