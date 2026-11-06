@@ -57,6 +57,8 @@ internal sealed partial class ProcessActionsSession : IDisposable
             return result;
         } catch (Exception error) when (cancellation.IsCancellationRequested && error is IOException or InvalidDataException or ObjectDisposedException or Win32Exception) {
             throw new OperationCanceledException("Čekání bylo zrušeno. Výsledek rozpracované akce není známý.", error, cancellation);
+        } catch (EndOfStreamException error) {
+            throw new IOException("Pracovník akcí skončil před dokončením odpovědi.", error);
         } catch (Win32Exception error) {
             throw new IOException("Pracovníka akcí nelze spustit nebo připojit (Windows " + error.NativeErrorCode + ").", error);
         } finally {

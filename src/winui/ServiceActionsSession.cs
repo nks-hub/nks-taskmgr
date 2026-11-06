@@ -58,12 +58,16 @@ internal sealed partial class ServiceActionsSession : IDisposable
 
     private static async Task<(ServiceActionHeader Header, byte[] Payload)> ReadAsync(Process process, byte[] request, ServiceActionPlan? plan, CancellationToken cancellation)
     {
-        var bytes = new byte[ServiceActionsProtocol.HeaderBytes];
-        await process.StandardOutput.BaseStream.ReadExactlyAsync(bytes, cancellation).ConfigureAwait(false);
-        var header = ServiceActionsProtocol.ReadHeader(bytes, request, plan);
-        var payload = new byte[header.Payload];
-        await process.StandardOutput.BaseStream.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
-        return (header, payload);
+        try {
+            var bytes = new byte[ServiceActionsProtocol.HeaderBytes];
+            await process.StandardOutput.BaseStream.ReadExactlyAsync(bytes, cancellation).ConfigureAwait(false);
+            var header = ServiceActionsProtocol.ReadHeader(bytes, request, plan);
+            var payload = new byte[header.Payload];
+            await process.StandardOutput.BaseStream.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
+            return (header, payload);
+        } catch (EndOfStreamException error) {
+            throw new IOException("Pracovník služeb skončil před dokončením odpovědi.", error);
+        }
     }
 
     private Process Start(CancellationToken cancellation)

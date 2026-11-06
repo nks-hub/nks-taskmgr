@@ -53,6 +53,8 @@ internal sealed partial class ProcessDumpSession : IDisposable
             return result;
         } catch (Exception error) when (cancellation.IsCancellationRequested && error is IOException or Win32Exception or ObjectDisposedException) {
             throw new OperationCanceledException("Čekání na dump bylo zrušeno.", error, cancellation);
+        } catch (EndOfStreamException error) {
+            throw new IOException("Pracovník dumpu skončil před dokončením odpovědi.", error);
         } catch (Win32Exception error) {
             throw new IOException("Dump nebo bezpečné uložení souboru není dostupné (Windows " + error.NativeErrorCode + "): " + error.Message, error);
         } catch (NativeMonitorException error) {

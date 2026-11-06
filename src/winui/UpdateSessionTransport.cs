@@ -76,11 +76,15 @@ internal sealed partial class UpdateWorkerProcess
     }
     private async Task<(byte[] Header, byte[] Payload)> ReadBodyAsync(byte[] request, CancellationToken cancellation)
     {
-        var header = new byte[UpdateProtocol.HeaderBytes];
-        await process.StandardOutput.BaseStream.ReadExactlyAsync(header, cancellation).ConfigureAwait(false);
-        var payload = new byte[UpdateProtocol.PayloadLength(header, request)];
-        await process.StandardOutput.BaseStream.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
-        return (header, payload);
+        try {
+            var header = new byte[UpdateProtocol.HeaderBytes];
+            await process.StandardOutput.BaseStream.ReadExactlyAsync(header, cancellation).ConfigureAwait(false);
+            var payload = new byte[UpdateProtocol.PayloadLength(header, request)];
+            await process.StandardOutput.BaseStream.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
+            return (header, payload);
+        } catch (EndOfStreamException error) {
+            throw new IOException("Pracovník aktualizací skončil před dokončením odpovědi.", error);
+        }
     }
     internal Task EndAsync(UpdateResponse response, CancellationToken cancellation) => EndCleanupAsync(response.Status, cancellation);
     internal async Task EndCleanupAsync(UpdateStatus status, CancellationToken cancellation)
