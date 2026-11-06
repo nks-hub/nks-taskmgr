@@ -1,5 +1,7 @@
 # NKS Task Manager
 
+[![CI](https://github.com/nks-hub/nks-taskmgr/actions/workflows/ci.yml/badge.svg)](https://github.com/nks-hub/nks-taskmgr/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/nks-hub/nks-taskmgr?include_prereleases)](https://github.com/nks-hub/nks-taskmgr/releases)
 ![Development](https://img.shields.io/badge/status-in%20development-8b6f47)
 ![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011%20x64-0078d4)
 ![C++](https://img.shields.io/badge/C%2B%2B-20-00599c)
@@ -8,7 +10,9 @@
 
 A Windows process and system monitor with a C#/WinUI 3 Native AOT interface and a C++20 core.
 
-Users launch NKS Task Manager once. The application loads its native DLL and manages its helper processes automatically. Remaining development and acceptance work is tracked in [TODO.md](TODO.md).
+Users launch NKS Task Manager once. The application loads its native DLL and manages its helper processes automatically. The interface is in Czech. Remaining development and acceptance work is tracked in [TODO.md](TODO.md).
+
+![Performance view with CPU graph and device list](docs/screenshots/performance.png)
 
 ## Features
 
@@ -57,7 +61,9 @@ Windows 10 runtime verification and management of 32-bit processes are implement
 
 ## Installation
 
-From a checked-out repository:
+Download `NksTaskMgr-<version>-<revision>-win-x64-setup.exe` or the portable ZIP from [Releases](https://github.com/nks-hub/nks-taskmgr/releases). The installer needs no administrator rights. Release builds come from CI and are not code-signed, so Windows SmartScreen asks for confirmation on first start, and the elevated broker and updater stay disabled.
+
+To build from a checked-out repository:
 
 ```powershell
 pwsh -NoProfile -File scripts/build.ps1 -Configuration Release
@@ -100,6 +106,16 @@ pwsh -NoProfile -File scripts/package.ps1 -Compiler ISCC.exe
 Use `-Compiler` with the compiler's full path if it is outside `PATH`. `-AppDirectory` selects a different publish directory. Packages are written to `build/packages` and contain the Native AOT application, Windows App SDK files, MSVC 14.44 DLLs, and license texts. The installer uses the current user's `LocalAppData/Programs/NKS Task Manager` directory and registers a Start menu shortcut and an uninstaller. Development packages are unsigned unless signing is explicitly requested.
 
 To sign a build, select an existing code-signing certificate in `Cert:\CurrentUser\My` and an explicit Microsoft-signed `signtool.exe`. Pass `-SigningCertificateThumbprint` and `-SignTool` to both build and package scripts. The build derives the broker and update SPKI pins from that certificate; packaging checks the public build evidence and signs the NKS binaries and setup. Third-party DLL signatures are preserved. `-TimestampServer` accepts an explicit HTTPS timestamp URL. Private keys are not exported. Real signing and installation acceptance remain pending.
+
+## Screenshots
+
+| Processes | Services |
+| --- | --- |
+| ![Process table with search, columns and toolbar](docs/screenshots/processes.png) | ![Services with state filters and shared PID filter](docs/screenshots/services.png) |
+| **Hardware** | **Startup** |
+| ![Hardware view with CPU topology, memory and firmware](docs/screenshots/hardware.png) | ![Startup items with publisher signature and source key](docs/screenshots/startup.png) |
+
+Captured on a Windows 11 virtual machine under a standard account.
 
 ## Usage
 
@@ -280,7 +296,7 @@ The build script discovers Visual Studio and the installed Windows SDK. It sets 
 ## Support
 
 - 📧 **Email:** dev@nks-hub.cz
-- 🐛 **Bug reports:** use the repository issue tracker after publication.
+- 🐛 **Bug reports:** [GitHub Issues](https://github.com/nks-hub/nks-taskmgr/issues)
 
 ## License
 
