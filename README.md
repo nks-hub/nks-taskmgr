@@ -8,7 +8,7 @@
 ![.NET](https://img.shields.io/badge/.NET-10-512BD4)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A Windows process and system monitor with a C#/WinUI 3 Native AOT interface and a C++20 core. The interface is in Czech.
+A Windows process and system monitor with a C#/WinUI 3 Native AOT interface and a C++20 core. The interface is available in Czech, English, German, Slovak and Polish.
 
 ![Performance view with CPU graph and device list](docs/screenshots/performance.png)
 
@@ -24,6 +24,7 @@ A Windows process and system monitor with a C#/WinUI 3 Native AOT interface and 
 - 📄 **Snapshots** - JSON export without names by default, and comparison of two snapshots.
 - 🕒 **ETW events** - Process start/stop and disk/network attribution when run as administrator.
 - 🔁 **Task Manager replacement** - Optional IFEO registration for a machine-wide install, with restore of the previous value.
+- 🌐 **Languages** - Czech, English, German, Slovak and Polish, chosen from the Windows display language or set manually.
 - 📦 **Updates** - Local installer verification with rollback; works for installed and portable copies.
 
 Helpers run as separate processes with the user's own rights. Missing data is shown as unavailable, never as zero.
@@ -75,6 +76,7 @@ Captured on a Windows 11 virtual machine under a standard account.
 - In graphs, click pins a time, Shift-click selects a range and Escape returns to live data.
 - CPU temperature can be read from a running LibreHardwareMonitor-compatible API on `127.0.0.1:8085` (off by default).
 - Appearance follows Windows or can be set to light or dark.
+- The language follows the Windows display language; Appearance → Language overrides it after a restart.
 
 The application sends nothing over the network except the optional sensor read and, in builds with `-SentryDsn`, crash reports. [docs/architecture.md](docs/architecture.md) describes each view, helper process and the native API.
 
