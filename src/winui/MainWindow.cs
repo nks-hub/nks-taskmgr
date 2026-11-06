@@ -32,6 +32,7 @@ public sealed partial class MainWindow : Window
     private readonly Grid root = new() { Background = Display.Brush(0x171d21) };
     private readonly Grid page = new();
     private readonly Grid sidebar = new() { Background = Display.Brush(0x12181c), Width = 68 };
+    private double sidebarWidth = 68;
     private readonly TextBlock heading = Label(Loc.T("Výkon"), 16, 0xe9eef0);
     private readonly Grid shellHeader = new();
     private readonly TextBlock footer = Label(Loc.T("Načítám živá data…"), 9, 0x95a4ad);
@@ -272,7 +273,11 @@ public sealed partial class MainWindow : Window
             content.Children.Add(button == startupNav ? new SymbolIcon(Symbol.Play) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
                 : button == applicationNav || button == usersNav ? new SymbolIcon(button == usersNav ? Symbol.People : Symbol.AllApps) { Width = 20, Height = 20, Foreground = Display.Brush(0x95a4ad) }
                 : UiIcon.Create(button == performanceNav ? "performance" : button == servicesNav ? "services" : button == hardwareNav ? "hardware" : "processes", 0x95a4ad));
-            content.Children.Add(Label(button == startupNav ? Loc.T("Spuštění") : name, 9, 0x95a4ad));
+            var label = Label(button == startupNav ? Loc.T("Spuštění") : name, 9, 0x95a4ad);
+            content.Children.Add(label);
+            // 68 DIP leaves 48 DIP for the label (6 + 4 DIP margins and padding each side); longer translations widen the sidebar.
+            label.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            sidebarWidth = Math.Min(120, Math.Max(sidebarWidth, Math.Ceiling(label.DesiredSize.Width) + 20));
             button.Content = content;
             nav.Children.Add(button);
         }
@@ -409,7 +414,7 @@ public sealed partial class MainWindow : Window
         if (IsIconic(windowHandle)) return;
         if (root.ActualWidth <= 0) return;
         double width = root.ActualWidth;
-        root.ColumnDefinitions[0].Width = new GridLength(68); sidebar.Width = 68;
+        root.ColumnDefinitions[0].Width = new GridLength(sidebarWidth); sidebar.Width = sidebarWidth;
         ResizeSidebarActions(true);
         shellHeader.Padding = new Thickness(16, 0, 16, 0);
         page.Margin = new Thickness(16, 0, 16, 8);
