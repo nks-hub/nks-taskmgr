@@ -10,8 +10,8 @@ public sealed partial class MainWindow
     private void ResizeSidebarActions(bool compact)
     {
         if (compactSidebarActions == compact) return;
-        updatesButton.Content = compact ? SidebarIcon(Symbol.Download) : "Aktualizace";
-        appearance.Content = compact ? SidebarIcon(Symbol.Setting) : "Vzhled";
+        updatesButton.Content = compact ? SidebarIcon(Symbol.Download) : Loc.T("Aktualizace");
+        appearance.Content = compact ? SidebarIcon(Symbol.Setting) : Loc.T("Vzhled");
         compactSidebarActions = compact;
     }
 

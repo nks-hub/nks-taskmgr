@@ -15,15 +15,15 @@ public sealed partial class MainWindow
     {
         processEventsButton.Width = 35; processEventsButton.Padding = new Thickness(0);
         processEventsButton.Content = UiIcon.Create("events", 0x95a4ad, 19);
-        AutomationProperties.SetName(processEventsButton, "Události procesů ETW");
+        AutomationProperties.SetName(processEventsButton, Loc.T("Události procesů ETW"));
         AutomationProperties.SetAutomationId(processEventsButton, "process-events");
-        ToolTipService.SetToolTip(processEventsButton, "Události vzniku a ukončení procesů");
+        ToolTipService.SetToolTip(processEventsButton, Loc.T("Události vzniku a ukončení procesů"));
         processEventsButton.Click += (_, _) => {
             if (waitingForEventsStop || allowMainEventsClose) return;
             if (processEventsWindow is null) {
                 var window = new ProcessEventsWindow(() => (model.ProcessTime, model.BootIdentity.Identifier, model.BootIdentity.State));
                 processEventsWindow = window;
-                window.RequestElevation = () => _ = OfferRestartElevatedAsync("Záznam událostí a síťového provozu (ETW) vyžaduje práva správce.");
+                window.RequestElevation = () => _ = OfferRestartElevatedAsync(Loc.T("Záznam událostí a síťového provozu (ETW) vyžaduje práva správce."));
                 window.Closed += (_, _) => { if (ReferenceEquals(processEventsWindow, window)) processEventsWindow = null; };
             }
             processEventsWindow.Activate();
@@ -50,9 +50,9 @@ public sealed partial class MainWindow
         bool clean = window is null || await window.StopForCloseAsync(fromMainWindow: true);
         if (allowMainEventsClose) return;
         if (!clean) {
-            var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = "Zastavení a dočtení záznamu nebylo potvrzené",
-                PrimaryButtonText = "Zavřít i tak", CloseButtonText = "Ponechat aplikaci otevřenou",
-                Content = "Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Aplikaci lze ponechat otevřenou a zkusit zastavení znovu." };
+            var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = Loc.T("Zastavení a dočtení záznamu nebylo potvrzené"),
+                PrimaryButtonText = Loc.T("Zavřít i tak"), CloseButtonText = Loc.T("Ponechat aplikaci otevřenou"),
+                Content = Loc.T("Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Aplikaci lze ponechat otevřenou a zkusit zastavení znovu.") };
             Appearance.Dialog(dialog);
             try { clean = await dialog.ShowAsync() == ContentDialogResult.Primary; }
             catch (InvalidOperationException) { clean = false; }

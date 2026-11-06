@@ -31,7 +31,7 @@ internal sealed class UpdateWorkerClient : IDisposable
         var result = await QueryAsync(UpdateCommand.Cache, pin, null, UpdateProtocol.CachePayload(source, hash), token).ConfigureAwait(false);
         if (result.Status != UpdateStatus.Ok) return Inventory(result);
         if (result.Packages.Length != 1 || result.Packages[0].Sha256 != Convert.ToHexString(hash)
-            || result.Packages[0].Bytes != source.Length) throw new InvalidDataException("Uložený balíček neodpovídá drženému zdroji.");
+            || result.Packages[0].Bytes != source.Length) throw new InvalidDataException(Loc.T("Uložený balíček neodpovídá drženému zdroji."));
         return Inventory(await QueryAsync(UpdateCommand.List, pin, null, null, token).ConfigureAwait(false));
     }, cancellation);
 
@@ -81,9 +81,9 @@ internal sealed class UpdateWorkerClient : IDisposable
                 var inspection = await QueryAsync(UpdateCommand.Inspect, pin, null, UpdateProtocol.ParseId(candidateId), token).ConfigureAwait(false);
                 if (inspection.Status != UpdateStatus.Ok) throw new UpdateException(inspection.Status, inspection.Detail, inspection.Error);
                 candidate = inspection.RecoveryCandidates.SingleOrDefault(item => item.CandidateId.Equals(candidateId, StringComparison.OrdinalIgnoreCase));
-                if (candidate is null) throw new UpdateException(UpdateStatus.NotFound, "Nejasný záznam pro obnovu už není dostupný.");
+                if (candidate is null) throw new UpdateException(UpdateStatus.NotFound, Loc.T("Nejasný záznam pro obnovu už není dostupný."));
                 if (!candidate.CanRepair || !candidate.HasOriginalPackage) throw new UpdateException(candidate.Status,
-                    candidate.Detail.Length > 0 ? candidate.Detail : "Zánik původního pracovníka nebo instalátoru nebyl prokázaný. Obnova nebyla připravena.");
+                    candidate.Detail.Length > 0 ? candidate.Detail : Loc.T("Zánik původního pracovníka nebo instalátoru nebyl prokázaný. Obnova nebyla připravena."));
                 packageSha256 = candidate.PackageSha256;
             }
             var result = await QueryAsync(candidate is null ? UpdateCommand.Plan : UpdateCommand.RepairPlan, pin, packageSha256,
@@ -99,12 +99,12 @@ internal sealed class UpdateWorkerClient : IDisposable
                 || candidate is not null && (plan.RecoveryCandidateId != candidate.CandidateId || plan.PreviousVersion.Length != 0
                     || plan.SelectedVersion != candidate.OriginalVersion || plan.Mode != candidate.Mode)
                 || plan.Action == UpdateAction.Rollback && plan.SelectedVersion == plan.CurrentVersion)
-                throw new InvalidDataException("Plán neodpovídá výběru ani ověřenému běžícímu obrazu.");
+                throw new InvalidDataException(Loc.T("Plán neodpovídá výběru ani ověřenému běžícímu obrazu."));
             using (var package = SignedImageLease.Open(plan.PackagePath, pin)) {
                 var role = PublisherTrust.RequireRole(package, "NKS Task Manager Setup", "NksTaskMgrSetup.exe");
                 if (role.ProductVersion != plan.SelectedVersion || package.Identity != plan.PackageFileId || package.Length != plan.PackageBytes
                     || !CryptographicOperations.FixedTimeEquals(package.Hash(UpdateProtocol.MaximumPackageBytes, token), UpdateProtocol.ParseHash(plan.PackageSha256)))
-                    throw new InvalidDataException("Balíček v plánu nebyl shodně ověřený.");
+                    throw new InvalidDataException(Loc.T("Balíček v plánu nebyl shodně ověřený."));
             }
             UpdateWorkerProcess? stage = null;
             try {
@@ -115,7 +115,7 @@ internal sealed class UpdateWorkerClient : IDisposable
                 await stage.WriteAsync(request, false, token).ConfigureAwait(false);
                 var ready = await stage.ReadAsync(request, token).ConfigureAwait(false);
                 if (ready.Frame != UpdateFrame.Ready || ready.Status != UpdateStatus.Ok || ready.Plan != plan)
-                    throw new UpdateException(ready.Status, ready.Detail.Length > 0 ? ready.Detail : "Pracovník nepřipravil stejný plán.", ready.Error);
+                    throw new UpdateException(ready.Status, ready.Detail.Length > 0 ? ready.Detail : Loc.T("Pracovník nepřipravil stejný plán."), ready.Error);
                 token.ThrowIfCancellationRequested();
                 var session = new UpdateSession(plan, stage, request, ready.CommitDeadlineMonotonicMs, () => Interlocked.Exchange(ref pending, 0), lifetime.Token, cancellation);
                 lock (sync) prepared = session;
@@ -141,15 +141,15 @@ internal sealed class UpdateWorkerClient : IDisposable
                 || command == UpdateCommand.Cache && result.Plan is not null
                 || (command is UpdateCommand.Plan or UpdateCommand.RepairPlan) && (result.Packages.Length != 0 || result.Status == UpdateStatus.Ok && result.Plan is null)
                 || command == UpdateCommand.Inspect && (result.Packages.Length != 0 || result.Plan is not null))
-                throw new InvalidDataException("Nesprávná fáze odpovědi aktualizace.");
+                throw new InvalidDataException(Loc.T("Nesprávná fáze odpovědi aktualizace."));
             if (result.Scope is { } scope && (scope.RootFileId != gui.RootFileId || !SameDirectory(scope.InstallDirectory, gui.Directory)
                 || scope.GuiVersion != gui.Version || scope.HelperVersion != worker.ReleaseVersion))
-                throw new InvalidDataException("Přehled aktualizací patří jinému kořeni nebo podepsanému obrazu.");
+                throw new InvalidDataException(Loc.T("Přehled aktualizací patří jinému kořeni nebo podepsanému obrazu."));
             if ((command is UpdateCommand.List or UpdateCommand.Inspect) && result.Status == UpdateStatus.Ok && result.Scope is null)
-                throw new InvalidDataException("Chybí ověřitelný rozsah přehledu aktualizací.");
+                throw new InvalidDataException(Loc.T("Chybí ověřitelný rozsah přehledu aktualizací."));
             foreach (var recovery in result.RecoveryCandidates) {
                 if (recovery.CanRepair && (recovery.InstallRootFileId != gui.RootFileId || !SameDirectory(recovery.InstallDirectory, gui.Directory)))
-                    throw new InvalidDataException("Obnova byla nabídnuta pro jinou kopii aplikace.");
+                    throw new InvalidDataException(Loc.T("Obnova byla nabídnuta pro jinou kopii aplikace."));
             }
             await worker.EndAsync(result, cancellation).ConfigureAwait(false); return result;
         } finally { await worker.RetireAsync(true).ConfigureAwait(false); }
@@ -160,8 +160,8 @@ internal sealed class UpdateWorkerClient : IDisposable
         using var self = Process.GetCurrentProcess();
         var key = NativeMonitor.QueryProcessIdentity(self.SafeHandle, GenerationKind.CreationTime);
         if (key.State != SampleState.Valid || key.Kind != GenerationKind.CreationTime || key.Boot.IsEmpty || key.Generation == 0 || key.Pid != Environment.ProcessId)
-            throw new InvalidDataException("Klient aktualizací nemá ověřenou životnost.");
-        var image = SignedImageLease.Open(Environment.ProcessPath ?? throw new IOException("Obraz klienta není známý."), pin);
+            throw new InvalidDataException(Loc.T("Klient aktualizací nemá ověřenou životnost."));
+        var image = SignedImageLease.Open(Environment.ProcessPath ?? throw new IOException(Loc.T("Obraz klienta není známý.")), pin);
         try {
             image.VerifyProcess(self);
             var role = PublisherTrust.RequireRole(image, "NKS Task Manager", "NksTaskMgr.WinUI.dll");
@@ -177,9 +177,9 @@ internal sealed class UpdateWorkerClient : IDisposable
     {
         lock (sync) ObjectDisposedException.ThrowIf(disposed, this);
         var pin = PublisherTrust.ReadPin(PublisherPolicy.Update)
-            ?? throw new UpdateException(UpdateStatus.TrustMissing, "Aktualizace nejsou nakonfigurované. Chybí připnutý podpis vydavatele; pracovník nebyl spuštěn.");
+            ?? throw new UpdateException(UpdateStatus.TrustMissing, Loc.T("Aktualizace nejsou nakonfigurované. Chybí připnutý podpis vydavatele; pracovník nebyl spuštěn."));
         cancellation.ThrowIfCancellationRequested();
-        if (Interlocked.CompareExchange(ref pending, 1, 0) != 0) throw new UpdateException(UpdateStatus.Busy, "Předchozí aktualizace nebo její ukončování ještě probíhá.");
+        if (Interlocked.CompareExchange(ref pending, 1, 0) != 0) throw new UpdateException(UpdateStatus.Busy, Loc.T("Předchozí aktualizace nebo její ukončování ještě probíhá."));
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(120));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellation, lifetime.Token, deadline.Token);
         var token = linked.Token;
@@ -192,7 +192,7 @@ internal sealed class UpdateWorkerClient : IDisposable
         _ = work.ContinueWith(task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         try { return await work.WaitAsync(token).ConfigureAwait(false); }
         catch (OperationCanceledException error) when (deadline.IsCancellationRequested && !cancellation.IsCancellationRequested) {
-            throw new UpdateException(UpdateStatus.Unknown, "Čekání na pracovníka vypršelo. Dokud není ověřen jeho konec, nevznikne další požadavek. " + error.Message, 1460);
+            throw new UpdateException(UpdateStatus.Unknown, Loc.F("Čekání na pracovníka vypršelo. Dokud není ověřen jeho konec, nevznikne další požadavek. {0}", error.Message), 1460);
         }
     }
     private static bool SameDirectory(string left, string right) => left.TrimEnd('\\').Equals(right.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
@@ -204,10 +204,10 @@ internal sealed class UpdateWorkerClient : IDisposable
             Mode = scope?.Mode ?? UpdateInstallMode.Unknown, InstallDirectory = scope?.InstallDirectory ?? "",
             InstallRootFileId = scope?.RootFileId ?? default, RecoveryCandidates = response.RecoveryCandidates,
             StandardOperationsAllowed = response.Status == UpdateStatus.Ok && scope is not null && scope.Mode != UpdateInstallMode.Unknown && exact && (scope.Flags & 2) == 0,
-            CompatibilityDetail = scope is null ? "Pracovník neposkytl ověřitelný rozsah v protokolu 2; tento výsledek nepovoluje změnu instalace."
-                : !exact ? "Podepsané části nemají stejnou vydanou verzi. Dostupný je pouze přehled, uložení ověřeného balíčku a výslovná obnova."
-                : scope?.Mode == UpdateInstallMode.Unknown ? "Původ adresáře nebyl prokázaný; standardní změna je zakázaná."
-                : ((scope?.Flags ?? 0) & 2) != 0 ? "Nejasný výsledek vyžaduje výslovné posouzení obnovy; standardní změna se nezkouší znovu." : ""
+            CompatibilityDetail = scope is null ? Loc.T("Pracovník neposkytl ověřitelný rozsah v protokolu 2; tento výsledek nepovoluje změnu instalace.")
+                : !exact ? Loc.T("Podepsané části nemají stejnou vydanou verzi. Dostupný je pouze přehled, uložení ověřeného balíčku a výslovná obnova.")
+                : scope?.Mode == UpdateInstallMode.Unknown ? Loc.T("Původ adresáře nebyl prokázaný; standardní změna je zakázaná.")
+                : ((scope?.Flags ?? 0) & 2) != 0 ? Loc.T("Nejasný výsledek vyžaduje výslovné posouzení obnovy; standardní změna se nezkouší znovu.") : ""
         };
     }
     public void Dispose()

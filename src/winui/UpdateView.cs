@@ -7,7 +7,7 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class MainWindow
 {
     private UpdateWindow? updateWindow;
-    private readonly Button updatesButton = Button("Aktualizace");
+    private readonly Button updatesButton = Button(Loc.T("Aktualizace"));
 
     private void ConfigureUpdates()
     {
@@ -17,9 +17,9 @@ public sealed partial class MainWindow
         button.HorizontalAlignment = HorizontalAlignment.Stretch;
         button.VerticalAlignment = VerticalAlignment.Bottom;
         button.Margin = new Thickness(8, 0, 8, 52);
-        AutomationProperties.SetName(button, "Aktualizace a návrat předchozí verze");
+        AutomationProperties.SetName(button, Loc.T("Aktualizace a návrat předchozí verze"));
         AutomationProperties.SetAutomationId(button, "updates-open");
-        ToolTipService.SetToolTip(button, "Verze aplikace a možnosti aktualizace");
+        ToolTipService.SetToolTip(button, Loc.T("Verze aplikace a možnosti aktualizace"));
         button.Click += async (_, _) => {
             try {
                 if (updateWindow is null) {
@@ -29,8 +29,8 @@ public sealed partial class MainWindow
                 updateWindow.ShowOwned(this);
             } catch (Exception error) when (error is System.ComponentModel.Win32Exception or System.Runtime.InteropServices.COMException or InvalidOperationException) {
                 updateWindow?.Close(); updateWindow = null;
-                await new ContentDialog { Title = "Aktualizace nelze otevřít", Content = error.Message,
-                    CloseButtonText = "Zavřít", XamlRoot = root.XamlRoot }.ShowAsync();
+                await new ContentDialog { Title = Loc.T("Aktualizace nelze otevřít"), Content = error.Message,
+                    CloseButtonText = Loc.T("Zavřít"), XamlRoot = root.XamlRoot }.ShowAsync();
             }
         };
         sidebar.Children.Add(button);

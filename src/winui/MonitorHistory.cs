@@ -9,8 +9,8 @@ public sealed partial class MonitorModel
     private readonly Dictionary<uint, CollectedSeries> collectedSeries = [];
     private ulong historySequence, historyLost, historyErrors;
     private bool historyUnavailable, collectedBindingsDirty = true;
-    public string HistoryWarning => historyUnavailable ? "Historie je nedostupná"
-        : historyLost != 0 || historyErrors != 0 ? $"Historie: {historyLost:N0} neuchovaných vzorků, {historyErrors:N0} chyb" : "";
+    public string HistoryWarning => historyUnavailable ? Loc.T("Historie je nedostupná")
+        : historyLost != 0 || historyErrors != 0 ? Loc.F("Historie: {0:N0} neuchovaných vzorků, {1:N0} chyb", historyLost, historyErrors) : "";
 
     private unsafe bool ReadCollectedHistory()
     {

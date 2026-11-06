@@ -184,9 +184,9 @@ public sealed partial class MonitorModel : IDisposable
                 }
             }
             processRevision = changes?.Revision ?? 0;
-            Resource("cpu", ResourceKind.Cpu).Update("Procesor", CpuModel, string.Empty, view.Processes.CpuPercent, default, default, 100, ProcessTime, visualUpdates && resourceViewVisible && recordHistory, recordHistory);
+            Resource("cpu", ResourceKind.Cpu).Update(Loc.T("Procesor"), CpuModel, string.Empty, view.Processes.CpuPercent, default, default, 100, ProcessTime, visualUpdates && resourceViewVisible && recordHistory, recordHistory);
             var memory = new Metric { Value = Memory.PhysicalBytes - Math.Min(Memory.PhysicalBytes, Memory.AvailableBytes), State = Memory.State, Source = MetricSource.PerformanceInfo };
-            Resource("memory", ResourceKind.Memory).Update("Paměť", "Fyzická paměť", string.Empty, memory, default, default, Memory.PhysicalBytes, ProcessTime, visualUpdates && resourceViewVisible && recordHistory, recordHistory);
+            Resource("memory", ResourceKind.Memory).Update(Loc.T("Paměť"), Loc.T("Fyzická paměť"), string.Empty, memory, default, default, Memory.PhysicalBytes, ProcessTime, visualUpdates && resourceViewVisible && recordHistory, recordHistory);
             if (recordHistory) PageFile.Append(ProcessTime, new Metric { Value = Memory.PageFileUsedBytes, State = Memory.PageFileState, Source = MetricSource.PerformanceInfo });
             currentProcessorKeys.Clear();
             for (uint i = 0; i < view.Processes.ProcessorCount; ++i) {

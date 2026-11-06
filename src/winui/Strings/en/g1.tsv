@@ -1,0 +1,396 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Chybí pole {0}.	Field {0} is missing.
+Chybějící druh generace má nenulovou hodnotu.	Missing generation kind has a nonzero value.
+Duplicitní PID v jednom snímku.	Duplicate PID in one snapshot.
+Duplicitní logický procesor.	Duplicate logical processor.
+Duplicitní vlastnost JSON objektu.	Duplicate JSON object property.
+Duplicitní zdroj metriky.	Duplicate metric source.
+Duplicitní životnost procesu.	Duplicate process lifetime.
+Neplatná boot identita.	Invalid boot identity.
+Neplatná celočíselná metrika.	Invalid integer metric.
+Neplatná generace procesu.	Invalid process generation.
+Neplatná hodnota metriky.	Invalid metric value.
+Neplatná jednotka metriky.	Invalid metric unit.
+Neplatná metrika obsahuje hodnotu.	An invalid metric contains a value.
+Neplatné celé číslo {0}.	Invalid integer {0}.
+Neplatné pořadí zařízení.	Invalid device order.
+Neplatný druh GPU enginu.	Invalid GPU engine type.
+Neplatný druh zařízení.	Invalid device type.
+Neplatný seznam polí.	Invalid field list.
+Neplatný stav boot identity.	Invalid boot identity state.
+Neplatný čas snímku.	Invalid snapshot time.
+Neplatný čas {0}.	Invalid time {0}.
+Nepodporovaná verze snímku.	Unsupported snapshot version.
+Nesouhlasí počet procesů.	Process count does not match.
+Nesouhlasí počet zařízení.	Device count does not match.
+Nesouhlasí vybraná pole.	Selected fields do not match.
+Nevybrané pole {0} je přítomné.	Unselected field {0} is present.
+Neznámý formát snímku.	Unknown snapshot format.
+Neznámý stav nebo druh.	Unknown state or kind.
+Náhled nelze porovnávat.	A preview cannot be compared.
+Očekáván objekt.	Object expected.
+Očekáván text.	Text expected.
+Očekávána pravdivostní hodnota.	Boolean value expected.
+Očekáváno pole {0}.	Array {0} expected.
+Platná metrika nemá číselnou hodnotu.	A valid metric has no numeric value.
+Prázdné nebo duplicitní ID zařízení.	Empty or duplicate device ID.
+Příliš dlouhý text ve snímku.	Text in the snapshot is too long.
+Příliš mnoho vlastností objektu.	Too many object properties.
+Snímek obsahuje neplatný JSON.	The snapshot contains invalid JSON.
+Snímek obsahuje neplatný Unicode.	The snapshot contains invalid Unicode.
+Snímek obsahuje příliš mnoho položek JSON.	The snapshot contains too many JSON tokens.
+Snímek obsahuje příliš mnoho řádků.	The snapshot contains too many rows.
+Soubor má nepovolenou velikost.	The file size is not allowed.
+Soubor se během čtení zkrátil.	The file got shorter while reading.
+Soubor se během čtení zvětšil.	The file grew while reading.
+relace|relace|relací	session|sessions|sessions
+proces|procesy|procesů	process|processes|processes
+ · klient {0}	 · client {0}
+ · stanice {0}	 · station {0}
+ · údaje jsou zastaralé	 · data is out of date
+Další možnosti uživatelů	More user options
+Měření nedostupné	Measurement unavailable
+Nadpis zprávy:	Message title:
+Nastavení uživatelských účtů se nepodařilo otevřít. {0}	User account settings could not be opened. {0}
+Načítám relace…	Loading sessions…
+Nedostupné bez správce	Unavailable without administrator
+Neznámý uživatel	Unknown user
+Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	TCP/UDP bytes sent and received. Measured only during this app's own ETW capture as administrator.
+Odeslat zprávu	Send message
+Odeslat zprávu…	Send message…
+Odhlásit se	Sign off
+Odhlásit vybraného uživatele. Neuložená data jeho programů se mohou ztratit.	Sign off the selected user. Unsaved data in their programs may be lost.
+Odhlásit	Sign off
+Odpojit vybraného uživatele. Jeho relace a programy dál běží.	Disconnect the selected user. Their session and programs keep running.
+Odpojit	Disconnect
+Pracovní sada	Working set
+Přihlášený uživatel a počet jeho procesů. Šipka nebo dvojklik rozbalí procesy.	Signed-in user and number of their processes. The arrow or a double-click expands the processes.
+Relace se mezitím změnila nebo skončila. Akce nebyla provedena.	The session changed or ended in the meantime. The action was not performed.
+Rozbalit vše	Expand all
+Rozbalit	Expand
+Sbalit vše	Collapse all
+Sbalit	Collapse
+Seznam relací Windows je nedostupný; relace jsou odvozené jen z procesů.	The Windows session list is unavailable; sessions are derived from processes only.
+Seznam relací Windows vyžaduje oprávnění; relace jsou odvozené jen z procesů.	The Windows session list requires permission; sessions are derived from processes only.
+Služby systému	System services
+Součet CPU procesů. ≥ označuje známou část, když některý proces nemá aktuální vzorek.	Sum of process CPU. ≥ marks the known part when some process has no current sample.
+Součet pracovních sad procesů. Přesné hodnoty v MB jsou v popisku buňky.	Sum of process working sets. Exact values in MB are in the cell tooltip.
+Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory).	Sum of reads and writes of all process I/O (files, devices, network files).
+Spravovat uživatelské účty	Manage user accounts
+Stav relace Windows.	Windows session state.
+Uživatel	User
+Uživatelé a jejich procesy	Users and their processes
+Uživatelé	Users
+Zavřít	Close
+Zobrazit celý název účtu	Show full account name
+Zobrazit zprávu na ploše vybraného uživatele.	Show a message on the selected user's desktop.
+Zpráva:	Message:
+Zpráva…	Message…
+Zrušit	Cancel
+konzole	console
+nedostupné	unavailable
+neznámé	unknown
+rozbaleno	expanded
+sbaleno	collapsed
+{0} · relace {1} · {2}	{0} · session {1} · {2}
+{0}, {1}, relace {2}, {3}, {4}	{0}, {1}, session {2}, {3}, {4}
+{0}: {1} ({2})\nPrivátní paměť: {3} ({4})	{0}: {1} ({2})\nPrivate memory: {3} ({4})
+\nÚdaje o uživateli této relace vyžadují oprávnění správce.	\nUser details of this session require administrator rights.
+\nZnámé aktuální vzorky: CPU {0}/{3}, paměť {1}/{3}, I/O {2}/{3}.	\nKnown current samples: CPU {0}/{3}, memory {1}/{3}, I/O {2}/{3}.
+\n≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.	\n≥ marks the known part of an incomplete sum. Shared RAM pages may be counted more than once.
+Paměť	Memory
+Handly	Handles
+Zjistit typ a název objektu	Get object type and name
+vlákna	threads
+moduly	modules
+oblasti paměti	memory regions
+handly	handles
+podrobnosti	details
+Mapa virtuální paměti procesu	Process virtual memory map
+Handly procesu	Process handles
+Zjistit aktuální typ a název duplikovaného objektu	Get the current type and name of the duplicated object
+Filtrovat pouze již načtené výsledky	Filter only results already loaded
+Stav nebo vlastnost načtených výsledků	State or property of loaded results
+Vše	All
+Potvrzené	Committed
+Rezervované	Reserved
+Volné	Free
+S udělenými právy	With granted access
+Bez udělených práv	Without granted access
+Dostupné časy	Times available
+Nedostupné časy	Times unavailable
+Adresa, velikost, ochrana nebo typ	Address, size, protection or type
+Hodnota handle, index typu nebo přístup	Handle value, type index or access
+Název nebo cesta modulu	Module name or path
+TID nebo základní priorita	TID or base priority
+Seznam zatím není načtený.	The list is not loaded yet.
+ · snímek z {0}	 · snapshot from {0}
+Info	Info
+Řadit skupiny aplikací podle	Sort app groups by
+Řazení skupin aplikací; paměť je součet pracovních sad dostupných procesů.	App group sorting; memory is the sum of working sets of available processes.
+Informace o skupině aplikace	App group information
+Informace o vybrané skupině a dostupnosti přehledu.	Information about the selected group and overview availability.
+Skupiny aplikací podle ověřených oken	App groups by verified windows
+Vybrat skupinu aplikace	Select app group
+Procesy	Processes
+Sestupně	Descending
+Vzestupně	Ascending
+Přehled není dostupný	Overview unavailable
+Načítám aplikace…	Loading apps…
+{0} skupin · 	{0} groups · 
+zastaralý přehled	outdated overview
+částečný přehled	partial overview
+podle oken	by windows
+ · pořadí a skupiny přidrženy	 · order and groups held
+Některá okna, vazby procesů nebo údaje nemusí být dostupné. ≥ u CPU označuje částečný součet.	Some windows, process links or data may be unavailable. ≥ at CPU marks a partial sum.
+Skupiny vycházejí z ověřených vlastníků viditelných oken a jejich potomků.	Groups are based on verified owners of visible windows and their descendants.
+\nKořen PID {0} · {1} · generace {2}	\nRoot PID {0} · {1} · generation {2}
+ · balíček: 	 · package: 
+\nHostitel pozorovaný v inventáři: PID {0}; sdílený host se nezapočítává více aplikacím.	\nHost observed in the inventory: PID {0}; a shared host is not counted for more than one app.
+\nCPU je součet dostupných validních hodnot.\n\n	\nCPU is the sum of available valid values.\n\n
+Historické procesy · NKS Task Manager	Historical processes · NKS Task Manager
+Podrobnosti o uchovaných datech	Details about retained data
+Řadit podle CPU	Sort by CPU
+Řadit podle pracovní sady	Sort by working set
+Řadit podle procesového I/O	Sort by process I/O
+Proces	Process
+Čas	Time
+Původní PID	Original PID
+Čtení a zápis procesu, bez rozlišení disku, sítě a GPU	Process reads and writes, not split into disk, network and GPU
+Skutečný čas vzorku	Actual sample time
+Neměnné historické procesové vzorky	Immutable historical process samples
+Původní identita a čas vybraného historického procesu	Original identity and time of the selected historical process
+Žádný zachycený snímek	No captured frame
+{0} od kurzoru	{0} from cursor
+{0} snímků	{0} frames
+⚠ {0} {1} v záznamu	⚠ {0} {1} in the recording
+mezera	gap
+mezery	gaps
+mezer	gaps
+\nZnámé vynechané revize předání: {0}	\nKnown skipped delivery revisions: {0}
+\nUloženo {0} z {1} řádků; každý snímek uchovává sjednocení top 8 podle CPU, RAM a I/O.	\nStored {0} of {1} rows; each frame keeps the union of the top 8 by CPU, RAM and I/O.
+\nVe snímku bylo původně {0}–{1} procesů.	\nThe frame originally had {0}–{1} processes.
+\nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} z 4 MiB.	\nRetained range {0} – {1}: {2} frames, {3} rows, {4} of 4 MiB.
+\nVytěsněno {0} snímků ({1} řádků).	\nEvicted {0} frames ({1} rows).
+\nÚplnost číslování předání nelze určit.	\nThe completeness of delivery numbering cannot be determined.
+\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit.	\nGeneral process I/O is not attributed to disk, network or GPU; the completeness of the original collection cannot be confirmed.
+{0} z {1} procesů	{0} of {1} processes
+{0} maxim	{0} peaks
+Všechny zachycené řádky nejbližšího snímku.	All captured rows of the nearest frame.
+Nejvýše 64 pozorovaných maxim zvolené metriky; každý řádek si zachovává skutečný čas a souběžné hodnoty.	Up to 64 observed peaks of the chosen metric; each row keeps its actual time and concurrent values.
+  ·  opožděný vzorek	  ·  late sample
+Pro tento výběr nejsou zachycené platné hodnoty zvolené metriky.	No valid values of the chosen metric were captured for this selection.
+Dump	Dump
+Vytvořit dump procesu…	Create dump file…
+Dump procesu a nedokončené dumpy	Process dump and unfinished dumps
+Nedokončené dumpy…	Unfinished dumps…
+Probíhá dump nebo úklid vlastního dočasného souboru.	A dump or cleanup of the app's own temporary file is in progress.
+Dump x64 nebo 32bitového procesu po potvrzení obsahu a cílového souboru	Dump of an x64 or 32-bit process after confirming the content and target file
+Čekám na dokončení pracovníka a vypořádání vlastního dočasného souboru…	Waiting for the worker to finish and for the app's own temporary file to be settled…
+Zahrnout úplnou paměť procesu	Include full process memory
+Úplná paměť procesu, ve výchozím stavu vypnuto	Full process memory, off by default
+Dump ukládá informace o procesu, vláknech, modulech a části paměti. Může obsahovat hesla, osobní údaje i obsah otevřených dokumentů.	A dump stores information about the process, threads, modules and part of memory. It may contain passwords, personal data and the content of open documents.
+Úplný dump obsahuje veškerou dostupnou paměť a může zabrat mnoho GiB. Vytváření může krátce pozastavit odezvu procesu. Limit je 32 GiB a 60 sekund.	A full dump contains all available memory and can take many GiB. Creating it may briefly pause the process. The limit is 32 GiB and 60 seconds.
+Ukládejte pouze do místního adresáře, kterému důvěřujete. Existující soubor se nepřepíše; odkazy a přesměrované adresáře se odmítnou.	Save only to a local folder you trust. An existing file is not overwritten; links and redirected folders are rejected.
+Vytvořit dump procesu	Create dump file
+Vybrat soubor…	Choose file…
+Dump procesu	Process dump
+Dump nebyl zahájen	The dump was not started
+Výběr se změnil nebo proces skončil. Vyberte znovu živý proces.	The selection changed or the process ended. Select a running process again.
+Dump nebyl dokončen	The dump was not completed
+Čekání bylo zrušeno. Výsledek není potvrzený.	Waiting was canceled. The result is not confirmed.
+Vytvářím úplný dump. Soubor se zveřejní až po dokončení a ověření.	Creating a full dump. The file appears only after it is finished and verified.
+Vytvářím běžný dump. Soubor se zveřejní až po dokončení a ověření.	Creating a standard dump. The file appears only after it is finished and verified.
+Limit 60 sekund · 32 GiB	Limit 60 seconds · 32 GiB
+Dump procesu · PID {0}	Process dump · PID {0}
+Zrušit čekání	Stop waiting
+Čekání bylo zrušeno.	Waiting was canceled.
+\nDump není potvrzený jako uložený. Finální soubor vzniklý těsně před zrušením zůstane zachovaný. Hotová nepublikovaná data zůstanou pro ruční obnovu; nedokončený vlastní soubor se po konci pracovníka uklidí.	\nThe dump is not confirmed as saved. A final file created just before canceling is kept. Finished unpublished data remains for manual recovery; the unfinished temporary file is cleaned up after the worker ends.
+Dump byl uložen.\n{0}	The dump was saved.\n{0}
+\nPříznaky zachycení: 0x{0}	\nCapture flags: 0x{0}
+Windows nebo pravidla ochrany cíle dump odmítly.	Windows or the target's protection rules refused the dump.
+Architektura nebo potřebná funkce není podporovaná.	The architecture or a required function is not supported.
+Proces skončil nebo se změnila jeho identita.	The process ended or its identity changed.
+Cíl není dostupný.	The target is not available.
+Dump překročil limit 32 GiB.	The dump exceeded the 32 GiB limit.
+Vytváření bylo zrušeno nebo překročilo časový limit.	Creation was canceled or exceeded the time limit.
+Pracovník odmítl neplatný požadavek nebo nesouhlasící soubor.	The worker rejected an invalid request or a mismatching file.
+Dump se nepodařilo ověřit.	The dump could not be verified.
+ Soubor nebyl zveřejněn.	 The file was not published.
+Pracovník vrátil více než jeden datový rámec.	The worker returned more than one data frame.
+Pracovník nedokončil dotaz správně.	The worker did not complete the query correctly.
+Dotaz byl zrušen.	The query was canceled.
+Pracovník vrátil neplatný datový rámec.	The worker returned an invalid data frame.
+Pracovník skončil před dokončením odpovědi.	The worker ended before completing the response.
+Pracovníka podrobností nelze spustit nebo připojit (Windows {0}).	The details worker cannot be started or connected (Windows {0}).
+Pracovníka podrobností se nepodařilo spustit.	The details worker could not be started.
+Procesor	Processor
+Fyzická paměť	Physical memory
+Název nebo typ musí mít alespoň dva znaky.	The name or type must have at least two characters.
+Převod zadaného písmene disku není dostupný; porovnávají se i doslovné názvy.	Conversion of the entered drive letter is not available; literal names are compared too.
+Seznam vlastníků není dostupný: {0}	The owner list is not available: {0}
+Některé vlastníky nebylo možné spolehlivě určit.	Some owners could not be determined reliably.
+Dosažen limit 8 MiB textu výsledků.	The 8 MiB result text limit was reached.
+Dosažen limit 5 000 výsledků.	The limit of 5,000 results was reached.
+Dosažen limit 25 000 dotazů na objekty.	The limit of 25,000 object queries was reached.
+Hledání bylo zrušené.	The search was canceled.
+Hledání dosáhlo časového limitu 2 minut.	The search reached the 2-minute time limit.
+Hledání nelze dokončit: {0}	The search cannot be completed: {0}
+chybí oprávnění	access denied
+nepodporováno	not supported
+proces se změnil nebo skončil	the process changed or ended
+překročen limit	limit exceeded
+nedostupné ({0})	unavailable ({0})
+Události procesů ETW	ETW process events
+Události vzniku a ukončení procesů	Process start and exit events
+Záznam událostí a síťového provozu (ETW) vyžaduje práva správce.	Recording events and network traffic (ETW) requires administrator rights.
+Zastavení a dočtení záznamu nebylo potvrzené	Stopping and reading the rest of the recording was not confirmed
+Zavřít i tak	Close anyway
+Ponechat aplikaci otevřenou	Keep the app open
+Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Aplikaci lze ponechat otevřenou a zkusit zastavení znovu.	Cleanup of the app's own ETW session or reading its remaining events could not be confirmed. The session may keep recording, and unread events may be lost on close. You can keep the app open and try stopping again.
+Aktualizace	Updates
+Aktualizace a návrat předchozí verze	Updates and rollback to the previous version
+Verze aplikace a možnosti aktualizace	App version and update options
+Aktualizace nelze otevřít	Updates cannot be opened
+Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej.	The previous elevated request is not closed yet. Do not repeat it.
+TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv.	TrustNotConfigured: elevation is not configured. The pinned publisher signature is missing; this development build stays without elevation.
+Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.	The signature, file or actual peer was not verified as trusted. Elevation was refused.
+Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána.	The app's own administrator confirmation was canceled, timed out, or the client is no longer running. The action was not sent.
+Náhradu lze zapnout jen z instalace v Program Files.	Replacing Task Manager can be enabled only from an installation in Program Files.
+Složka instalace není chráněná proti zápisu běžných uživatelů.	The installation folder is not protected against writes by standard users.
+Zvýšení práv bylo v UAC zrušeno. Akce nebyla odeslána.	Elevation was canceled in UAC. The action was not sent.
+Neplatná vazba okna na aplikaci.	Invalid link of a window to an app.
+Neplatný stav metadat aplikace.	Invalid app metadata state.
+Výsledek aplikací obsahuje data mimo rámec.	The app result contains data outside the frame.
+Historie je nedostupná	History is unavailable
+Historie: {0:N0} neuchovaných vzorků, {1:N0} chyb	History: {0:N0} samples not kept, {1:N0} errors
+ · ukončeno	 · ended
+ · zastaralé	 · stale
+Ukončeno	Ended
+Zastaralé	Stale
+PID {0} · ukončeno	PID {0} · ended
+PID {0} · {1} vláken	PID {0} · {1} threads
+Načítám…	Loading…
+Celkové využití procesoru; otevřít graf procesoru.	Total processor usage; open the processor chart.
+Použitá a celková fyzická paměť; otevřít graf paměti.	Used and total physical memory; open the memory chart.
+Disky · maximum	Disks · maximum
+{0} zařízení	{0} devices
+Aktivita disků právě není dostupná.	Disk activity is not available right now.
+Nejvyšší aktuální aktivita: {0} · {1}	Highest current activity: {0} · {1}
+Síť	Network
+Žádné připojení	No connection
+Žádný připojený adaptér v tomto pohledu.	No connected adapter in this view.
+Největší aktuální provoz: {0}. Příjem a odesílání tohoto adaptéru; hodnoty adaptérů se nesčítají.	Highest current traffic: {0}. Receive and send of this adapter; adapter values are not added together.
+Uložený balíček neodpovídá drženému zdroji.	The saved package does not match the held source.
+Nejasný záznam pro obnovu už není dostupný.	The uncertain recovery record is no longer available.
+Zánik původního pracovníka nebo instalátoru nebyl prokázaný. Obnova nebyla připravena.	The end of the original worker or installer was not proven. Recovery was not prepared.
+Plán neodpovídá výběru ani ověřenému běžícímu obrazu.	The plan matches neither the selection nor the verified running image.
+Balíček v plánu nebyl shodně ověřený.	The package in the plan was not verified consistently.
+Pracovník nepřipravil stejný plán.	The worker did not prepare the same plan.
+Nesprávná fáze odpovědi aktualizace.	Wrong phase of the update response.
+Přehled aktualizací patří jinému kořeni nebo podepsanému obrazu.	The update overview belongs to a different root or signed image.
+Chybí ověřitelný rozsah přehledu aktualizací.	The verifiable scope of the update overview is missing.
+Obnova byla nabídnuta pro jinou kopii aplikace.	Recovery was offered for a different copy of the app.
+Klient aktualizací nemá ověřenou životnost.	The update client has no verified lifetime.
+Obraz klienta není známý.	The client image is not known.
+Aktualizace nejsou nakonfigurované. Chybí připnutý podpis vydavatele; pracovník nebyl spuštěn.	Updates are not configured. The pinned publisher signature is missing; the worker was not started.
+Předchozí aktualizace nebo její ukončování ještě probíhá.	The previous update or its shutdown is still in progress.
+Čekání na pracovníka vypršelo. Dokud není ověřen jeho konec, nevznikne další požadavek. {0}	Waiting for the worker timed out. No further request is made until its end is verified. {0}
+Pracovník neposkytl ověřitelný rozsah v protokolu 2; tento výsledek nepovoluje změnu instalace.	The worker did not provide a verifiable scope in protocol 2; this result does not allow changing the installation.
+Podepsané části nemají stejnou vydanou verzi. Dostupný je pouze přehled, uložení ověřeného balíčku a výslovná obnova.	The signed parts do not have the same released version. Only the overview, saving a verified package and explicit recovery are available.
+Původ adresáře nebyl prokázaný; standardní změna je zakázaná.	The origin of the folder was not proven; a standard change is blocked.
+Nejasný výsledek vyžaduje výslovné posouzení obnovy; standardní změna se nezkouší znovu.	An uncertain result requires an explicit recovery review; a standard change is not retried.
+položka|položky|položek	item|items|items
+(výchozí hodnota)	(default value)
+Povoleno	Enabled
+Zakázáno	Disabled
+Jednorázově	Run once
+Zakázáno {0}	Disabled {0}
+Spustí se jednou při příštím přihlášení a Windows položku pak odstraní.	Runs once at the next sign-in, then Windows removes the item.
+Celý počítač	All users
+Spuštění	Startup apps
+Obnovit	Refresh
+Vypnout	Disable
+Zapnout	Enable
+Otevřít umístění	Open file location
+Načítám položky po spuštění…	Loading startup apps…
+Aplikace spouštěné po přihlášení	Apps that start after sign-in
+Položky vlastního účtu se zapínají a vypínají stejně jako ve Windows (StartupApproved), nic se nemaže.\nPoložky pro celý počítač a jednorázové položky NKS jen zobrazuje; změnit je může správce.	Items of your own account are enabled and disabled the same way as in Windows (StartupApproved); nothing is deleted.\nNKS only shows items for all users and run-once items; an administrator can change them.
+Jak funguje zapnutí a vypnutí	How enabling and disabling works
+Znovu načíst položky po spuštění	Reload startup apps
+Název	Name
+Vydavatel	Publisher
+Stav	Status
+Aplikace po spuštění	Startup apps
+Seznam nelze načíst: {0}	The list cannot be loaded: {0}
+ · povoleno {0}	 · enabled {0}
+Žádné položky po spuštění.	No startup apps.
+ (správce)	 (administrator)
+Jednorázovou položku nelze vypnout.	A run-once item cannot be disabled.
+Jednorázovou položku nelze vypnout	A run-once item cannot be disabled
+Změní jen značku Windows (StartupApproved); položka se nemaže.	Changes only the Windows flag (StartupApproved); the item is not deleted.
+ Položka pro celý počítač vyžaduje správce, nabídne se výzva UAC.	 An item for all users requires an administrator; a UAC prompt is offered.
+Soubor	File
+Příkaz	Command
+Umístění	Location
+Soubor nezjištěn	File not determined
+Ověřuji podpis…	Verifying signature…
+Nezjištěno	Unknown
+Podepsáno	Signed
+Bez podpisu	Unsigned
+Neplatný podpis	Invalid signature
+Soubor nenalezen	File not found
+Mimo místní disk	Not on a local disk
+Přístup odepřen	Access denied
+Položku „{0}“ spouští Windows pro všechny uživatele, takže ji může změnit jen správce.	Windows starts “{0}” for all users, so only an administrator can change it.
+Změnu nelze provést: {0}	The change cannot be made: {0}
+{0} se po přihlášení spustí.	{0} will start after sign-in.
+{0} se po přihlášení nespustí.	{0} will not start after sign-in.
+Změnu nelze provést, Windows vrátil chybu {0}.	The change cannot be made; Windows returned error {0}.
+Při bootu	Boot
+Systém	System
+Automaticky (odloženě)	Automatic (delayed start)
+Automaticky (?)	Automatic (?)
+Automaticky	Automatic
+Ručně	Manual
+Neznámé	Unknown
+Zastaveno	Stopped
+Spouští se	Starting
+Zastavuje se	Stopping
+Běží	Running
+Obnovuje se	Resuming
+Pozastavuje se	Pausing
+Pozastaveno	Paused
+Neznámý stav {0}	Unknown state {0}
+Chybí oprávnění (5)	Access denied (5)
+Nedostupné ({0})	Unavailable ({0})
+služba	service
+služby	services
+služeb	services
+PID není hlášen.	No PID reported.
+Hlášený PID {0} · {1}	Reported PID {0} · {1}
+Vznik	Start
+Ukončení	Exit
+Čas ETW nedostupný	ETW time unavailable
+Název není dostupný	Name not available
+PID {0} · rodič {1}	PID {0} · parent {1}
+CreateTime přímo ze zdroje · ověřená historická životnost	CreateTime directly from the source · verified historical lifetime
+Historický záznam · životnost není ověřená	Historical record · lifetime not verified
+Pořadí ve zdroji: {0}\nČas ETW (QPC): {1}\nFrekvence QPC: {2}\nPřijato (monotónní ns): {3}\nStav identity: {4}\nDruh generace: {5} · generace {6}\nPříznaky události: {7}	Source sequence: {0}\nETW time (QPC): {1}\nQPC frequency: {2}\nReceived (monotonic ns): {3}\nIdentity state: {4}\nGeneration kind: {5} · generation {6}\nEvent flags: {7}
+\nNávratový kód: 0x{0}	\nExit code: 0x{0}
+\nNávratový kód není dostupný.	\nExit code not available.
+\nTento záznam neopravňuje k živé akci nad současným vlastníkem stejného PID.	\nThis record does not authorize a live action on the current owner of the same PID.
+Podrobnosti procesu…	Process details…
+Závislosti služby	Service dependencies
+Otevřít hostitelský proces	Open host process
+Pokračovat ve sběru	Resume collection
+Pozastavit sběr	Pause collection
+Obnovovat každých 250 ms	Refresh every 250 ms
+Obnovovat každou 1 s	Refresh every 1 s
+Časové okno	Time range
+60 sekund	60 seconds
+10 minut	10 minutes
+Zobrazení procesoru	Processor view
+Automatické měřítko	Automatic scale
+Procesy ve vybraném čase…	Processes at selected time…
+Zrušit výběr času	Clear time selection

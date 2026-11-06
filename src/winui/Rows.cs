@@ -11,7 +11,7 @@ public sealed partial class ProcessRow : INotifyPropertyChanged
     public ProcessKey Key { get; }
     public string PidText { get; }
     public string Name { get; private set; } = string.Empty;
-    public string DisplayName => (HasChildren ? Collapsed ? "› " : "⌄ " : "") + Name + (Ended ? " · ukončeno" : Stale ? " · zastaralé" : "");
+    public string DisplayName => (HasChildren ? Collapsed ? "› " : "⌄ " : "") + Name + (Ended ? Loc.T(" · ukončeno") : Stale ? Loc.T(" · zastaralé") : "");
     public uint ParentPid { get; private set; }
     public ulong Created100ns { get; private set; }
     public uint Threads { get; private set; }
@@ -27,12 +27,12 @@ public sealed partial class ProcessRow : INotifyPropertyChanged
     public bool HasChildren { get; private set; }
     public bool Collapsed { get; private set; }
     public Thickness Indent => new(Depth * 14, 0, 0, 0);
-    public string Note => Ended ? $"PID {PidText} · ukončeno" : $"PID {PidText} · {Threads} vláken";
-    public string CpuText => Ended ? "Ukončeno" : Stale ? "Zastaralé" : Display.Metric(Cpu, " %");
-    public string WorkingText => Ended ? "Ukončeno" : Stale ? "Zastaralé" : Display.Number(WorkingBytes / 1048576d, " MiB", 0);
-    public string PrivateText => Ended ? "Ukončeno" : Stale ? "Zastaralé" : Display.Number(PrivateBytes / 1048576d, " MiB", 0);
-    public string ReadText => Ended ? "Ukončeno" : Stale ? "Zastaralé" : Display.Metric(ReadIo, " MiB/s", 1048576);
-    public string WriteText => Ended ? "Ukončeno" : Stale ? "Zastaralé" : Display.Metric(WriteIo, " MiB/s", 1048576);
+    public string Note => Ended ? Loc.F("PID {0} · ukončeno", PidText) : Loc.F("PID {0} · {1} vláken", PidText, Threads);
+    public string CpuText => Ended ? Loc.T("Ukončeno") : Stale ? Loc.T("Zastaralé") : Display.Metric(Cpu, " %");
+    public string WorkingText => Ended ? Loc.T("Ukončeno") : Stale ? Loc.T("Zastaralé") : Display.Number(WorkingBytes / 1048576d, " MiB", 0);
+    public string PrivateText => Ended ? Loc.T("Ukončeno") : Stale ? Loc.T("Zastaralé") : Display.Number(PrivateBytes / 1048576d, " MiB", 0);
+    public string ReadText => Ended ? Loc.T("Ukončeno") : Stale ? Loc.T("Zastaralé") : Display.Metric(ReadIo, " MiB/s", 1048576);
+    public string WriteText => Ended ? Loc.T("Ukončeno") : Stale ? Loc.T("Zastaralé") : Display.Metric(WriteIo, " MiB/s", 1048576);
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public unsafe void Update(in ProcessInfo source, bool notify = true)

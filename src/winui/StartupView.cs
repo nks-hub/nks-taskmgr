@@ -18,27 +18,27 @@ internal sealed class StartupRow(StartupEntry entry)
         or StartupSource.MachineRun32 or StartupSource.CommonFolder;
     /// <summary>Machine-wide items need an administrator; a standard user is offered a restart through UAC.</summary>
     internal bool NeedsAdministrator => Entry.Source is StartupSource.MachineRun or StartupSource.MachineRun32 or StartupSource.CommonFolder;
-    internal string Title => Entry.Name.Length == 0 ? "(výchozí hodnota)"
+    internal string Title => Entry.Name.Length == 0 ? Loc.T("(výchozí hodnota)")
         : Entry.Name.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ? Entry.Name[..^4] : Entry.Name;
     internal string StateText => Entry.State switch {
-        StartupState.Enabled => "Povoleno", StartupState.Disabled => "Zakázáno", _ => "Jednorázově"
+        StartupState.Enabled => Loc.T("Povoleno"), StartupState.Disabled => Loc.T("Zakázáno"), _ => Loc.T("Jednorázově")
     };
     internal string StateDetail => Entry.State switch {
         StartupState.Disabled when Entry.ChangedFileTime is > 0 and < 0x7fffffffffffffff
-            => "Zakázáno " + DateTime.FromFileTimeUtc((long)Entry.ChangedFileTime).ToLocalTime().ToString("g", CultureInfo.GetCultureInfo("cs-CZ")),
-        StartupState.RunOnce => "Spustí se jednou při příštím přihlášení a Windows položku pak odstraní.",
+            => Loc.F("Zakázáno {0}", DateTime.FromFileTimeUtc((long)Entry.ChangedFileTime).ToLocalTime().ToString("g", Loc.Culture)),
+        StartupState.RunOnce => Loc.T("Spustí se jednou při příštím přihlášení a Windows položku pak odstraní."),
         _ => StateText
     };
-    internal string Scope => Entry.Source is StartupSource.UserRun or StartupSource.UserRunOnce or StartupSource.UserFolder ? "Uživatel" : "Celý počítač";
+    internal string Scope => Entry.Source is StartupSource.UserRun or StartupSource.UserRunOnce or StartupSource.UserFolder ? Loc.T("Uživatel") : Loc.T("Celý počítač");
 }
 
 public sealed partial class MainWindow
 {
-    private readonly Button startupNav = Button("Spuštění"), startupReload = Button("Obnovit"), startupInfo = Button("ⓘ"),
-        startupToggle = Button("Vypnout"), startupOpen = Button("Otevřít umístění");
+    private readonly Button startupNav = Button(Loc.T("Spuštění")), startupReload = Button(Loc.T("Obnovit")), startupInfo = Button("ⓘ"),
+        startupToggle = Button(Loc.T("Vypnout")), startupOpen = Button(Loc.T("Otevřít umístění"));
     private readonly Grid startupPage = new();
     private readonly ListView startupList = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
-    private readonly TextBlock startupCount = Label("", 11, 0x95a4ad), startupStatus = Label("", 11, 0x95a4ad), startupEmpty = Label("Načítám položky po spuštění…", 12, 0x95a4ad);
+    private readonly TextBlock startupCount = Label("", 11, 0x95a4ad), startupStatus = Label("", 11, 0x95a4ad), startupEmpty = Label(Loc.T("Načítám položky po spuštění…"), 12, 0x95a4ad);
     private readonly Image startupDetailIcon = new() { Width = 32, Height = 32 };
     private readonly TextBlock startupDetailTitle = Label("", 16, 0xe9eef0), startupDetailState = Label("", 12, 0x95a4ad);
     private readonly StackPanel startupFacts = new() { Spacing = 10 };
@@ -52,7 +52,7 @@ public sealed partial class MainWindow
 
     private void BuildStartup()
     {
-        ToolTipService.SetToolTip(startupNav, "Aplikace spouštěné po přihlášení");
+        ToolTipService.SetToolTip(startupNav, Loc.T("Aplikace spouštěné po přihlášení"));
         startupNav.Click += (_, _) => ShowView(DesktopView.Startup);
         startupPage.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) }); startupPage.RowDefinitions.Add(new RowDefinition());
         var toolbar = new Grid { ColumnSpacing = 8 };
@@ -63,17 +63,16 @@ public sealed partial class MainWindow
         toolbar.Children.Add(left);
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
         startupInfo.Width = 32; startupInfo.Padding = new Thickness(0);
-        ToolTipService.SetToolTip(startupInfo, "Položky vlastního účtu se zapínají a vypínají stejně jako ve Windows (StartupApproved), nic se nemaže.\n"
-            + "Položky pro celý počítač a jednorázové položky NKS jen zobrazuje; změnit je může správce.");
-        AutomationProperties.SetName(startupInfo, "Jak funguje zapnutí a vypnutí");
+        ToolTipService.SetToolTip(startupInfo, Loc.T("Položky vlastního účtu se zapínají a vypínají stejně jako ve Windows (StartupApproved), nic se nemaže.\nPoložky pro celý počítač a jednorázové položky NKS jen zobrazuje; změnit je může správce."));
+        AutomationProperties.SetName(startupInfo, Loc.T("Jak funguje zapnutí a vypnutí"));
         foreach (var button in new[] { startupInfo, startupReload }) { button.Height = 28; commands.Children.Add(button); }
         startupReload.Click += (_, _) => { startupPublishers.Clear(); _ = LoadStartupAsync(); };
-        AutomationProperties.SetName(startupReload, "Znovu načíst položky po spuštění");
+        AutomationProperties.SetName(startupReload, Loc.T("Znovu načíst položky po spuštění"));
         Grid.SetColumn(commands, 1); toolbar.Children.Add(commands); startupPage.Children.Add(toolbar);
 
         var table = new Grid(); table.RowDefinitions.Add(new RowDefinition { Height = new GridLength(30) }); table.RowDefinitions.Add(new RowDefinition());
         var header = StartupGrid(); header.BorderBrush = Display.Brush(0x2c363d); header.BorderThickness = new Thickness(0, 0, 0, 1);
-        string[] headings = ["Název", "Vydavatel", "Stav"];
+        string[] headings = [Loc.T("Název"), Loc.T("Vydavatel"), Loc.T("Stav")];
         for (int i = 0; i < headings.Length; ++i) StartupCell(header, i, headings[i], 0x95a4ad).Margin = new Thickness(i == 0 ? 26 : 0, 0, 0, 0);
         table.Children.Add(header);
         var style = new Style { TargetType = typeof(ListViewItem) };
@@ -81,7 +80,7 @@ public sealed partial class MainWindow
         style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch)); startupList.ItemContainerStyle = style;
         startupList.ContextRequested += StartupContextRequested;
         startupList.SelectionChanged += (_, _) => RefreshStartupDetail();
-        AutomationProperties.SetName(startupList, "Aplikace po spuštění");
+        AutomationProperties.SetName(startupList, Loc.T("Aplikace po spuštění"));
         AutomationProperties.SetAutomationId(startupList, "startup-list");
         Grid.SetRow(startupList, 1); table.Children.Add(startupList);
         startupEmpty.HorizontalAlignment = HorizontalAlignment.Center; startupEmpty.VerticalAlignment = VerticalAlignment.Center;
@@ -143,13 +142,13 @@ public sealed partial class MainWindow
     {
         int generation = ++startupGeneration;
         string? selected = SelectedStartup() is { } current ? current.Entry.Source + "|" + current.Entry.Name : null;
-        startupEmpty.Text = "Načítám položky po spuštění…"; startupEmpty.Visibility = Visibility.Visible;
+        startupEmpty.Text = Loc.T("Načítám položky po spuštění…"); startupEmpty.Visibility = Visibility.Visible;
         StartupEntry[] entries;
         try { entries = await Task.Run(NativeStartup.Read); }
         catch (Exception error) when (error is NativeMonitorException or DllNotFoundException or EntryPointNotFoundException) {
             if (generation != startupGeneration) return;
             startupRows = []; startupList.Items.Clear(); startupCount.Text = "";
-            startupEmpty.Text = "Seznam nelze načíst: " + error.Message; RefreshStartupDetail(); return;
+            startupEmpty.Text = Loc.F("Seznam nelze načíst: {0}", error.Message); RefreshStartupDetail(); return;
         }
         if (generation != startupGeneration) return;
         startupRows = entries.Select(entry => new StartupRow(entry)).OrderBy(row => row.Title, StringComparer.CurrentCultureIgnoreCase).ToList();
@@ -177,8 +176,8 @@ public sealed partial class MainWindow
             if (selected == row.Entry.Source + "|" + row.Entry.Name) reselect = item;
         }
         int enabled = startupRows.Count(row => row.Entry.State == StartupState.Enabled);
-        startupCount.Text = Plural(startupRows.Count, "položka", "položky", "položek") + " · povoleno " + enabled;
-        startupEmpty.Text = "Žádné položky po spuštění.";
+        startupCount.Text = Plural(startupRows.Count, "položka", "položky", "položek") + Loc.F(" · povoleno {0}", enabled);
+        startupEmpty.Text = Loc.T("Žádné položky po spuštění.");
         startupEmpty.Visibility = startupRows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         startupList.SelectedItem = reselect ?? (startupList.Items.Count > 0 ? startupList.Items[0] : null);
         RefreshStartupDetail();
@@ -190,11 +189,11 @@ public sealed partial class MainWindow
         startupDetail.Visibility = Visibility.Visible;
         startupDetailTitle.Text = row.Title; startupDetailState.Text = row.StateDetail + " · " + row.Scope;
         startupDetailIcon.Source = null; _ = SetStartupIconAsync(row, startupDetailIcon);
-        startupToggle.Content = row.Entry.State == StartupState.Enabled ? "Vypnout" : "Zapnout";
+        startupToggle.Content = row.Entry.State == StartupState.Enabled ? Loc.T("Vypnout") : Loc.T("Zapnout");
         startupToggle.IsEnabled = row.Switchable && row.Entry.State != StartupState.RunOnce;
-        if (row.NeedsAdministrator && !RunningElevated) startupToggle.Content += " (správce)";
-        ToolTipService.SetToolTip(startupToggle, !row.Switchable ? "Jednorázovou položku nelze vypnout."
-            : "Změní jen značku Windows (StartupApproved); položka se nemaže." + (row.NeedsAdministrator && !RunningElevated ? " Položka pro celý počítač vyžaduje správce, nabídne se výzva UAC." : ""));
+        if (row.NeedsAdministrator && !RunningElevated) startupToggle.Content += Loc.T(" (správce)");
+        ToolTipService.SetToolTip(startupToggle, !row.Switchable ? Loc.T("Jednorázovou položku nelze vypnout.")
+            : Loc.T("Změní jen značku Windows (StartupApproved); položka se nemaže.") + (row.NeedsAdministrator && !RunningElevated ? Loc.T(" Položka pro celý počítač vyžaduje správce, nabídne se výzva UAC.") : ""));
         startupOpen.IsEnabled = row.Entry.Target.Length > 0;
         startupFacts.Children.Clear();
         void Fact(string label, string value) {
@@ -204,10 +203,10 @@ public sealed partial class MainWindow
             var text = Label(value, 12, 0xe9eef0); text.TextWrapping = TextWrapping.Wrap; text.IsTextSelectionEnabled = true;
             block.Children.Add(text); startupFacts.Children.Add(block);
         }
-        Fact("Vydavatel", StartupPublisher(row));
-        Fact("Soubor", row.Entry.Target);
-        Fact("Příkaz", row.Entry.Command);
-        Fact("Umístění", row.Entry.Location);
+        Fact(Loc.T("Vydavatel"), StartupPublisher(row));
+        Fact(Loc.T("Soubor"), row.Entry.Target);
+        Fact(Loc.T("Příkaz"), row.Entry.Command);
+        Fact(Loc.T("Umístění"), row.Entry.Location);
     }
 
     /// <summary>Shows the target file's shell icon; items without a file keep an empty slot so names stay aligned.</summary>
@@ -237,8 +236,8 @@ public sealed partial class MainWindow
         catch (System.ComponentModel.Win32Exception) { }
     }
 
-    private string StartupPublisher(StartupRow row) => row.Entry.Target.Length == 0 ? "Soubor nezjištěn"
-        : startupPublishers.TryGetValue(row.Entry.Target, out var publisher) ? publisher : "Ověřuji podpis…";
+    private string StartupPublisher(StartupRow row) => row.Entry.Target.Length == 0 ? Loc.T("Soubor nezjištěn")
+        : startupPublishers.TryGetValue(row.Entry.Target, out var publisher) ? publisher : Loc.T("Ověřuji podpis…");
 
     private async Task VerifyStartupPublishersAsync(int generation)
     {
@@ -247,10 +246,10 @@ public sealed partial class MainWindow
             if (generation != startupGeneration) return;
             if (!startupPublishers.ContainsKey(path)) {
                 string text;
-                if (model.BootIdentity is not { State: SampleState.Valid } boot || boot.Identifier.IsEmpty) text = "Nezjištěno";
+                if (model.BootIdentity is not { State: SampleState.Valid } boot || boot.Identifier.IsEmpty) text = Loc.T("Nezjištěno");
                 else {
                     try { text = StartupSignatureText(await processDetailsClient.ReadFileSignatureAsync(boot.Identifier, path, CancellationToken.None)); }
-                    catch (Exception error) when (error is IOException or TimeoutException or InvalidDataException or ArgumentException or OperationCanceledException) { text = "Nezjištěno"; }
+                    catch (Exception error) when (error is IOException or TimeoutException or InvalidDataException or ArgumentException or OperationCanceledException) { text = Loc.T("Nezjištěno"); }
                 }
                 startupPublishers[path] = text;
             }
@@ -264,15 +263,15 @@ public sealed partial class MainWindow
 
     private static string StartupSignatureText(ProcessDetailsSnapshot result) => result.State switch {
         ProcessDetailsState.Ok when result.Signature is { } signature => signature.State switch {
-            ModuleSignatureState.Valid => signature.Publisher.Length > 0 ? signature.Publisher : "Podepsáno",
-            ModuleSignatureState.Unsigned => "Bez podpisu",
-            ModuleSignatureState.Untrusted => "Neplatný podpis" + (signature.Publisher.Length > 0 ? " · " + signature.Publisher : ""),
-            _ => "Nezjištěno"
+            ModuleSignatureState.Valid => signature.Publisher.Length > 0 ? signature.Publisher : Loc.T("Podepsáno"),
+            ModuleSignatureState.Unsigned => Loc.T("Bez podpisu"),
+            ModuleSignatureState.Untrusted => Loc.T("Neplatný podpis") + (signature.Publisher.Length > 0 ? " · " + signature.Publisher : ""),
+            _ => Loc.T("Nezjištěno")
         },
-        _ when result.Error is 2 or 3 => "Soubor nenalezen",
-        ProcessDetailsState.Unsupported => "Mimo místní disk",
-        ProcessDetailsState.AccessDenied => "Přístup odepřen",
-        _ => "Nezjištěno"
+        _ when result.Error is 2 or 3 => Loc.T("Soubor nenalezen"),
+        ProcessDetailsState.Unsupported => Loc.T("Mimo místní disk"),
+        ProcessDetailsState.AccessDenied => Loc.T("Přístup odepřen"),
+        _ => Loc.T("Nezjištěno")
     };
 
     private void StartupContextRequested(UIElement sender, ContextRequestedEventArgs args)
@@ -284,12 +283,12 @@ public sealed partial class MainWindow
         var menu = new MenuFlyout();
         foreach (bool enable in new[] { true, false }) {
             bool available = row.Switchable && (row.Entry.State == StartupState.Enabled) != enable;
-            menu.Items.Add(ContextItem(enable ? "Zapnout" : "Vypnout", enable ? "context-startup-enable" : "context-startup-disable", available,
+            menu.Items.Add(ContextItem(enable ? Loc.T("Zapnout") : Loc.T("Vypnout"), enable ? "context-startup-enable" : "context-startup-disable", available,
                 async () => await SetStartupEnabledAsync(row, enable)));
         }
         if (!row.Switchable) {
             menu.Items.Add(new MenuFlyoutSeparator());
-            menu.Items.Add(new MenuFlyoutItem { Text = "Jednorázovou položku nelze vypnout", IsEnabled = false });
+            menu.Items.Add(new MenuFlyoutItem { Text = Loc.T("Jednorázovou položku nelze vypnout"), IsEnabled = false });
         }
         ShowContextMenu(menu, startupList, args);
     }
@@ -298,14 +297,14 @@ public sealed partial class MainWindow
     {
         if (view != DesktopView.Startup || !startupRows.Contains(row) || !row.Switchable) return;
         if (row.NeedsAdministrator && !RunningElevated) {
-            await OfferRestartElevatedAsync("Položku „" + row.Title + "“ spouští Windows pro všechny uživatele, takže ji může změnit jen správce.");
+            await OfferRestartElevatedAsync(Loc.F("Položku „{0}“ spouští Windows pro všechny uživatele, takže ji může změnit jen správce.", row.Title));
             return;
         }
         uint error;
         try { error = await Task.Run(() => NativeStartup.SetEnabled(row.Entry.Source, row.Entry.Name, enabled)); }
-        catch (NativeMonitorException failure) { startupStatus.Text = "Změnu nelze provést: " + failure.Message; await LoadStartupAsync(); return; }
-        startupStatus.Text = error == 0 ? row.Title + (enabled ? " se po přihlášení spustí." : " se po přihlášení nespustí.")
-            : "Změnu nelze provést, Windows vrátil chybu " + error.ToString(CultureInfo.InvariantCulture) + ".";
+        catch (NativeMonitorException failure) { startupStatus.Text = Loc.F("Změnu nelze provést: {0}", failure.Message); await LoadStartupAsync(); return; }
+        startupStatus.Text = error == 0 ? (enabled ? Loc.F("{0} se po přihlášení spustí.", row.Title) : Loc.F("{0} se po přihlášení nespustí.", row.Title))
+            : Loc.F("Změnu nelze provést, Windows vrátil chybu {0}.", error.ToString(CultureInfo.InvariantCulture));
         await LoadStartupAsync();
     }
 }

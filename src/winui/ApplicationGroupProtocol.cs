@@ -26,15 +26,15 @@ internal static partial class ProcessDetailsProtocol
             if (window == 0 || !windows.Add(window) || pid == 0 || kind is not (1 or 2) || generation == 0 || flags > 1
                 || titleChars > 511 || appChars > 511 || packageChars > 511
                 || flags == 0 && (hostPid != 0 || hostKind != 0 || hostGeneration != 0)
-                || flags == 1 && (hostPid == 0 || hostKind is not (1 or 2) || hostGeneration == 0)) throw Invalid("Neplatná vazba okna na aplikaci.");
+                || flags == 1 && (hostPid == 0 || hostKind is not (1 or 2) || hostGeneration == 0)) throw Invalid(Loc.T("Neplatná vazba okna na aplikaci."));
             string title = Text(payload, ref offset, titleChars), app = Text(payload, ref offset, appChars), package = Text(payload, ref offset, packageChars);
             if (appState != SampleState.Valid && app.Length != 0 || packageState != SampleState.Valid && package.Length != 0
                 || appState == SampleState.Valid && app.Length == 0 || packageState == SampleState.Valid && package.Length == 0)
-                throw Invalid("Neplatný stav metadat aplikace.");
+                throw Invalid(Loc.T("Neplatný stav metadat aplikace."));
             ProcessKey? host = flags == 1 ? new(boot, hostPid, (GenerationKind)hostKind, hostGeneration) : null;
             values[i] = new(window, new(boot, pid, (GenerationKind)kind, generation), host, title, app, package, appState, packageState);
         }
-        if (offset != payload.Length) throw Invalid("Výsledek aplikací obsahuje data mimo rámec.");
+        if (offset != payload.Length) throw Invalid(Loc.T("Výsledek aplikací obsahuje data mimo rámec."));
         return result with { Applications = values };
     }
 }

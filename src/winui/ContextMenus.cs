@@ -130,7 +130,7 @@ public sealed partial class MainWindow
         bool ActionsAvailable() { RefreshProcessActions(); return Current() && processActionsButton.IsEnabled; }
         var menu = new MenuFlyout();
         var single = snapshot.Single;
-        menu.Items.Add(ContextItem("Podrobnosti procesu…", "context-process-details", single is not null && CanReadDetails(single), () => {
+        menu.Items.Add(ContextItem(Loc.T("Podrobnosti procesu…"), "context-process-details", single is not null && CanReadDetails(single), () => {
             if (Current() && snapshot.Single is { } row && CanReadDetails(row)) InvokeContextButton(processDetailsButton);
         }));
         RefreshProcessDump();
@@ -165,12 +165,12 @@ public sealed partial class MainWindow
             menu.Items.Add(ContextItem(ServiceActionTitle(action) + "…", "context-service-" + action.ToString().ToLowerInvariant(), Available(action),
                 async () => { if (Available(action)) await StartServiceActionAsync(action); }));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(ContextItem("Závislosti služby", "context-service-dependencies", Current(), () => {
+        menu.Items.Add(ContextItem(Loc.T("Závislosti služby"), "context-service-dependencies", Current(), () => {
             if (Current()) InvokeContextButton(serviceDependenciesTab);
         }));
         var host = servicesModel?.Host(model);
         var hostKey = host?.Key;
-        menu.Items.Add(ContextItem("Otevřít hostitelský proces", "context-service-host", Current() && serviceHost.IsEnabled && host is not null, () => {
+        menu.Items.Add(ContextItem(Loc.T("Otevřít hostitelský proces"), "context-service-host", Current() && serviceHost.IsEnabled && host is not null, () => {
             if (Current() && host is not null && host.Key == hostKey && model.IsCurrent(host)
                 && ReferenceEquals(servicesModel?.Host(model), host)) InvokeContextButton(serviceHost);
         }));
@@ -205,23 +205,23 @@ public sealed partial class MainWindow
         bool Current() => ResourceContextCurrent(resource);
         var menu = new MenuFlyout();
         bool paused = model.Paused; uint refresh = model.Interval;
-        menu.Items.Add(ContextItem(paused ? "Pokračovat ve sběru" : "Pozastavit sběr", "context-performance-pause", pause.IsEnabled, () => {
+        menu.Items.Add(ContextItem(paused ? Loc.T("Pokračovat ve sběru") : Loc.T("Pozastavit sběr"), "context-performance-pause", pause.IsEnabled, () => {
             if (Current() && model.Paused == paused) InvokeContextButton(pause);
         }));
-        menu.Items.Add(ContextItem(refresh == 1000 ? "Obnovovat každých 250 ms" : "Obnovovat každou 1 s", "context-performance-refresh", interval.IsEnabled, () => {
+        menu.Items.Add(ContextItem(refresh == 1000 ? Loc.T("Obnovovat každých 250 ms") : Loc.T("Obnovovat každou 1 s"), "context-performance-refresh", interval.IsEnabled, () => {
             if (Current() && model.Interval == refresh) InvokeContextButton(interval);
         }));
         menu.Items.Add(new MenuFlyoutSeparator());
-        var range = new MenuFlyoutSubItem { Text = "Časové okno" };
+        var range = new MenuFlyoutSubItem { Text = Loc.T("Časové okno") };
         foreach (int seconds in new[] { 60, 600 }) {
-            var item = new ToggleMenuFlyoutItem { Text = seconds == 60 ? "60 sekund" : "10 minut", IsChecked = rangeSeconds == seconds };
+            var item = new ToggleMenuFlyoutItem { Text = seconds == 60 ? Loc.T("60 sekund") : Loc.T("10 minut"), IsChecked = rangeSeconds == seconds };
             AutomationProperties.SetAutomationId(item, "context-performance-range-" + seconds);
             item.Click += (_, _) => { if (Current()) { rangeSeconds = seconds; RefreshPerformance(); } };
             range.Items.Add(item);
         }
         menu.Items.Add(range);
         if (resource.Kind == ResourceKind.Cpu) {
-            var modes = new MenuFlyoutSubItem { Text = "Zobrazení procesoru" };
+            var modes = new MenuFlyoutSubItem { Text = Loc.T("Zobrazení procesoru") };
             for (int index = 0; index < cpuButtons.Count; ++index) {
                 int mode = index;
                 var item = new ToggleMenuFlyoutItem { Text = cpuButtons[index].Content?.ToString() ?? "", IsChecked = cpuMode == index };
@@ -233,17 +233,17 @@ public sealed partial class MainWindow
         }
         if (scaleChoice.Visibility == Visibility.Visible) {
             bool automatic = scaleChoice.IsChecked == true;
-            var scale = new ToggleMenuFlyoutItem { Text = "Automatické měřítko", IsChecked = automatic, IsEnabled = scaleChoice.IsEnabled };
+            var scale = new ToggleMenuFlyoutItem { Text = Loc.T("Automatické měřítko"), IsChecked = automatic, IsEnabled = scaleChoice.IsEnabled };
             AutomationProperties.SetAutomationId(scale, "context-performance-scale");
             scale.Click += (_, _) => { if (Current() && scaleChoice.IsEnabled) SetPerformanceAutomaticScale(!automatic); };
             menu.Items.Add(scale);
         }
         var timeline = performanceTimeline.State;
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(ContextItem("Procesy ve vybraném čase…", "context-performance-history", historicalProcessesButton.IsEnabled, () => {
+        menu.Items.Add(ContextItem(Loc.T("Procesy ve vybraném čase…"), "context-performance-history", historicalProcessesButton.IsEnabled, () => {
             if (Current() && performanceTimeline.State == timeline) InvokeContextButton(historicalProcessesButton);
         }));
-        menu.Items.Add(ContextItem("Zrušit výběr času", "context-performance-clear-time", timeline.CursorTimeNs is not null || timeline.RangeAnchorNs is not null, () => {
+        menu.Items.Add(ContextItem(Loc.T("Zrušit výběr času"), "context-performance-clear-time", timeline.CursorTimeNs is not null || timeline.RangeAnchorNs is not null, () => {
             if (Current() && performanceTimeline.State == timeline) performanceTimeline.Clear();
         }));
         return menu;

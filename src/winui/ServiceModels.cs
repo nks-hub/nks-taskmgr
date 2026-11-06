@@ -30,18 +30,18 @@ public sealed record ServiceConfiguration(uint Error, uint StartType, uint Delay
     }
     internal static unsafe bool Same(string value, String16 source) => value.AsSpan().SequenceEqual(new ReadOnlySpan<char>(source.Data, checked((int)source.Length)));
     public string Startup => Error != 0 ? ServiceText.Error(Error) : StartType switch {
-        0 => "Při bootu", 1 => "Systém", 2 => Delayed ? "Automaticky (odloženě)" : DelayedError != 0 ? "Automaticky (?)" : "Automaticky",
-        3 => "Ručně", 4 => "Zakázáno", _ => "Neznámé"
+        0 => Loc.T("Při bootu"), 1 => Loc.T("Systém"), 2 => Delayed ? Loc.T("Automaticky (odloženě)") : DelayedError != 0 ? Loc.T("Automaticky (?)") : Loc.T("Automaticky"),
+        3 => Loc.T("Ručně"), 4 => Loc.T("Zakázáno"), _ => Loc.T("Neznámé")
     };
 }
 
 public static class ServiceText
 {
-    public static string Count(int value) => value + (value == 1 ? " služba" : value is >= 2 and <= 4 ? " služby" : " služeb");
+    public static string Count(int value) => value + " " + MainWindow.PluralForm(value, Loc.T("služba"), Loc.T("služby"), Loc.T("služeb"));
     public static string State(uint value) => value switch {
-        1 => "Zastaveno", 2 => "Spouští se", 3 => "Zastavuje se", 4 => "Běží", 5 => "Obnovuje se", 6 => "Pozastavuje se", 7 => "Pozastaveno", _ => "Neznámý stav " + value
+        1 => Loc.T("Zastaveno"), 2 => Loc.T("Spouští se"), 3 => Loc.T("Zastavuje se"), 4 => Loc.T("Běží"), 5 => Loc.T("Obnovuje se"), 6 => Loc.T("Pozastavuje se"), 7 => Loc.T("Pozastaveno"), _ => Loc.F("Neznámý stav {0}", value)
     };
-    public static string Error(uint value) => value == 5 ? "Chybí oprávnění (5)" : "Nedostupné (" + value + ")";
+    public static string Error(uint value) => value == 5 ? Loc.T("Chybí oprávnění (5)") : Loc.F("Nedostupné ({0})", value);
 }
 
 public sealed partial class ServiceRow(string name) : INotifyPropertyChanged
@@ -58,7 +58,7 @@ public sealed partial class ServiceRow(string name) : INotifyPropertyChanged
     public string HostCountText => ReportedHostCount > 1 ? ServiceText.Count(ReportedHostCount) : "";
     // An empty second line would still take its height and push the PID above the row centre.
     public Visibility HostCountVisibility => ReportedHostCount > 1 ? Visibility.Visible : Visibility.Collapsed;
-    public string HostSummary => Pid == 0 ? "PID není hlášen." : "Hlášený PID " + PidText + " · " + ServiceText.Count(ReportedHostCount);
+    public string HostSummary => Pid == 0 ? Loc.T("PID není hlášen.") : Loc.F("Hlášený PID {0} · {1}", PidText, ServiceText.Count(ReportedHostCount));
     public string HostPeerDescription => StateText + " · " + Account;
     public string Startup => Config.Startup;
     public string Account => Config.Error == 0 ? Config.Account : ServiceText.Error(Config.Error);

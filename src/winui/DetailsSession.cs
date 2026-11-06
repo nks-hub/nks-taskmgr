@@ -38,21 +38,21 @@ internal sealed partial class DetailsSession : IDisposable
             await output.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
             if (!persistent) {
                 var end = new byte[1];
-                if (await output.ReadAsync(end, cancellation).ConfigureAwait(false) != 0) throw new InvalidDataException("Pracovník vrátil více než jeden datový rámec.");
+                if (await output.ReadAsync(end, cancellation).ConfigureAwait(false) != 0) throw new InvalidDataException(Loc.T("Pracovník vrátil více než jeden datový rámec."));
                 await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
             }
             var result = ProcessDetailsProtocol.Response(header, payload, request, module);
             if (!persistent && process.ExitCode != 0 && result.State == ProcessDetailsState.Ok)
-                throw new ProcessDetailsWorkerException(ProcessDetailsFailure.Terminated, "Pracovník nedokončil dotaz správně.");
+                throw new ProcessDetailsWorkerException(ProcessDetailsFailure.Terminated, Loc.T("Pracovník nedokončil dotaz správně."));
             return result;
         } catch (Exception error) when (cancellation.IsCancellationRequested && error is IOException or InvalidDataException or ObjectDisposedException or Win32Exception) {
-            Cancel(requestId); throw new OperationCanceledException("Dotaz byl zrušen.", error, cancellation);
+            Cancel(requestId); throw new OperationCanceledException(Loc.T("Dotaz byl zrušen."), error, cancellation);
         } catch (InvalidDataException error) {
-            Cancel(requestId); throw new ProcessDetailsWorkerException(ProcessDetailsFailure.InvalidResponse, "Pracovník vrátil neplatný datový rámec.", error);
+            Cancel(requestId); throw new ProcessDetailsWorkerException(ProcessDetailsFailure.InvalidResponse, Loc.T("Pracovník vrátil neplatný datový rámec."), error);
         } catch (IOException error) when (error is not ProcessDetailsWorkerException) {
-            Cancel(requestId); throw new ProcessDetailsWorkerException(ProcessDetailsFailure.Terminated, "Pracovník skončil před dokončením odpovědi.", error);
+            Cancel(requestId); throw new ProcessDetailsWorkerException(ProcessDetailsFailure.Terminated, Loc.T("Pracovník skončil před dokončením odpovědi."), error);
         } catch (Win32Exception error) {
-            Cancel(requestId); throw new ProcessDetailsWorkerException(ProcessDetailsFailure.Unavailable, "Pracovníka podrobností nelze spustit nebo připojit (Windows " + error.NativeErrorCode + ").", error);
+            Cancel(requestId); throw new ProcessDetailsWorkerException(ProcessDetailsFailure.Unavailable, Loc.F("Pracovníka podrobností nelze spustit nebo připojit (Windows {0}).", error.NativeErrorCode), error);
         }
     }
 
@@ -77,7 +77,7 @@ internal sealed partial class DetailsSession : IDisposable
                 RedirectStandardInput = true, RedirectStandardOutput = true, StandardInputEncoding = new UTF8Encoding(false)
             };
             start.ArgumentList.Add(persistent ? "--stdio-server" : "--stdio");
-            process = Process.Start(start) ?? throw new IOException("Pracovníka podrobností se nepodařilo spustit.");
+            process = Process.Start(start) ?? throw new IOException(Loc.T("Pracovníka podrobností se nepodařilo spustit."));
             lock (sync) { child = process; server = persistent; Check(requestId, cancellation); }
             if (!AssignProcessToJobObject(ownedJob, process.SafeHandle)) throw new Win32Exception(Marshal.GetLastPInvokeError());
             return process;

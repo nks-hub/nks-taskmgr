@@ -13,17 +13,17 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class MainWindow
 {
     // Columns follow Task Manager (Uživatel, Stav, CPU, Paměť, Disk, Síť); ID, station and client stay in the row tooltip.
-    private readonly Button usersNav = Button("Uživatelé");
+    private readonly Button usersNav = Button(Loc.T("Uživatelé"));
     private readonly Grid usersPage = new() { Visibility = Visibility.Collapsed };
     private readonly ListView usersList = new() { SelectionMode = ListViewSelectionMode.Single, Padding = new Thickness(0) };
     private readonly GroupLines userItems = [];
     private readonly GroupTemplates groupTemplates = new();
     private Grid usersHeader = new();
     private readonly List<(Button Button, TextBlock Text)> userHeaders = [];
-    private readonly TextBlock usersStatus = Label("Načítám relace…", 11, 0x95a4ad);
-    private readonly Button disconnectUser = Button("Odpojit"), logoffUser = Button("Odhlásit"), messageUser = Button("Zpráva…"),
+    private readonly TextBlock usersStatus = Label(Loc.T("Načítám relace…"), 11, 0x95a4ad);
+    private readonly Button disconnectUser = Button(Loc.T("Odpojit")), logoffUser = Button(Loc.T("Odhlásit")), messageUser = Button(Loc.T("Zpráva…")),
         usersOptions = Button("⋯");
-    private readonly ToggleMenuFlyoutItem fullAccountName = new() { Text = "Zobrazit celý název účtu" };
+    private readonly ToggleMenuFlyoutItem fullAccountName = new() { Text = Loc.T("Zobrazit celý název účtu") };
     private readonly HashSet<uint> expandedSessions = [];
     private readonly Dictionary<uint, GroupLine> sessionItems = [];
     private readonly Dictionary<ProcessKey, GroupLine> userProcessItems = [];
@@ -47,29 +47,29 @@ public sealed partial class MainWindow
         disconnectUser.Click += async (_, _) => await RunUserActionAsync(UserSessionAction.Disconnect);
         logoffUser.Click += async (_, _) => await RunUserActionAsync(UserSessionAction.Logoff);
         messageUser.Click += async (_, _) => await RunUserActionAsync(UserSessionAction.Message);
-        ToolTipService.SetToolTip(disconnectUser, "Odpojit vybraného uživatele. Jeho relace a programy dál běží.");
-        ToolTipService.SetToolTip(logoffUser, "Odhlásit vybraného uživatele. Neuložená data jeho programů se mohou ztratit.");
-        ToolTipService.SetToolTip(messageUser, "Zobrazit zprávu na ploše vybraného uživatele.");
-        AutomationProperties.SetName(usersOptions, "Další možnosti uživatelů");
+        ToolTipService.SetToolTip(disconnectUser, Loc.T("Odpojit vybraného uživatele. Jeho relace a programy dál běží."));
+        ToolTipService.SetToolTip(logoffUser, Loc.T("Odhlásit vybraného uživatele. Neuložená data jeho programů se mohou ztratit."));
+        ToolTipService.SetToolTip(messageUser, Loc.T("Zobrazit zprávu na ploše vybraného uživatele."));
+        AutomationProperties.SetName(usersOptions, Loc.T("Další možnosti uživatelů"));
         var options = new MenuFlyout();
-        options.Items.Add(ContextItem("Rozbalit vše", "users-expand-all", true, () => { foreach (var session in model.Sessions) expandedSessions.Add(session.Id); RefreshUsers(); }));
-        options.Items.Add(ContextItem("Sbalit vše", "users-collapse-all", true, () => { expandedSessions.Clear(); RefreshUsers(); }));
+        options.Items.Add(ContextItem(Loc.T("Rozbalit vše"), "users-expand-all", true, () => { foreach (var session in model.Sessions) expandedSessions.Add(session.Id); RefreshUsers(); }));
+        options.Items.Add(ContextItem(Loc.T("Sbalit vše"), "users-collapse-all", true, () => { expandedSessions.Clear(); RefreshUsers(); }));
         options.Items.Add(new MenuFlyoutSeparator());
         fullAccountName.Click += (_, _) => RefreshUsers();
         options.Items.Add(fullAccountName);
-        options.Items.Add(ContextItem("Spravovat uživatelské účty", "users-accounts", true, OpenUserAccounts));
+        options.Items.Add(ContextItem(Loc.T("Spravovat uživatelské účty"), "users-accounts", true, OpenUserAccounts));
         usersOptions.Flyout = options;
         foreach (var button in new[] { disconnectUser, logoffUser, messageUser, usersOptions }) { button.Height = 28; actions.Children.Add(button); }
         Grid.SetColumn(actions, 1); toolbar.Children.Add(actions);
         usersPage.Children.Add(toolbar);
 
         string[] tips = [
-            "Přihlášený uživatel a počet jeho procesů. Šipka nebo dvojklik rozbalí procesy.", "Stav relace Windows.",
-            "Součet CPU procesů. ≥ označuje známou část, když některý proces nemá aktuální vzorek.",
-            "Součet pracovních sad procesů. Přesné hodnoty v MB jsou v popisku buňky.",
-            "Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory).",
-            "Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem."];
-        usersHeader = GroupHeader("Uživatel", tips, userHeaders, column => {
+            Loc.T("Přihlášený uživatel a počet jeho procesů. Šipka nebo dvojklik rozbalí procesy."), Loc.T("Stav relace Windows."),
+            Loc.T("Součet CPU procesů. ≥ označuje známou část, když některý proces nemá aktuální vzorek."),
+            Loc.T("Součet pracovních sad procesů. Přesné hodnoty v MB jsou v popisku buňky."),
+            Loc.T("Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory)."),
+            Loc.T("Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.")];
+        usersHeader = GroupHeader(Loc.T("Uživatel"), tips, userHeaders, column => {
             userSortDescending = userSortColumn == column ? !userSortDescending : column >= 2; userSortColumn = column; RefreshUsers();
         });
         Grid.SetRow(usersHeader, 1); usersPage.Children.Add(usersHeader);
@@ -88,7 +88,7 @@ public sealed partial class MainWindow
             if (LineFrom(args.OriginalSource) is not { Group: uint id } line || usersList.ContainerFromItem(line) is not FrameworkElement owner) return;
             UserContextRequested(id, owner, args);
         };
-        AutomationProperties.SetName(usersList, "Uživatelé a jejich procesy"); AutomationProperties.SetAutomationId(usersList, "users-list");
+        AutomationProperties.SetName(usersList, Loc.T("Uživatelé a jejich procesy")); AutomationProperties.SetAutomationId(usersList, "users-list");
         Grid.SetRow(usersList, 2); usersPage.Children.Add(usersList);
         page.Children.Add(usersPage);
         model.SessionNotifications = UserSessionApi.Watch(windowHandle);
@@ -110,7 +110,7 @@ public sealed partial class MainWindow
         MarkNavigation(usersNav, visible);
         model.SetSessionViewVisible(visible);
         if (!visible) return;
-        heading.Text = "Uživatelé"; heading.Visibility = Visibility.Visible;
+        heading.Text = Loc.T("Uživatelé"); heading.Visibility = Visibility.Visible;
         search.Visibility = Visibility.Collapsed;
         RefreshUsers();
     }
@@ -125,21 +125,34 @@ public sealed partial class MainWindow
         messageUser.IsEnabled = !userActionBusy && session is not null && UserSessionText.CanRun(UserSessionAction.Message, session.State);
     }
 
-    private static string Plural(int count, string one, string few, string many) => count + " " + (count == 1 ? one : count is >= 2 and <= 4 ? few : many);
+    /// <summary>Count with a noun in the UI language; translations are keyed by the three Czech forms joined with '|'.</summary>
+    private static string Plural(int count, string one, string few, string many)
+    {
+        if (Loc.Language != "cs" && Loc.T(one + "|" + few + "|" + many).Split('|') is [var first, var second, var third]) (one, few, many) = (first, second, third);
+        return count + " " + PluralForm(count, one, few, many);
+    }
+
+    /// <summary>Picks the singular, few or many form by the plural rule of the UI language.</summary>
+    internal static string PluralForm(long count, string one, string few, string many) => Loc.Language switch {
+        "en" or "de" => count == 1 ? one : many,
+        "pl" => count == 1 ? one : count % 10 is >= 2 and <= 4 && count % 100 is not (>= 12 and <= 14) ? few : many,
+        _ => count == 1 ? one : count is >= 2 and <= 4 ? few : many
+    };
 
     internal static string MemoryTip(string label, ulong working, ulong privateBytes)
-        => $"{label}: {Display.Number(working / 1_000_000d, " MB")} ({Display.Bytes(working)})\nPrivátní paměť: {Display.Number(privateBytes / 1_000_000d, " MB")} ({Display.Bytes(privateBytes)})";
+        => Loc.F("{0}: {1} ({2})\nPrivátní paměť: {3} ({4})", label, Display.Number(working / 1_000_000d, " MB"), Display.Bytes(working),
+            Display.Number(privateBytes / 1_000_000d, " MB"), Display.Bytes(privateBytes));
 
     private void RefreshUsers()
     {
         var sessions = model.Sessions;
         int processes = sessions.Sum(session => session.Members);
         usersStatus.Text = model.SessionState switch {
-            SampleState.First => "Načítám relace…",
+            SampleState.First => Loc.T("Načítám relace…"),
             SampleState.Valid => Plural(sessions.Count, "relace", "relace", "relací") + " · " + Plural(processes, "proces", "procesy", "procesů"),
-            SampleState.AccessDenied => "Seznam relací Windows vyžaduje oprávnění; relace jsou odvozené jen z procesů.",
-            _ => "Seznam relací Windows je nedostupný; relace jsou odvozené jen z procesů."
-        } + (model.Stale ? " · údaje jsou zastaralé" : "");
+            SampleState.AccessDenied => Loc.T("Seznam relací Windows vyžaduje oprávnění; relace jsou odvozené jen z procesů."),
+            _ => Loc.T("Seznam relací Windows je nedostupný; relace jsou odvozené jen z procesů.")
+        } + (model.Stale ? Loc.T(" · údaje jsou zastaralé") : "");
         // Without a running ETW capture there is no per-process network figure, so the column is hidden instead of showing dashes.
         bool network = model.NetworkAvailable;
         if (network != userNetworkShown) {
@@ -147,7 +160,7 @@ public sealed partial class MainWindow
             usersHeader.ColumnDefinitions[^1].Width = new GridLength(network ? GroupColumns[^1] : 0);
             userItems.Sync([]);
         }
-        UpdateGroupHeader(userHeaders, "Uživatel", userSortColumn, userSortDescending);
+        UpdateGroupHeader(userHeaders, Loc.T("Uživatel"), userSortColumn, userSortDescending);
         var members = new Dictionary<uint, List<ProcessRow>>();
         var sessionNetwork = new Dictionary<uint, (ProcessBranchMetric Sum, int Count)>();
         foreach (var row in model.Processes) {
@@ -205,26 +218,26 @@ public sealed partial class MainWindow
         bool expanded = expandedSessions.Contains(session.Id);
         bool showFull = fullAccountName.IsChecked;
         string name = session.User.Length > 0 ? UserSessionText.Name(session.User, session.Domain, showFull ? FullName(session) : "", showFull)
-            : session.InfoState == SampleState.AccessDenied ? "Nedostupné bez správce"
-            : session.Id == 0 ? "Služby systému" : session.Station.Length > 0 ? session.Station : "Neznámý uživatel";
+            : session.InfoState == SampleState.AccessDenied ? Loc.T("Nedostupné bez správce")
+            : session.Id == 0 ? Loc.T("Služby systému") : session.Station.Length > 0 ? session.Station : Loc.T("Neznámý uživatel");
         string protocol = session.Protocol switch {
-            SessionProtocol.Console => "konzole", SessionProtocol.Rdp => "RDP", SessionProtocol.Ica => "ICA",
-            _ => session.InfoState == SampleState.AccessDenied ? "nedostupné" : "neznámé"
+            SessionProtocol.Console => Loc.T("konzole"), SessionProtocol.Rdp => "RDP", SessionProtocol.Ica => "ICA",
+            _ => session.InfoState == SampleState.AccessDenied ? Loc.T("nedostupné") : Loc.T("neznámé")
         };
         string state = UserSessionText.State(session.State);
         var (traffic, trafficMembers) = network;
         string account = session.User.Length == 0 ? name : UserSessionText.Account(session.User, session.Domain);
-        string tip = $"{account} · relace {session.Id} · {protocol}" + (session.Station.Length > 0 ? $" · stanice {session.Station}" : "")
-            + (session.Client.Length > 0 ? $" · klient {session.Client}" : "")
-            + (session.InfoState == SampleState.AccessDenied ? "\nÚdaje o uživateli této relace vyžadují oprávnění správce." : "")
-            + $"\nZnámé aktuální vzorky: CPU {session.Cpu.Known}/{session.Members}, paměť {session.Working.Known}/{session.Members}, I/O {session.Io.Known}/{session.Members}."
-            + "\n≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.";
+        string tip = Loc.F("{0} · relace {1} · {2}", account, session.Id, protocol) + (session.Station.Length > 0 ? Loc.F(" · stanice {0}", session.Station) : "")
+            + (session.Client.Length > 0 ? Loc.F(" · klient {0}", session.Client) : "")
+            + (session.InfoState == SampleState.AccessDenied ? Loc.T("\nÚdaje o uživateli této relace vyžadují oprávnění správce.") : "")
+            + Loc.F("\nZnámé aktuální vzorky: CPU {0}/{3}, paměť {1}/{3}, I/O {2}/{3}.", session.Cpu.Known, session.Working.Known, session.Io.Known, session.Members)
+            + Loc.T("\n≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.");
         line.Set(expanded ? "⌄" : "›", UserSessionText.Title(name, session.Members), state,
             session.Cpu.Text(session.Members, false, " %"),
-            session.Working.Known == 0 ? "Měření nedostupné" : (session.Working.Known != session.Members ? "≥ " : "") + Display.Bytes(session.Working.Value),
-            MemoryTip("Pracovní sada", session.Working.Value, session.Private.Value),
+            session.Working.Known == 0 ? Loc.T("Měření nedostupné") : (session.Working.Known != session.Members ? "≥ " : "") + Display.Bytes(session.Working.Value),
+            MemoryTip(Loc.T("Pracovní sada"), session.Working.Value, session.Private.Value),
             session.Io.Text(session.Members, false, " MiB/s", 1048576), traffic.NetworkText(trafficMembers, trafficMembers != session.Members), tip,
-            $"{name}, {state}, relace {session.Id}, {Plural(session.Members, "proces", "procesy", "procesů")}, {(expanded ? "rozbaleno" : "sbaleno")}");
+            Loc.F("{0}, {1}, relace {2}, {3}, {4}", name, state, session.Id, Plural(session.Members, "proces", "procesy", "procesů"), expanded ? Loc.T("rozbaleno") : Loc.T("sbaleno")));
         line.SetSort(name, session.Cpu.SortValue, session.Working.SortValue, session.Io.SortValue, traffic.SortValue);
         return line;
     }
@@ -235,7 +248,7 @@ public sealed partial class MainWindow
             userProcessItems[row.Key] = line = new GroupLine(session, row, row);
         }
         string disk = DiskText(row, out double diskValue);
-        line.Set("", row.Name, "", row.CpuText, Display.Bytes(row.WorkingBytes), MemoryTip("Pracovní sada", row.WorkingBytes, row.PrivateBytes),
+        line.Set("", row.Name, "", row.CpuText, Display.Bytes(row.WorkingBytes), MemoryTip(Loc.T("Pracovní sada"), row.WorkingBytes, row.PrivateBytes),
             disk, row.NetworkText, $"{row.Name} · PID {row.PidText}", $"{row.Name}, PID {row.PidText}");
         line.SetSort(row.Name, row.Cpu.State == SampleState.Valid ? row.Cpu.Value : -1, row.WorkingBytes,
             diskValue, row.Network.SortValue);
@@ -248,15 +261,15 @@ public sealed partial class MainWindow
         SelectSession(id);
         bool expanded = expandedSessions.Contains(id);
         var menu = new MenuFlyout();
-        menu.Items.Add(ContextItem("Rozbalit", "context-user-expand", !expanded, () => SetSessionExpanded(id, true)));
-        menu.Items.Add(ContextItem("Sbalit", "context-user-collapse", expanded, () => SetSessionExpanded(id, false)));
+        menu.Items.Add(ContextItem(Loc.T("Rozbalit"), "context-user-expand", !expanded, () => SetSessionExpanded(id, true)));
+        menu.Items.Add(ContextItem(Loc.T("Sbalit"), "context-user-collapse", expanded, () => SetSessionExpanded(id, false)));
         menu.Items.Add(new MenuFlyoutSeparator());
-        foreach (var (action, text) in new[] { (UserSessionAction.Disconnect, "Odpojit"), (UserSessionAction.Logoff, "Odhlásit se"), (UserSessionAction.Message, "Odeslat zprávu…") }) {
+        foreach (var (action, text) in new[] { (UserSessionAction.Disconnect, Loc.T("Odpojit")), (UserSessionAction.Logoff, Loc.T("Odhlásit se")), (UserSessionAction.Message, Loc.T("Odeslat zprávu…")) }) {
             bool enabled = !userActionBusy && SelectedUserSession() is { } session && UserSessionText.CanRun(action, session.State);
             menu.Items.Add(ContextItem(text, "context-user-" + action.ToString().ToLowerInvariant(), enabled, async () => await RunUserActionAsync(action)));
         }
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(ContextItem("Spravovat uživatelské účty", "context-user-accounts", true, OpenUserAccounts));
+        menu.Items.Add(ContextItem(Loc.T("Spravovat uživatelské účty"), "context-user-accounts", true, OpenUserAccounts));
         ShowContextMenu(menu, owner, args);
     }
 
@@ -272,7 +285,7 @@ public sealed partial class MainWindow
             } else if (!await ConfirmUserActionAsync(action)) return;
             // The session id may have been reused by another logon while the dialog was open.
             if (!model.Sessions.Any(current => current.Id == session.Id && current.User == session.User && current.Domain == session.Domain)) {
-                await ShowUserActionResultAsync("Relace se mezitím změnila nebo skončila. Akce nebyla provedena.");
+                await ShowUserActionResultAsync(Loc.T("Relace se mezitím změnila nebo skončila. Akce nebyla provedena."));
                 return;
             }
             uint id = session.Id;
@@ -288,7 +301,7 @@ public sealed partial class MainWindow
     {
         var (title, content, confirm) = UserSessionText.Confirmation(action);
         var dialog = Appearance.Dialog(new ContentDialog {
-            Title = title, XamlRoot = root.XamlRoot, PrimaryButtonText = confirm, CloseButtonText = "Zrušit", DefaultButton = ContentDialogButton.Close
+            Title = title, XamlRoot = root.XamlRoot, PrimaryButtonText = confirm, CloseButtonText = Loc.T("Zrušit"), DefaultButton = ContentDialogButton.Close
         });
         if (content.Length > 0) dialog.Content = ServiceActionText(content, 0xe9eef0);
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
@@ -296,12 +309,12 @@ public sealed partial class MainWindow
 
     private async Task<(string Title, string Text)?> AskUserMessageAsync()
     {
-        var title = new TextBox { Header = "Nadpis zprávy:", Text = UserSessionText.MessageTitle(Environment.UserName, DateTime.Now), FontSize = 12 };
-        var text = new TextBox { Header = "Zpráva:", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 120, FontSize = 12 };
+        var title = new TextBox { Header = Loc.T("Nadpis zprávy:"), Text = UserSessionText.MessageTitle(Environment.UserName, DateTime.Now), FontSize = 12 };
+        var text = new TextBox { Header = Loc.T("Zpráva:"), AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 120, FontSize = 12 };
         var body = new StackPanel { Spacing = 12, MinWidth = 340 };
         body.Children.Add(title); body.Children.Add(text);
         var dialog = Appearance.Dialog(new ContentDialog {
-            Title = "Odeslat zprávu", XamlRoot = root.XamlRoot, Content = body, PrimaryButtonText = "OK", CloseButtonText = "Zrušit",
+            Title = Loc.T("Odeslat zprávu"), XamlRoot = root.XamlRoot, Content = body, PrimaryButtonText = "OK", CloseButtonText = Loc.T("Zrušit"),
             DefaultButton = ContentDialogButton.Primary, IsPrimaryButtonEnabled = false
         });
         text.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = text.Text.Length > 0;
@@ -311,7 +324,7 @@ public sealed partial class MainWindow
     private async Task ShowUserActionResultAsync(string message)
     {
         await Appearance.Dialog(new ContentDialog {
-            Title = "Uživatelé", XamlRoot = root.XamlRoot, Content = ServiceActionText(message, 0xe9eef0), CloseButtonText = "Zavřít", DefaultButton = ContentDialogButton.Close
+            Title = Loc.T("Uživatelé"), XamlRoot = root.XamlRoot, Content = ServiceActionText(message, 0xe9eef0), CloseButtonText = Loc.T("Zavřít"), DefaultButton = ContentDialogButton.Close
         }).ShowAsync();
     }
 
@@ -319,7 +332,7 @@ public sealed partial class MainWindow
     {
         // Taskmgr.exe references only the Control Panel canonical name Microsoft.UserAccounts, no ms-settings page.
         try { Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "control.exe"), "/name Microsoft.UserAccounts") { UseShellExecute = false })?.Dispose(); }
-        catch (Win32Exception error) { _ = ShowUserActionResultAsync("Nastavení uživatelských účtů se nepodařilo otevřít. " + error.Message); }
+        catch (Win32Exception error) { _ = ShowUserActionResultAsync(Loc.F("Nastavení uživatelských účtů se nepodařilo otevřít. {0}", error.Message)); }
     }
 
     private string FullName(UserSession session)

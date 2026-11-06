@@ -14,7 +14,7 @@ internal sealed class ElevationBrokerClient : IDisposable
     internal async Task<ProcessActionsBatch> ExecuteAsync(ProcessActionsRequest request, CancellationToken cancellation)
     {
         if (Interlocked.CompareExchange(ref pending, 1, 0) != 0)
-            throw new IOException("Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej.");
+            throw new IOException(Loc.T("Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej."));
         long started = Stopwatch.GetTimestamp(); bool uncertain = true;
         try {
             var result = await client.ExecuteAsync(request, cancellation).ConfigureAwait(false);
@@ -40,12 +40,12 @@ internal sealed class ElevationBrokerClient : IDisposable
     }
 
     internal static string Status(uint error) => error switch {
-        0xe04e0001 => "TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv.",
-        0xe04e0002 => "Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.",
-        0xe04e0003 => "Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána.",
-        0xe04e0004 => "Náhradu lze zapnout jen z instalace v Program Files.",
-        0xe04e0005 => "Složka instalace není chráněná proti zápisu běžných uživatelů.",
-        1223 => "Zvýšení práv bylo v UAC zrušeno. Akce nebyla odeslána.",
+        0xe04e0001 => Loc.T("TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv."),
+        0xe04e0002 => Loc.T("Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto."),
+        0xe04e0003 => Loc.T("Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána."),
+        0xe04e0004 => Loc.T("Náhradu lze zapnout jen z instalace v Program Files."),
+        0xe04e0005 => Loc.T("Složka instalace není chráněná proti zápisu běžných uživatelů."),
+        1223 => Loc.T("Zvýšení práv bylo v UAC zrušeno. Akce nebyla odeslána."),
         _ => ""
     };
 

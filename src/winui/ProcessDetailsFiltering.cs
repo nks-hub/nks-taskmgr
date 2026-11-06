@@ -7,7 +7,7 @@ namespace NksTaskMgr.WinUI;
 
 internal sealed partial class ProcessDetailsView
 {
-    private readonly Button memory = Command("Paměť"), handles = Command("Handly"), observeObject = Command("Zjistit typ a název objektu");
+    private readonly Button memory = Command(Loc.T("Paměť")), handles = Command(Loc.T("Handly")), observeObject = Command(Loc.T("Zjistit typ a název objektu"));
     private readonly TextBox find = new() { Height = 34, MinHeight = 0, FontFamily = UiTypography.Font, FontSize = 12 };
     private readonly ComboBox stateFilter = new() { Width = 170, MinHeight = 32 };
     private DispatcherQueueTimer searchTimer = null!;
@@ -22,8 +22,8 @@ internal sealed partial class ProcessDetailsView
         ProcessDetailsCommand.Memory => memorySnapshot, ProcessDetailsCommand.Handles => handlesSnapshot, _ => null
     };
     private static string ModeName(ProcessDetailsCommand value) => value switch {
-        ProcessDetailsCommand.Threads => "vlákna", ProcessDetailsCommand.Modules => "moduly",
-        ProcessDetailsCommand.Memory => "oblasti paměti", ProcessDetailsCommand.Handles => "handly", _ => "podrobnosti"
+        ProcessDetailsCommand.Threads => Loc.T("vlákna"), ProcessDetailsCommand.Modules => Loc.T("moduly"),
+        ProcessDetailsCommand.Memory => Loc.T("oblasti paměti"), ProcessDetailsCommand.Handles => Loc.T("handly"), _ => Loc.T("podrobnosti")
     };
 
     private void ConfigureObjects(StackPanel modes)
@@ -32,17 +32,17 @@ internal sealed partial class ProcessDetailsView
         memory.Click += async (_, _) => await SelectModeAsync(ProcessDetailsCommand.Memory);
         handles.Click += async (_, _) => await SelectModeAsync(ProcessDetailsCommand.Handles);
         observeObject.Click += async (_, _) => { if (SelectedHandle is { } handle) await ReadAsync(ProcessDetailsCommand.HandleInfo, handle: handle); };
-        Identify(memory, "process-details-memory", "Mapa virtuální paměti procesu");
-        Identify(handles, "process-details-handles", "Handly procesu");
-        Identify(observeObject, "process-details-object-name", "Zjistit aktuální typ a název duplikovaného objektu");
+        Identify(memory, "process-details-memory", Loc.T("Mapa virtuální paměti procesu"));
+        Identify(handles, "process-details-handles", Loc.T("Handly procesu"));
+        Identify(observeObject, "process-details-object-name", Loc.T("Zjistit aktuální typ a název duplikovaného objektu"));
         inspector.Children.Add(observeObject);
         ConfigureHandleClose();
         var filters = filtersPanel = new Grid { ColumnSpacing = 8 };
         filters.ColumnDefinitions.Add(new ColumnDefinition()); filters.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         filters.Children.Add(find); filters.Children.Add(stateFilter); Grid.SetColumn(stateFilter, 1);
         Grid.SetRow(filters, 3); layout.Children.Add(filters);
-        Identify(find, "process-details-find", "Filtrovat pouze již načtené výsledky");
-        Identify(stateFilter, "process-details-filter", "Stav nebo vlastnost načtených výsledků");
+        Identify(find, "process-details-find", Loc.T("Filtrovat pouze již načtené výsledky"));
+        Identify(stateFilter, "process-details-filter", Loc.T("Stav nebo vlastnost načtených výsledků"));
         searchTimer = DispatcherQueue.CreateTimer(); searchTimer.Interval = TimeSpan.FromMilliseconds(150); searchTimer.IsRepeating = false;
         searchTimer.Tick += (_, _) => _ = FilterRowsAsync();
         find.TextChanged += (_, _) => { if (!buildingFilters) QueueFilter(false); };
@@ -56,14 +56,14 @@ internal sealed partial class ProcessDetailsView
         try {
             configuredMode = mode; find.Text = ""; stateFilter.Items.Clear();
             string[] options = mode switch {
-                ProcessDetailsCommand.Memory => ["Vše", "Potvrzené", "Rezervované", "Volné"],
-                ProcessDetailsCommand.Handles => ["Vše", "S udělenými právy", "Bez udělených práv"],
-                ProcessDetailsCommand.Threads => ["Vše", "Dostupné časy", "Nedostupné časy"], _ => ["Vše"]
+                ProcessDetailsCommand.Memory => [Loc.T("Vše"), Loc.T("Potvrzené"), Loc.T("Rezervované"), Loc.T("Volné")],
+                ProcessDetailsCommand.Handles => [Loc.T("Vše"), Loc.T("S udělenými právy"), Loc.T("Bez udělených práv")],
+                ProcessDetailsCommand.Threads => [Loc.T("Vše"), Loc.T("Dostupné časy"), Loc.T("Nedostupné časy")], _ => [Loc.T("Vše")]
             };
             foreach (string option in options) stateFilter.Items.Add(option);
             stateFilter.SelectedIndex = 0; stateFilter.IsEnabled = options.Length > 1;
-            find.PlaceholderText = mode switch { ProcessDetailsCommand.Memory => "Adresa, velikost, ochrana nebo typ",
-                ProcessDetailsCommand.Handles => "Hodnota handle, index typu nebo přístup", ProcessDetailsCommand.Modules => "Název nebo cesta modulu", _ => "TID nebo základní priorita" };
+            find.PlaceholderText = mode switch { ProcessDetailsCommand.Memory => Loc.T("Adresa, velikost, ochrana nebo typ"),
+                ProcessDetailsCommand.Handles => Loc.T("Hodnota handle, index typu nebo přístup"), ProcessDetailsCommand.Modules => Loc.T("Název nebo cesta modulu"), _ => Loc.T("TID nebo základní priorita") };
         } finally { buildingFilters = false; }
     }
 
@@ -78,7 +78,7 @@ internal sealed partial class ProcessDetailsView
         filterOperation?.Cancel();
         using var current = new CancellationTokenSource(); filterOperation = current;
         var selectedMode = mode; var snapshot = SnapshotFor(selectedMode); string query = find.Text.Trim(); int filter = stateFilter.SelectedIndex;
-        if (snapshot is null) { list.ItemsSource = null; count.Text = "Seznam zatím není načtený."; UpdateDetail(); filterOperation = null; return; }
+        if (snapshot is null) { list.ItemsSource = null; count.Text = Loc.T("Seznam zatím není načtený."); UpdateDetail(); filterOperation = null; return; }
         object[] all = selectedMode switch {
             ProcessDetailsCommand.Threads => snapshot.Threads, ProcessDetailsCommand.Modules => snapshot.Modules,
             ProcessDetailsCommand.Memory => snapshot.Memory, ProcessDetailsCommand.Handles => snapshot.Handles, _ => []
@@ -103,7 +103,7 @@ internal sealed partial class ProcessDetailsView
             } finally { applyingRows = false; }
             if (!ReferenceEquals(previous, SelectedRow)) { signature = null; signatureTime = null; }
             if (!ReferenceEquals(observationHandle, SelectedHandle)) ClearObservation();
-            count.Text = rows.Length.ToString(Czech) + " / " + all.Length.ToString(Czech) + " · snímek z " + snapshot.ReceivedAt.LocalDateTime.ToString("HH:mm:ss", Czech);
+            count.Text = rows.Length.ToString(Loc.Culture) + " / " + all.Length.ToString(Loc.Culture) + Loc.F(" · snímek z {0}", snapshot.ReceivedAt.LocalDateTime.ToString("HH:mm:ss", Loc.Culture));
             UpdateDetail(); UpdateAvailability();
         } catch (OperationCanceledException) { }
         finally { if (ReferenceEquals(filterOperation, current)) filterOperation = null; }

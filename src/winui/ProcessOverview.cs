@@ -10,26 +10,26 @@ public sealed partial class MainWindow
     private void RefreshProcessOverview()
     {
         var cpu = model.Resources.FirstOrDefault(row => row.Kind == ResourceKind.Cpu);
-        UpdateProcessOverview(ResourceKind.Cpu, "CPU", cpu?.Value ?? "Načítám…", cpu, "Celkové využití procesoru; otevřít graf procesoru.");
+        UpdateProcessOverview(ResourceKind.Cpu, "CPU", cpu?.Value ?? Loc.T("Načítám…"), cpu, Loc.T("Celkové využití procesoru; otevřít graf procesoru."));
 
         var memory = model.Resources.FirstOrDefault(row => row.Kind == ResourceKind.Memory);
-        string memoryValue = memory?.Value ?? "Načítám…";
+        string memoryValue = memory?.Value ?? Loc.T("Načítám…");
         if (memory is { Stale: false, Capacity: > 0 } && memory.Primary.State == SampleState.Valid)
             memoryValue = Display.Number(memory.Primary.Value / 1073741824, "") + "/" + Display.Number(memory.Capacity / 1073741824, " GiB")
                 + " · " + Display.Number(memory.Primary.Value / memory.Capacity * 100, " %");
-        UpdateProcessOverview(ResourceKind.Memory, "RAM", memoryValue, memory, "Použitá a celková fyzická paměť; otevřít graf paměti.");
+        UpdateProcessOverview(ResourceKind.Memory, "RAM", memoryValue, memory, Loc.T("Použitá a celková fyzická paměť; otevřít graf paměti."));
 
         var disks = model.Resources.Where(row => row.Kind == ResourceKind.Disk).ToArray();
         var disk = disks.Where(row => !row.Stale && row.Primary.State == SampleState.Valid)
             .OrderByDescending(row => row.Primary.Value).FirstOrDefault();
-        UpdateProcessOverview(ResourceKind.Disk, "Disky · maximum", disk?.Value ?? (disks.Length + " zařízení"), disk,
-            disk is null ? "Aktivita disků právě není dostupná." : "Nejvyšší aktuální aktivita: " + disk.Title + " · " + disk.Description);
+        UpdateProcessOverview(ResourceKind.Disk, Loc.T("Disky · maximum"), disk?.Value ?? Loc.F("{0} zařízení", disks.Length), disk,
+            disk is null ? Loc.T("Aktivita disků právě není dostupná.") : Loc.F("Nejvyšší aktuální aktivita: {0} · {1}", disk.Title, disk.Description));
 
         var network = model.Resources.Where(row => row.Kind == ResourceKind.Network && row.Status == "Připojeno")
             .OrderByDescending(row => Rate(row.Primary) + Rate(row.Secondary)).FirstOrDefault();
-        UpdateProcessOverview(ResourceKind.Network, "Síť", network?.Value ?? "Žádné připojení", network,
-            network is null ? "Žádný připojený adaptér v tomto pohledu."
-                : "Největší aktuální provoz: " + network.Title + ". Příjem a odesílání tohoto adaptéru; hodnoty adaptérů se nesčítají.");
+        UpdateProcessOverview(ResourceKind.Network, Loc.T("Síť"), network?.Value ?? Loc.T("Žádné připojení"), network,
+            network is null ? Loc.T("Žádný připojený adaptér v tomto pohledu.")
+                : Loc.F("Největší aktuální provoz: {0}. Příjem a odesílání tohoto adaptéru; hodnoty adaptérů se nesčítají.", network.Title));
     }
 
     private static double Rate(Metric metric) => metric.State == SampleState.Valid && double.IsFinite(metric.Value) ? metric.Value : 0;

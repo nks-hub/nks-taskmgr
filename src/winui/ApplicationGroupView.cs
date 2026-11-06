@@ -15,7 +15,7 @@ public sealed partial class MainWindow
     private readonly ComboBox applicationChoice = new() { DisplayMemberPath = nameof(ApplicationGroupRow.Title), Width = 180, MaxWidth = 180, MinWidth = 0, MinHeight = 28, Height = 28, FontSize = 12, FontFamily = UiTypography.Font };
     private readonly Grid applicationToolbar = new() { ColumnSpacing = 4 };
     private readonly DropDownButton applicationSort = new() { MinHeight = 28, Height = 28, FontSize = 11, FontFamily = UiTypography.Font, Padding = new Thickness(6, 0, 6, 0) };
-    private readonly Button applicationInfo = Button("Info");
+    private readonly Button applicationInfo = Button(Loc.T("Info"));
     private readonly TextBlock applicationStatus = new() { FontSize = 11, FontFamily = UiTypography.Font, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock applicationTitle = new() { FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, FontFamily = UiTypography.Font,
         TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap };
@@ -56,8 +56,8 @@ public sealed partial class MainWindow
         applicationInfo.Content = "ⓘ";
         applicationToolbar.Children.Add(applicationInfo); Grid.SetColumn(applicationInfo, 2);
         applicationSort.Flyout = ApplicationSortMenu();
-        AutomationProperties.SetName(applicationSort, "Řadit skupiny aplikací podle"); AutomationProperties.SetAutomationId(applicationSort, "application-sort");
-        ToolTipService.SetToolTip(applicationSort, "Řazení skupin aplikací; paměť je součet pracovních sad dostupných procesů.");
+        AutomationProperties.SetName(applicationSort, Loc.T("Řadit skupiny aplikací podle")); AutomationProperties.SetAutomationId(applicationSort, "application-sort");
+        ToolTipService.SetToolTip(applicationSort, Loc.T("Řazení skupin aplikací; paměť je součet pracovních sad dostupných procesů."));
         var pane = new Grid();
         pane.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); pane.RowDefinitions.Add(new RowDefinition());
         applicationHeader.Children.Add(applicationTitle); applicationHeader.Children.Add(applicationSummary);
@@ -73,8 +73,8 @@ public sealed partial class MainWindow
         info.Opening += (_, _) => { applicationInfoOpen = true; applicationFacts.Text = ApplicationFacts(); };
         info.Closed += (_, _) => applicationInfoOpen = false;
         applicationInfo.Flyout = info;
-        AutomationProperties.SetName(applicationInfo, "Informace o skupině aplikace"); AutomationProperties.SetAutomationId(applicationInfo, "application-info");
-        ToolTipService.SetToolTip(applicationInfo, "Informace o vybrané skupině a dostupnosti přehledu.");
+        AutomationProperties.SetName(applicationInfo, Loc.T("Informace o skupině aplikace")); AutomationProperties.SetAutomationId(applicationInfo, "application-info");
+        ToolTipService.SetToolTip(applicationInfo, Loc.T("Informace o vybrané skupině a dostupnosti přehledu."));
         void Select(object? value) {
             if (updatingApplicationChoice || model.Applications.Updating || model.Mode != ProcessMode.Applications || value is not ApplicationGroupRow group) return;
             if (!model.Processes.Any(row => row.Key == group.Key && model.IsCurrent(row))) return;
@@ -83,8 +83,8 @@ public sealed partial class MainWindow
         }
         applicationGroups.SelectionChanged += (_, _) => Select(applicationGroups.SelectedItem);
         applicationChoice.SelectionChanged += (_, _) => Select(applicationChoice.SelectedItem);
-        AutomationProperties.SetName(applicationGroups, "Skupiny aplikací podle ověřených oken"); AutomationProperties.SetAutomationId(applicationGroups, "application-groups");
-        AutomationProperties.SetName(applicationChoice, "Vybrat skupinu aplikace"); AutomationProperties.SetAutomationId(applicationChoice, "application-choice");
+        AutomationProperties.SetName(applicationGroups, Loc.T("Skupiny aplikací podle ověřených oken")); AutomationProperties.SetAutomationId(applicationGroups, "application-groups");
+        AutomationProperties.SetName(applicationChoice, Loc.T("Vybrat skupinu aplikace")); AutomationProperties.SetAutomationId(applicationChoice, "application-choice");
         var releaseView = PreserveApplicationGroupView(model.Applications, applicationGroups, applicationChoice);
         Closed += (_, _) => { CancelNavigationRestore(); releaseView(); applicationsClosed = true; applicationRequest?.Cancel(); applicationLifetime.Cancel(); if (applicationRequest is null) applicationLifetime.Dispose(); };
         ResizeApplicationGroups();
@@ -92,7 +92,7 @@ public sealed partial class MainWindow
     }
 
     private static string ApplicationSortTitle(ApplicationGroupSort sort) => sort switch {
-        ApplicationGroupSort.Cpu => "CPU", ApplicationGroupSort.Memory => "Paměť", ApplicationGroupSort.Processes => "Procesy", _ => "Název"
+        ApplicationGroupSort.Cpu => "CPU", ApplicationGroupSort.Memory => Loc.T("Paměť"), ApplicationGroupSort.Processes => Loc.T("Procesy"), _ => Loc.T("Název")
     };
 
     private MenuFlyout ApplicationSortMenu()
@@ -108,7 +108,7 @@ public sealed partial class MainWindow
             }
             menu.Items.Add(new MenuFlyoutSeparator());
             foreach (bool descending in new[] { false, true }) {
-                var item = new ToggleMenuFlyoutItem { Text = descending ? "Sestupně" : "Vzestupně", IsChecked = model.Applications.SortDescending == descending };
+                var item = new ToggleMenuFlyoutItem { Text = descending ? Loc.T("Sestupně") : Loc.T("Vzestupně"), IsChecked = model.Applications.SortDescending == descending };
                 item.Click += (_, _) => SetSort(model.Applications.Sort, descending);
                 menu.Items.Add(item);
             }
@@ -282,12 +282,12 @@ public sealed partial class MainWindow
         updatingApplicationChoice = true;
         try { applicationGroups.SelectedItem = applicationChoice.SelectedItem = model.Applications.Selected; }
         finally { updatingApplicationChoice = false; }
-        applicationStatus.Text = !model.Applications.HasInventory ? model.Applications.Error.Length > 0 ? "Přehled není dostupný" : "Načítám aplikace…"
-            : model.Applications.Visible.Count + " skupin · " + (model.Applications.Stale ? "zastaralý přehled"
-                : model.Applications.Partial ? "částečný přehled" : "podle oken");
+        applicationStatus.Text = !model.Applications.HasInventory ? model.Applications.Error.Length > 0 ? Loc.T("Přehled není dostupný") : Loc.T("Načítám aplikace…")
+            : Loc.F("{0} skupin · ", model.Applications.Visible.Count) + (model.Applications.Stale ? Loc.T("zastaralý přehled")
+                : model.Applications.Partial ? Loc.T("částečný přehled") : Loc.T("podle oken"));
         string inventoryDetail = ApplicationInventoryDetail();
         ToolTipService.SetToolTip(applicationStatus, inventoryDetail); ToolTipService.SetToolTip(applicationChoice, inventoryDetail);
-        if (model.Held) { model.Applications.RefreshMetrics(true); applicationStatus.Text += " · pořadí a skupiny přidrženy"; }
+        if (model.Held) { model.Applications.RefreshMetrics(true); applicationStatus.Text += Loc.T(" · pořadí a skupiny přidrženy"); }
         string sortCaption = ApplicationSortTitle(model.Applications.Sort) + (model.Applications.SortDescending ? " ↓" : " ↑");
         if (applicationSort.Content as string != sortCaption) applicationSort.Content = sortCaption;
         // One icon; colour instead of "*" or "!" tells that the inventory is partial, held or unavailable.
@@ -352,20 +352,20 @@ public sealed partial class MainWindow
     }
 
     private string ApplicationInventoryDetail() => model.Applications.Error.Length > 0 ? model.Applications.Error
-        : model.Applications.Partial ? "Některá okna, vazby procesů nebo údaje nemusí být dostupné. ≥ u CPU označuje částečný součet."
-            : "Skupiny vycházejí z ověřených vlastníků viditelných oken a jejich potomků.";
+        : model.Applications.Partial ? Loc.T("Některá okna, vazby procesů nebo údaje nemusí být dostupné. ≥ u CPU označuje částečný součet.")
+            : Loc.T("Skupiny vycházejí z ověřených vlastníků viditelných oken a jejich potomků.");
 
     private string ApplicationFacts()
     {
         if (model.Applications.Selected is not { } group) return ApplicationInventoryDetail();
         var first = group.Windows[0];
         var text = new StringBuilder(group.TitleTooltip).Append(" · ").Append(group.Summary)
-            .Append("\nKořen PID ").Append(group.Key.Pid).Append(" · ").Append(group.Key.Kind).Append(" · generace ").Append(group.Key.Generation);
+            .Append(Loc.F("\nKořen PID {0} · {1} · generace {2}", group.Key.Pid, group.Key.Kind, group.Key.Generation));
         if (first.AppIdState == SampleState.Valid) text.Append("\nAUMID: ").Append(first.AppId);
-        if (first.PackageState == SampleState.Valid) text.Append(" · balíček: ").Append(first.Package);
+        if (first.PackageState == SampleState.Valid) text.Append(Loc.T(" · balíček: ")).Append(first.Package);
         var hosts = group.Windows.Where(window => window.Host.HasValue).Select(window => window.Host!.Value.Pid).Distinct().ToArray();
-        if (hosts.Length > 0) text.Append("\nHostitel pozorovaný v inventáři: PID ").AppendJoin(", ", hosts).Append("; sdílený host se nezapočítává více aplikacím.");
-        text.Append("\nCPU je součet dostupných validních hodnot.\n\n").Append(ApplicationInventoryDetail());
+        if (hosts.Length > 0) text.Append(Loc.F("\nHostitel pozorovaný v inventáři: PID {0}; sdílený host se nezapočítává více aplikacím.", string.Join(", ", hosts)));
+        text.Append(Loc.T("\nCPU je součet dostupných validních hodnot.\n\n")).Append(ApplicationInventoryDetail());
         return text.ToString();
     }
 

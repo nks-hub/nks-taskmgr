@@ -1,0 +1,396 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Chybí pole {0}.	Chýba pole {0}.
+Chybějící druh generace má nenulovou hodnotu.	Chýbajúci druh generácie má nenulovú hodnotu.
+Duplicitní PID v jednom snímku.	Duplicitné PID v jednej snímke.
+Duplicitní logický procesor.	Duplicitný logický procesor.
+Duplicitní vlastnost JSON objektu.	Duplicitná vlastnosť objektu JSON.
+Duplicitní zdroj metriky.	Duplicitný zdroj metriky.
+Duplicitní životnost procesu.	Duplicitná životnosť procesu.
+Neplatná boot identita.	Neplatná identita spustenia.
+Neplatná celočíselná metrika.	Neplatná celočíselná metrika.
+Neplatná generace procesu.	Neplatná generácia procesu.
+Neplatná hodnota metriky.	Neplatná hodnota metriky.
+Neplatná jednotka metriky.	Neplatná jednotka metriky.
+Neplatná metrika obsahuje hodnotu.	Neplatná metrika obsahuje hodnotu.
+Neplatné celé číslo {0}.	Neplatné celé číslo {0}.
+Neplatné pořadí zařízení.	Neplatné poradie zariadení.
+Neplatný druh GPU enginu.	Neplatný druh enginu GPU.
+Neplatný druh zařízení.	Neplatný druh zariadenia.
+Neplatný seznam polí.	Neplatný zoznam polí.
+Neplatný stav boot identity.	Neplatný stav identity spustenia.
+Neplatný čas snímku.	Neplatný čas snímky.
+Neplatný čas {0}.	Neplatný čas {0}.
+Nepodporovaná verze snímku.	Nepodporovaná verzia snímky.
+Nesouhlasí počet procesů.	Nesúhlasí počet procesov.
+Nesouhlasí počet zařízení.	Nesúhlasí počet zariadení.
+Nesouhlasí vybraná pole.	Nesúhlasia vybrané polia.
+Nevybrané pole {0} je přítomné.	Nevybrané pole {0} je prítomné.
+Neznámý formát snímku.	Neznámy formát snímky.
+Neznámý stav nebo druh.	Neznámy stav alebo druh.
+Náhled nelze porovnávat.	Náhľad nemožno porovnávať.
+Očekáván objekt.	Očakáva sa objekt.
+Očekáván text.	Očakáva sa text.
+Očekávána pravdivostní hodnota.	Očakáva sa pravdivostná hodnota.
+Očekáváno pole {0}.	Očakáva sa pole {0}.
+Platná metrika nemá číselnou hodnotu.	Platná metrika nemá číselnú hodnotu.
+Prázdné nebo duplicitní ID zařízení.	Prázdne alebo duplicitné ID zariadenia.
+Příliš dlouhý text ve snímku.	Príliš dlhý text v snímke.
+Příliš mnoho vlastností objektu.	Príliš veľa vlastností objektu.
+Snímek obsahuje neplatný JSON.	Snímka obsahuje neplatný JSON.
+Snímek obsahuje neplatný Unicode.	Snímka obsahuje neplatný Unicode.
+Snímek obsahuje příliš mnoho položek JSON.	Snímka obsahuje príliš veľa položiek JSON.
+Snímek obsahuje příliš mnoho řádků.	Snímka obsahuje príliš veľa riadkov.
+Soubor má nepovolenou velikost.	Súbor má nepovolenú veľkosť.
+Soubor se během čtení zkrátil.	Súbor sa počas čítania skrátil.
+Soubor se během čtení zvětšil.	Súbor sa počas čítania zväčšil.
+relace|relace|relací	relácia|relácie|relácií
+proces|procesy|procesů	proces|procesy|procesov
+ · klient {0}	 · klient {0}
+ · stanice {0}	 · stanica {0}
+ · údaje jsou zastaralé	 · údaje sú zastarané
+Další možnosti uživatelů	Ďalšie možnosti používateľov
+Měření nedostupné	Meranie nedostupné
+Nadpis zprávy:	Nadpis správy:
+Nastavení uživatelských účtů se nepodařilo otevřít. {0}	Nastavenia používateľských kont sa nepodarilo otvoriť. {0}
+Načítám relace…	Načítavam relácie…
+Nedostupné bez správce	Nedostupné bez správcu
+Neznámý uživatel	Neznámy používateľ
+Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	Odoslané a prijaté bajty TCP/UDP. Meria sa len počas vlastného záznamu ETW so správcom.
+Odeslat zprávu	Odoslať správu
+Odeslat zprávu…	Odoslať správu…
+Odhlásit se	Odhlásiť sa
+Odhlásit vybraného uživatele. Neuložená data jeho programů se mohou ztratit.	Odhlásiť vybraného používateľa. Neuložené údaje jeho programov sa môžu stratiť.
+Odhlásit	Odhlásiť
+Odpojit vybraného uživatele. Jeho relace a programy dál běží.	Odpojiť vybraného používateľa. Jeho relácia a programy naďalej bežia.
+Odpojit	Odpojiť
+Pracovní sada	Pracovná množina
+Přihlášený uživatel a počet jeho procesů. Šipka nebo dvojklik rozbalí procesy.	Prihlásený používateľ a počet jeho procesov. Šípka alebo dvojklik rozbalí procesy.
+Relace se mezitím změnila nebo skončila. Akce nebyla provedena.	Relácia sa medzitým zmenila alebo skončila. Akcia nebola vykonaná.
+Rozbalit vše	Rozbaliť všetko
+Rozbalit	Rozbaliť
+Sbalit vše	Zbaliť všetko
+Sbalit	Zbaliť
+Seznam relací Windows je nedostupný; relace jsou odvozené jen z procesů.	Zoznam relácií Windows je nedostupný; relácie sú odvodené len z procesov.
+Seznam relací Windows vyžaduje oprávnění; relace jsou odvozené jen z procesů.	Zoznam relácií Windows vyžaduje oprávnenie; relácie sú odvodené len z procesov.
+Služby systému	Systémové služby
+Součet CPU procesů. ≥ označuje známou část, když některý proces nemá aktuální vzorek.	Súčet CPU procesov. ≥ označuje známu časť, keď niektorý proces nemá aktuálnu vzorku.
+Součet pracovních sad procesů. Přesné hodnoty v MB jsou v popisku buňky.	Súčet pracovných množín procesov. Presné hodnoty v MB sú v popise bunky.
+Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory).	Súčet čítania a zápisu všetkých I/O procesov (súbory, zariadenia, sieťové súbory).
+Spravovat uživatelské účty	Spravovať používateľské kontá
+Stav relace Windows.	Stav relácie Windows.
+Uživatel	Používateľ
+Uživatelé a jejich procesy	Používatelia a ich procesy
+Uživatelé	Používatelia
+Zavřít	Zavrieť
+Zobrazit celý název účtu	Zobraziť celý názov konta
+Zobrazit zprávu na ploše vybraného uživatele.	Zobraziť správu na ploche vybraného používateľa.
+Zpráva:	Správa:
+Zpráva…	Správa…
+Zrušit	Zrušiť
+konzole	konzola
+nedostupné	nedostupné
+neznámé	neznáme
+rozbaleno	rozbalené
+sbaleno	zbalené
+{0} · relace {1} · {2}	{0} · relácia {1} · {2}
+{0}, {1}, relace {2}, {3}, {4}	{0}, {1}, relácia {2}, {3}, {4}
+{0}: {1} ({2})\nPrivátní paměť: {3} ({4})	{0}: {1} ({2})\nSúkromná pamäť: {3} ({4})
+\nÚdaje o uživateli této relace vyžadují oprávnění správce.	\nÚdaje o používateľovi tejto relácie vyžadujú oprávnenie správcu.
+\nZnámé aktuální vzorky: CPU {0}/{3}, paměť {1}/{3}, I/O {2}/{3}.	\nZnáme aktuálne vzorky: CPU {0}/{3}, pamäť {1}/{3}, I/O {2}/{3}.
+\n≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.	\n≥ označuje známu časť neúplného súčtu. Zdieľané stránky RAM môžu byť započítané opakovane.
+Paměť	Pamäť
+Handly	Popisovače
+Zjistit typ a název objektu	Zistiť typ a názov objektu
+vlákna	vlákna
+moduly	moduly
+oblasti paměti	oblasti pamäte
+handly	popisovače
+podrobnosti	podrobnosti
+Mapa virtuální paměti procesu	Mapa virtuálnej pamäte procesu
+Handly procesu	Popisovače procesu
+Zjistit aktuální typ a název duplikovaného objektu	Zistiť aktuálny typ a názov duplikovaného objektu
+Filtrovat pouze již načtené výsledky	Filtrovať len už načítané výsledky
+Stav nebo vlastnost načtených výsledků	Stav alebo vlastnosť načítaných výsledkov
+Vše	Všetko
+Potvrzené	Potvrdené
+Rezervované	Rezervované
+Volné	Voľné
+S udělenými právy	S udelenými právami
+Bez udělených práv	Bez udelených práv
+Dostupné časy	Dostupné časy
+Nedostupné časy	Nedostupné časy
+Adresa, velikost, ochrana nebo typ	Adresa, veľkosť, ochrana alebo typ
+Hodnota handle, index typu nebo přístup	Hodnota popisovača, index typu alebo prístup
+Název nebo cesta modulu	Názov alebo cesta modulu
+TID nebo základní priorita	TID alebo základná priorita
+Seznam zatím není načtený.	Zoznam ešte nie je načítaný.
+ · snímek z {0}	 · snímka z {0}
+Info	Info
+Řadit skupiny aplikací podle	Zoradiť skupiny aplikácií podľa
+Řazení skupin aplikací; paměť je součet pracovních sad dostupných procesů.	Zoradenie skupín aplikácií; pamäť je súčet pracovných množín dostupných procesov.
+Informace o skupině aplikace	Informácie o skupine aplikácie
+Informace o vybrané skupině a dostupnosti přehledu.	Informácie o vybranej skupine a dostupnosti prehľadu.
+Skupiny aplikací podle ověřených oken	Skupiny aplikácií podľa overených okien
+Vybrat skupinu aplikace	Vybrať skupinu aplikácie
+Procesy	Procesy
+Sestupně	Zostupne
+Vzestupně	Vzostupne
+Přehled není dostupný	Prehľad nie je dostupný
+Načítám aplikace…	Načítavam aplikácie…
+{0} skupin · 	{0} skupín · 
+zastaralý přehled	zastaraný prehľad
+částečný přehled	čiastočný prehľad
+podle oken	podľa okien
+ · pořadí a skupiny přidrženy	 · poradie a skupiny pozdržané
+Některá okna, vazby procesů nebo údaje nemusí být dostupné. ≥ u CPU označuje částečný součet.	Niektoré okná, väzby procesov alebo údaje nemusia byť dostupné. ≥ pri CPU označuje čiastočný súčet.
+Skupiny vycházejí z ověřených vlastníků viditelných oken a jejich potomků.	Skupiny vychádzajú z overených vlastníkov viditeľných okien a ich potomkov.
+\nKořen PID {0} · {1} · generace {2}	\nKoreň PID {0} · {1} · generácia {2}
+ · balíček: 	 · balík: 
+\nHostitel pozorovaný v inventáři: PID {0}; sdílený host se nezapočítává více aplikacím.	\nHostiteľ pozorovaný v inventári: PID {0}; zdieľaný hostiteľ sa nezapočítava viacerým aplikáciám.
+\nCPU je součet dostupných validních hodnot.\n\n	\nCPU je súčet dostupných platných hodnôt.\n\n
+Historické procesy · NKS Task Manager	Historické procesy · NKS Task Manager
+Podrobnosti o uchovaných datech	Podrobnosti o uchovaných údajoch
+Řadit podle CPU	Zoradiť podľa CPU
+Řadit podle pracovní sady	Zoradiť podľa pracovnej množiny
+Řadit podle procesového I/O	Zoradiť podľa I/O procesu
+Proces	Proces
+Čas	Čas
+Původní PID	Pôvodné PID
+Čtení a zápis procesu, bez rozlišení disku, sítě a GPU	Čítanie a zápis procesu, bez rozlíšenia disku, siete a GPU
+Skutečný čas vzorku	Skutočný čas vzorky
+Neměnné historické procesové vzorky	Nemenné historické vzorky procesov
+Původní identita a čas vybraného historického procesu	Pôvodná identita a čas vybraného historického procesu
+Žádný zachycený snímek	Žiadna zachytená snímka
+{0} od kurzoru	{0} od kurzora
+{0} snímků	{0} snímok
+⚠ {0} {1} v záznamu	⚠ {0} {1} v zázname
+mezera	medzera
+mezery	medzery
+mezer	medzier
+\nZnámé vynechané revize předání: {0}	\nZnáme vynechané revízie odovzdania: {0}
+\nUloženo {0} z {1} řádků; každý snímek uchovává sjednocení top 8 podle CPU, RAM a I/O.	\nUložených {0} z {1} riadkov; každá snímka uchováva zjednotenie top 8 podľa CPU, RAM a I/O.
+\nVe snímku bylo původně {0}–{1} procesů.	\nV snímke bolo pôvodne {0}–{1} procesov.
+\nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} z 4 MiB.	\nUchovaný rozsah {0} – {1}: {2} snímok, {3} riadkov, {4} z 4 MiB.
+\nVytěsněno {0} snímků ({1} řádků).	\nVytlačených {0} snímok ({1} riadkov).
+\nÚplnost číslování předání nelze určit.	\nÚplnosť číslovania odovzdania nemožno určiť.
+\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit.	\nVšeobecné I/O procesu sa nepriraďuje k disku, sieti ani GPU; úplnosť pôvodného zberu nemožno potvrdiť.
+{0} z {1} procesů	{0} z {1} procesov
+{0} maxim	{0} maxím
+Všechny zachycené řádky nejbližšího snímku.	Všetky zachytené riadky najbližšej snímky.
+Nejvýše 64 pozorovaných maxim zvolené metriky; každý řádek si zachovává skutečný čas a souběžné hodnoty.	Najviac 64 pozorovaných maxím zvolenej metriky; každý riadok si zachováva skutočný čas a súbežné hodnoty.
+  ·  opožděný vzorek	  ·  oneskorená vzorka
+Pro tento výběr nejsou zachycené platné hodnoty zvolené metriky.	Pre tento výber nie sú zachytené platné hodnoty zvolenej metriky.
+Dump	Výpis
+Vytvořit dump procesu…	Vytvoriť výpis procesu…
+Dump procesu a nedokončené dumpy	Výpis procesu a nedokončené výpisy
+Nedokončené dumpy…	Nedokončené výpisy…
+Probíhá dump nebo úklid vlastního dočasného souboru.	Prebieha výpis alebo upratovanie vlastného dočasného súboru.
+Dump x64 nebo 32bitového procesu po potvrzení obsahu a cílového souboru	Výpis x64 alebo 32-bitového procesu po potvrdení obsahu a cieľového súboru
+Čekám na dokončení pracovníka a vypořádání vlastního dočasného souboru…	Čakám na dokončenie pracovníka a vyriešenie vlastného dočasného súboru…
+Zahrnout úplnou paměť procesu	Zahrnúť úplnú pamäť procesu
+Úplná paměť procesu, ve výchozím stavu vypnuto	Úplná pamäť procesu, predvolene vypnuté
+Dump ukládá informace o procesu, vláknech, modulech a části paměti. Může obsahovat hesla, osobní údaje i obsah otevřených dokumentů.	Výpis ukladá informácie o procese, vláknach, moduloch a časti pamäte. Môže obsahovať heslá, osobné údaje aj obsah otvorených dokumentov.
+Úplný dump obsahuje veškerou dostupnou paměť a může zabrat mnoho GiB. Vytváření může krátce pozastavit odezvu procesu. Limit je 32 GiB a 60 sekund.	Úplný výpis obsahuje všetku dostupnú pamäť a môže zabrať veľa GiB. Vytváranie môže krátko pozastaviť odozvu procesu. Limit je 32 GiB a 60 sekúnd.
+Ukládejte pouze do místního adresáře, kterému důvěřujete. Existující soubor se nepřepíše; odkazy a přesměrované adresáře se odmítnou.	Ukladajte len do miestneho priečinka, ktorému dôverujete. Existujúci súbor sa neprepíše; odkazy a presmerované priečinky sa odmietnu.
+Vytvořit dump procesu	Vytvoriť výpis procesu
+Vybrat soubor…	Vybrať súbor…
+Dump procesu	Výpis procesu
+Dump nebyl zahájen	Výpis nebol spustený
+Výběr se změnil nebo proces skončil. Vyberte znovu živý proces.	Výber sa zmenil alebo proces skončil. Vyberte znova bežiaci proces.
+Dump nebyl dokončen	Výpis nebol dokončený
+Čekání bylo zrušeno. Výsledek není potvrzený.	Čakanie bolo zrušené. Výsledok nie je potvrdený.
+Vytvářím úplný dump. Soubor se zveřejní až po dokončení a ověření.	Vytváram úplný výpis. Súbor sa zverejní až po dokončení a overení.
+Vytvářím běžný dump. Soubor se zveřejní až po dokončení a ověření.	Vytváram bežný výpis. Súbor sa zverejní až po dokončení a overení.
+Limit 60 sekund · 32 GiB	Limit 60 sekúnd · 32 GiB
+Dump procesu · PID {0}	Výpis procesu · PID {0}
+Zrušit čekání	Zrušiť čakanie
+Čekání bylo zrušeno.	Čakanie bolo zrušené.
+\nDump není potvrzený jako uložený. Finální soubor vzniklý těsně před zrušením zůstane zachovaný. Hotová nepublikovaná data zůstanou pro ruční obnovu; nedokončený vlastní soubor se po konci pracovníka uklidí.	\nVýpis nie je potvrdený ako uložený. Finálny súbor vzniknutý tesne pred zrušením zostane zachovaný. Hotové nezverejnené údaje zostanú na ručnú obnovu; nedokončený vlastný súbor sa po skončení pracovníka uprace.
+Dump byl uložen.\n{0}	Výpis bol uložený.\n{0}
+\nPříznaky zachycení: 0x{0}	\nPríznaky zachytenia: 0x{0}
+Windows nebo pravidla ochrany cíle dump odmítly.	Windows alebo pravidlá ochrany cieľa výpis odmietli.
+Architektura nebo potřebná funkce není podporovaná.	Architektúra alebo potrebná funkcia nie je podporovaná.
+Proces skončil nebo se změnila jeho identita.	Proces skončil alebo sa zmenila jeho identita.
+Cíl není dostupný.	Cieľ nie je dostupný.
+Dump překročil limit 32 GiB.	Výpis prekročil limit 32 GiB.
+Vytváření bylo zrušeno nebo překročilo časový limit.	Vytváranie bolo zrušené alebo prekročilo časový limit.
+Pracovník odmítl neplatný požadavek nebo nesouhlasící soubor.	Pracovník odmietol neplatnú požiadavku alebo nesúhlasiaci súbor.
+Dump se nepodařilo ověřit.	Výpis sa nepodarilo overiť.
+ Soubor nebyl zveřejněn.	 Súbor nebol zverejnený.
+Pracovník vrátil více než jeden datový rámec.	Pracovník vrátil viac než jeden dátový rámec.
+Pracovník nedokončil dotaz správně.	Pracovník nedokončil dotaz správne.
+Dotaz byl zrušen.	Dotaz bol zrušený.
+Pracovník vrátil neplatný datový rámec.	Pracovník vrátil neplatný dátový rámec.
+Pracovník skončil před dokončením odpovědi.	Pracovník skončil pred dokončením odpovede.
+Pracovníka podrobností nelze spustit nebo připojit (Windows {0}).	Pracovníka podrobností nemožno spustiť ani pripojiť (Windows {0}).
+Pracovníka podrobností se nepodařilo spustit.	Pracovníka podrobností sa nepodarilo spustiť.
+Procesor	Procesor
+Fyzická paměť	Fyzická pamäť
+Název nebo typ musí mít alespoň dva znaky.	Názov alebo typ musí mať aspoň dva znaky.
+Převod zadaného písmene disku není dostupný; porovnávají se i doslovné názvy.	Prevod zadaného písmena disku nie je dostupný; porovnávajú sa aj doslovné názvy.
+Seznam vlastníků není dostupný: {0}	Zoznam vlastníkov nie je dostupný: {0}
+Některé vlastníky nebylo možné spolehlivě určit.	Niektorých vlastníkov nebolo možné spoľahlivo určiť.
+Dosažen limit 8 MiB textu výsledků.	Dosiahnutý limit 8 MiB textu výsledkov.
+Dosažen limit 5 000 výsledků.	Dosiahnutý limit 5 000 výsledkov.
+Dosažen limit 25 000 dotazů na objekty.	Dosiahnutý limit 25 000 dotazov na objekty.
+Hledání bylo zrušené.	Hľadanie bolo zrušené.
+Hledání dosáhlo časového limitu 2 minut.	Hľadanie dosiahlo časový limit 2 minút.
+Hledání nelze dokončit: {0}	Hľadanie nemožno dokončiť: {0}
+chybí oprávnění	chýba oprávnenie
+nepodporováno	nepodporované
+proces se změnil nebo skončil	proces sa zmenil alebo skončil
+překročen limit	prekročený limit
+nedostupné ({0})	nedostupné ({0})
+Události procesů ETW	Udalosti procesov ETW
+Události vzniku a ukončení procesů	Udalosti vzniku a ukončenia procesov
+Záznam událostí a síťového provozu (ETW) vyžaduje práva správce.	Záznam udalostí a sieťovej prevádzky (ETW) vyžaduje práva správcu.
+Zastavení a dočtení záznamu nebylo potvrzené	Zastavenie a dočítanie záznamu nebolo potvrdené
+Zavřít i tak	Zavrieť aj tak
+Ponechat aplikaci otevřenou	Ponechať aplikáciu otvorenú
+Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Aplikaci lze ponechat otevřenou a zkusit zastavení znovu.	Nepodarilo sa potvrdiť upratanie vlastnej relácie ETW ani dočítať jej udalosti. Relácia môže ďalej zaznamenávať a pri zatvorení sa môžu stratiť doteraz neprečítané udalosti. Aplikáciu možno ponechať otvorenú a skúsiť zastavenie znova.
+Aktualizace	Aktualizácie
+Aktualizace a návrat předchozí verze	Aktualizácie a návrat predchádzajúcej verzie
+Verze aplikace a možnosti aktualizace	Verzia aplikácie a možnosti aktualizácie
+Aktualizace nelze otevřít	Aktualizácie nemožno otvoriť
+Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej.	Predchádzajúca zvýšená požiadavka ešte nie je uzavretá. Neopakujte ju.
+TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv.	TrustNotConfigured: zvýšenie práv nie je nakonfigurované. Chýba pripnutý podpis vydavateľa; tento vývojový build zostáva bez zvýšenia práv.
+Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.	Podpis, súbor alebo skutočný náprotivok nebol dôveryhodne overený. Zvýšenie práv bolo odmietnuté.
+Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána.	Vlastné potvrdenie správcu bolo zrušené, vypršal jeho limit alebo klient už nebeží. Akcia nebola odoslaná.
+Náhradu lze zapnout jen z instalace v Program Files.	Náhradu možno zapnúť len z inštalácie v Program Files.
+Složka instalace není chráněná proti zápisu běžných uživatelů.	Priečinok inštalácie nie je chránený proti zápisu bežných používateľov.
+Zvýšení práv bylo v UAC zrušeno. Akce nebyla odeslána.	Zvýšenie práv bolo v UAC zrušené. Akcia nebola odoslaná.
+Neplatná vazba okna na aplikaci.	Neplatná väzba okna na aplikáciu.
+Neplatný stav metadat aplikace.	Neplatný stav metadát aplikácie.
+Výsledek aplikací obsahuje data mimo rámec.	Výsledok aplikácií obsahuje dáta mimo rámca.
+Historie je nedostupná	História je nedostupná
+Historie: {0:N0} neuchovaných vzorků, {1:N0} chyb	História: {0:N0} neuchovaných vzoriek, {1:N0} chýb
+ · ukončeno	 · ukončené
+ · zastaralé	 · zastarané
+Ukončeno	Ukončené
+Zastaralé	Zastarané
+PID {0} · ukončeno	PID {0} · ukončené
+PID {0} · {1} vláken	PID {0} · {1} vlákien
+Načítám…	Načítavam…
+Celkové využití procesoru; otevřít graf procesoru.	Celkové využitie procesora; otvoriť graf procesora.
+Použitá a celková fyzická paměť; otevřít graf paměti.	Použitá a celková fyzická pamäť; otvoriť graf pamäte.
+Disky · maximum	Disky · maximum
+{0} zařízení	{0} zariadení
+Aktivita disků právě není dostupná.	Aktivita diskov práve nie je dostupná.
+Nejvyšší aktuální aktivita: {0} · {1}	Najvyššia aktuálna aktivita: {0} · {1}
+Síť	Sieť
+Žádné připojení	Žiadne pripojenie
+Žádný připojený adaptér v tomto pohledu.	Žiadny pripojený adaptér v tomto zobrazení.
+Největší aktuální provoz: {0}. Příjem a odesílání tohoto adaptéru; hodnoty adaptérů se nesčítají.	Najväčšia aktuálna prevádzka: {0}. Príjem a odosielanie tohto adaptéra; hodnoty adaptérov sa nesčítavajú.
+Uložený balíček neodpovídá drženému zdroji.	Uložený balík nezodpovedá držanému zdroju.
+Nejasný záznam pro obnovu už není dostupný.	Nejasný záznam na obnovu už nie je dostupný.
+Zánik původního pracovníka nebo instalátoru nebyl prokázaný. Obnova nebyla připravena.	Zánik pôvodného pracovníka alebo inštalátora nebol preukázaný. Obnova nebola pripravená.
+Plán neodpovídá výběru ani ověřenému běžícímu obrazu.	Plán nezodpovedá výberu ani overenému bežiacemu obrazu.
+Balíček v plánu nebyl shodně ověřený.	Balík v pláne nebol zhodne overený.
+Pracovník nepřipravil stejný plán.	Pracovník nepripravil rovnaký plán.
+Nesprávná fáze odpovědi aktualizace.	Nesprávna fáza odpovede aktualizácie.
+Přehled aktualizací patří jinému kořeni nebo podepsanému obrazu.	Prehľad aktualizácií patrí inému koreňu alebo podpísanému obrazu.
+Chybí ověřitelný rozsah přehledu aktualizací.	Chýba overiteľný rozsah prehľadu aktualizácií.
+Obnova byla nabídnuta pro jinou kopii aplikace.	Obnova bola ponúknutá pre inú kópiu aplikácie.
+Klient aktualizací nemá ověřenou životnost.	Klient aktualizácií nemá overenú životnosť.
+Obraz klienta není známý.	Obraz klienta nie je známy.
+Aktualizace nejsou nakonfigurované. Chybí připnutý podpis vydavatele; pracovník nebyl spuštěn.	Aktualizácie nie sú nakonfigurované. Chýba pripnutý podpis vydavateľa; pracovník nebol spustený.
+Předchozí aktualizace nebo její ukončování ještě probíhá.	Predchádzajúca aktualizácia alebo jej ukončovanie ešte prebieha.
+Čekání na pracovníka vypršelo. Dokud není ověřen jeho konec, nevznikne další požadavek. {0}	Čakanie na pracovníka vypršalo. Kým nie je overený jeho koniec, nevznikne ďalšia požiadavka. {0}
+Pracovník neposkytl ověřitelný rozsah v protokolu 2; tento výsledek nepovoluje změnu instalace.	Pracovník neposkytol overiteľný rozsah v protokole 2; tento výsledok nepovoľuje zmenu inštalácie.
+Podepsané části nemají stejnou vydanou verzi. Dostupný je pouze přehled, uložení ověřeného balíčku a výslovná obnova.	Podpísané časti nemajú rovnakú vydanú verziu. Dostupný je len prehľad, uloženie overeného balíka a výslovná obnova.
+Původ adresáře nebyl prokázaný; standardní změna je zakázaná.	Pôvod priečinka nebol preukázaný; štandardná zmena je zakázaná.
+Nejasný výsledek vyžaduje výslovné posouzení obnovy; standardní změna se nezkouší znovu.	Nejasný výsledok vyžaduje výslovné posúdenie obnovy; štandardná zmena sa neskúša znova.
+položka|položky|položek	položka|položky|položiek
+(výchozí hodnota)	(predvolená hodnota)
+Povoleno	Povolené
+Zakázáno	Zakázané
+Jednorázově	Jednorazovo
+Zakázáno {0}	Zakázané {0}
+Spustí se jednou při příštím přihlášení a Windows položku pak odstraní.	Spustí sa raz pri ďalšom prihlásení a Windows potom položku odstráni.
+Celý počítač	Celý počítač
+Spuštění	Spúšťanie
+Obnovit	Obnoviť
+Vypnout	Vypnúť
+Zapnout	Zapnúť
+Otevřít umístění	Otvoriť umiestnenie
+Načítám položky po spuštění…	Načítavam položky spúšťania…
+Aplikace spouštěné po přihlášení	Aplikácie spúšťané po prihlásení
+Položky vlastního účtu se zapínají a vypínají stejně jako ve Windows (StartupApproved), nic se nemaže.\nPoložky pro celý počítač a jednorázové položky NKS jen zobrazuje; změnit je může správce.	Položky vlastného konta sa zapínajú a vypínajú rovnako ako vo Windows (StartupApproved), nič sa nemaže.\nPoložky pre celý počítač a jednorazové položky NKS len zobrazuje; zmeniť ich môže správca.
+Jak funguje zapnutí a vypnutí	Ako funguje zapnutie a vypnutie
+Znovu načíst položky po spuštění	Znova načítať položky spúšťania
+Název	Názov
+Vydavatel	Vydavateľ
+Stav	Stav
+Aplikace po spuštění	Aplikácie pri spustení
+Seznam nelze načíst: {0}	Zoznam nemožno načítať: {0}
+ · povoleno {0}	 · povolené {0}
+Žádné položky po spuštění.	Žiadne položky spúšťania.
+ (správce)	 (správca)
+Jednorázovou položku nelze vypnout.	Jednorazovú položku nemožno vypnúť.
+Jednorázovou položku nelze vypnout	Jednorazovú položku nemožno vypnúť
+Změní jen značku Windows (StartupApproved); položka se nemaže.	Zmení len značku Windows (StartupApproved); položka sa nemaže.
+ Položka pro celý počítač vyžaduje správce, nabídne se výzva UAC.	 Položka pre celý počítač vyžaduje správcu, ponúkne sa výzva UAC.
+Soubor	Súbor
+Příkaz	Príkaz
+Umístění	Umiestnenie
+Soubor nezjištěn	Súbor nezistený
+Ověřuji podpis…	Overujem podpis…
+Nezjištěno	Nezistené
+Podepsáno	Podpísané
+Bez podpisu	Bez podpisu
+Neplatný podpis	Neplatný podpis
+Soubor nenalezen	Súbor sa nenašiel
+Mimo místní disk	Mimo miestneho disku
+Přístup odepřen	Prístup odmietnutý
+Položku „{0}“ spouští Windows pro všechny uživatele, takže ji může změnit jen správce.	Položku „{0}“ spúšťa Windows pre všetkých používateľov, takže ju môže zmeniť len správca.
+Změnu nelze provést: {0}	Zmenu nemožno vykonať: {0}
+{0} se po přihlášení spustí.	{0} sa po prihlásení spustí.
+{0} se po přihlášení nespustí.	{0} sa po prihlásení nespustí.
+Změnu nelze provést, Windows vrátil chybu {0}.	Zmenu nemožno vykonať, Windows vrátil chybu {0}.
+Při bootu	Pri zavádzaní
+Systém	Systém
+Automaticky (odloženě)	Automaticky (oneskorene)
+Automaticky (?)	Automaticky (?)
+Automaticky	Automaticky
+Ručně	Manuálne
+Neznámé	Neznáme
+Zastaveno	Zastavené
+Spouští se	Spúšťa sa
+Zastavuje se	Zastavuje sa
+Běží	Spustené
+Obnovuje se	Obnovuje sa
+Pozastavuje se	Pozastavuje sa
+Pozastaveno	Pozastavené
+Neznámý stav {0}	Neznámy stav {0}
+Chybí oprávnění (5)	Chýba oprávnenie (5)
+Nedostupné ({0})	Nedostupné ({0})
+služba	služba
+služby	služby
+služeb	služieb
+PID není hlášen.	PID nie je hlásené.
+Hlášený PID {0} · {1}	Hlásené PID {0} · {1}
+Vznik	Vznik
+Ukončení	Ukončenie
+Čas ETW nedostupný	Čas ETW nedostupný
+Název není dostupný	Názov nie je dostupný
+PID {0} · rodič {1}	PID {0} · rodič {1}
+CreateTime přímo ze zdroje · ověřená historická životnost	CreateTime priamo zo zdroja · overená historická životnosť
+Historický záznam · životnost není ověřená	Historický záznam · životnosť nie je overená
+Pořadí ve zdroji: {0}\nČas ETW (QPC): {1}\nFrekvence QPC: {2}\nPřijato (monotónní ns): {3}\nStav identity: {4}\nDruh generace: {5} · generace {6}\nPříznaky události: {7}	Poradie v zdroji: {0}\nČas ETW (QPC): {1}\nFrekvencia QPC: {2}\nPrijaté (monotónne ns): {3}\nStav identity: {4}\nDruh generácie: {5} · generácia {6}\nPríznaky udalosti: {7}
+\nNávratový kód: 0x{0}	\nNávratový kód: 0x{0}
+\nNávratový kód není dostupný.	\nNávratový kód nie je dostupný.
+\nTento záznam neopravňuje k živé akci nad současným vlastníkem stejného PID.	\nTento záznam neoprávňuje na živú akciu nad súčasným vlastníkom rovnakého PID.
+Podrobnosti procesu…	Podrobnosti procesu…
+Závislosti služby	Závislosti služby
+Otevřít hostitelský proces	Otvoriť hostiteľský proces
+Pokračovat ve sběru	Pokračovať v zbere
+Pozastavit sběr	Pozastaviť zber
+Obnovovat každých 250 ms	Obnovovať každých 250 ms
+Obnovovat každou 1 s	Obnovovať každú 1 s
+Časové okno	Časové okno
+60 sekund	60 sekúnd
+10 minut	10 minút
+Zobrazení procesoru	Zobrazenie procesora
+Automatické měřítko	Automatická mierka
+Procesy ve vybraném čase…	Procesy vo vybranom čase…
+Zrušit výběr času	Zrušiť výber času

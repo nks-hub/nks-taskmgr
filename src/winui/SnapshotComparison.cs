@@ -42,62 +42,62 @@ internal static class SnapshotComparison
     public static Task<ImportedSnapshot> ReadAsync(string path, CancellationToken cancel = default) => Task.Run(() => {
         cancel.ThrowIfCancellationRequested();
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 131_072, FileOptions.SequentialScan);
-        if (stream.Length < 2 || stream.Length > MaximumFileBytes) throw Invalid("Soubor má nepovolenou velikost.");
+        if (stream.Length < 2 || stream.Length > MaximumFileBytes) throw Invalid(Loc.T("Soubor má nepovolenou velikost."));
         var bytes = new byte[checked((int)stream.Length)];
         int offset = 0;
         while (offset < bytes.Length) {
             cancel.ThrowIfCancellationRequested();
             int count = stream.Read(bytes, offset, Math.Min(131_072, bytes.Length - offset));
-            if (count == 0) throw Invalid("Soubor se během čtení zkrátil.");
+            if (count == 0) throw Invalid(Loc.T("Soubor se během čtení zkrátil."));
             offset += count;
         }
-        if (stream.ReadByte() != -1) throw Invalid("Soubor se během čtení zvětšil.");
+        if (stream.ReadByte() != -1) throw Invalid(Loc.T("Soubor se během čtení zvětšil."));
         return Read(bytes, cancel);
     }, cancel);
 
     internal static ImportedSnapshot Read(ReadOnlyMemory<byte> json, CancellationToken cancel = default)
     {
         cancel.ThrowIfCancellationRequested();
-        if (json.Length < 2 || json.Length > MaximumFileBytes) throw Invalid("Soubor má nepovolenou velikost.");
+        if (json.Length < 2 || json.Length > MaximumFileBytes) throw Invalid(Loc.T("Soubor má nepovolenou velikost."));
         try {
             Preflight(json.Span, cancel);
             using var document = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = MaximumDepth });
             ValidateProperties(document.RootElement, cancel);
             var root = Object(document.RootElement);
-            if (UInt(root, "schemaVersion") != 1) throw Invalid("Nepodporovaná verze snímku.");
-            if (root.TryGetProperty("previewOnly", out var preview) && Boolean(preview)) throw Invalid("Náhled nelze porovnávat.");
-            if (Text(root, "application") != "NKS Task Manager") throw Invalid("Neznámý formát snímku.");
+            if (UInt(root, "schemaVersion") != 1) throw Invalid(Loc.T("Nepodporovaná verze snímku."));
+            if (root.TryGetProperty("previewOnly", out var preview) && Boolean(preview)) throw Invalid(Loc.T("Náhled nelze porovnávat."));
+            if (Text(root, "application") != "NKS Task Manager") throw Invalid(Loc.T("Neznámý formát snímku."));
             var fields = Array(root, "fields").EnumerateArray().Select(Text).ToArray();
             if (fields.Distinct(StringComparer.Ordinal).Count() != fields.Length || fields.Any(field => field is not
-                ("Cpu" or "Memory" or "Io" or "Devices" or "Names" or "DeviceIds"))) throw Invalid("Neplatný seznam polí.");
+                ("Cpu" or "Memory" or "Io" or "Devices" or "Names" or "DeviceIds"))) throw Invalid(Loc.T("Neplatný seznam polí."));
             bool names = Bool(root, "namesIncluded"), ids = Bool(root, "deviceIdsIncluded");
-            if (names != fields.Contains("Names") || ids != fields.Contains("DeviceIds")) throw Invalid("Nesouhlasí vybraná pole.");
+            if (names != fields.Contains("Names") || ids != fields.Contains("DeviceIds")) throw Invalid(Loc.T("Nesouhlasí vybraná pole."));
             var bootState = State(root, "bootIdentityState");
             var bootValue = Property(root, "bootIdentifier");
             BootIdentifier? boot = bootState == SampleState.Valid ? Boot(bootValue) : null;
-            if (bootState != SampleState.Valid && bootValue.ValueKind != JsonValueKind.Null) throw Invalid("Neplatný stav boot identity.");
+            if (bootState != SampleState.Valid && bootValue.ValueKind != JsonValueKind.Null) throw Invalid(Loc.T("Neplatný stav boot identity."));
             var captured = Property(root, "capturedAtUtc");
             if (captured.ValueKind != JsonValueKind.String || !captured.TryGetDateTimeOffset(out var capturedAt)
-                || capturedAt.Offset != TimeSpan.Zero) throw Invalid("Neplatný čas snímku.");
+                || capturedAt.Offset != TimeSpan.Zero) throw Invalid(Loc.T("Neplatný čas snímku."));
             var metadata = new SnapshotMetadata(capturedAt, Time(root, "capturedMonotonicNs"),
                 Time(root, "processMeasuredAtMonotonicNs"), Time(root, "processMeasuredAtUnixNs", true),
                 Time(root, "resourceMeasuredAtMonotonicNs"), State(root, "processStreamState"), State(root, "resourceStreamState"),
                 bootState, boot, Bool(root, "paused"), Bool(root, "stale"), fields.ToFrozenSet(StringComparer.Ordinal));
             var rows = Array(root, "processes");
-            if (UInt(root, "processesTotal") != rows.GetArrayLength()) throw Invalid("Nesouhlasí počet procesů.");
+            if (UInt(root, "processesTotal") != rows.GetArrayLength()) throw Invalid(Loc.T("Nesouhlasí počet procesů."));
             var processes = new List<ImportedProcess>(rows.GetArrayLength());
             var keys = new HashSet<ProcessKey>();
             var pids = new HashSet<uint>();
             foreach (var value in rows.EnumerateArray()) {
                 cancel.ThrowIfCancellationRequested();
                 var process = ReadProcess(Object(value), metadata, names);
-                if (!keys.Add(process.Key)) throw Invalid("Duplicitní životnost procesu.");
-                if (!pids.Add(process.Key.Pid)) throw Invalid("Duplicitní PID v jednom snímku.");
+                if (!keys.Add(process.Key)) throw Invalid(Loc.T("Duplicitní životnost procesu."));
+                if (!pids.Add(process.Key.Pid)) throw Invalid(Loc.T("Duplicitní PID v jednom snímku."));
                 processes.Add(process);
             }
             ValidateSections(root, metadata, names, ids, cancel);
             return new(metadata, processes.AsReadOnly());
-        } catch (JsonException error) { throw new InvalidDataException("Snímek obsahuje neplatný JSON.", error); }
+        } catch (JsonException error) { throw new InvalidDataException(Loc.T("Snímek obsahuje neplatný JSON."), error); }
     }
 
     public static Task<SnapshotComparisonResult> CompareAsync(ImportedSnapshot before, ImportedSnapshot after,
@@ -191,7 +191,7 @@ internal static class SnapshotComparison
         bool claim = Bool(row, "identityReliable");
         bool verified = claim && BootVerified(metadata) && key.Boot == metadata.BootIdentifier
             && !key.Boot.IsEmpty && key.Kind is GenerationKind.CreationTime or GenerationKind.SequenceNumber && key.Generation != 0;
-        if (key.Kind == GenerationKind.Missing && key.Generation != 0) throw Invalid("Chybějící druh generace má nenulovou hodnotu.");
+        if (key.Kind == GenerationKind.Missing && key.Generation != 0) throw Invalid(Loc.T("Chybějící druh generace má nenulovou hodnotu."));
         string? name = names ? Text(row, "name") : null;
         if (!names) Absent(row, "name");
         uint parent = UInt(row, "parentPid"), threads = UInt(row, "threadCount"), handles = UInt(row, "handleCount");
@@ -219,17 +219,17 @@ internal static class SnapshotComparison
         value = Object(value);
         string unit = Text(value, "unit");
         if (unit is not ("percent" or "percentOfMachine" or "bytes" or "bytesPerSecond" or "bitsPerSecond" or "degreesCelsius")
-            || unsigned && unit != "bytes") throw Invalid("Neplatná jednotka metriky.");
+            || unsigned && unit != "bytes") throw Invalid(Loc.T("Neplatná jednotka metriky."));
         var source = inheritedSource ?? EnumValue<MetricSource>(Property(value, "source"));
-        if (inheritedSource is not null && value.TryGetProperty("source", out _)) throw Invalid("Duplicitní zdroj metriky.");
+        if (inheritedSource is not null && value.TryGetProperty("source", out _)) throw Invalid(Loc.T("Duplicitní zdroj metriky."));
         var state = State(value, "state");
         var number = Property(value, "value");
         double? floating = null; ulong? integer = null;
         if (state == SampleState.Valid) {
-            if (number.ValueKind != JsonValueKind.Number) throw Invalid("Platná metrika nemá číselnou hodnotu.");
-            if (unsigned) { if (!number.TryGetUInt64(out var raw)) throw Invalid("Neplatná celočíselná metrika."); integer = raw; }
-            else { if (!number.TryGetDouble(out var raw) || !double.IsFinite(raw) || raw < 0) throw Invalid("Neplatná hodnota metriky."); floating = raw; }
-        } else if (number.ValueKind != JsonValueKind.Null) throw Invalid("Neplatná metrika obsahuje hodnotu.");
+            if (number.ValueKind != JsonValueKind.Number) throw Invalid(Loc.T("Platná metrika nemá číselnou hodnotu."));
+            if (unsigned) { if (!number.TryGetUInt64(out var raw)) throw Invalid(Loc.T("Neplatná celočíselná metrika.")); integer = raw; }
+            else { if (!number.TryGetDouble(out var raw) || !double.IsFinite(raw) || raw < 0) throw Invalid(Loc.T("Neplatná hodnota metriky.")); floating = raw; }
+        } else if (number.ValueKind != JsonValueKind.Null) throw Invalid(Loc.T("Neplatná metrika obsahuje hodnotu."));
         if (state == SampleState.Valid && streamState != SampleState.Valid) { state = streamState; floating = null; integer = null; }
         return new(unit, source, state, floating, integer);
     }
@@ -241,7 +241,7 @@ internal static class SnapshotComparison
             var processors = new HashSet<(uint, uint)>();
             foreach (var row in Array(root, "logicalProcessors").EnumerateArray()) {
                 cancel.ThrowIfCancellationRequested(); Object(row);
-                if (!processors.Add((UInt(row, "group"), UInt(row, "index")))) throw Invalid("Duplicitní logický procesor.");
+                if (!processors.Add((UInt(row, "group"), UInt(row, "index")))) throw Invalid(Loc.T("Duplicitní logický procesor."));
                 Metric(Property(row, "cpu"), false);
             }
         } else { Absent(root, "logicalProcessorCount"); Absent(root, "systemCpu"); Absent(root, "logicalProcessors"); }
@@ -253,14 +253,14 @@ internal static class SnapshotComparison
         } else Absent(root, "systemMemory");
         if (!metadata.Fields.Contains("Devices")) { Absent(root, "devices"); Absent(root, "devicesTotal"); return; }
         var devices = Array(root, "devices");
-        if (UInt(root, "devicesTotal") != devices.GetArrayLength()) throw Invalid("Nesouhlasí počet zařízení.");
+        if (UInt(root, "devicesTotal") != devices.GetArrayLength()) throw Invalid(Loc.T("Nesouhlasí počet zařízení."));
         var identifiers = new HashSet<string>(StringComparer.Ordinal);
         uint index = 0;
         foreach (var row in devices.EnumerateArray()) {
             cancel.ThrowIfCancellationRequested(); Object(row);
-            if (UInt(row, "index") != index++) throw Invalid("Neplatné pořadí zařízení.");
+            if (UInt(row, "index") != index++) throw Invalid(Loc.T("Neplatné pořadí zařízení."));
             var kind = EnumValue<ResourceKind>(Property(row, "kind"));
-            if (kind is not (ResourceKind.Disk or ResourceKind.Network or ResourceKind.Gpu)) throw Invalid("Neplatný druh zařízení.");
+            if (kind is not (ResourceKind.Disk or ResourceKind.Network or ResourceKind.Gpu)) throw Invalid(Loc.T("Neplatný druh zařízení."));
             ValidateLabels(row, names, ids, identifiers);
             if (names) Text(row, "description"); else Absent(row, "description");
             Metric(Property(row, kind == ResourceKind.Network ? "receive" : "utilization"), false);
@@ -271,7 +271,7 @@ internal static class SnapshotComparison
             var engineIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var engine in Array(row, "engines").EnumerateArray()) {
                 cancel.ThrowIfCancellationRequested(); Object(engine);
-                if (Text(engine, "type") is not ("3D" or "Copy" or "VideoDecode" or "VideoEncode" or "Compute" or "VideoProcessing" or "Other")) throw Invalid("Neplatný druh GPU enginu.");
+                if (Text(engine, "type") is not ("3D" or "Copy" or "VideoDecode" or "VideoEncode" or "Compute" or "VideoProcessing" or "Other")) throw Invalid(Loc.T("Neplatný druh GPU enginu."));
                 ValidateLabels(engine, names, ids, engineIds); Metric(Property(engine, "utilization"), false);
             }
         }
@@ -280,7 +280,7 @@ internal static class SnapshotComparison
     private static void ValidateLabels(JsonElement row, bool names, bool ids, HashSet<string> identifiers)
     {
         if (names) Text(row, "name"); else Absent(row, "name");
-        if (ids) { string id = Text(row, "id"); if (id.Length == 0 || !identifiers.Add(id)) throw Invalid("Prázdné nebo duplicitní ID zařízení."); }
+        if (ids) { string id = Text(row, "id"); if (id.Length == 0 || !identifiers.Add(id)) throw Invalid(Loc.T("Prázdné nebo duplicitní ID zařízení.")); }
         else Absent(row, "id");
     }
 
@@ -295,20 +295,20 @@ internal static class SnapshotComparison
         int nextLimit = MaximumArrayItems, total = 0, tokens = 0;
         while (reader.Read()) {
             cancel.ThrowIfCancellationRequested();
-            if (++tokens > MaximumTokens) throw Invalid("Snímek obsahuje příliš mnoho položek JSON.");
+            if (++tokens > MaximumTokens) throw Invalid(Loc.T("Snímek obsahuje příliš mnoho položek JSON."));
             int depth = reader.CurrentDepth;
             if (reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName) {
-                if (reader.ValueSpan.Length > MaximumStringBytes) throw Invalid("Příliš dlouhý text ve snímku.");
+                if (reader.ValueSpan.Length > MaximumStringBytes) throw Invalid(Loc.T("Příliš dlouhý text ve snímku."));
                 ValidateText(ref reader);
             }
             if (reader.TokenType == JsonTokenType.PropertyName) {
-                if (++properties[depth - 1] > 64) throw Invalid("Příliš mnoho vlastností objektu.");
+                if (++properties[depth - 1] > 64) throw Invalid(Loc.T("Příliš mnoho vlastností objektu."));
                 nextLimit = reader.ValueTextEquals("processes"u8) ? MaximumProcesses : reader.ValueTextEquals("devices"u8) ? MaximumDevices
                     : reader.ValueTextEquals("logicalProcessors"u8) ? MaximumProcessors : reader.ValueTextEquals("engines"u8) ? MaximumEngines
                     : reader.ValueTextEquals("fields"u8) ? 6 : MaximumArrayItems;
             }
             if (depth > 0 && arrays[depth - 1] && reader.TokenType is not (JsonTokenType.EndArray or JsonTokenType.EndObject or JsonTokenType.PropertyName)) {
-                if (++counts[depth - 1] > limits[depth - 1] || ++total > MaximumArrayItems) throw Invalid("Snímek obsahuje příliš mnoho řádků.");
+                if (++counts[depth - 1] > limits[depth - 1] || ++total > MaximumArrayItems) throw Invalid(Loc.T("Snímek obsahuje příliš mnoho řádků."));
             }
             if (reader.TokenType == JsonTokenType.StartArray) { arrays[depth] = true; counts[depth] = 0; limits[depth] = nextLimit; }
             if (reader.TokenType == JsonTokenType.EndArray) arrays[depth] = false;
@@ -323,7 +323,7 @@ internal static class SnapshotComparison
             : rented = ArrayPool<char>.Shared.Rent(reader.ValueSpan.Length);
         // The token kind is checked by the caller, so this exception identifies invalid Unicode.
         try { reader.CopyString(decoded); }
-        catch (InvalidOperationException error) { throw new InvalidDataException("Snímek obsahuje neplatný Unicode.", error); }
+        catch (InvalidOperationException error) { throw new InvalidDataException(Loc.T("Snímek obsahuje neplatný Unicode."), error); }
         finally { if (rented is not null) ArrayPool<char>.Shared.Return(rented, clearArray: true); }
     }
 
@@ -333,25 +333,25 @@ internal static class SnapshotComparison
         if (value.ValueKind == JsonValueKind.Object) {
             var names = new HashSet<string>(StringComparer.Ordinal);
             foreach (var property in value.EnumerateObject()) {
-                if (!names.Add(property.Name)) throw Invalid("Duplicitní vlastnost JSON objektu.");
+                if (!names.Add(property.Name)) throw Invalid(Loc.T("Duplicitní vlastnost JSON objektu."));
                 ValidateProperties(property.Value, cancel);
             }
         } else if (value.ValueKind == JsonValueKind.Array) foreach (var item in value.EnumerateArray()) ValidateProperties(item, cancel);
     }
 
-    private static JsonElement Object(JsonElement value) => value.ValueKind == JsonValueKind.Object ? value : throw Invalid("Očekáván objekt.");
-    private static JsonElement Property(JsonElement value, string name) => value.TryGetProperty(name, out var result) ? result : throw Invalid("Chybí pole " + name + ".");
-    private static JsonElement Array(JsonElement value, string name) { var result = Property(value, name); return result.ValueKind == JsonValueKind.Array ? result : throw Invalid("Očekáváno pole " + name + "."); }
-    private static string Text(JsonElement value) => value.ValueKind == JsonValueKind.String ? value.GetString()! : throw Invalid("Očekáván text.");
+    private static JsonElement Object(JsonElement value) => value.ValueKind == JsonValueKind.Object ? value : throw Invalid(Loc.T("Očekáván objekt."));
+    private static JsonElement Property(JsonElement value, string name) => value.TryGetProperty(name, out var result) ? result : throw Invalid(Loc.F("Chybí pole {0}.", name));
+    private static JsonElement Array(JsonElement value, string name) { var result = Property(value, name); return result.ValueKind == JsonValueKind.Array ? result : throw Invalid(Loc.F("Očekáváno pole {0}.", name)); }
+    private static string Text(JsonElement value) => value.ValueKind == JsonValueKind.String ? value.GetString()! : throw Invalid(Loc.T("Očekáván text."));
     private static string Text(JsonElement value, string name) => Text(Property(value, name));
-    private static bool Boolean(JsonElement value) => value.ValueKind is JsonValueKind.True or JsonValueKind.False ? value.GetBoolean() : throw Invalid("Očekávána pravdivostní hodnota.");
+    private static bool Boolean(JsonElement value) => value.ValueKind is JsonValueKind.True or JsonValueKind.False ? value.GetBoolean() : throw Invalid(Loc.T("Očekávána pravdivostní hodnota."));
     private static bool Bool(JsonElement value, string name) => Boolean(Property(value, name));
-    private static uint UInt(JsonElement value, string name) { var number = Property(value, name); return number.ValueKind == JsonValueKind.Number && number.TryGetUInt32(out uint result) ? result : throw Invalid("Neplatné celé číslo " + name + "."); }
-    private static void Absent(JsonElement value, string name) { if (value.TryGetProperty(name, out _)) throw Invalid("Nevybrané pole " + name + " je přítomné."); }
+    private static uint UInt(JsonElement value, string name) { var number = Property(value, name); return number.ValueKind == JsonValueKind.Number && number.TryGetUInt32(out uint result) ? result : throw Invalid(Loc.F("Neplatné celé číslo {0}.", name)); }
+    private static void Absent(JsonElement value, string name) { if (value.TryGetProperty(name, out _)) throw Invalid(Loc.F("Nevybrané pole {0} je přítomné.", name)); }
     private static SampleState State(JsonElement value, string name) => EnumValue<SampleState>(Property(value, name));
-    private static T EnumValue<T>(JsonElement value) where T : struct, Enum { string text = Text(value); return Enum.TryParse<T>(text, out var result) && Enum.IsDefined(result) && result.ToString() == text ? result : throw Invalid("Neznámý stav nebo druh."); }
-    private static ulong UnsignedText(JsonElement value) { string text = Text(value); return ulong.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out ulong result) ? result : throw Invalid("Neplatná generace procesu."); }
-    private static long Time(JsonElement value, string name, bool signed = false) { string text = Text(value, name); return long.TryParse(text, signed ? NumberStyles.AllowLeadingSign : NumberStyles.None, CultureInfo.InvariantCulture, out long result) && (signed || result >= 0) ? result : throw Invalid("Neplatný čas " + name + "."); }
-    private static BootIdentifier Boot(JsonElement value) { string text = Text(value); return text.Length == 32 && ulong.TryParse(text.AsSpan(0, 16), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong high) && ulong.TryParse(text.AsSpan(16, 16), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong low) ? new(low, high) : throw Invalid("Neplatná boot identita."); }
+    private static T EnumValue<T>(JsonElement value) where T : struct, Enum { string text = Text(value); return Enum.TryParse<T>(text, out var result) && Enum.IsDefined(result) && result.ToString() == text ? result : throw Invalid(Loc.T("Neznámý stav nebo druh.")); }
+    private static ulong UnsignedText(JsonElement value) { string text = Text(value); return ulong.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out ulong result) ? result : throw Invalid(Loc.T("Neplatná generace procesu.")); }
+    private static long Time(JsonElement value, string name, bool signed = false) { string text = Text(value, name); return long.TryParse(text, signed ? NumberStyles.AllowLeadingSign : NumberStyles.None, CultureInfo.InvariantCulture, out long result) && (signed || result >= 0) ? result : throw Invalid(Loc.F("Neplatný čas {0}.", name)); }
+    private static BootIdentifier Boot(JsonElement value) { string text = Text(value); return text.Length == 32 && ulong.TryParse(text.AsSpan(0, 16), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong high) && ulong.TryParse(text.AsSpan(16, 16), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong low) ? new(low, high) : throw Invalid(Loc.T("Neplatná boot identita.")); }
     private static InvalidDataException Invalid(string message) => new(message);
 }

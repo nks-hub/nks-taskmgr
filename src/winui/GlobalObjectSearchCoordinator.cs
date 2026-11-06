@@ -13,7 +13,7 @@ internal sealed class GlobalObjectSearchCoordinator(ProcessDetailsClient client)
     internal Task SearchAsync(BootIdentifier boot, GlobalObjectSearchQuery query,
         Func<GlobalObjectSearchBatch, CancellationToken, Task> publish, CancellationToken cancellation)
     {
-        if (!query.IsValid) throw new ArgumentException("Název nebo typ musí mít alespoň dva znaky.", nameof(query));
+        if (!query.IsValid) throw new ArgumentException(Loc.T("Název nebo typ musí mít alespoň dva znaky."), nameof(query));
         return Task.Run(() => SearchCoreAsync(boot, query with { Name = query.Name.Trim(), Type = query.Type.Trim() }, publish, cancellation), cancellation);
     }
 
@@ -36,13 +36,13 @@ internal sealed class GlobalObjectSearchCoordinator(ProcessDetailsClient client)
         try {
             var paths = GlobalObjectSearchPaths.Capture(linked.Token);
             string canonical = paths.Canonical(query.Name);
-            if (!paths.CanResolve(query.Name)) { state.Partial = true; state.Note = "Převod zadaného písmene disku není dostupný; porovnávají se i doslovné názvy."; }
+            if (!paths.CanResolve(query.Name)) { state.Partial = true; state.Note = Loc.T("Převod zadaného písmene disku není dostupný; porovnávají se i doslovné názvy."); }
             var owners = await client.ReadOwnersAsync(boot, linked.Token).ConfigureAwait(false);
             if (owners.State != ProcessDetailsState.Ok) {
-                state.Partial = true; state.Note = "Seznam vlastníků není dostupný: " + Status(owners);
+                state.Partial = true; state.Note = Loc.F("Seznam vlastníků není dostupný: {0}", Status(owners));
             } else {
                 state.TotalOwners = owners.Owners.Length;
-                if (owners.PartialMetrics) { state.Partial = true; state.Note = "Některé vlastníky nebylo možné spolehlivě určit."; }
+                if (owners.PartialMetrics) { state.Partial = true; state.Note = Loc.T("Některé vlastníky nebylo možné spolehlivě určit."); }
                 await FlushAsync(true, linked.Token).ConfigureAwait(false);
                 foreach (var owner in owners.Owners) {
                     linked.Token.ThrowIfCancellationRequested();
@@ -94,7 +94,7 @@ internal sealed class GlobalObjectSearchCoordinator(ProcessDetailsClient client)
                                     int characters = observation.Type.Length + observation.Name.Length + display.Length;
                                     if (characters > MaximumResultCharacters - state.ResultCharacters) {
                                         state.Partial = state.ResultTextLimit = limited = true;
-                                        state.Note = "Dosažen limit 8 MiB textu výsledků."; break;
+                                        state.Note = Loc.T("Dosažen limit 8 MiB textu výsledků."); break;
                                     }
                                     state.ResultCharacters += characters;
                                     pending.Add(new(owner.Key, owner.Name, handle, observation, display, info.ReceivedAt));
@@ -121,23 +121,23 @@ internal sealed class GlobalObjectSearchCoordinator(ProcessDetailsClient client)
                     }
                 }
                 if (state.Matches >= MaximumResults || state.ObjectsExamined >= MaximumQueries) {
-                    state.Partial = true; state.Note = state.Matches >= MaximumResults ? "Dosažen limit 5 000 výsledků." : "Dosažen limit 25 000 dotazů na objekty.";
+                    state.Partial = true; state.Note = state.Matches >= MaximumResults ? Loc.T("Dosažen limit 5 000 výsledků.") : Loc.T("Dosažen limit 25 000 dotazů na objekty.");
                 }
             }
         } catch (OperationCanceledException) when (linked.IsCancellationRequested) {
             state.Partial = true; state.Cancelled = cancellation.IsCancellationRequested;
-            state.Note = state.Cancelled ? "Hledání bylo zrušené." : "Hledání dosáhlo časového limitu 2 minut.";
+            state.Note = state.Cancelled ? Loc.T("Hledání bylo zrušené.") : Loc.T("Hledání dosáhlo časového limitu 2 minut.");
         } catch (Exception error) when (error is IOException or InvalidDataException or TimeoutException or ObjectDisposedException) {
-            state.Partial = true; state.Note = "Hledání nelze dokončit: " + error.Message;
+            state.Partial = true; state.Note = Loc.F("Hledání nelze dokončit: {0}", error.Message);
         }
         state.Finished = true; state.CurrentOwner = "";
         await FlushAsync(true, CancellationToken.None).ConfigureAwait(false);
     }
 
     private static string Status(ProcessDetailsSnapshot snapshot) => snapshot.State switch {
-        ProcessDetailsState.AccessDenied => "chybí oprávnění", ProcessDetailsState.Unsupported => "nepodporováno",
-        ProcessDetailsState.TargetChanged => "proces se změnil nebo skončil", ProcessDetailsState.LimitExceeded => "překročen limit",
-        _ => "nedostupné (" + snapshot.State + ")"
+        ProcessDetailsState.AccessDenied => Loc.T("chybí oprávnění"), ProcessDetailsState.Unsupported => Loc.T("nepodporováno"),
+        ProcessDetailsState.TargetChanged => Loc.T("proces se změnil nebo skončil"), ProcessDetailsState.LimitExceeded => Loc.T("překročen limit"),
+        _ => Loc.F("nedostupné ({0})", snapshot.State)
     };
 
     private sealed class Counters
