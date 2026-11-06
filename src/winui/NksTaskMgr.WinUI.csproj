@@ -47,6 +47,7 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.261008100" />
     <ProjectReference Include="..\interop\dotnet\NksTaskMgr.Native.csproj" />
+    <EmbeddedResource Include="Strings\**\*.tsv" LogicalName="NksStrings.%(RecursiveDir)%(Filename)%(Extension)" />
     <None Include="$(NativeMonitorPath)" Link="nks-monitor.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Include="$(IconWorkerPath)" Link="nks-icon-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
     <None Include="$(DetailsWorkerPath)" Link="nks-details-worker.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />

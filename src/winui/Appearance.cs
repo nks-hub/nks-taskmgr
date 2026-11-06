@@ -108,7 +108,7 @@ internal static class Appearance
 
 public sealed partial class MainWindow
 {
-    private readonly Button appearance = Button("Vzhled");
+    private readonly Button appearance = Button(Loc.T("Vzhled"));
 
     private void ConfigureAppearance()
     {
@@ -116,24 +116,37 @@ public sealed partial class MainWindow
         appearance.FontSize = 11; appearance.Padding = new Thickness(4, 0, 4, 0);
         appearance.HorizontalAlignment = HorizontalAlignment.Stretch;
         appearance.VerticalAlignment = VerticalAlignment.Bottom; appearance.Margin = new Thickness(8, 0, 8, 12);
-        AutomationProperties.SetName(appearance, "Vzhled aplikace");
+        AutomationProperties.SetName(appearance, Loc.T("Vzhled aplikace"));
         AutomationProperties.SetAutomationId(appearance, "appearance-choice");
-        ToolTipService.SetToolTip(appearance, "Vzhled podle Windows, světlý nebo tmavý");
+        ToolTipService.SetToolTip(appearance, Loc.T("Vzhled podle Windows, světlý nebo tmavý"));
         var menu = new MenuFlyout();
         var choices = new Dictionary<AppAppearance, ToggleMenuFlyoutItem>();
         void UpdateChecks() { foreach (var (mode, choice) in choices) choice.IsChecked = mode == Appearance.Preference; }
-        foreach (var (mode, label) in new[] { (AppAppearance.System, "Podle Windows"), (AppAppearance.Light, "Světlý"), (AppAppearance.Dark, "Tmavý") }) {
+        foreach (var (mode, label) in new[] { (AppAppearance.System, Loc.T("Podle Windows")), (AppAppearance.Light, Loc.T("Světlý")), (AppAppearance.Dark, Loc.T("Tmavý")) }) {
             var item = new ToggleMenuFlyoutItem { Text = label };
             AutomationProperties.SetAutomationId(item, "appearance-" + mode.ToString().ToLowerInvariant());
             item.Click += (_, _) => {
                 bool saved = Appearance.Select(mode); UpdateChecks();
-                if (!saved) footer.Text = "Vzhled je změněný, ale volbu se nepodařilo uložit pro příští spuštění.";
+                if (!saved) footer.Text = Loc.T("Vzhled je změněný, ale volbu se nepodařilo uložit pro příští spuštění.");
             };
             choices.Add(mode, item); menu.Items.Add(item);
         }
+        var language = new MenuFlyoutSubItem { Text = Loc.T("Jazyk") };
+        AutomationProperties.SetAutomationId(language, "language-choice");
+        var languages = new Dictionary<string, ToggleMenuFlyoutItem>();
+        foreach (var code in Loc.Languages.Prepend(Loc.SystemPreference)) {
+            var item = new ToggleMenuFlyoutItem { Text = code == Loc.SystemPreference ? Loc.T("Podle Windows") : Loc.NativeName(code) };
+            AutomationProperties.SetAutomationId(item, "language-" + code);
+            item.Click += (_, _) => {
+                footer.Text = Loc.Select(code) ? Loc.T("Jazyk se změní po restartu aplikace.") : Loc.T("Jazyk se nepodařilo uložit.");
+                foreach (var (other, choice) in languages) choice.IsChecked = other == Loc.Preference;
+            };
+            languages.Add(code, item); language.Items.Add(item);
+        }
+        menu.Items.Add(new MenuFlyoutSeparator()); menu.Items.Add(language);
         AddReplacementMenu(menu);
         AddElevationMenu(menu);
-        menu.Opening += (_, _) => UpdateChecks();
+        menu.Opening += (_, _) => { UpdateChecks(); foreach (var (code, choice) in languages) choice.IsChecked = code == Loc.Preference; };
         appearance.Flyout = menu; sidebar.Children.Add(appearance);
     }
 }

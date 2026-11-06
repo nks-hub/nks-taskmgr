@@ -1,0 +1,11 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Vzhled	Darstellung
+Vzhled aplikace	App-Darstellung
+Vzhled podle Windows, světlý nebo tmavý	Darstellung wie Windows, hell oder dunkel
+Podle Windows	Wie Windows
+Světlý	Hell
+Tmavý	Dunkel
+Vzhled je změněný, ale volbu se nepodařilo uložit pro příští spuštění.	Die Darstellung wurde geändert, die Auswahl konnte aber nicht für den nächsten Start gespeichert werden.
+Jazyk	Sprache
+Jazyk se změní po restartu aplikace.	Die Sprache ändert sich nach einem Neustart der App.
+Jazyk se nepodařilo uložit.	Die Sprache konnte nicht gespeichert werden.
