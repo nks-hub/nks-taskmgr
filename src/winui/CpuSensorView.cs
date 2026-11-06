@@ -40,7 +40,7 @@ public sealed partial class MonitorModel
             "Poskytovatel nedostupný" => Loc.T("Externí program s čidly neběží nebo není dostupný"),
             "Chyba čtecího API" => Loc.T("Externí program neposkytl použitelné údaje z čidel"),
             "Nepodporováno" => Loc.T("Externí program neposkytuje podporované teplotní čidlo CPU"),
-            var status => Loc.Native(status)
+            var status => status is null ? null : Loc.Native(status)
         } : null)
         ?? Loc.T("Čeká na první odpověď externího programu s čidly");
 
