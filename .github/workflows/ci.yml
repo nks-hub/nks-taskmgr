@@ -20,6 +20,9 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Check UI translations
+        run: ./scripts/check-strings.ps1
+
       - name: Build native core and run tests
         run: ./scripts/build.ps1 -Configuration Release -Test
 
