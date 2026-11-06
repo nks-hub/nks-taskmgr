@@ -45,12 +45,17 @@ struct Child {
         process = created.hProcess;
         require(AssignProcessToJobObject(job, process) != FALSE, "Worker job assignment failed");
         ResumeThread(created.hThread); CloseHandle(created.hThread);
-        HANDLE token{};
-        require(OpenProcessToken(process, TOKEN_QUERY, &token) != FALSE, "Worker token unavailable");
-        TOKEN_ELEVATION elevation{}; DWORD used{};
-        const BOOL queried = GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &used);
-        CloseHandle(token);
-        require(queried && !elevation.TokenIsElevated, "Icon worker is elevated");
+        const auto elevated = [](HANDLE owner) {
+            HANDLE token{};
+            require(OpenProcessToken(owner, TOKEN_QUERY, &token) != FALSE, "Process token unavailable");
+            TOKEN_ELEVATION elevation{}; DWORD used{};
+            const BOOL queried = GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &used);
+            CloseHandle(token);
+            require(queried != FALSE, "Process elevation unavailable");
+            return elevation.TokenIsElevated != 0;
+        };
+        // The worker inherits the caller's token; an elevated CI runner yields an elevated worker.
+        require(elevated(process) == elevated(GetCurrentProcess()), "Icon worker elevation differs from its parent");
         } catch (...) {
             if (process) TerminateProcess(process, 1);
             for (HANDLE handle : {job, input, output, process}) if (handle) CloseHandle(handle);

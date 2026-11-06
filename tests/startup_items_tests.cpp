@@ -193,7 +193,8 @@ void wow64Modules()
 
 int main()
 {
-    const auto temp = fs::temp_directory_path() / (L"nks-startup-tests-" + std::to_wstring(GetCurrentProcessId()));
+    // Shortcuts resolve to long names; CI runners set TEMP to an 8.3 short path (RUNNER~1).
+    const auto temp = fs::canonical(fs::temp_directory_path()) / (L"nks-startup-tests-" + std::to_wstring(GetCurrentProcessId()));
     int status = 0;
     const HRESULT com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     try {

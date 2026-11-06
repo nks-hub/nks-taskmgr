@@ -102,6 +102,14 @@ void realDeletion()
     std::filesystem::path file;
 
     auto target = fixture.package(cache, packages, std::string(4096, 'a'), file);
+    nks::broker::TokenIdentity own;
+    require(nks::broker::readToken(GetCurrentProcess(), own), "Own token unavailable");
+    if (own.elevated || own.integrity >= SECURITY_MANDATORY_HIGH_RID) {
+        // CI runners are administrators; the worker refuses to delete under an elevated token.
+        require(deleteCacheFile(target).state == CacheDeleteState::denied && std::filesystem::exists(file), "An elevated cleanup was not refused");
+        std::cout << "PASS real cache deletion: refused under an elevated token\n";
+        return;
+    }
     auto result = deleteCacheFile(target);
     require(result.state == CacheDeleteState::deleted && result.files == 1 && result.bytes == 4096 && !std::filesystem::exists(file),
         "A verified package was not deleted exactly once");
