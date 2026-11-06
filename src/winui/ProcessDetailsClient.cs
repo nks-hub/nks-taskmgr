@@ -44,7 +44,7 @@ internal sealed class ProcessDetailsClient : IDisposable
         lock (sync) ObjectDisposedException.ThrowIf(disposed, this);
         if (Interlocked.Increment(ref pending) > 4) {
             Interlocked.Decrement(ref pending);
-            throw new IOException("Fronta podrobností procesu je obsazená. Zrušte předchozí dotaz nebo chvíli počkejte.");
+            throw new IOException(Loc.T("Fronta podrobností procesu je obsazená. Zrušte předchozí dotaz nebo chvíli počkejte."));
         }
         bool leased = false, running = false;
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -75,10 +75,10 @@ internal sealed class ProcessDetailsClient : IDisposable
             CapabilityReports.Observe(key, result);
             return result;
         } catch (OperationCanceledException error) when (deadline.IsCancellationRequested && !cancellation.IsCancellationRequested && !lifetime.IsCancellationRequested) {
-            CapabilityReports.Failed(command, key, "Vypršel limit dotazu.");
-            throw new TimeoutException("Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz lze zopakovat.", error);
+            CapabilityReports.Failed(command, key, Loc.T("Vypršel limit dotazu."));
+            throw new TimeoutException(Loc.T("Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz lze zopakovat."), error);
         } catch (IOException error) {
-            CapabilityReports.Failed(command, key, error is ProcessDetailsWorkerException { Failure: ProcessDetailsFailure.Terminated } ? "Pracovník předčasně skončil." : "Chyba spojení s pracovníkem.");
+            CapabilityReports.Failed(command, key, error is ProcessDetailsWorkerException { Failure: ProcessDetailsFailure.Terminated } ? Loc.T("Pracovník předčasně skončil.") : Loc.T("Chyba spojení s pracovníkem."));
             throw;
         } finally {
             if (linked.IsCancellationRequested) session?.Cancel(requestId);

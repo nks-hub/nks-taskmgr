@@ -26,10 +26,10 @@ internal static class ProcessDumpProtocol
         var key = target.Key;
         if (key.Boot.IsEmpty || key.Pid == 0 || key.Kind is not (GenerationKind.CreationTime or GenerationKind.SequenceNumber)
             || key.Generation == 0 || target.Created100ns == 0 || mode is not (ProcessDumpMode.Mini or ProcessDumpMode.Full))
-            throw new ArgumentException("Proces nemá ověřitelnou identitu.");
+            throw new ArgumentException(Loc.T("Proces nemá ověřitelnou identitu."));
         string destination = file.Destination, temporary = file.Temporary;
         if (destination.Length is 0 or > 32760 || temporary.Length is 0 or > 32760 || destination.Contains('\0') || temporary.Contains('\0'))
-            throw new ArgumentException("Cesta dumpu je příliš dlouhá nebo neplatná.");
+            throw new ArgumentException(Loc.T("Cesta dumpu je příliš dlouhá nebo neplatná."));
         var bytes = new byte[112 + (destination.Length + temporary.Length) * 2];
         Write(bytes, 0, 0x31444d4eu); BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(4), 1);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(6), (ushort)mode);
@@ -48,7 +48,7 @@ internal static class ProcessDumpProtocol
     {
         if (bytes.Length != ResponseBytes || request.Length < 112 || !bytes[..8].SequenceEqual(request[..8]) || UInt(bytes, 8) != 0
             || !bytes.Slice(16, 64).SequenceEqual(request.Slice(16, 64)) || UInt(bytes, 92) != 0)
-            throw new InvalidDataException("Odpověď dumpu nepatří požadavku nebo vybranému procesu.");
+            throw new InvalidDataException(Loc.T("Odpověď dumpu nepatří požadavku nebo vybranému procesu."));
         var state = (ProcessDumpState)UInt(bytes, 12); var actualArchitecture = (ProcessArchitecture)UInt(bytes, 88);
         uint flags = UInt(bytes, 84), expectedFlags = BinaryPrimitives.ReadUInt16LittleEndian(request[6..]) == 1 ? 0x1802u : 0;
         ulong size = ULong(bytes, 96), created = ULong(bytes, 104);
@@ -57,7 +57,7 @@ internal static class ProcessDumpProtocol
             || flags != 0 && flags != expectedFlags || size > MaximumFileBytes
             || state == ProcessDumpState.Captured && (UInt(bytes, 80) != 0 || flags != expectedFlags || actualArchitecture != architecture
                 || size == 0 || created != ULong(request, 72) || file != expectedFile || bytes.Slice(112, 32).IndexOfAnyExcept((byte)0) < 0))
-            throw new InvalidDataException("Pracovník vrátil neplatný výsledek dumpu.");
+            throw new InvalidDataException(Loc.T("Pracovník vrátil neplatný výsledek dumpu."));
         return new(state, UInt(bytes, 80), flags, actualArchitecture, size, created, Convert.ToHexString(bytes.Slice(112, 32)), file);
     }
     private static uint UInt(ReadOnlySpan<byte> bytes, int at) => BinaryPrimitives.ReadUInt32LittleEndian(bytes[at..]);

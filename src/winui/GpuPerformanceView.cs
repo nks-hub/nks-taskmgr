@@ -28,7 +28,7 @@ public sealed partial class MainWindow
             line.ColumnDefinitions.Add(new ColumnDefinition()); line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var choice = new ComboBox { FontSize = 11, FontFamily = UiTypography.Font, MinWidth = 0, MinHeight = 25, Height = 25,
                 Padding = new Thickness(6, 1, 22, 1), HorizontalAlignment = HorizontalAlignment.Stretch };
-            AutomationProperties.SetName(choice, "GPU engine " + (i + 1));
+            AutomationProperties.SetName(choice, Loc.F("GPU engine {0}", i + 1));
             var value = Label("", 10, 0xcc9bb6); value.HorizontalAlignment = HorizontalAlignment.Right; value.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(value, 1); line.Children.Add(choice); line.Children.Add(value); tile.Children.Add(line);
             var plot = new ChartView { Height = 130, Timeline = performanceTimeline }; tile.Children.Add(plot); gpuTiles.Add((tile, choice, plot, value));
@@ -66,7 +66,7 @@ public sealed partial class MainWindow
                 string? selected = (tile.Choice.SelectedItem as ComboBoxItem)?.Tag as string;
                 tile.Choice.Items.Clear();
                 foreach (var engine in engines) tile.Choice.Items.Add(new ComboBoxItem { Content = engine.Name + (engines.Count(other => other.Name == engine.Name) > 1 ? " · " + (Array.IndexOf(engines, engine) + 1) : ""), Tag = engine.Id });
-                if (engines.Length == 0) tile.Choice.Items.Add(new ComboBoxItem { Content = "Engine není dostupný" });
+                if (engines.Length == 0) tile.Choice.Items.Add(new ComboBoxItem { Content = Loc.T("Engine není dostupný") });
                 tile.Choice.IsEnabled = engines.Length > 0;
                 tile.Choice.SelectedIndex = selected is not null && engines.Any(engine => engine.Id == selected)
                     ? Array.FindIndex(engines, engine => engine.Id == selected)
@@ -78,16 +78,16 @@ public sealed partial class MainWindow
             string? id = (tile.Choice.SelectedItem as ComboBoxItem)?.Tag as string;
             var engine = id is not null && gpu.Engines.TryGetValue(id, out var found) ? found : null;
             tile.Chart.Height = Math.Clamp(performancePlotHeight * .46, 100, 135);
-            tile.Value.Text = resource.Stale ? "Zastaralé" : engine is null ? "Nedostupné" : Display.Metric(engine.Current, " %");
-            tile.Chart.Configure(resource.Title + " · " + (engine?.Name ?? "Engine"));
+            tile.Value.Text = resource.Stale ? Loc.T("Zastaralé") : engine is null ? Loc.T("Nedostupné") : Display.Metric(engine.Current, " %");
+            tile.Chart.Configure(resource.Title + " · " + (engine?.Name ?? Loc.T("Engine")));
             tile.Chart.Set(engine?.History, null, now, rangeSeconds, 100, 0xcc9bb6, autoScale: scaleChoice.IsChecked == true);
-            AutomationProperties.SetName(tile.Chart, "Využití GPU " + (engine?.Name ?? "nedostupné") + ": " + tile.Value.Text);
+            AutomationProperties.SetName(tile.Chart, Loc.F("Využití GPU {0}: {1}", engine?.Name ?? Loc.T("nedostupné"), tile.Value.Text));
         }
-        string MemoryValue(Metric value, double capacity) => resource.Stale ? "Zastaralé" : Display.Metric(value, "", 1073741824) + " / " + Display.Number(capacity / 1073741824, " GiB");
-        gpuDedicatedLabel.Text = "Vyhrazená paměť GPU   " + MemoryValue(resource.Secondary, resource.Capacity);
-        gpuSharedLabel.Text = "Sdílená paměť GPU   " + MemoryValue(resource.Tertiary, gpu.SharedCapacity);
-        gpuDedicated.Configure("Vyhrazená paměť GPU", ChartUnit.Bytes);
-        gpuShared.Configure("Sdílená paměť GPU", ChartUnit.Bytes);
+        string MemoryValue(Metric value, double capacity) => resource.Stale ? Loc.T("Zastaralé") : Display.Metric(value, "", 1073741824) + " / " + Display.Number(capacity / 1073741824, " GiB");
+        gpuDedicatedLabel.Text = Loc.T("Vyhrazená paměť GPU") + "   " + MemoryValue(resource.Secondary, resource.Capacity);
+        gpuSharedLabel.Text = Loc.T("Sdílená paměť GPU") + "   " + MemoryValue(resource.Tertiary, gpu.SharedCapacity);
+        gpuDedicated.Configure(Loc.T("Vyhrazená paměť GPU"), ChartUnit.Bytes);
+        gpuShared.Configure(Loc.T("Sdílená paměť GPU"), ChartUnit.Bytes);
         gpuDedicated.Set(gpu.Dedicated, null, now, rangeSeconds, Math.Max(1, resource.Capacity), 0xcc9bb6, autoScale: scaleChoice.IsChecked == true);
         gpuShared.Set(gpu.Shared, null, now, rangeSeconds, Math.Max(1, gpu.SharedCapacity), 0xabb0f1, autoScale: scaleChoice.IsChecked == true);
     }
@@ -104,12 +104,12 @@ public sealed partial class MainWindow
                 if (diskTransferPanel.Visibility != Visibility.Visible || diskTransfers.ActualWidth <= 0)
                     throw new InvalidOperationException("Disk transfer graph did not lay out below disk activity.");
                 diskTransfers.CheckDiskTransferSeries(resource.DiskReadHistory, resource.DiskWriteHistory);
-                if (diskDetails is null || DiskSummary.Any(name => !factValues.ContainsKey(name)))
+                if (diskDetails is null || DiskSummary.Any(name => !factValues.ContainsKey(Loc.T(name))))
                     throw new InvalidOperationException("Disk summary or expanded SMART details did not render.");
                 var diskCells = facts.Children.ToArray(); diskDetails.IsExpanded = true; root.UpdateLayout();
                 CheckScrollablePerformanceViewport();
                 foreach (var detail in diskDetailValues)
-                    if (detail.Value.Text != resource.HardwareFacts[detail.Key]) throw new InvalidOperationException("Disk detail lost a native value.");
+                    if (detail.Value.Text != Loc.T(resource.HardwareFacts[detail.Key])) throw new InvalidOperationException("Disk detail lost a native value.");
                 RefreshPerformance();
                 if (!diskDetails.IsExpanded || !diskCells.SequenceEqual(facts.Children)) throw new InvalidOperationException("Disk refresh recreated expanded facts.");
                 var originalFacts = resource.HardwareFacts;
@@ -119,7 +119,7 @@ public sealed partial class MainWindow
                     if (diskDetails is not { IsExpanded: true }) throw new InvalidOperationException("A missing SMART field collapsed the disk details.");
                 } finally { resource.HardwareFacts = originalFacts; RefreshPerformance(); }
                 if (diskDetails is not { IsExpanded: true }) throw new InvalidOperationException("Restored SMART fields collapsed the disk details.");
-                App.Trace($"Disk detail passed: summary={DiskSummary.Length};expanded={diskDetailValues.Count};temperature={factValues["Teplota"].Text};smart={factValues["SMART"].Text}");
+                App.Trace($"Disk detail passed: summary={DiskSummary.Length};expanded={diskDetailValues.Count};temperature={factValues[Loc.T("Teplota")].Text};smart={factValues[Loc.T("SMART")].Text}");
                 diskDetails.IsExpanded = false;
             }
             if (resource.Kind != ResourceKind.Gpu) continue;

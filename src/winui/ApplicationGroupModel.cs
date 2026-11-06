@@ -54,7 +54,7 @@ internal sealed partial class ApplicationGroupModel
     internal bool Partial => partial || missingLinks || Stale || Error.Length > 0;
     internal void Apply(ProcessDetailsSnapshot snapshot)
     {
-        if (snapshot.State != ProcessDetailsState.Ok) { Error = "Inventář aplikací není dostupný: " + snapshot.State; return; }
+        if (snapshot.State != ProcessDetailsState.Ok) { Error = Loc.F("Inventář aplikací není dostupný: {0}", snapshot.State); return; }
         inventory = snapshot.Applications; partial = snapshot.PartialMetrics; receivedAt = NativeMonitor.MonotonicNowNs; Error = "";
     }
     internal void Failed(string error) => Error = error;

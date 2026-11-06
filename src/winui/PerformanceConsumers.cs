@@ -70,7 +70,7 @@ public sealed partial class MainWindow
         if (consumers.Children.Count == 0) {
             consumers.Children.Add(consumerCaption); consumers.Children.Add(consumerCards);
         }
-        SetConsumerText(consumerCaption, memory ? "Pracovní sada včetně sdílených stránek" : "Procesy podle CPU");
+        SetConsumerText(consumerCaption, memory ? Loc.T("Pracovní sada včetně sdílených stránek") : Loc.T("Procesy podle CPU"));
         var rows = model.TopConsumers(memory).ToArray();
         bool stacked = performanceDetailWidth < 720;
         if (consumerLayout != (stacked, rows.Length)) {

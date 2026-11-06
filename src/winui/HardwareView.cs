@@ -12,7 +12,7 @@ public sealed partial class MainWindow
     private readonly Dictionary<string, HardwareFactRows> hardwareSections = [];
     private readonly CapabilityPanel capabilities = new();
     private readonly TextBlock hardwareSummary = Label("", 14, 0xe9eef0);
-    private readonly Button hardwareCopy = Button("Kopírovat");
+    private readonly Button hardwareCopy = Button(Loc.T("Kopírovat"));
     private Border capabilityCard = null!;
 
     private void BuildHardware()
@@ -24,7 +24,7 @@ public sealed partial class MainWindow
         AutomationProperties.SetAutomationId(hardwareSummary, "hardware-summary");
         top.Children.Add(hardwareSummary);
         hardwareCopy.Height = 30; hardwareCopy.VerticalAlignment = VerticalAlignment.Center;
-        ToolTipService.SetToolTip(hardwareCopy, "Zkopírovat celou sestavu jako text do schránky");
+        ToolTipService.SetToolTip(hardwareCopy, Loc.T("Zkopírovat celou sestavu jako text do schránky"));
         hardwareCopy.Click += (_, _) => CopyHardware();
         Grid.SetColumn(hardwareCopy, 1); top.Children.Add(hardwareCopy);
         hardwareCards.ColumnDefinitions.Add(new ColumnDefinition()); hardwareCards.ColumnDefinitions.Add(new ColumnDefinition());
@@ -33,7 +33,7 @@ public sealed partial class MainWindow
             var body = new StackPanel { Padding = new Thickness(14, 12, 14, 12), Spacing = 8 };
             var heading = new Grid();
             heading.ColumnDefinitions.Add(new ColumnDefinition()); heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var title = Label(key switch { "cpu" => "Procesor", "memory" => "Paměť", "board" => "Základní deska a BIOS", _ => "Záložní zdroj UPS" }, 14, 0xe9eef0);
+            var title = Label(key switch { "cpu" => Loc.T("Procesor"), "memory" => Loc.T("Paměť"), "board" => Loc.T("Základní deska a BIOS"), _ => Loc.T("Záložní zdroj UPS") }, 14, 0xe9eef0);
             title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold; title.VerticalAlignment = VerticalAlignment.Center; heading.Children.Add(title);
             body.Children.Add(heading);
             if (key == "cpu") AddCpuSensorChoice(heading);
@@ -41,7 +41,7 @@ public sealed partial class MainWindow
             if (key == "cpu") AddCpuSensorDetails(body);
             hardwareCards.Children.Add(Card(body));
         }
-        var capabilityExpander = new Expander { Header = "Oprávnění a dostupnost měření", Content = capabilities, IsExpanded = false,
+        var capabilityExpander = new Expander { Header = Loc.T("Oprávnění a dostupnost měření"), Content = capabilities, IsExpanded = false,
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
         capabilityCard = Card(capabilityExpander); hardwareCards.Children.Add(capabilityCard);
         var content = new StackPanel(); content.Children.Add(top); content.Children.Add(hardwareCards);
@@ -107,15 +107,15 @@ public sealed partial class MainWindow
     private void CopyHardware()
     {
         var text = new System.Text.StringBuilder();
-        var titles = new Dictionary<string, string> { ["cpu"] = "Procesor", ["memory"] = "Paměť", ["board"] = "Základní deska a BIOS", ["ups"] = "Záložní zdroj UPS" };
+        var titles = new Dictionary<string, string> { ["cpu"] = Loc.T("Procesor"), ["memory"] = Loc.T("Paměť"), ["board"] = Loc.T("Základní deska a BIOS"), ["ups"] = Loc.T("Záložní zdroj UPS") };
         foreach (var (key, facts) in HardwareFacts()) {
             text.AppendLine(titles[key]);
-            foreach (var (name, value) in facts) text.Append("  ").Append(name).Append(": ").AppendLine(value);
+            foreach (var (name, value) in facts) text.Append("  ").Append(Loc.T(name)).Append(": ").AppendLine(Loc.T(value));
         }
         var package = new Windows.ApplicationModel.DataTransfer.DataPackage(); package.SetText(text.ToString());
         Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
-        hardwareCopy.Content = "Zkopírováno";
-        DispatcherQueue.TryEnqueue(async () => { await Task.Delay(1500); hardwareCopy.Content = "Kopírovat"; });
+        hardwareCopy.Content = Loc.T("Zkopírováno");
+        DispatcherQueue.TryEnqueue(async () => { await Task.Delay(1500); hardwareCopy.Content = Loc.T("Kopírovat"); });
     }
 
     private sealed class HardwareFactRows
@@ -137,11 +137,11 @@ public sealed partial class MainWindow
                 if (!rows.TryGetValue(key, out var row)) {
                     var line = new Grid { ColumnSpacing = 20 };
                     line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) }); line.ColumnDefinitions.Add(new ColumnDefinition());
-                    var caption = Label(name, 12, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; line.Children.Add(caption);
-                    var reading = Label(value, 12, 0xe9eef0); reading.TextWrapping = TextWrapping.Wrap;
+                    var caption = Label(Loc.T(name), 12, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; line.Children.Add(caption);
+                    var reading = Label(Loc.T(value), 12, 0xe9eef0); reading.TextWrapping = TextWrapping.Wrap;
                     Grid.SetColumn(reading, 1); line.Children.Add(reading);
                     rows.Add(key, row = new Row(line, reading));
-                } else if (row.Value.Text != value) row.Value.Text = value;
+                } else if (row.Value.Text != Loc.T(value)) row.Value.Text = Loc.T(value);
                 ordered.Add(row);
             }
             foreach (var key in rows.Keys.Where(key => !seen.Contains(key)).ToArray()) {

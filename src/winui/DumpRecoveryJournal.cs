@@ -46,7 +46,7 @@ internal sealed class DumpRecoveryJournal
     {
         try { return action(); }
         catch (Exception error) when (error is System.Text.Json.JsonException or System.ComponentModel.Win32Exception or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException) {
-            throw new IOException("Záznam obnovy nelze bezpečně zapsat nebo odstranit. Existující záznam zůstane zachovaný.", error);
+            throw new IOException(Loc.T("Záznam obnovy nelze bezpečně zapsat nebo odstranit. Existující záznam zůstane zachovaný."), error);
         }
     }
 }

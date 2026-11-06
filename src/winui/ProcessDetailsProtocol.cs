@@ -13,13 +13,13 @@ internal enum ModuleSignatureSource : uint { None, Embedded, Catalog }
 internal sealed record ProcessThreadInfo(uint Id, int BasePriority, int RelativePriority, ulong Created100ns,
     ulong Kernel100ns, ulong User100ns, SampleState TimesState, uint TimesError, SampleState PriorityState, uint PriorityError)
 {
-    public override string ToString() => "TID " + Id + " · základní priorita " + BasePriority;
+    public override string ToString() => Loc.F("TID {0} · základní priorita {1}", Id, BasePriority);
 }
 internal sealed record ProcessModuleInfo(ulong BaseAddress, ulong ImageSize, string Name, string Path)
 {
     public override string ToString()
     {
-        string name = Name.Length == 0 ? "(název nedostupný)" : Name.Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ');
+        string name = Name.Length == 0 ? Loc.T("(název nedostupný)") : Name.Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ');
         int length = Math.Min(140, name.Length);
         if (length < name.Length && char.IsHighSurrogate(name[length - 1])) --length;
         return "0x" + BaseAddress.ToString("X16") + " · " + (length == name.Length ? name : name[..length] + "…");
@@ -50,11 +50,11 @@ internal static partial class ProcessDetailsProtocol
         bool signature = command is ProcessDetailsCommand.Signature or ProcessDetailsCommand.FileSignature;
         if (key.Boot.IsEmpty || key.Kind is not (GenerationKind.CreationTime or GenerationKind.SequenceNumber)
             || (owners ? key.Pid != 0 || key.Generation != 0 : key.Generation == 0))
-            throw new ArgumentException("Proces nemá ověřitelnou identitu.", nameof(key));
+            throw new ArgumentException(Loc.T("Proces nemá ověřitelnou identitu."), nameof(key));
         int pathChars = module?.Path.Length ?? 0;
         if (signature && (module is null || pathChars is 0 or > 32767 || module.Path.Contains('\0')))
-            throw new ArgumentException("Podpis vyžaduje cestu vybraného modulu.", nameof(module));
-        if (command == ProcessDetailsCommand.HandleInfo && handle is null) throw new ArgumentException("Chybí hodnota handle.", nameof(handle));
+            throw new ArgumentException(Loc.T("Podpis vyžaduje cestu vybraného modulu."), nameof(module));
+        if (command == ProcessDetailsCommand.HandleInfo && handle is null) throw new ArgumentException(Loc.T("Chybí hodnota handle."), nameof(handle));
         int payload = command == ProcessDetailsCommand.Signature ? checked(12 + pathChars * 2) : command == ProcessDetailsCommand.FileSignature ? checked(4 + pathChars * 2) : command == ProcessDetailsCommand.HandleInfo ? 8 : 0;
         var bytes = new byte[56 + payload];
         BinaryPrimitives.WriteUInt32LittleEndian(bytes, Magic);
@@ -71,12 +71,12 @@ internal static partial class ProcessDetailsProtocol
             BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(56), module!.BaseAddress);
             BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(64), (uint)pathChars);
             try { Utf16.GetBytes(module.Path, bytes.AsSpan(68)); }
-            catch (EncoderFallbackException error) { throw new ArgumentException("Cesta modulu obsahuje neplatný Unicode text.", nameof(module), error); }
+            catch (EncoderFallbackException error) { throw new ArgumentException(Loc.T("Cesta modulu obsahuje neplatný Unicode text."), nameof(module), error); }
         }
         if (command == ProcessDetailsCommand.FileSignature) {
             BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(56), (uint)pathChars);
             try { Utf16.GetBytes(module!.Path, bytes.AsSpan(60)); }
-            catch (EncoderFallbackException error) { throw new ArgumentException("Cesta souboru obsahuje neplatný Unicode text.", nameof(module), error); }
+            catch (EncoderFallbackException error) { throw new ArgumentException(Loc.T("Cesta souboru obsahuje neplatný Unicode text."), nameof(module), error); }
         }
         if (command == ProcessDetailsCommand.HandleInfo) BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(56), handle!.Value);
         return bytes;
@@ -87,17 +87,17 @@ internal static partial class ProcessDetailsProtocol
         if (header.Length != ResponseHeaderBytes || request.Length < 56
             || BinaryPrimitives.ReadUInt32LittleEndian(header) != Magic
             || !header[..8].SequenceEqual(request[..8]) || !header.Slice(16, 40).SequenceEqual(request.Slice(16, 40))
-            || UInt(header, 76) != 0) throw Invalid("Pracovník vrátil neplatnou hlavičku nebo jiný proces.");
+            || UInt(header, 76) != 0) throw Invalid(Loc.T("Pracovník vrátil neplatnou hlavičku nebo jiný proces."));
         uint length = UInt(header, 8), state = UInt(header, 12), architecture = UInt(header, 64), rows = UInt(header, 68), flags = UInt(header, 72);
         var command = (ProcessDetailsCommand)BinaryPrimitives.ReadUInt16LittleEndian(header[6..]);
         if (length > MaximumResponseBytes || state > (uint)ProcessDetailsState.Error || architecture > (uint)ProcessArchitecture.Arm64)
-            throw Invalid("Pracovník překročil protokol nebo datový limit.");
+            throw Invalid(Loc.T("Pracovník překročil protokol nebo datový limit."));
         bool signature = command is ProcessDetailsCommand.Signature or ProcessDetailsCommand.FileSignature;
         uint expectedFlags = signature ? 2u : 0u;
         uint allowedFlags = command is ProcessDetailsCommand.Threads or ProcessDetailsCommand.HandleInfo or ProcessDetailsCommand.Owners or ProcessDetailsCommand.Applications ? 1u : expectedFlags;
         if ((flags & ~allowedFlags) != 0 || (signature && flags != expectedFlags))
-            throw Invalid("Pracovník vrátil neplatné příznaky.");
-        if (state != 0 && (length != 0 || rows != 0)) throw Invalid("Chybový výsledek obsahuje neověřená data.");
+            throw Invalid(Loc.T("Pracovník vrátil neplatné příznaky."));
+        if (state != 0 && (length != 0 || rows != 0)) throw Invalid(Loc.T("Chybový výsledek obsahuje neověřená data."));
         if (command == ProcessDetailsCommand.Threads && (rows > 16384 || state == 0 && length != rows * 56)
             || command == ProcessDetailsCommand.Modules && rows > 4096
             || command is ProcessDetailsCommand.Signature or ProcessDetailsCommand.FileSignature or ProcessDetailsCommand.HandleInfo && state == 0 && rows != 1
@@ -105,13 +105,13 @@ internal static partial class ProcessDetailsProtocol
             || command == ProcessDetailsCommand.Handles && (rows > 65536 || state == 0 && length != rows * 24)
             || command == ProcessDetailsCommand.Owners && rows > 32768
             || command == ProcessDetailsCommand.Applications && rows > 1024)
-            throw Invalid("Pracovník vrátil neplatný počet záznamů.");
+            throw Invalid(Loc.T("Pracovník vrátil neplatný počet záznamů."));
         return (int)length;
     }
 
     internal static ProcessDetailsSnapshot Response(ReadOnlySpan<byte> header, ReadOnlySpan<byte> payload, ReadOnlySpan<byte> request, ProcessModuleInfo? selected)
     {
-        if (PayloadLength(header, request) != payload.Length) throw Invalid("Neúplný výsledek pracovníka.");
+        if (PayloadLength(header, request) != payload.Length) throw Invalid(Loc.T("Neúplný výsledek pracovníka."));
         var command = (ProcessDetailsCommand)BinaryPrimitives.ReadUInt16LittleEndian(header[6..]);
         if (command == ProcessDetailsCommand.Applications) return ReadApplications(header, payload, request);
         if (command is >= ProcessDetailsCommand.Memory and <= ProcessDetailsCommand.Owners) return ReadObjects(header, payload, request);
@@ -132,7 +132,7 @@ internal static partial class ProcessDetailsProtocol
                         || times == SampleState.Valid && UInt(row, 44) != 0 || priority == SampleState.Valid && UInt(row, 52) != 0
                         || times != SampleState.Valid && (ULong(row, 16) != 0 || ULong(row, 24) != 0 || ULong(row, 32) != 0)
                         || priority != SampleState.Valid && Int(row, 12) != 0)
-                        throw Invalid("Neplatný záznam vlákna.");
+                        throw Invalid(Loc.T("Neplatný záznam vlákna."));
                     threads[i] = new(id, Int(row, 8), Int(row, 12), ULong(row, 16), ULong(row, 24), ULong(row, 32), times, UInt(row, 44), priority, UInt(row, 52));
                 }
             } else if (command == ProcessDetailsCommand.Modules) {
@@ -141,7 +141,7 @@ internal static partial class ProcessDetailsProtocol
                     var row = Take(payload, ref offset, 24);
                     ulong address = ULong(row, 0), size = ULong(row, 8);
                     uint nameChars = UInt(row, 16), pathChars = UInt(row, 20);
-                    if (address == 0 || size == 0 || address > ulong.MaxValue - size || !bases.Add(address)) throw Invalid("Neplatná adresa nebo velikost modulu.");
+                    if (address == 0 || size == 0 || address > ulong.MaxValue - size || !bases.Add(address)) throw Invalid(Loc.T("Neplatná adresa nebo velikost modulu."));
                     modules[i] = new(address, size, Text(payload, ref offset, nameChars), Text(payload, ref offset, pathChars));
                 }
             } else {
@@ -149,33 +149,33 @@ internal static partial class ProcessDetailsProtocol
                 uint signatureState = UInt(row, 0), source = UInt(row, 4), pathChars = UInt(row, 16), publisherChars = UInt(row, 20);
                 int trust = Int(row, 8);
                 if (signatureState > 3 || source > 2 || UInt(row, 12) != 0 || signatureState == 0 && (source == 0 || trust != 0))
-                    throw Invalid("Neplatný stav podpisu souboru.");
+                    throw Invalid(Loc.T("Neplatný stav podpisu souboru."));
                 string path = Text(payload, ref offset, pathChars), publisher = Text(payload, ref offset, publisherChars);
-                if (selected is null || !string.Equals(selected.Path, path, StringComparison.OrdinalIgnoreCase)) throw Invalid("Podpis patří jinému souboru.");
+                if (selected is null || !string.Equals(selected.Path, path, StringComparison.OrdinalIgnoreCase)) throw Invalid(Loc.T("Podpis patří jinému souboru."));
                 signature = new((ModuleSignatureState)signatureState, (ModuleSignatureSource)source, trust, path, publisher);
             }
-            if (offset != payload.Length) throw Invalid("Výsledek obsahuje data mimo rámec.");
+            if (offset != payload.Length) throw Invalid(Loc.T("Výsledek obsahuje data mimo rámec."));
         }
         return new(command, state, UInt(header, 56), Int(header, 60), architecture, (UInt(header, 72) & 1) != 0, threads, modules, signature, DateTimeOffset.UtcNow);
     }
 
-    private static SampleState State(uint value) => value <= (uint)SampleState.Gap ? (SampleState)value : throw Invalid("Neplatný stav měření.");
+    private static SampleState State(uint value) => value <= (uint)SampleState.Gap ? (SampleState)value : throw Invalid(Loc.T("Neplatný stav měření."));
     private static uint UInt(ReadOnlySpan<byte> value, int offset) => BinaryPrimitives.ReadUInt32LittleEndian(value[offset..]);
     private static int Int(ReadOnlySpan<byte> value, int offset) => BinaryPrimitives.ReadInt32LittleEndian(value[offset..]);
     private static ulong ULong(ReadOnlySpan<byte> value, int offset) => BinaryPrimitives.ReadUInt64LittleEndian(value[offset..]);
     private static ReadOnlySpan<byte> Take(ReadOnlySpan<byte> value, ref int offset, int length)
     {
-        if (length > value.Length - offset) throw Invalid("Neúplný datový rámec.");
+        if (length > value.Length - offset) throw Invalid(Loc.T("Neúplný datový rámec."));
         var part = value.Slice(offset, length); offset += length; return part;
     }
     private static string Text(ReadOnlySpan<byte> value, ref int offset, uint characters)
     {
-        if (characters > 32767) throw Invalid("Text pracovníka překročil limit.");
+        if (characters > 32767) throw Invalid(Loc.T("Text pracovníka překročil limit."));
         var bytes = Take(value, ref offset, checked((int)characters * 2));
         try {
             string text = Utf16.GetString(bytes);
-            return text.Contains('\0') ? throw Invalid("Text pracovníka obsahuje nulový znak.") : text;
-        } catch (DecoderFallbackException error) { throw new InvalidDataException("Pracovník vrátil neplatný Unicode text.", error); }
+            return text.Contains('\0') ? throw Invalid(Loc.T("Text pracovníka obsahuje nulový znak.")) : text;
+        } catch (DecoderFallbackException error) { throw new InvalidDataException(Loc.T("Pracovník vrátil neplatný Unicode text."), error); }
     }
     private static InvalidDataException Invalid(string message) => new(message);
 }

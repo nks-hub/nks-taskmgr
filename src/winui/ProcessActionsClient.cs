@@ -15,7 +15,7 @@ internal sealed class ProcessActionsClient : IDisposable
     {
         lock (sync) ObjectDisposedException.ThrowIf(disposed, this);
         if (Interlocked.CompareExchange(ref pending, 1, 0) != 0)
-            throw new IOException("Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek.");
+            throw new IOException(Loc.T("Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek."));
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(elevated ? 175 : 5));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellation, lifetime.Token, deadline.Token);
         var session = new ProcessActionsSession(elevated);
@@ -42,13 +42,13 @@ internal sealed class ProcessActionsClient : IDisposable
         } catch (ElevationBrokerTrustException) { throw;
         } catch (OperationCanceledException error) when (deadline.IsCancellationRequested && !cancellation.IsCancellationRequested && !lifetime.IsCancellationRequested) {
             if (request.Command == ProcessActionCommand.TerminateTree)
-                throw new ProcessTreeActionsUnknownException("Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.", session.TreePlan, error);
-            throw new TimeoutException(elevated ? "Čekání na zvýšení práv nebo výsledek skončilo. Výsledek případné akce není známý."
-                : "Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.", error);
+                throw new ProcessTreeActionsUnknownException(Loc.T("Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý."), session.TreePlan, error);
+            throw new TimeoutException(elevated ? Loc.T("Čekání na zvýšení práv nebo výsledek skončilo. Výsledek případné akce není známý.")
+                : Loc.T("Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý."), error);
         } catch (OperationCanceledException error) when (request.Command == ProcessActionCommand.TerminateTree) {
-            throw new ProcessTreeActionsUnknownException("Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést.", session.TreePlan, error);
+            throw new ProcessTreeActionsUnknownException(Loc.T("Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést."), session.TreePlan, error);
         } catch (Exception error) when (request.Command == ProcessActionCommand.TerminateTree && error is IOException or InvalidDataException) {
-            throw new ProcessTreeActionsUnknownException("Chybí úplný ověřený výsledek stromu. Akce se mohly provést. " + error.Message, session.TreePlan, error);
+            throw new ProcessTreeActionsUnknownException(Loc.F("Chybí úplný ověřený výsledek stromu. Akce se mohly provést. {0}", error.Message), session.TreePlan, error);
         } finally {
             if (linked.IsCancellationRequested) session.Cancel();
             if (!started) { session.Dispose(); Interlocked.Exchange(ref pending, 0); }

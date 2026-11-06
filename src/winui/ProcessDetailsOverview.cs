@@ -18,24 +18,24 @@ namespace NksTaskMgr.WinUI;
 /// </summary>
 internal sealed partial class ProcessDetailsView
 {
-    private readonly Button overviewTab = Command("Přehled");
+    private readonly Button overviewTab = Command(Loc.T("Přehled"));
     private readonly Grid overview = new() { RowSpacing = 14, Visibility = Visibility.Collapsed };
     private readonly Grid listHeader = new() { ColumnSpacing = 12, Padding = new Thickness(10, 0, 10, 0), MinHeight = 26 };
     private readonly TextBlock overviewDescription = Label("", 13);
     private readonly Grid overviewTiles = new() { ColumnSpacing = 10 };
     private readonly Dictionary<string, TextBlock> tileValues = [];
     private readonly StackPanel overviewFacts = new() { Spacing = 10 };
-    private readonly Button openLocation = Command("Otevřít umístění");
+    private readonly Button openLocation = Command(Loc.T("Otevřít umístění"));
     private DispatcherQueueTimer? overviewTimer;
     private Grid? filtersPanel;
-    private readonly Button elevate = Command("Spustit jako správce");
+    private readonly Button elevate = Command(Loc.T("Spustit jako správce"));
     /// <summary>Set by the main window: restarts the application elevated after an access-denied read.</summary>
     internal Action? RequestElevation { get; set; }
 
     private void ShowAccessDenied(bool denied)
     {
         elevate.Visibility = denied && !MainWindow.RunningElevated && RequestElevation is not null ? Visibility.Visible : Visibility.Collapsed;
-        if (denied) detail.Text = "Tento proces patří jinému uživateli nebo systému. Bez práv správce ho Windows nedovolí číst.";
+        if (denied) detail.Text = Loc.T("Tento proces patří jinému uživateli nebo systému. Bez práv správce ho Windows nedovolí číst.");
     }
     private Func<ProcessRow?>? liveRow;
     private Func<uint, string?>? processNameOf;
@@ -46,8 +46,8 @@ internal sealed partial class ProcessDetailsView
     {
         liveRow = live; processNameOf = nameOf;
         elevate.Visibility = Visibility.Collapsed;
-        Identify(elevate, "process-details-elevate", "Spustit NKS znovu jako správce");
-        ToolTipService.SetToolTip(elevate, "NKS se spustí znovu jako správce po potvrzení výzvy UAC.");
+        Identify(elevate, "process-details-elevate", Loc.T("Spustit NKS znovu jako správce"));
+        ToolTipService.SetToolTip(elevate, Loc.T("NKS se spustí znovu jako správce po potvrzení výzvy UAC."));
         elevate.Click += (_, _) => RequestElevation?.Invoke();
         if (live?.Invoke() is { } iconRow) {
             layout.Children.Remove(title);
@@ -56,7 +56,7 @@ internal sealed partial class ProcessDetailsView
             head.Children.Add(title); layout.Children.Insert(0, head);
         }
         modes.Children.Insert(0, overviewTab);
-        Identify(overviewTab, "process-details-overview", "Přehled procesu");
+        Identify(overviewTab, "process-details-overview", Loc.T("Přehled procesu"));
         overviewTab.Click += (_, _) => ShowOverview(true);
         overview.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         overview.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -67,7 +67,7 @@ internal sealed partial class ProcessDetailsView
         for (int i = 0; i < tiles.Length; ++i) {
             overviewTiles.ColumnDefinitions.Add(new ColumnDefinition());
             var panel = new StackPanel { Spacing = 4, Padding = new Thickness(12, 10, 12, 10) };
-            panel.Children.Add(Label(tiles[i], 11));
+            panel.Children.Add(Label(Loc.T(tiles[i]), 11));
             var value = Label("—", 18); value.Foreground = Display.Brush(0xe9eef0); panel.Children.Add(value);
             tileValues[tiles[i]] = value;
             var card = new Border { Child = panel, CornerRadius = new CornerRadius(6), Background = Display.Brush(0x1d252a) };
@@ -126,10 +126,10 @@ internal sealed partial class ProcessDetailsView
         }
         tileValues["CPU"].Text = row.CpuText;
         tileValues["Paměť"].Text = Display.Bytes(row.WorkingBytes);
-        ToolTipService.SetToolTip(tileValues["Paměť"], MainWindow.MemoryTip("Pracovní sada", row.WorkingBytes, row.PrivateBytes));
+        ToolTipService.SetToolTip(tileValues["Paměť"], MainWindow.MemoryTip(Loc.T("Pracovní sada"), row.WorkingBytes, row.PrivateBytes));
         tileValues["Disk"].Text = MainWindow.DiskText(row, out _);
-        tileValues["Vlákna"].Text = row.Threads.ToString("N0", Czech);
-        tileValues["Handly"].Text = row.Handles.ToString("N0", Czech);
+        tileValues["Vlákna"].Text = row.Threads.ToString("N0", Loc.Culture);
+        tileValues["Handly"].Text = row.Handles.ToString("N0", Loc.Culture);
     }
 
     private async Task LoadOverviewAsync()
@@ -139,47 +139,47 @@ internal sealed partial class ProcessDetailsView
         var facts = await Task.Run(() => ProcessFacts.Read(key));
         if (closed) return;
         imagePath = facts.Path;
-        string description = string.Join(" · ", new[] { facts.Description, facts.Company, facts.Version is { Length: > 0 } version ? "verze " + version : "" }.Where(part => part.Length > 0));
-        overviewDescription.Text = description.Length > 0 ? description : "Popis souboru není dostupný.";
+        string description = string.Join(" · ", new[] { facts.Description, facts.Company, facts.Version is { Length: > 0 } version ? Loc.F("verze {0}", version) : "" }.Where(part => part.Length > 0));
+        overviewDescription.Text = description.Length > 0 ? description : Loc.T("Popis souboru není dostupný.");
         overviewFacts.Children.Clear();
         void Fact(string label, string value, UIElement? extra = null) {
             var block = new StackPanel { Spacing = 3 };
             block.Children.Add(Label(label, 11));
-            var text = Label(value.Length > 0 ? value : "Nedostupné", 12); text.Foreground = Display.Brush(0xe9eef0);
+            var text = Label(value.Length > 0 ? value : Loc.T("Nedostupné"), 12); text.Foreground = Display.Brush(0xe9eef0);
             text.TextWrapping = TextWrapping.Wrap; text.IsTextSelectionEnabled = true; block.Children.Add(text);
             if (extra is not null) block.Children.Add(extra);
             overviewFacts.Children.Add(block);
         }
-        Fact("Soubor", facts.Path ?? "", facts.Path is null ? null : openLocation);
-        string hidden = MainWindow.RunningElevated ? "Nedostupné" : "Nedostupné bez práv správce";
-        Fact("Příkazový řádek", facts.CommandLine.Length > 0 ? facts.CommandLine : hidden);
-        Fact("Uživatel", facts.User.Length > 0 ? facts.User : hidden);
+        Fact(Loc.T("Soubor"), facts.Path ?? "", facts.Path is null ? null : openLocation);
+        string hidden = MainWindow.RunningElevated ? Loc.T("Nedostupné") : Loc.T("Nedostupné bez práv správce");
+        Fact(Loc.T("Příkazový řádek"), facts.CommandLine.Length > 0 ? facts.CommandLine : hidden);
+        Fact(Loc.T("Uživatel"), facts.User.Length > 0 ? facts.User : hidden);
         uint parent = row?.ParentPid ?? 0;
-        Fact("Nadřazený proces", parent == 0 ? "" : (processNameOf?.Invoke(parent) is { Length: > 0 } name ? name + " · " : "") + "PID " + parent.ToString(Czech));
-        Fact("Spuštěno", created100ns is > 0 and <= long.MaxValue ? StartedText(DateTime.FromFileTimeUtc((long)created100ns).ToLocalTime()) : "");
-        Fact("Podpis", "Ověřuji…");
+        Fact(Loc.T("Nadřazený proces"), parent == 0 ? "" : (processNameOf?.Invoke(parent) is { Length: > 0 } name ? name + " · " : "") + "PID " + parent.ToString(Loc.Culture));
+        Fact(Loc.T("Spuštěno"), created100ns is > 0 and <= long.MaxValue ? StartedText(DateTime.FromFileTimeUtc((long)created100ns).ToLocalTime()) : "");
+        Fact(Loc.T("Podpis"), Loc.T("Ověřuji…"));
         var signatureBlock = (StackPanel)overviewFacts.Children[^1];
         if (facts.Path is { } path) {
             try {
                 var result = await client.ReadFileSignatureAsync(key.Boot, path, CancellationToken.None);
                 if (closed) return;
                 ((TextBlock)signatureBlock.Children[1]).Text = result.Signature is { } signed ? signed.State switch {
-                    ModuleSignatureState.Valid => "Platný · " + (signed.Publisher.Length > 0 ? signed.Publisher : "vydavatel neuveden"),
-                    ModuleSignatureState.Unsigned => "Bez podpisu",
-                    ModuleSignatureState.Untrusted => "Neplatný podpis" + (signed.Publisher.Length > 0 ? " · " + signed.Publisher : ""),
-                    _ => "Nezjištěno"
-                } : "Nezjištěno";
+                    ModuleSignatureState.Valid => Loc.F("Platný · {0}", signed.Publisher.Length > 0 ? signed.Publisher : Loc.T("vydavatel neuveden")),
+                    ModuleSignatureState.Unsigned => Loc.T("Bez podpisu"),
+                    ModuleSignatureState.Untrusted => Loc.T("Neplatný podpis") + (signed.Publisher.Length > 0 ? " · " + signed.Publisher : ""),
+                    _ => Loc.T("Nezjištěno")
+                } : Loc.T("Nezjištěno");
             } catch (Exception error) when (error is IOException or TimeoutException or InvalidDataException or ArgumentException or OperationCanceledException) {
-                ((TextBlock)signatureBlock.Children[1]).Text = "Nezjištěno";
+                ((TextBlock)signatureBlock.Children[1]).Text = Loc.T("Nezjištěno");
             }
-        } else ((TextBlock)signatureBlock.Children[1]).Text = "Soubor není dostupný";
+        } else ((TextBlock)signatureBlock.Children[1]).Text = Loc.T("Soubor není dostupný");
     }
 
     private static string StartedText(DateTime started)
     {
         var running = DateTime.Now - started;
         string duration = running.TotalDays >= 1 ? $"{(int)running.TotalDays} d {running.Hours} h" : running.TotalHours >= 1 ? $"{(int)running.TotalHours} h {running.Minutes} min" : $"{running.Minutes} min {running.Seconds} s";
-        return started.ToString("d. M. yyyy HH:mm:ss", Czech) + " · běží " + duration;
+        return Loc.F("{0} · běží {1}", started.ToString(Loc.Language == "cs" ? "d. M. yyyy HH:mm:ss" : "G", Loc.Culture), duration);
     }
 }
 
@@ -239,7 +239,7 @@ internal static partial class ProcessFacts
     internal static string ObjectTypeName(uint index)
     {
         objectTypes ??= ObjectTypes();
-        return objectTypes.TryGetValue(index, out var name) ? name : "typ " + index.ToString(CultureInfo.InvariantCulture);
+        return objectTypes.TryGetValue(index, out var name) ? name : Loc.F("typ {0}", index.ToString(CultureInfo.InvariantCulture));
     }
 
     // OBJECT_TYPES_INFORMATION: count, then pointer-aligned OBJECT_TYPE_INFORMATION (0x68 bytes on x64, TypeIndex at 0x5A)

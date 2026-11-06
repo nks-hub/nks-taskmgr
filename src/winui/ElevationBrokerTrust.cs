@@ -21,7 +21,7 @@ internal sealed class ElevationBrokerTrust : IDisposable
         if (pin is null) throw new ElevationBrokerTrustException(0xe04e0001, ElevationBrokerClient.Status(0xe04e0001));
         try { return new(SignedImageLease.Open(System.IO.Path.Combine(AppContext.BaseDirectory, "nks-elevation-broker.exe"), pin)); }
         catch (Exception error) when (error is IOException or Win32Exception or CryptographicException) {
-            throw new ElevationBrokerTrustException(0xe04e0002, "Broker nebyl spuštěn: " + error.Message);
+            throw new ElevationBrokerTrustException(0xe04e0002, Loc.F("Broker nebyl spuštěn: {0}", error.Message));
         }
     }
     internal void VerifyProcess(Process process)

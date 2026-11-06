@@ -1,0 +1,452 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Kopírovat	Kopírovať
+Zkopírovat celou sestavu jako text do schránky	Skopírovať celú zostavu ako text do schránky
+Procesor	Procesor
+Paměť	Pamäť
+Základní deska a BIOS	Základná doska a BIOS
+Záložní zdroj UPS	Záložný zdroj UPS
+Oprávnění a dostupnost měření	Oprávnenia a dostupnosť meraní
+Zkopírováno	Skopírované
+Instalováno	Nainštalované
+Model	Model
+Logické procesory	Logické procesory
+Dostupnost	Dostupnosť
+Windows nehlásí	Windows nehlási
+Načítání…	Načítava sa…
+Údaje zatím nejsou dostupné	Údaje zatiaľ nie sú dostupné
+Údaje RAM	Údaje RAM
+Firmware nedostupný	Firmware nedostupný
+Firmware nehlásí	Firmware nehlási
+Čtení selhalo	Čítanie zlyhalo
+Neplatný firmware	Neplatný firmware
+Fyzická jádra	Fyzické jadrá
+Patice	Pätice
+Rodina / model / revize	Rodina / model / revízia
+Instrukce CPU (CPUID)	Inštrukcie CPU (CPUID)
+Virtualizace	Virtualizácia
+Základní takt (CPUID)	Základný takt (CPUID)
+Maximum (CPUID)	Maximum (CPUID)
+Výrobce desky	Výrobca dosky
+Model desky	Model dosky
+Verze desky	Verzia dosky
+Výrobce BIOS	Výrobca BIOS
+Verze BIOS	Verzia BIOS
+Datum BIOS	Dátum BIOS
+Výrobce systému	Výrobca systému
+Model systému	Model systému
+Režim firmware	Režim firmvéru
+Neznámý	Neznámy
+Nehlášeno	Nehlásené
+Nepodporováno	Nepodporované
+Povoleno	Povolené
+Povoleno (Hyper-V)	Povolené (Hyper-V)
+Zakázáno ve firmwaru	Zakázané vo firmvéri
+Virtuální počítač	Virtuálny počítač
+Typ paměti	Typ pamäte
+Rychlost RAM	Rýchlosť RAM
+Použité sloty	Použité sloty
+Provedení	Prevedenie
+Ovladač UPS není dostupný	Ovládač UPS nie je dostupný
+Výrobce	Výrobca
+Napájení	Napájanie
+Elektrická síť	Elektrická sieť
+Baterie	Batéria
+Neznámé	Neznáme
+Stav baterie	Stav batérie
+Kritická	Kritická
+Nabíjí se	Nabíja sa
+Bez nabíjení	Nenabíja sa
+Nabití	Nabitie
+Napětí baterie	Napätie batérie
+Tok energie baterie	Tok energie batérie
+Stav	Stav
+Měření nedostupné	Meranie nedostupné
+Odhad výdrže	Odhad výdrže
+Zařízení nelze přečíst	Zariadenie nemožno prečítať
+Windows nehlásí podporovanou UPS	Windows nehlási podporovanú UPS
+Průměrná odezva	Priemerná odozva
+Fronta požadavků	Front požiadaviek
+Čtení IOPS	Čítanie IOPS
+Zápis IOPS	Zápis IOPS
+Teplota	Teplota
+SMART	SMART
+Rozhraní	Rozhranie
+Kapacita disku	Kapacita disku
+Bez kritického upozornění	Bez kritického upozornenia
+Chyby média	Chyby média
+Chybí oprávnění	Chýba oprávnenie
+Disk předpovídá selhání	Disk predpovedá zlyhanie
+Nepodporováno ovladačem	Nepodporované ovládačom
+Nečistá vypnutí	Nečisté vypnutia
+Obnova SMART / teploty	Obnova SMART / teploty
+Parametry disku	Parametre disku
+Provozní hodiny	Prevádzkové hodiny
+Přečteno celkem	Prečítané celkom
+Rezervní kapacita	Rezervná kapacita
+Sektor logický / fyzický	Sektor logický / fyzický
+Selhání není hlášeno	Zlyhanie nie je hlásené
+Virtuální	Virtuálny
+Využitá životnost	Využitá životnosť
+Zapnutí	Zapnutia
+Zapsáno celkem	Zapísané celkom
+Zdroj stavu	Zdroj stavu
+Přehled	Prehľad
+Otevřít umístění	Otvoriť umiestnenie
+Spustit jako správce	Spustiť ako správca
+Tento proces patří jinému uživateli nebo systému. Bez práv správce ho Windows nedovolí číst.	Tento proces patrí inému používateľovi alebo systému. Bez práv správcu ho Windows nedovolí čítať.
+Spustit NKS znovu jako správce	Spustiť NKS znova ako správca
+NKS se spustí znovu jako správce po potvrzení výzvy UAC.	NKS sa po potvrdení výzvy UAC spustí znova ako správca.
+Přehled procesu	Prehľad procesu
+Pracovní sada	Pracovná množina
+Disk	Disk
+Vlákna	Vlákna
+Handly	Popisovače
+verze {0}	verzia {0}
+Popis souboru není dostupný.	Popis súboru nie je dostupný.
+Nedostupné	Nedostupné
+Soubor	Súbor
+Nedostupné bez práv správce	Nedostupné bez práv správcu
+Příkazový řádek	Príkazový riadok
+Uživatel	Používateľ
+Nadřazený proces	Nadradený proces
+Spuštěno	Spustené
+Podpis	Podpis
+Ověřuji…	Overujem…
+Platný · {0}	Platný · {0}
+vydavatel neuveden	vydavateľ neuvedený
+Bez podpisu	Bez podpisu
+Neplatný podpis	Neplatný podpis
+Nezjištěno	Nezistené
+Soubor není dostupný	Súbor nie je dostupný
+{0} · běží {1}	{0} · beží {1}
+typ {0}	typ {0}
+Akce	Akcie
+Spustit, zastavit nebo restartovat vybranou službu	Spustiť, zastaviť alebo reštartovať vybranú službu
+Akce služeb nebo ukončování jejího pracovníka ještě probíhá.	Akcia služieb alebo ukončovanie jej pracovníka ešte prebieha.
+Vyberte živou službu s dostupnou konfigurací. Windows ověří oprávnění bez automatického zvýšení práv.	Vyberte živú službu s dostupnou konfiguráciou. Windows overí oprávnenia bez automatického zvýšenia práv.
+Výběr, stav nebo konfigurace služby se před schválením změnily. Vyberte znovu aktuální službu.	Výber, stav alebo konfigurácia služby sa pred schválením zmenili. Vyberte znova aktuálnu službu.
+Načítám plán správce služeb Windows…	Načítavam plán správcu služieb Windows…
+Zrušit	Zrušiť
+Plán už neodpovídá výběru, stavu nebo konfiguraci služby. Po obnovení seznamu jej vytvořte znovu.	Plán už nezodpovedá výberu, stavu alebo konfigurácii služby. Po obnovení zoznamu ho vytvorte znova.
+Provádím schválený plán. Zrušení čekání nevrátí již přijaté požadavky správce služeb Windows.	Vykonávam schválený plán. Zrušenie čakania nevráti požiadavky, ktoré správca služieb Windows už prijal.
+Čeká na výsledek…	Čaká na výsledok…
+Zrušit čekání	Zrušiť čakanie
+Výsledek není potvrzený. Správce služeb mohl část požadavků přijmout.	Výsledok nie je potvrdený. Správca služieb mohol časť požiadaviek prijať.
+Změna nebyla odeslána.	Zmena nebola odoslaná.
+Zavřít	Zavrieť
+Plán zahrnuje {0}. Zkontrolujte všechny položky. Potvrzení má limit 60 sekund.	Plán zahŕňa {0}. Skontrolujte všetky položky. Potvrdenie má limit 60 sekúnd.
+Správce služeb Windows může při spuštění nebo restartu automaticky spustit předpoklady uvedené v konfiguraci služby.	Správca služieb Windows môže pri spustení alebo reštarte automaticky spustiť predpoklady uvedené v konfigurácii služby.
+Stav: {0} → {1}	Stav: {0} → {1}
+ · zastavení #{0}	 · zastavenie #{0}
+ · spuštění #{0}	 · spustenie #{0}
+Účet: {0}	Účet: {0}
+neuveden	neuvedený
+Příkaz: {0}	Príkaz: {0}
+Konfigurované předpoklady: {0}	Konfigurované predpoklady: {0}
+žádné	žiadne
+Současně se zastaví tyto závislé služby: {0}	Súčasne sa zastavia tieto závislé služby: {0}
+Souhlasím se zastavením všech těchto závislých služeb	Súhlasím so zastavením všetkých týchto závislých služieb
+Výslovně schválit zastavení všech vypsaných závislých služeb	Výslovne schváliť zastavenie všetkých vypísaných závislých služieb
+Provést plán	Vykonať plán
+Potvrzená odpověď: {0}	Potvrdená odpoveď: {0}
+Konečný výsledek není potvrzený: {0}	Konečný výsledok nie je potvrdený: {0}
+Správce služeb	Správca služieb
+Vybraná služba: {0}	Vybraná služba: {0}
+Výsledek není známý; požadavek se mohl provést.	Výsledok nie je známy; požiadavka sa mohla vykonať.
+Neprovedeno.	Nevykonané.
+Požadavek se zpracovává; účinek zatím není potvrzený.	Požiadavka sa spracúva; účinok zatiaľ nie je potvrdený.
+Operace pro tuto službu nebyla zahájena.	Operácia pre túto službu nebola začatá.
+Služba už měla požadovaný stav.	Služba už mala požadovaný stav.
+Požadovaný stav byl potvrzen.	Požadovaný stav bol potvrdený.
+Konfigurace nebo stav se změnily.	Konfigurácia alebo stav sa zmenili.
+Vypršel čas čekání; výsledek není potvrzený.	Vypršal čas čakania; výsledok nie je potvrdený.
+Operace byla zrušena.	Operácia bola zrušená.
+Operace skončila chybou.	Operácia skončila chybou.
+Poslední pozorovaný stav: {0} · checkpoint {1} · doporučené čekání {2} ms.	Posledný pozorovaný stav: {0} · checkpoint {1} · odporúčané čakanie {2} ms.
+Stav není dostupný.	Stav nie je dostupný.
+Zastavení bylo potvrzeno při pozorování.	Zastavenie bolo potvrdené pri pozorovaní.
+Spuštění bylo potvrzeno při pozorování.	Spustenie bolo potvrdené pri pozorovaní.
+Pozorování	Pozorovanie
+Zastavení	Zastavenie
+Spuštění	Spustenie
+Ukončení služby	Ukončenie služby
+Vlastní návratový kód služby {0} (0x{1}).	Vlastný návratový kód služby {0} (0x{1}).
+Správce služeb mohl část požadavků přijmout.	Správca služieb mohol časť požiadaviek prijať.
+ · vybraná služba	 · vybraná služba
+ · závislá služba	 · závislá služba
+Spustit službu	Spustiť službu
+Zastavit službu	Zastaviť službu
+Restartovat službu	Reštartovať službu
+Připravuji náhled úklidu…	Pripravujem náhľad upratovania…
+Lze odstranit: {0}	Možno odstrániť: {0}
+Zachováno: {0}	Zachované: {0}
+Neověřené položky: {0}	Neoverené položky: {0}
+Přehled cache není úplný. Uvedené velikosti nejsou velikostí celé cache; odstranit lze jen ověřené položky v tomto náhledu.	Prehľad cache nie je úplný. Uvedené veľkosti nie sú veľkosťou celej cache; odstrániť možno len overené položky v tomto náhľade.
+Odstraní se pouze uvedené nepotřebné soubory aktualizací. Před smazáním se znovu ověří. Používané nebo změněné soubory se přeskočí. Nastavení aplikace zůstane zachované.	Odstránia sa len uvedené nepotrebné súbory aktualizácií. Pred zmazaním sa znova overia. Používané alebo zmenené súbory sa preskočia. Nastavenia aplikácie zostanú zachované.
+V tomto náhledu nejsou žádné ověřené položky k odstranění.	V tomto náhľade nie sú žiadne overené položky na odstránenie.
+Úklid cache aktualizací	Upratanie cache aktualizácií
+Odstranit uvedené soubory	Odstrániť uvedené súbory
+Úklid nebyl spuštěný.	Upratovanie nebolo spustené.
+Odstraňuji potvrzené položky…	Odstraňujem potvrdené položky…
+Přehled balíčků se po úklidu změnil.	Prehľad balíkov sa po upratovaní zmenil.
+Před další operací načtěte aktuální přehled.	Pred ďalšou operáciou načítajte aktuálny prehľad.
+Úklid nemá potvrzený výsledek.	Upratovanie nemá potvrdený výsledok.
+Úklid nebyl dokončený.	Upratovanie nebolo dokončené.
+Úklid dokončen.	Upratovanie dokončené.
+Úklid skončil s omezením.	Upratovanie skončilo s obmedzením.
+Odstraněno: {0}	Odstránené: {0}
+Počet odstraněných souborů a uvolněná velikost nejsou potvrzené.	Počet odstránených súborov a uvoľnená veľkosť nie sú potvrdené.
+Přeskočeno	Preskočené
+Chyby	Chyby
+Neověřeno	Neoverené
+Část souborů už mohla být odstraněná. Po skončení pomocníka načtěte přehled. Úklid se neopakuje automaticky.	Časť súborov už mohla byť odstránená. Po skončení pomocníka načítajte prehľad. Upratovanie sa neopakuje automaticky.
+Před další operací načtěte aktuální přehled balíčků.	Pred ďalšou operáciou načítajte aktuálny prehľad balíkov.
+Žádné položky.	Žiadne položky.
+Položky náhledu úklidu a důvod jejich zachování nebo odstranění	Položky náhľadu upratovania a dôvod ich zachovania alebo odstránenia
+Položky a důvody	Položky a dôvody
+počet a velikost nejsou potvrzené	počet a veľkosť nie sú potvrdené
+soubory: {0}	súbory: {0}
+známé údaje: soubory: {0}	známe údaje: súbory: {0}
+, složky: {0}	, priečinky: {0}
+; položky s nezjištěnou velikostí: {0}	; položky s nezistenou veľkosťou: {0}
+velikost nezjištěná	veľkosť nezistená
+K odstranění	Na odstránenie
+Zachováno	Zachované
+Odstraněno	Odstránené
+Chyba	Chyba
+Skutečně odstraněno: {0}	Skutočne odstránené: {0}
+Nepotřebná ověřená položka.	Nepotrebná overená položka.
+Balíček současné verze se zachovává.	Balík súčasnej verzie sa zachováva.
+Balíček předchozí verze se zachovává pro návrat.	Balík predchádzajúcej verzie sa zachováva na návrat.
+Aktualizační pomocník ještě běží.	Aktualizačný pomocník ešte beží.
+Instalátor ještě běží.	Inštalátor ešte beží.
+Ukončení původního procesu není ověřené.	Ukončenie pôvodného procesu nie je overené.
+Záznam nedokončené operace zůstává zachovaný.	Záznam nedokončenej operácie zostáva zachovaný.
+Doklad potřebný pro ověření obnovy zůstává zachovaný.	Doklad potrebný na overenie obnovy zostáva zachovaný.
+Záznam potřebný pro historii této kopie aplikace zůstává zachovaný.	Záznam potrebný pre históriu tejto kópie aplikácie zostáva zachovaný.
+Složku aplikace nelze ověřit.	Priečinok aplikácie nemožno overiť.
+Neznámá data se neodstraňují.	Neznáme údaje sa neodstraňujú.
+Chybí důkaz pro bezpečné odstranění.	Chýba dôkaz na bezpečné odstránenie.
+Pracovní složka je používaná nebo není prázdná.	Pracovný priečinok sa používa alebo nie je prázdny.
+Položka se od náhledu změnila.	Položka sa od náhľadu zmenila.
+Přístup k položce byl odmítnutý.	Prístup k položke bol odmietnutý.
+Položku nelze zpracovat kvůli chybě souboru.	Položku nemožno spracovať pre chybu súboru.
+Položku potřebuje jiný zachovaný záznam.	Položku potrebuje iný zachovaný záznam.
+Úklid byl zrušený.	Upratovanie bolo zrušené.
+Starší záznam nemá všechny potřebné údaje.	Starší záznam nemá všetky potrebné údaje.
+Položka už není přítomná; nepočítá se jako odstraněná tímto úklidem.	Položka už nie je prítomná; nepočíta sa ako odstránená týmto upratovaním.
+Důvod nebyl rozpoznaný; položka se neodstraňuje.	Dôvod nebol rozpoznaný; položka sa neodstraňuje.
+Záznamy se načtou po otevření přehledu.	Záznamy sa načítajú po otvorení prehľadu.
+Obnovit přehled	Obnoviť prehľad
+Dokončit uložení	Dokončiť uloženie
+Odstranit dočasný soubor	Odstrániť dočasný súbor
+Odstranit záznam	Odstrániť záznam
+Nedokončené dumpy · NKS Task Manager	Nedokončené výpisy · NKS Task Manager
+Obnova nic nemaže automaticky. Vyberte záznam; před změnou se znovu ověří soubor i původní aplikace a pracovník.	Obnova nič nemaže automaticky. Vyberte záznam; pred zmenou sa znova overí súbor aj pôvodná aplikácia a pracovník.
+Omezený přehled nedokončených dumpů	Obmedzený prehľad nedokončených výpisov
+Cesty a ověřený stav vybraného záznamu obnovy	Cesty a overený stav vybraného záznamu obnovy
+Čtu omezený přehled…	Čítam obmedzený prehľad…
+Žádné nedokončené transakce nejsou zaznamenané.	Žiadne nedokončené transakcie nie sú zaznamenané.
+Vyberte záznam. Neověřitelné soubory zůstanou zachované.	Vyberte záznam. Neoveriteľné súbory zostanú zachované.
+Čtení bylo zrušeno.	Čítanie bolo zrušené.
+Cílový soubor: {0}	Cieľový súbor: {0}
+Dočasný soubor: {0}	Dočasný súbor: {0}
+Zahájeno: {0}	Začaté: {0}
+Zapsaná fáze: {0}	Zapísaná fáza: {0}
+záměr před vytvořením souboru	zámer pred vytvorením súboru
+dočasný soubor vytvořen	dočasný súbor vytvorený
+spouštění pracovníka	spúšťanie pracovníka
+pracovník před odesláním požadavku	pracovník pred odoslaním požiadavky
+hotová data před publikací	hotové údaje pred publikovaním
+Původní aplikace PID {0} · pracovník {1}	Pôvodná aplikácia PID {0} · pracovník {1}
+identita nebyla zapsaná	identita nebola zapísaná
+Zjištěná velikost: {0}	Zistená veľkosť: {0}
+Očekávaná velikost: {0} B	Očakávaná veľkosť: {0} B
+Zapsané SHA-256: {0}	Zapísaný SHA-256: {0}
+Ověřit hotový záznam	Overiť hotový záznam
+Odstraní pouze ověřený dočasný soubor. Jeho obsah paměti bude ztracen.	Odstráni len overený dočasný súbor. Jeho obsah pamäte sa stratí.
+Znovu ověří nepřítomnost dočasného i cílového souboru a odstraní pouze záznam této transakce.	Znova overí neprítomnosť dočasného aj cieľového súboru a odstráni len záznam tejto transakcie.
+Ověří velikost a SHA-256 již uloženého souboru. Potom odstraní pouze dokončený pomocný záznam. Finální dump se nemění.	Overí veľkosť a SHA-256 už uloženého súboru. Potom odstráni len dokončený pomocný záznam. Finálny výpis sa nemení.
+Ověří velikost a SHA-256 hotového dočasného souboru. Potom jej uloží pod cílovým názvem bez přepsání existujících dat.	Overí veľkosť a SHA-256 hotového dočasného súboru. Potom ho uloží pod cieľovým názvom bez prepísania existujúcich údajov.
+Odstranit dočasný dump	Odstrániť dočasný výpis
+Potvrdit obnovu	Potvrdiť obnovu
+Odstranit	Odstrániť
+Pokračovat	Pokračovať
+Ponechat	Ponechať
+Ověřuji soubor a původní procesy…	Overujem súbor a pôvodné procesy…
+Přehled se nepodařilo znovu načíst: {0}	Prehľad sa nepodarilo znova načítať: {0}
+Čekání bylo zrušeno. Výsledek není potvrzený; obnovte přehled.	Čakanie bolo zrušené. Výsledok nie je potvrdený; obnovte prehľad.
+GPU engine {0}	GPU engine {0}
+Engine není dostupný	Engine nie je dostupný
+Zastaralé	Zastarané
+Engine	Engine
+Využití GPU {0}: {1}	Využitie GPU {0}: {1}
+nedostupné	nedostupné
+Vyhrazená paměť GPU	Vyhradená pamäť GPU
+Sdílená paměť GPU	Zdieľaná pamäť GPU
+Šířka sloupce {0}	Šírka stĺpca {0}
+Přesunout doleva	Presunúť doľava
+Přesunout doprava	Presunúť doprava
+Zúžit o 20 bodů	Zúžiť o 20 bodov
+Rozšířit o 20 bodů	Rozšíriť o 20 bodov
+Skrýt sloupec	Skryť stĺpec
+Obnovit výchozí sloupce	Obnoviť predvolené stĺpce
+, proces s potomky	, proces s potomkami
+, vlastní hodnoty	, vlastné hodnoty
+, sestupně	, zostupne
+, vzestupně	, vzostupne
+, seřadit	, zoradiť
+Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další volby.	Kliknutím zoradiť, presunutím premiestniť. Pravé tlačidlo otvorí ďalšie voľby.
+Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené.	Hodnoty procesu a overených potomkov; chýbajúce údaje sú označené.
+Vlastní hodnota procesu bez potomků.	Vlastná hodnota procesu bez potomkov.
+Sdílené stránky RAM se mohou započítat opakovaně.	Zdieľané stránky RAM sa môžu započítať opakovane.
+Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.	Odoslané a prijaté bajty TCP/UDP len počas vlastného záznamu ETW v okne Udalosti procesov, ktorý vyžaduje správcu; inak nedostupné. Hodnota je za uzavretú sekundu asi 5 s späť; ≥ znamená, že časť prevádzky nebolo možné priradiť.
+Řazeno podle skrytého sloupce {0} sestupně	Zoradené podľa skrytého stĺpca {0} zostupne
+Řazeno podle skrytého sloupce {0} vzestupně	Zoradené podľa skrytého stĺpca {0} vzostupne
+ · ukončeno	 · ukončené
+ · zastaralé	 · zastarané
+Rozbalit {0}	Rozbaliť {0}
+Sbalit {0}	Zbaliť {0}
+Auto přenos	Auto prenos
+Čtení a zápis	Čítanie a zápis
+Automatické měřítko podle čtení i zápisu. Vypnutí podrží aktuální rozsah osy.	Automatická mierka podľa čítania aj zápisu. Vypnutie podrží aktuálny rozsah osi.
+Čtení	Čítanie
+Zápis	Zápis
+Další údaje a SMART	Ďalšie údaje a SMART
+Pracovní sada včetně sdílených stránek	Pracovná množina vrátane zdieľaných stránok
+Procesy podle CPU	Procesy podľa CPU
+Inventář aplikací není dostupný: {0}	Inventár aplikácií nie je dostupný: {0}
+Broker nebyl spuštěn: {0}	Broker nebol spustený: {0}
+Chybí ověřený kořen souboru.	Chýba overený koreň súboru.
+Identitu drženého kořenového adresáře nelze ověřit.	Identitu drženého koreňového adresára nemožno overiť.
+Neplatný rozsah v podepsaném souboru.	Neplatný rozsah v podpísanom súbore.
+Podepsaný soubor není úplný.	Podpísaný súbor nie je úplný.
+Podepsaný soubor překračuje velikostní limit.	Podpísaný súbor prekračuje veľkostný limit.
+Držený podepsaný soubor změnil identitu.	Držaný podpísaný súbor zmenil identitu.
+Neplatný připnutý klíč vydavatele.	Neplatný pripnutý kľúč vydavateľa.
+Podepsaný soubor musí být na ověřeném místním pevném svazku.	Podpísaný súbor musí byť na overenom miestnom pevnom zväzku.
+Cestu podepsaného souboru nelze zamknout bez změnitelných odkazů.	Cestu podpísaného súboru nemožno zamknúť bez zmeniteľných odkazov.
+Podepsaný soubor se při ověření změnil.	Podpísaný súbor sa pri overení zmenil.
+Identitu spuštěného podepsaného obrazu nelze ověřit: {0}	Identitu spusteného podpísaného obrazu nemožno overiť: {0}
+Spuštěný proces neodpovídá drženému podepsanému souboru. Požadavek nebyl odeslán.	Spustený proces nezodpovedá držanému podpísanému súboru. Požiadavka nebola odoslaná.
+Podpis souboru nebo řetězec důvěry není platný.	Podpis súboru alebo reťazec dôvery nie je platný.
+Podpis nemá ověřeného vydavatele.	Podpis nemá overeného vydavateľa.
+Chybí certifikát podepisujícího.	Chýba certifikát podpisujúceho.
+Chybí podepisující certifikát.	Chýba podpisujúci certifikát.
+Neplatný podepisující certifikát.	Neplatný podpisujúci certifikát.
+Vydavatel souboru neodpovídá připnutému veřejnému klíči.	Vydavateľ súboru nezodpovedá pripnutému verejnému kľúču.
+Správce služeb: {0}, Windows {1}.	Správca služieb: {0}, Windows {1}.
+potvrzeno	potvrdené
+odepřený přístup	odopretý prístup
+nepodporovaný stav	nepodporovaný stav
+plán se změnil	plán sa zmenil
+vypršel čas	vypršal čas
+neplatný požadavek	neplatná požiadavka
+překročený limit	prekročený limit
+zrušeno	zrušené
+částečný výsledek	čiastočný výsledok
+chyba	chyba
+Vyberte jednu službu.	Vyberte jednu službu.
+Neplatný název služby.	Neplatný názov služby.
+Schválený seznam závislých služeb neodpovídá plánu.	Schválený zoznam závislých služieb nezodpovedá plánu.
+Pracovník vrátil jiný nebo neplatný požadavek.	Pracovník vrátil inú alebo neplatnú požiadavku.
+Neplatná délka nebo fáze odpovědi služeb.	Neplatná dĺžka alebo fáza odpovede služieb.
+Neúplný plán služeb.	Neúplný plán služieb.
+Neplatná položka plánu služeb.	Neplatná položka plánu služieb.
+Neplatný nebo duplicitní název služby.	Neplatný alebo duplicitný názov služby.
+Prázdná závislost služby.	Prázdna závislosť služby.
+Plán patří jiné službě.	Plán patrí inej službe.
+Neúplný výsledek služeb.	Neúplný výsledok služieb.
+Neplatný výsledek služby.	Neplatný výsledok služby.
+Neúplný rámec služeb.	Neúplný rámec služieb.
+Text služby překročil limit.	Text služby prekročil limit.
+Nulový znak v textu služby.	Nulový znak v texte služby.
+Neplatný Unicode text služby.	Neplatný Unicode text služby.
+Data za koncem rámce služeb.	Údaje za koncom rámca služieb.
+Architektura cíle není pro dump x86/x64 podporovaná.	Architektúra cieľa nie je pre výpis x86/x64 podporovaná.
+Pracovník vrátil data za výsledkem dumpu.	Pracovník vrátil údaje za výsledkom výpisu.
+Pracovník dumpu skončil bez ověřeného výsledku.	Pracovník výpisu skončil bez overeného výsledku.
+Čekání na dump bylo zrušeno.	Čakanie na výpis bolo zrušené.
+Pracovník dumpu skončil před dokončením odpovědi.	Pracovník výpisu skončil pred dokončením odpovede.
+Dump nebo bezpečné uložení souboru není dostupné (Windows {0}): {1}	Výpis alebo bezpečné uloženie súboru nie je dostupné (Windows {0}): {1}
+Identitu vybraného procesu nelze ověřit.	Identitu vybraného procesu nemožno overiť.
+Hotový nepublikovaný dump zůstal v přehledu nedokončených dumpů. Obnova je dostupná po ukončení původní aplikace.	Hotový nepublikovaný výpis zostal v prehľade nedokončených výpisov. Obnova je dostupná po ukončení pôvodnej aplikácie.
+Identita vybraného procesu se změnila nebo není ověřitelná.	Identita vybraného procesu sa zmenila alebo nie je overiteľná.
+Vybraný proces už skončil nebo má jiný čas vytvoření.	Vybraný proces už skončil alebo má iný čas vytvorenia.
+Pracovníka dumpu se nepodařilo spustit.	Pracovníka výpisu sa nepodarilo spustiť.
+Proces nemá ověřitelnou identitu.	Proces nemá overiteľnú identitu.
+Cesta dumpu je příliš dlouhá nebo neplatná.	Cesta výpisu je príliš dlhá alebo neplatná.
+Odpověď dumpu nepatří požadavku nebo vybranému procesu.	Odpoveď výpisu nepatrí požiadavke alebo vybranému procesu.
+Pracovník vrátil neplatný výsledek dumpu.	Pracovník vrátil neplatný výsledok výpisu.
+TID {0} · základní priorita {1}	TID {0} · základná priorita {1}
+(název nedostupný)	(názov nedostupný)
+Podpis vyžaduje cestu vybraného modulu.	Podpis vyžaduje cestu vybraného modulu.
+Chybí hodnota handle.	Chýba hodnota popisovača.
+Cesta modulu obsahuje neplatný Unicode text.	Cesta modulu obsahuje neplatný Unicode text.
+Cesta souboru obsahuje neplatný Unicode text.	Cesta súboru obsahuje neplatný Unicode text.
+Pracovník vrátil neplatnou hlavičku nebo jiný proces.	Pracovník vrátil neplatnú hlavičku alebo iný proces.
+Pracovník překročil protokol nebo datový limit.	Pracovník prekročil protokol alebo dátový limit.
+Pracovník vrátil neplatné příznaky.	Pracovník vrátil neplatné príznaky.
+Chybový výsledek obsahuje neověřená data.	Chybový výsledok obsahuje neoverené údaje.
+Pracovník vrátil neplatný počet záznamů.	Pracovník vrátil neplatný počet záznamov.
+Neúplný výsledek pracovníka.	Neúplný výsledok pracovníka.
+Neplatný záznam vlákna.	Neplatný záznam vlákna.
+Neplatná adresa nebo velikost modulu.	Neplatná adresa alebo veľkosť modulu.
+Neplatný stav podpisu souboru.	Neplatný stav podpisu súboru.
+Podpis patří jinému souboru.	Podpis patrí inému súboru.
+Výsledek obsahuje data mimo rámec.	Výsledok obsahuje údaje mimo rámca.
+Neplatný stav měření.	Neplatný stav merania.
+Neúplný datový rámec.	Neúplný dátový rámec.
+Text pracovníka překročil limit.	Text pracovníka prekročil limit.
+Text pracovníka obsahuje nulový znak.	Text pracovníka obsahuje nulový znak.
+Pracovník vrátil neplatný Unicode text.	Pracovník vrátil neplatný Unicode text.
+ · potvrzený kořen	 · potvrdený koreň
+PID {0} · {1} · generace {2}	PID {0} · {1} · generácia {2}
+Úplný ověřený výsledek chybí. Nepotvrzené cíle mohou být ukončené; zásah se nebude automaticky opakovat.	Úplný overený výsledok chýba. Nepotvrdené ciele môžu byť ukončené; zásah sa nebude automaticky opakovať.
+ · výsledek není známý. Další cíle se nepodařilo ověřeně převzít.	 · výsledok nie je známy. Ďalšie ciele sa nepodarilo overene prevziať.
+Výsledek není známý. Akce se mohla provést.	Výsledok nie je známy. Akcia sa mohla vykonať.
+Pracovník neposlal úplný výsledek.	Pracovník neposlal úplný výsledok.
+Pracovník požadavek nepřijal, zásah nebyl proveden.	Pracovník požiadavku neprijal, zásah nebol vykonaný.
+Výsledky známých cílů. Průchod není atomický a nedokazuje, že nezůstal žádný souběžně vzniklý potomek.	Výsledky známych cieľov. Prechod nie je atomický a nedokazuje, že nezostal žiadny súbežne vzniknutý potomok.
+Doložených cílů: {0} · průchodů: {1} · možných reziduí v posledním inventáři: {2}	Doložených cieľov: {0} · prechodov: {1} · možných zvyškov v poslednom inventári: {2}
+limit 256 cílů	limit 256 cieľov
+časový limit	časový limit
+limit tří průchodů	limit troch prechodov
+nedostupný inventář	nedostupný inventár
+zaniklá nebo neověřitelná vazba rodiče	zaniknutá alebo neoveriteľná väzba rodiča
+další neověřená pozorování potomků	ďalšie neoverené pozorovania potomkov
+Částečný výsledek: {0}.	Čiastočný výsledok: {0}.
+Pracovník plánu není dostupný.	Pracovník plánu nie je dostupný.
+Opakované přijetí akce služeb.	Opakované prijatie akcie služieb.
+Pracovník nepotvrdil plán před průběhem.	Pracovník nepotvrdil plán pred priebehom.
+Neplatné pořadí odpovědí služeb.	Neplatné poradie odpovedí služieb.
+Data za koncem akce služeb.	Údaje za koncom akcie služieb.
+Pracovník nepotvrdil dokončení odpovědi.	Pracovník nepotvrdil dokončenie odpovede.
+Pracovník překročil limit průběžných odpovědí.	Pracovník prekročil limit priebežných odpovedí.
+Pracovník služeb skončil před dokončením odpovědi.	Pracovník služieb skončil pred dokončením odpovede.
+Pracovníka služeb nelze spustit.	Pracovníka služieb nemožno spustiť.
+Uživatelskou identitu nelze ověřit.	Používateľskú identitu nemožno overiť.
+Identita běžícího procesu není ověřitelná.	Identita bežiaceho procesu nie je overiteľná.
+Identita původního pracovníka není uložená. Soubor zůstane zachovaný.	Identita pôvodného pracovníka nie je uložená. Súbor zostane zachovaný.
+Stav původního procesu nelze ověřit (Windows {0}). Soubor zůstane zachovaný.	Stav pôvodného procesu nemožno overiť (Windows {0}). Súbor zostane zachovaný.
+Životní stav původního procesu není dostupný. Soubor zůstane zachovaný.	Životný stav pôvodného procesu nie je dostupný. Súbor zostane zachovaný.
+Původní proces nelze spolehlivě ověřit. Soubor zůstane zachovaný.	Pôvodný proces nemožno spoľahlivo overiť. Súbor zostane zachovaný.
+Původní aplikace nebo pracovník stále běží. Soubor se nebude měnit.	Pôvodná aplikácia alebo pracovník stále beží. Súbor sa nebude meniť.
+Fronta ukládání a obnovy dumpů je obsazená.	Front ukladania a obnovy výpisov je obsadený.
+Záznam obnovy nelze bezpečně zapsat nebo odstranit. Existující záznam zůstane zachovaný.	Záznam obnovy nemožno bezpečne zapísať ani odstrániť. Existujúci záznam zostane zachovaný.
+Fronta podrobností procesu je obsazená. Zrušte předchozí dotaz nebo chvíli počkejte.	Front podrobností procesu je obsadený. Zrušte predchádzajúci dotaz alebo chvíľu počkajte.
+Vypršel limit dotazu.	Vypršal limit dotazu.
+Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz lze zopakovat.	Dotaz na podrobnosti prekročil limit 5 sekúnd. Pracovník sa ukončuje; dotaz možno zopakovať.
+Pracovník předčasně skončil.	Pracovník predčasne skončil.
+Chyba spojení s pracovníkem.	Chyba spojenia s pracovníkom.
+Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek.	Iný dotaz alebo akcia ešte prebieha. Počkajte na výsledok.
+Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.	Vypršal limit. Výsledok rozpracovaného ukončovania stromu nie je známy.
+Čekání na zvýšení práv nebo výsledek skončilo. Výsledek případné akce není známý.	Čakanie na zvýšenie práv alebo výsledok skončilo. Výsledok prípadnej akcie nie je známy.
+Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.	Pracovník neodpovedal do 5 sekúnd. Výsledok rozpracovanej akcie nie je známy.
+Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést.	Čakanie bolo zrušené. Akcie na známych aj novo zistených cieľoch sa mohli vykonať.
+Chybí úplný ověřený výsledek stromu. Akce se mohly provést. {0}	Chýba úplný overený výsledok stromu. Akcie sa mohli vykonať. {0}
+Předání aktualizace se nesmí opakovat.	Odovzdanie aktualizácie sa nesmie opakovať.
+Platnost potvrzení aktualizace vypršela.	Platnosť potvrdenia aktualizácie vypršala.
+Předání instalace nebylo potvrzené.	Odovzdanie inštalácie nebolo potvrdené.
+Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte v příštím spuštění.	Pracovník prevzal plán. Inštalácia začne až po skutočnom ukončení tohto procesu; dokončenie overte pri ďalšom spustení.
+Potvrzení pracovníka nedorazilo. Plán mohl být předán; neopakujte požadavek a zkontrolujte deník. {0}	Potvrdenie pracovníka neprišlo. Plán mohol byť odovzdaný; neopakujte požiadavku a skontrolujte denník. {0}

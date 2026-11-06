@@ -1,0 +1,452 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Kopírovat	Kopieren
+Zkopírovat celou sestavu jako text do schránky	Gesamte Systemübersicht als Text in die Zwischenablage kopieren
+Procesor	Prozessor
+Paměť	Arbeitsspeicher
+Základní deska a BIOS	Mainboard und BIOS
+Záložní zdroj UPS	USV-Notstromversorgung
+Oprávnění a dostupnost měření	Berechtigungen und Verfügbarkeit der Messungen
+Zkopírováno	Kopiert
+Instalováno	Installiert
+Model	Modell
+Logické procesory	Logische Prozessoren
+Dostupnost	Verfügbarkeit
+Windows nehlásí	Von Windows nicht gemeldet
+Načítání…	Wird geladen…
+Údaje zatím nejsou dostupné	Daten sind noch nicht verfügbar
+Údaje RAM	RAM-Daten
+Firmware nedostupný	Firmware nicht verfügbar
+Firmware nehlásí	Von der Firmware nicht gemeldet
+Čtení selhalo	Lesen fehlgeschlagen
+Neplatný firmware	Ungültige Firmware
+Fyzická jádra	Physische Kerne
+Patice	Sockel
+Rodina / model / revize	Familie / Modell / Stepping
+Instrukce CPU (CPUID)	CPU-Befehle (CPUID)
+Virtualizace	Virtualisierung
+Základní takt (CPUID)	Basistakt (CPUID)
+Maximum (CPUID)	Maximum (CPUID)
+Výrobce desky	Mainboard-Hersteller
+Model desky	Mainboard-Modell
+Verze desky	Mainboard-Version
+Výrobce BIOS	BIOS-Hersteller
+Verze BIOS	BIOS-Version
+Datum BIOS	BIOS-Datum
+Výrobce systému	Systemhersteller
+Model systému	Systemmodell
+Režim firmware	Firmwaremodus
+Neznámý	Unbekannt
+Nehlášeno	Nicht gemeldet
+Nepodporováno	Nicht unterstützt
+Povoleno	Aktiviert
+Povoleno (Hyper-V)	Aktiviert (Hyper-V)
+Zakázáno ve firmwaru	In der Firmware deaktiviert
+Virtuální počítač	Virtueller Computer
+Typ paměti	Speichertyp
+Rychlost RAM	RAM-Geschwindigkeit
+Použité sloty	Belegte Steckplätze
+Provedení	Formfaktor
+Ovladač UPS není dostupný	USV-Treiber ist nicht verfügbar
+Výrobce	Hersteller
+Napájení	Stromversorgung
+Elektrická síť	Netzstrom
+Baterie	Akku
+Neznámé	Unbekannt
+Stav baterie	Akkustatus
+Kritická	Kritisch
+Nabíjí se	Wird geladen
+Bez nabíjení	Wird nicht geladen
+Nabití	Ladestand
+Napětí baterie	Akkuspannung
+Tok energie baterie	Akku-Energiefluss
+Stav	Status
+Měření nedostupné	Messung nicht verfügbar
+Odhad výdrže	Geschätzte Laufzeit
+Zařízení nelze přečíst	Das Gerät kann nicht gelesen werden
+Windows nehlásí podporovanou UPS	Windows meldet keine unterstützte USV
+Průměrná odezva	Durchschnittliche Antwortzeit
+Fronta požadavků	Anforderungswarteschlange
+Čtení IOPS	Lese-IOPS
+Zápis IOPS	Schreib-IOPS
+Teplota	Temperatur
+SMART	SMART
+Rozhraní	Schnittstelle
+Kapacita disku	Datenträgerkapazität
+Bez kritického upozornění	Keine kritische Warnung
+Chyby média	Medienfehler
+Chybí oprávnění	Berechtigung fehlt
+Disk předpovídá selhání	Datenträger sagt einen Ausfall voraus
+Nepodporováno ovladačem	Vom Treiber nicht unterstützt
+Nečistá vypnutí	Unsichere Herunterfahrvorgänge
+Obnova SMART / teploty	SMART-/Temperaturaktualisierung
+Parametry disku	Datenträgerparameter
+Provozní hodiny	Betriebsstunden
+Přečteno celkem	Insgesamt gelesen
+Rezervní kapacita	Verfügbare Reserve
+Sektor logický / fyzický	Sektor logisch / physisch
+Selhání není hlášeno	Kein Ausfall gemeldet
+Virtuální	Virtuell
+Využitá životnost	Verbrauchte Lebensdauer
+Zapnutí	Einschaltvorgänge
+Zapsáno celkem	Insgesamt geschrieben
+Zdroj stavu	Statusquelle
+Přehled	Übersicht
+Otevřít umístění	Dateipfad öffnen
+Spustit jako správce	Als Administrator ausführen
+Tento proces patří jinému uživateli nebo systému. Bez práv správce ho Windows nedovolí číst.	Dieser Prozess gehört einem anderen Benutzer oder dem System. Ohne Administratorrechte lässt Windows ihn nicht lesen.
+Spustit NKS znovu jako správce	NKS als Administrator neu starten
+NKS se spustí znovu jako správce po potvrzení výzvy UAC.	NKS wird nach Bestätigung der UAC-Abfrage als Administrator neu gestartet.
+Přehled procesu	Prozessübersicht
+Pracovní sada	Arbeitssatz
+Disk	Datenträger
+Vlákna	Threads
+Handly	Handles
+verze {0}	Version {0}
+Popis souboru není dostupný.	Dateibeschreibung ist nicht verfügbar.
+Nedostupné	Nicht verfügbar
+Soubor	Datei
+Nedostupné bez práv správce	Ohne Administratorrechte nicht verfügbar
+Příkazový řádek	Befehlszeile
+Uživatel	Benutzer
+Nadřazený proces	Übergeordneter Prozess
+Spuštěno	Gestartet
+Podpis	Signatur
+Ověřuji…	Wird überprüft…
+Platný · {0}	Gültig · {0}
+vydavatel neuveden	Herausgeber nicht angegeben
+Bez podpisu	Nicht signiert
+Neplatný podpis	Ungültige Signatur
+Nezjištěno	Nicht ermittelt
+Soubor není dostupný	Datei ist nicht verfügbar
+{0} · běží {1}	{0} · läuft seit {1}
+typ {0}	Typ {0}
+Akce	Aktionen
+Spustit, zastavit nebo restartovat vybranou službu	Ausgewählten Dienst starten, beenden oder neu starten
+Akce služeb nebo ukončování jejího pracovníka ještě probíhá.	Eine Dienstaktion oder das Beenden ihres Hilfsprozesses läuft noch.
+Vyberte živou službu s dostupnou konfigurací. Windows ověří oprávnění bez automatického zvýšení práv.	Wählen Sie einen aktiven Dienst mit verfügbarer Konfiguration. Windows prüft die Berechtigung ohne automatische Rechteerhöhung.
+Výběr, stav nebo konfigurace služby se před schválením změnily. Vyberte znovu aktuální službu.	Auswahl, Status oder Konfiguration des Dienstes haben sich vor der Bestätigung geändert. Wählen Sie den aktuellen Dienst erneut aus.
+Načítám plán správce služeb Windows…	Plan des Windows-Dienststeuerungs-Managers wird geladen…
+Zrušit	Abbrechen
+Plán už neodpovídá výběru, stavu nebo konfiguraci služby. Po obnovení seznamu jej vytvořte znovu.	Der Plan entspricht nicht mehr Auswahl, Status oder Konfiguration des Dienstes. Erstellen Sie ihn nach dem Aktualisieren der Liste neu.
+Provádím schválený plán. Zrušení čekání nevrátí již přijaté požadavky správce služeb Windows.	Der bestätigte Plan wird ausgeführt. Ein Abbruch des Wartens macht bereits vom Windows-Dienststeuerungs-Manager angenommene Anforderungen nicht rückgängig.
+Čeká na výsledek…	Warten auf das Ergebnis…
+Zrušit čekání	Warten abbrechen
+Výsledek není potvrzený. Správce služeb mohl část požadavků přijmout.	Das Ergebnis ist nicht bestätigt. Der Dienststeuerungs-Manager hat möglicherweise einen Teil der Anforderungen angenommen.
+Změna nebyla odeslána.	Die Änderung wurde nicht gesendet.
+Zavřít	Schließen
+Plán zahrnuje {0}. Zkontrolujte všechny položky. Potvrzení má limit 60 sekund.	Der Plan umfasst {0}. Prüfen Sie alle Einträge. Für die Bestätigung gilt ein Limit von 60 Sekunden.
+Správce služeb Windows může při spuštění nebo restartu automaticky spustit předpoklady uvedené v konfiguraci služby.	Beim Starten oder Neustarten kann der Windows-Dienststeuerungs-Manager die in der Dienstkonfiguration angegebenen Abhängigkeiten automatisch starten.
+Stav: {0} → {1}	Status: {0} → {1}
+ · zastavení #{0}	 · Beenden #{0}
+ · spuštění #{0}	 · Start #{0}
+Účet: {0}	Konto: {0}
+neuveden	nicht angegeben
+Příkaz: {0}	Befehl: {0}
+Konfigurované předpoklady: {0}	Konfigurierte Abhängigkeiten: {0}
+žádné	keine
+Současně se zastaví tyto závislé služby: {0}	Diese abhängigen Dienste werden ebenfalls beendet: {0}
+Souhlasím se zastavením všech těchto závislých služeb	Ich stimme dem Beenden aller dieser abhängigen Dienste zu
+Výslovně schválit zastavení všech vypsaných závislých služeb	Beenden aller aufgeführten abhängigen Dienste ausdrücklich bestätigen
+Provést plán	Plan ausführen
+Potvrzená odpověď: {0}	Bestätigte Antwort: {0}
+Konečný výsledek není potvrzený: {0}	Das Endergebnis ist nicht bestätigt: {0}
+Správce služeb	Dienststeuerungs-Manager
+Vybraná služba: {0}	Ausgewählter Dienst: {0}
+Výsledek není známý; požadavek se mohl provést.	Das Ergebnis ist unbekannt; die Anforderung wurde möglicherweise ausgeführt.
+Neprovedeno.	Nicht ausgeführt.
+Požadavek se zpracovává; účinek zatím není potvrzený.	Die Anforderung wird verarbeitet; die Wirkung ist noch nicht bestätigt.
+Operace pro tuto službu nebyla zahájena.	Der Vorgang wurde für diesen Dienst nicht gestartet.
+Služba už měla požadovaný stav.	Der Dienst hatte bereits den angeforderten Status.
+Požadovaný stav byl potvrzen.	Der angeforderte Status wurde bestätigt.
+Konfigurace nebo stav se změnily.	Konfiguration oder Status haben sich geändert.
+Vypršel čas čekání; výsledek není potvrzený.	Zeitlimit beim Warten überschritten; das Ergebnis ist nicht bestätigt.
+Operace byla zrušena.	Der Vorgang wurde abgebrochen.
+Operace skončila chybou.	Der Vorgang ist fehlgeschlagen.
+Poslední pozorovaný stav: {0} · checkpoint {1} · doporučené čekání {2} ms.	Zuletzt beobachteter Status: {0} · Checkpoint {1} · empfohlene Wartezeit {2} ms.
+Stav není dostupný.	Status ist nicht verfügbar.
+Zastavení bylo potvrzeno při pozorování.	Das Beenden wurde durch Beobachtung bestätigt.
+Spuštění bylo potvrzeno při pozorování.	Der Start wurde durch Beobachtung bestätigt.
+Pozorování	Beobachtung
+Zastavení	Beenden
+Spuštění	Start
+Ukončení služby	Dienstbeendigung
+Vlastní návratový kód služby {0} (0x{1}).	Dienstspezifischer Exitcode {0} (0x{1}).
+Správce služeb mohl část požadavků přijmout.	Der Dienststeuerungs-Manager hat möglicherweise einen Teil der Anforderungen angenommen.
+ · vybraná služba	 · ausgewählter Dienst
+ · závislá služba	 · abhängiger Dienst
+Spustit službu	Dienst starten
+Zastavit službu	Dienst beenden
+Restartovat službu	Dienst neu starten
+Připravuji náhled úklidu…	Bereinigungsvorschau wird vorbereitet…
+Lze odstranit: {0}	Kann entfernt werden: {0}
+Zachováno: {0}	Beibehalten: {0}
+Neověřené položky: {0}	Nicht überprüfte Einträge: {0}
+Přehled cache není úplný. Uvedené velikosti nejsou velikostí celé cache; odstranit lze jen ověřené položky v tomto náhledu.	Die Cache-Übersicht ist unvollständig. Die angezeigten Größen sind nicht die Größe des gesamten Caches; entfernt werden können nur überprüfte Einträge dieser Vorschau.
+Odstraní se pouze uvedené nepotřebné soubory aktualizací. Před smazáním se znovu ověří. Používané nebo změněné soubory se přeskočí. Nastavení aplikace zůstane zachované.	Nur die aufgeführten nicht benötigten Updatedateien werden entfernt. Sie werden vor dem Löschen erneut überprüft. Verwendete oder geänderte Dateien werden übersprungen. Die App-Einstellungen bleiben erhalten.
+V tomto náhledu nejsou žádné ověřené položky k odstranění.	In dieser Vorschau gibt es keine überprüften Einträge zum Entfernen.
+Úklid cache aktualizací	Update-Cache bereinigen
+Odstranit uvedené soubory	Aufgeführte Dateien entfernen
+Úklid nebyl spuštěný.	Die Bereinigung wurde nicht gestartet.
+Odstraňuji potvrzené položky…	Bestätigte Einträge werden entfernt…
+Přehled balíčků se po úklidu změnil.	Die Paketübersicht hat sich nach der Bereinigung geändert.
+Před další operací načtěte aktuální přehled.	Laden Sie vor dem nächsten Vorgang die aktuelle Übersicht.
+Úklid nemá potvrzený výsledek.	Das Ergebnis der Bereinigung ist nicht bestätigt.
+Úklid nebyl dokončený.	Die Bereinigung wurde nicht abgeschlossen.
+Úklid dokončen.	Bereinigung abgeschlossen.
+Úklid skončil s omezením.	Bereinigung mit Einschränkungen abgeschlossen.
+Odstraněno: {0}	Entfernt: {0}
+Počet odstraněných souborů a uvolněná velikost nejsou potvrzené.	Anzahl der entfernten Dateien und freigegebener Speicher sind nicht bestätigt.
+Přeskočeno	Übersprungen
+Chyby	Fehler
+Neověřeno	Nicht überprüft
+Část souborů už mohla být odstraněná. Po skončení pomocníka načtěte přehled. Úklid se neopakuje automaticky.	Ein Teil der Dateien wurde möglicherweise bereits entfernt. Laden Sie die Übersicht, nachdem der Hilfsprozess beendet ist. Die Bereinigung wird nicht automatisch wiederholt.
+Před další operací načtěte aktuální přehled balíčků.	Laden Sie vor dem nächsten Vorgang die aktuelle Paketübersicht.
+Žádné položky.	Keine Einträge.
+Položky náhledu úklidu a důvod jejich zachování nebo odstranění	Einträge der Bereinigungsvorschau und Grund für Beibehalten oder Entfernen
+Položky a důvody	Einträge und Gründe
+počet a velikost nejsou potvrzené	Anzahl und Größe sind nicht bestätigt
+soubory: {0}	Dateien: {0}
+známé údaje: soubory: {0}	bekannte Daten: Dateien: {0}
+, složky: {0}	, Ordner: {0}
+; položky s nezjištěnou velikostí: {0}	; Einträge mit unbekannter Größe: {0}
+velikost nezjištěná	Größe nicht ermittelt
+K odstranění	Zu entfernen
+Zachováno	Beibehalten
+Odstraněno	Entfernt
+Chyba	Fehler
+Skutečně odstraněno: {0}	Tatsächlich entfernt: {0}
+Nepotřebná ověřená položka.	Nicht benötigter überprüfter Eintrag.
+Balíček současné verze se zachovává.	Das Paket der aktuellen Version wird beibehalten.
+Balíček předchozí verze se zachovává pro návrat.	Das Paket der vorherigen Version wird für ein Zurücksetzen beibehalten.
+Aktualizační pomocník ještě běží.	Der Update-Hilfsprozess läuft noch.
+Instalátor ještě běží.	Das Installationsprogramm läuft noch.
+Ukončení původního procesu není ověřené.	Das Beenden des ursprünglichen Prozesses ist nicht überprüft.
+Záznam nedokončené operace zůstává zachovaný.	Der Eintrag eines nicht abgeschlossenen Vorgangs bleibt erhalten.
+Doklad potřebný pro ověření obnovy zůstává zachovaný.	Der zur Überprüfung der Wiederherstellung nötige Nachweis bleibt erhalten.
+Záznam potřebný pro historii této kopie aplikace zůstává zachovaný.	Der für den Verlauf dieser App-Kopie nötige Eintrag bleibt erhalten.
+Složku aplikace nelze ověřit.	Der App-Ordner kann nicht überprüft werden.
+Neznámá data se neodstraňují.	Unbekannte Daten werden nicht entfernt.
+Chybí důkaz pro bezpečné odstranění.	Der Nachweis für sicheres Entfernen fehlt.
+Pracovní složka je používaná nebo není prázdná.	Der Arbeitsordner wird verwendet oder ist nicht leer.
+Položka se od náhledu změnila.	Der Eintrag hat sich seit der Vorschau geändert.
+Přístup k položce byl odmítnutý.	Der Zugriff auf den Eintrag wurde verweigert.
+Položku nelze zpracovat kvůli chybě souboru.	Der Eintrag kann wegen eines Dateifehlers nicht verarbeitet werden.
+Položku potřebuje jiný zachovaný záznam.	Ein anderer beibehaltener Eintrag benötigt diesen Eintrag.
+Úklid byl zrušený.	Die Bereinigung wurde abgebrochen.
+Starší záznam nemá všechny potřebné údaje.	Einem älteren Eintrag fehlen benötigte Daten.
+Položka už není přítomná; nepočítá se jako odstraněná tímto úklidem.	Der Eintrag ist nicht mehr vorhanden; er zählt nicht als durch diese Bereinigung entfernt.
+Důvod nebyl rozpoznaný; položka se neodstraňuje.	Der Grund wurde nicht erkannt; der Eintrag wird nicht entfernt.
+Záznamy se načtou po otevření přehledu.	Einträge werden beim Öffnen der Übersicht geladen.
+Obnovit přehled	Übersicht aktualisieren
+Dokončit uložení	Speichern abschließen
+Odstranit dočasný soubor	Temporäre Datei löschen
+Odstranit záznam	Eintrag löschen
+Nedokončené dumpy · NKS Task Manager	Nicht abgeschlossene Abbilder · NKS Task Manager
+Obnova nic nemaže automaticky. Vyberte záznam; před změnou se znovu ověří soubor i původní aplikace a pracovník.	Die Wiederherstellung löscht nichts automatisch. Wählen Sie einen Eintrag; vor jeder Änderung werden Datei, ursprüngliche App und Hilfsprozess erneut überprüft.
+Omezený přehled nedokončených dumpů	Eingeschränkte Übersicht nicht abgeschlossener Abbilder
+Cesty a ověřený stav vybraného záznamu obnovy	Pfade und überprüfter Status des ausgewählten Wiederherstellungseintrags
+Čtu omezený přehled…	Eingeschränkte Übersicht wird gelesen…
+Žádné nedokončené transakce nejsou zaznamenané.	Es sind keine nicht abgeschlossenen Transaktionen erfasst.
+Vyberte záznam. Neověřitelné soubory zůstanou zachované.	Wählen Sie einen Eintrag. Nicht überprüfbare Dateien bleiben erhalten.
+Čtení bylo zrušeno.	Das Lesen wurde abgebrochen.
+Cílový soubor: {0}	Zieldatei: {0}
+Dočasný soubor: {0}	Temporäre Datei: {0}
+Zahájeno: {0}	Begonnen: {0}
+Zapsaná fáze: {0}	Erfasste Phase: {0}
+záměr před vytvořením souboru	Absicht vor dem Erstellen der Datei
+dočasný soubor vytvořen	temporäre Datei erstellt
+spouštění pracovníka	Hilfsprozess wird gestartet
+pracovník před odesláním požadavku	Hilfsprozess vor dem Senden der Anforderung
+hotová data před publikací	fertige Daten vor der Veröffentlichung
+Původní aplikace PID {0} · pracovník {1}	Ursprüngliche App PID {0} · Hilfsprozess {1}
+identita nebyla zapsaná	Identität wurde nicht erfasst
+Zjištěná velikost: {0}	Ermittelte Größe: {0}
+Očekávaná velikost: {0} B	Erwartete Größe: {0} B
+Zapsané SHA-256: {0}	Erfasster SHA-256: {0}
+Ověřit hotový záznam	Fertigen Eintrag überprüfen
+Odstraní pouze ověřený dočasný soubor. Jeho obsah paměti bude ztracen.	Löscht nur die überprüfte temporäre Datei. Ihr Speicherinhalt geht verloren.
+Znovu ověří nepřítomnost dočasného i cílového souboru a odstraní pouze záznam této transakce.	Prüft erneut, dass temporäre Datei und Zieldatei fehlen, und löscht nur den Eintrag dieser Transaktion.
+Ověří velikost a SHA-256 již uloženého souboru. Potom odstraní pouze dokončený pomocný záznam. Finální dump se nemění.	Prüft Größe und SHA-256 der bereits gespeicherten Datei. Danach wird nur der abgeschlossene Hilfseintrag gelöscht. Das endgültige Abbild bleibt unverändert.
+Ověří velikost a SHA-256 hotového dočasného souboru. Potom jej uloží pod cílovým názvem bez přepsání existujících dat.	Prüft Größe und SHA-256 der fertigen temporären Datei. Danach wird sie unter dem Zielnamen gespeichert, ohne vorhandene Daten zu überschreiben.
+Odstranit dočasný dump	Temporäres Abbild löschen
+Potvrdit obnovu	Wiederherstellung bestätigen
+Odstranit	Löschen
+Pokračovat	Fortsetzen
+Ponechat	Behalten
+Ověřuji soubor a původní procesy…	Datei und ursprüngliche Prozesse werden überprüft…
+Přehled se nepodařilo znovu načíst: {0}	Die Übersicht konnte nicht neu geladen werden: {0}
+Čekání bylo zrušeno. Výsledek není potvrzený; obnovte přehled.	Das Warten wurde abgebrochen. Das Ergebnis ist nicht bestätigt; aktualisieren Sie die Übersicht.
+GPU engine {0}	GPU-Engine {0}
+Engine není dostupný	Engine ist nicht verfügbar
+Zastaralé	Veraltet
+Engine	Engine
+Využití GPU {0}: {1}	GPU-Auslastung {0}: {1}
+nedostupné	nicht verfügbar
+Vyhrazená paměť GPU	Dedizierter GPU-Speicher
+Sdílená paměť GPU	Gemeinsamer GPU-Speicher
+Šířka sloupce {0}	Spaltenbreite {0}
+Přesunout doleva	Nach links verschieben
+Přesunout doprava	Nach rechts verschieben
+Zúžit o 20 bodů	Um 20 Punkte schmaler
+Rozšířit o 20 bodů	Um 20 Punkte breiter
+Skrýt sloupec	Spalte ausblenden
+Obnovit výchozí sloupce	Standardspalten wiederherstellen
+, proces s potomky	, Prozess mit Nachfolgern
+, vlastní hodnoty	, eigene Werte
+, sestupně	, absteigend
+, vzestupně	, aufsteigend
+, seřadit	, sortieren
+Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další volby.	Zum Sortieren klicken, zum Verschieben ziehen. Rechtsklick öffnet weitere Optionen.
+Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené.	Werte des Prozesses und seiner überprüften Nachfolger; fehlende Daten sind markiert.
+Vlastní hodnota procesu bez potomků.	Eigener Wert des Prozesses ohne Nachfolger.
+Sdílené stránky RAM se mohou započítat opakovaně.	Gemeinsam genutzte RAM-Seiten können mehrfach gezählt werden.
+Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.	Gesendete und empfangene TCP/UDP-Bytes nur während der eigenen ETW-Aufzeichnung im Fenster Prozessereignisse, die Administratorrechte erfordert; sonst nicht verfügbar. Der Wert gilt für eine abgeschlossene Sekunde etwa 5 s zuvor; ≥ bedeutet, dass ein Teil des Verkehrs nicht zugeordnet werden konnte.
+Řazeno podle skrytého sloupce {0} sestupně	Nach ausgeblendeter Spalte {0} absteigend sortiert
+Řazeno podle skrytého sloupce {0} vzestupně	Nach ausgeblendeter Spalte {0} aufsteigend sortiert
+ · ukončeno	 · beendet
+ · zastaralé	 · veraltet
+Rozbalit {0}	{0} erweitern
+Sbalit {0}	{0} reduzieren
+Auto přenos	Auto Übertragung
+Čtení a zápis	Lesen und Schreiben
+Automatické měřítko podle čtení i zápisu. Vypnutí podrží aktuální rozsah osy.	Automatische Skalierung nach Lese- und Schreibvorgängen. Ausschalten behält den aktuellen Achsenbereich bei.
+Čtení	Lesen
+Zápis	Schreiben
+Další údaje a SMART	Weitere Daten und SMART
+Pracovní sada včetně sdílených stránek	Arbeitssatz einschließlich gemeinsam genutzter Seiten
+Procesy podle CPU	Prozesse nach CPU
+Inventář aplikací není dostupný: {0}	Die App-Inventur ist nicht verfügbar: {0}
+Broker nebyl spuštěn: {0}	Der Broker wurde nicht gestartet: {0}
+Chybí ověřený kořen souboru.	Der überprüfte Dateistamm fehlt.
+Identitu drženého kořenového adresáře nelze ověřit.	Die Identität des gehaltenen Stammordners kann nicht überprüft werden.
+Neplatný rozsah v podepsaném souboru.	Ungültiger Bereich in der signierten Datei.
+Podepsaný soubor není úplný.	Die signierte Datei ist unvollständig.
+Podepsaný soubor překračuje velikostní limit.	Die signierte Datei überschreitet das Größenlimit.
+Držený podepsaný soubor změnil identitu.	Die gehaltene signierte Datei hat ihre Identität geändert.
+Neplatný připnutý klíč vydavatele.	Ungültiger angehefteter Herausgeberschlüssel.
+Podepsaný soubor musí být na ověřeném místním pevném svazku.	Die signierte Datei muss auf einem überprüften lokalen Festplattenvolume liegen.
+Cestu podepsaného souboru nelze zamknout bez změnitelných odkazů.	Der Pfad der signierten Datei kann nicht ohne änderbare Verknüpfungen gesperrt werden.
+Podepsaný soubor se při ověření změnil.	Die signierte Datei hat sich während der Überprüfung geändert.
+Identitu spuštěného podepsaného obrazu nelze ověřit: {0}	Die Identität des gestarteten signierten Abbilds kann nicht überprüft werden: {0}
+Spuštěný proces neodpovídá drženému podepsanému souboru. Požadavek nebyl odeslán.	Der gestartete Prozess entspricht nicht der gehaltenen signierten Datei. Die Anforderung wurde nicht gesendet.
+Podpis souboru nebo řetězec důvěry není platný.	Die Dateisignatur oder Vertrauenskette ist ungültig.
+Podpis nemá ověřeného vydavatele.	Die Signatur hat keinen überprüften Herausgeber.
+Chybí certifikát podepisujícího.	Das Zertifikat des Signierenden fehlt.
+Chybí podepisující certifikát.	Das Signaturzertifikat fehlt.
+Neplatný podepisující certifikát.	Ungültiges Signaturzertifikat.
+Vydavatel souboru neodpovídá připnutému veřejnému klíči.	Der Dateiherausgeber entspricht nicht dem angehefteten öffentlichen Schlüssel.
+Správce služeb: {0}, Windows {1}.	Dienststeuerungs-Manager: {0}, Windows {1}.
+potvrzeno	bestätigt
+odepřený přístup	Zugriff verweigert
+nepodporovaný stav	nicht unterstützter Status
+plán se změnil	Plan geändert
+vypršel čas	Zeitlimit überschritten
+neplatný požadavek	ungültige Anforderung
+překročený limit	Limit überschritten
+zrušeno	abgebrochen
+částečný výsledek	Teilergebnis
+chyba	Fehler
+Vyberte jednu službu.	Wählen Sie einen Dienst aus.
+Neplatný název služby.	Ungültiger Dienstname.
+Schválený seznam závislých služeb neodpovídá plánu.	Die bestätigte Liste abhängiger Dienste entspricht nicht dem Plan.
+Pracovník vrátil jiný nebo neplatný požadavek.	Der Hilfsprozess hat eine andere oder ungültige Anforderung zurückgegeben.
+Neplatná délka nebo fáze odpovědi služeb.	Ungültige Länge oder Phase der Dienstantwort.
+Neúplný plán služeb.	Unvollständiger Dienstplan.
+Neplatná položka plánu služeb.	Ungültiger Eintrag im Dienstplan.
+Neplatný nebo duplicitní název služby.	Ungültiger oder doppelter Dienstname.
+Prázdná závislost služby.	Leere Dienstabhängigkeit.
+Plán patří jiné službě.	Der Plan gehört zu einem anderen Dienst.
+Neúplný výsledek služeb.	Unvollständiges Dienstergebnis.
+Neplatný výsledek služby.	Ungültiges Dienstergebnis.
+Neúplný rámec služeb.	Unvollständiger Dienstrahmen.
+Text služby překročil limit.	Diensttext hat das Limit überschritten.
+Nulový znak v textu služby.	Nullzeichen im Diensttext.
+Neplatný Unicode text služby.	Ungültiger Unicode-Diensttext.
+Data za koncem rámce služeb.	Daten nach dem Ende des Dienstrahmens.
+Architektura cíle není pro dump x86/x64 podporovaná.	Die Zielarchitektur wird für ein x86/x64-Abbild nicht unterstützt.
+Pracovník vrátil data za výsledkem dumpu.	Der Hilfsprozess hat nach dem Abbildergebnis Daten zurückgegeben.
+Pracovník dumpu skončil bez ověřeného výsledku.	Der Abbild-Hilfsprozess wurde ohne überprüftes Ergebnis beendet.
+Čekání na dump bylo zrušeno.	Das Warten auf das Abbild wurde abgebrochen.
+Pracovník dumpu skončil před dokončením odpovědi.	Der Abbild-Hilfsprozess wurde vor Abschluss der Antwort beendet.
+Dump nebo bezpečné uložení souboru není dostupné (Windows {0}): {1}	Abbild oder sicheres Speichern der Datei ist nicht verfügbar (Windows {0}): {1}
+Identitu vybraného procesu nelze ověřit.	Die Identität des ausgewählten Prozesses kann nicht überprüft werden.
+Hotový nepublikovaný dump zůstal v přehledu nedokončených dumpů. Obnova je dostupná po ukončení původní aplikace.	Das fertige, nicht veröffentlichte Abbild verbleibt in der Übersicht nicht abgeschlossener Abbilder. Die Wiederherstellung ist nach dem Beenden der ursprünglichen App verfügbar.
+Identita vybraného procesu se změnila nebo není ověřitelná.	Die Identität des ausgewählten Prozesses hat sich geändert oder ist nicht überprüfbar.
+Vybraný proces už skončil nebo má jiný čas vytvoření.	Der ausgewählte Prozess wurde bereits beendet oder hat eine andere Erstellungszeit.
+Pracovníka dumpu se nepodařilo spustit.	Der Abbild-Hilfsprozess konnte nicht gestartet werden.
+Proces nemá ověřitelnou identitu.	Der Prozess hat keine überprüfbare Identität.
+Cesta dumpu je příliš dlouhá nebo neplatná.	Der Abbildpfad ist zu lang oder ungültig.
+Odpověď dumpu nepatří požadavku nebo vybranému procesu.	Die Abbildantwort gehört nicht zur Anforderung oder zum ausgewählten Prozess.
+Pracovník vrátil neplatný výsledek dumpu.	Der Hilfsprozess hat ein ungültiges Abbildergebnis zurückgegeben.
+TID {0} · základní priorita {1}	TID {0} · Basispriorität {1}
+(název nedostupný)	(Name nicht verfügbar)
+Podpis vyžaduje cestu vybraného modulu.	Die Signatur erfordert den Pfad des ausgewählten Moduls.
+Chybí hodnota handle.	Der Handle-Wert fehlt.
+Cesta modulu obsahuje neplatný Unicode text.	Der Modulpfad enthält ungültigen Unicode-Text.
+Cesta souboru obsahuje neplatný Unicode text.	Der Dateipfad enthält ungültigen Unicode-Text.
+Pracovník vrátil neplatnou hlavičku nebo jiný proces.	Der Hilfsprozess hat einen ungültigen Header oder einen anderen Prozess zurückgegeben.
+Pracovník překročil protokol nebo datový limit.	Der Hilfsprozess hat das Protokoll verletzt oder das Datenlimit überschritten.
+Pracovník vrátil neplatné příznaky.	Der Hilfsprozess hat ungültige Flags zurückgegeben.
+Chybový výsledek obsahuje neověřená data.	Das Fehlerergebnis enthält nicht überprüfte Daten.
+Pracovník vrátil neplatný počet záznamů.	Der Hilfsprozess hat eine ungültige Anzahl von Einträgen zurückgegeben.
+Neúplný výsledek pracovníka.	Unvollständiges Ergebnis des Hilfsprozesses.
+Neplatný záznam vlákna.	Ungültiger Thread-Eintrag.
+Neplatná adresa nebo velikost modulu.	Ungültige Moduladresse oder -größe.
+Neplatný stav podpisu souboru.	Ungültiger Status der Dateisignatur.
+Podpis patří jinému souboru.	Die Signatur gehört zu einer anderen Datei.
+Výsledek obsahuje data mimo rámec.	Das Ergebnis enthält Daten außerhalb des Rahmens.
+Neplatný stav měření.	Ungültiger Messstatus.
+Neúplný datový rámec.	Unvollständiger Datenrahmen.
+Text pracovníka překročil limit.	Text des Hilfsprozesses hat das Limit überschritten.
+Text pracovníka obsahuje nulový znak.	Text des Hilfsprozesses enthält ein Nullzeichen.
+Pracovník vrátil neplatný Unicode text.	Der Hilfsprozess hat ungültigen Unicode-Text zurückgegeben.
+ · potvrzený kořen	 · bestätigter Stamm
+PID {0} · {1} · generace {2}	PID {0} · {1} · Generation {2}
+Úplný ověřený výsledek chybí. Nepotvrzené cíle mohou být ukončené; zásah se nebude automaticky opakovat.	Ein vollständiges überprüftes Ergebnis fehlt. Nicht bestätigte Ziele wurden möglicherweise beendet; der Eingriff wird nicht automatisch wiederholt.
+ · výsledek není známý. Další cíle se nepodařilo ověřeně převzít.	 · Ergebnis unbekannt. Weitere Ziele konnten nicht überprüft übernommen werden.
+Výsledek není známý. Akce se mohla provést.	Das Ergebnis ist unbekannt. Die Aktion wurde möglicherweise ausgeführt.
+Pracovník neposlal úplný výsledek.	Der Hilfsprozess hat kein vollständiges Ergebnis gesendet.
+Pracovník požadavek nepřijal, zásah nebyl proveden.	Der Hilfsprozess hat die Anforderung nicht angenommen; es wurde nichts ausgeführt.
+Výsledky známých cílů. Průchod není atomický a nedokazuje, že nezůstal žádný souběžně vzniklý potomek.	Ergebnisse bekannter Ziele. Der Durchlauf ist nicht atomar und beweist nicht, dass kein gleichzeitig entstandener Nachfolger übrig ist.
+Doložených cílů: {0} · průchodů: {1} · možných reziduí v posledním inventáři: {2}	Belegte Ziele: {0} · Durchläufe: {1} · mögliche Reste in der letzten Inventur: {2}
+limit 256 cílů	Limit von 256 Zielen
+časový limit	Zeitlimit
+limit tří průchodů	Limit von drei Durchläufen
+nedostupný inventář	Inventur nicht verfügbar
+zaniklá nebo neověřitelná vazba rodiče	Elternbeziehung entfallen oder nicht überprüfbar
+další neověřená pozorování potomků	weitere nicht überprüfte Beobachtungen von Nachfolgern
+Částečný výsledek: {0}.	Teilergebnis: {0}.
+Pracovník plánu není dostupný.	Der Plan-Hilfsprozess ist nicht verfügbar.
+Opakované přijetí akce služeb.	Die Dienstaktion wurde mehrfach angenommen.
+Pracovník nepotvrdil plán před průběhem.	Der Hilfsprozess hat den Plan vor dem Fortschritt nicht bestätigt.
+Neplatné pořadí odpovědí služeb.	Ungültige Reihenfolge der Dienstantworten.
+Data za koncem akce služeb.	Daten nach dem Ende der Dienstaktion.
+Pracovník nepotvrdil dokončení odpovědi.	Der Hilfsprozess hat den Abschluss der Antwort nicht bestätigt.
+Pracovník překročil limit průběžných odpovědí.	Der Hilfsprozess hat das Limit für Zwischenantworten überschritten.
+Pracovník služeb skončil před dokončením odpovědi.	Der Dienst-Hilfsprozess wurde vor Abschluss der Antwort beendet.
+Pracovníka služeb nelze spustit.	Der Dienst-Hilfsprozess kann nicht gestartet werden.
+Uživatelskou identitu nelze ověřit.	Die Benutzeridentität kann nicht überprüft werden.
+Identita běžícího procesu není ověřitelná.	Die Identität des laufenden Prozesses ist nicht überprüfbar.
+Identita původního pracovníka není uložená. Soubor zůstane zachovaný.	Die Identität des ursprünglichen Hilfsprozesses ist nicht gespeichert. Die Datei bleibt erhalten.
+Stav původního procesu nelze ověřit (Windows {0}). Soubor zůstane zachovaný.	Der Status des ursprünglichen Prozesses kann nicht überprüft werden (Windows {0}). Die Datei bleibt erhalten.
+Životní stav původního procesu není dostupný. Soubor zůstane zachovaný.	Der Lebensstatus des ursprünglichen Prozesses ist nicht verfügbar. Die Datei bleibt erhalten.
+Původní proces nelze spolehlivě ověřit. Soubor zůstane zachovaný.	Der ursprüngliche Prozess kann nicht zuverlässig überprüft werden. Die Datei bleibt erhalten.
+Původní aplikace nebo pracovník stále běží. Soubor se nebude měnit.	Die ursprüngliche App oder der Hilfsprozess läuft noch. Die Datei wird nicht geändert.
+Fronta ukládání a obnovy dumpů je obsazená.	Die Warteschlange zum Speichern und Wiederherstellen von Abbildern ist belegt.
+Záznam obnovy nelze bezpečně zapsat nebo odstranit. Existující záznam zůstane zachovaný.	Der Wiederherstellungseintrag kann nicht sicher geschrieben oder gelöscht werden. Der vorhandene Eintrag bleibt erhalten.
+Fronta podrobností procesu je obsazená. Zrušte předchozí dotaz nebo chvíli počkejte.	Die Warteschlange für Prozessdetails ist belegt. Brechen Sie die vorherige Abfrage ab oder warten Sie kurz.
+Vypršel limit dotazu.	Zeitlimit der Abfrage überschritten.
+Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz lze zopakovat.	Die Detailabfrage hat das Limit von 5 Sekunden überschritten. Der Hilfsprozess wird beendet; die Abfrage kann wiederholt werden.
+Pracovník předčasně skončil.	Der Hilfsprozess wurde vorzeitig beendet.
+Chyba spojení s pracovníkem.	Verbindungsfehler mit dem Hilfsprozess.
+Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek.	Eine andere Abfrage oder Aktion läuft noch. Warten Sie auf das Ergebnis.
+Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.	Zeitlimit überschritten. Das Ergebnis des laufenden Beendens der Struktur ist unbekannt.
+Čekání na zvýšení práv nebo výsledek skončilo. Výsledek případné akce není známý.	Das Warten auf Rechteerhöhung oder Ergebnis wurde beendet. Das Ergebnis einer eventuellen Aktion ist unbekannt.
+Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.	Der Hilfsprozess hat nicht innerhalb von 5 Sekunden geantwortet. Das Ergebnis der laufenden Aktion ist unbekannt.
+Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést.	Das Warten wurde abgebrochen. Aktionen an bekannten und neu gefundenen Zielen wurden möglicherweise ausgeführt.
+Chybí úplný ověřený výsledek stromu. Akce se mohly provést. {0}	Ein vollständiges überprüftes Ergebnis der Struktur fehlt. Aktionen wurden möglicherweise ausgeführt. {0}
+Předání aktualizace se nesmí opakovat.	Die Übergabe des Updates darf nicht wiederholt werden.
+Platnost potvrzení aktualizace vypršela.	Die Bestätigung des Updates ist abgelaufen.
+Předání instalace nebylo potvrzené.	Die Übergabe der Installation wurde nicht bestätigt.
+Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte v příštím spuštění.	Der Hilfsprozess hat den Plan übernommen. Die Installation beginnt erst, wenn dieser Prozess tatsächlich beendet ist; prüfen Sie den Abschluss beim nächsten Start.
+Potvrzení pracovníka nedorazilo. Plán mohl být předán; neopakujte požadavek a zkontrolujte deník. {0}	Die Bestätigung des Hilfsprozesses ist nicht eingetroffen. Der Plan wurde möglicherweise übergeben; wiederholen Sie die Anforderung nicht und prüfen Sie das Journal. {0}

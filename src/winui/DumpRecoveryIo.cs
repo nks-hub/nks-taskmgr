@@ -6,7 +6,7 @@ internal static class DumpRecoveryIo
     private static int pending;
     internal static async Task<IDisposable> EnterAsync(CancellationToken cancellation)
     {
-        if (Interlocked.Increment(ref pending) > 4) { Interlocked.Decrement(ref pending); throw new IOException("Fronta ukládání a obnovy dumpů je obsazená."); }
+        if (Interlocked.Increment(ref pending) > 4) { Interlocked.Decrement(ref pending); throw new IOException(Loc.T("Fronta ukládání a obnovy dumpů je obsazená.")); }
         try { await worker.WaitAsync(cancellation).ConfigureAwait(false); return new Lease(); }
         catch { Interlocked.Decrement(ref pending); throw; }
     }

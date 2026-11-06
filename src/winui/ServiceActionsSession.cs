@@ -29,7 +29,7 @@ internal sealed partial class ServiceActionsSession : IDisposable
 
     internal async Task<ServiceActionsBatch> ApplyAsync(ServiceActionPlan plan, uint[] approved, IProgress<ServiceActionItem[]>? progress, CancellationToken cancellation)
     {
-        Process process; lock (sync) { ObjectDisposedException.ThrowIf(Volatile.Read(ref cancelled) != 0, this); process = child ?? throw new IOException("Pracovník plánu není dostupný."); }
+        Process process; lock (sync) { ObjectDisposedException.ThrowIf(Volatile.Read(ref cancelled) != 0, this); process = child ?? throw new IOException(Loc.T("Pracovník plánu není dostupný.")); }
         var request = ServiceActionsProtocol.ApplyRequest(plan, approved);
         Interlocked.Exchange(ref applySent, 1);
         await process.StandardInput.BaseStream.WriteAsync(request, cancellation).ConfigureAwait(false);
@@ -38,22 +38,22 @@ internal sealed partial class ServiceActionsSession : IDisposable
         for (int frames = 0; frames < 512; ++frames) {
             var (header, payload) = await ReadAsync(process, request, plan, cancellation).ConfigureAwait(false);
             if (header.Phase == ServiceActionPhase.Accepted) {
-                if (accepted) throw new InvalidDataException("Opakované přijetí akce služeb.");
+                if (accepted) throw new InvalidDataException(Loc.T("Opakované přijetí akce služeb."));
                 accepted = true; continue;
             }
             if (header.Phase == ServiceActionPhase.Error) throw new ServiceActionException(header.Status, header.Error);
-            if (header.Phase == ServiceActionPhase.Progress && !accepted) throw new InvalidDataException("Pracovník nepotvrdil plán před průběhem.");
+            if (header.Phase == ServiceActionPhase.Progress && !accepted) throw new InvalidDataException(Loc.T("Pracovník nepotvrdil plán před průběhem."));
             var rows = ServiceActionsProtocol.DecodeItems(header, payload, plan, accepted);
             Volatile.Write(ref latest, rows);
             if (header.Phase == ServiceActionPhase.Progress) { progress?.Report((ServiceActionItem[])rows.Clone()); continue; }
-            if (header.Phase != ServiceActionPhase.Result) throw new InvalidDataException("Neplatné pořadí odpovědí služeb.");
+            if (header.Phase != ServiceActionPhase.Result) throw new InvalidDataException(Loc.T("Neplatné pořadí odpovědí služeb."));
             var extra = new byte[1];
-            if (await process.StandardOutput.BaseStream.ReadAsync(extra, cancellation).ConfigureAwait(false) != 0) throw new InvalidDataException("Data za koncem akce služeb.");
+            if (await process.StandardOutput.BaseStream.ReadAsync(extra, cancellation).ConfigureAwait(false) != 0) throw new InvalidDataException(Loc.T("Data za koncem akce služeb."));
             await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
-            if (process.ExitCode != 0) throw new IOException("Pracovník nepotvrdil dokončení odpovědi.");
+            if (process.ExitCode != 0) throw new IOException(Loc.T("Pracovník nepotvrdil dokončení odpovědi."));
             return new(plan, header.Status, header.Error, rows, true, true);
         }
-        throw new InvalidDataException("Pracovník překročil limit průběžných odpovědí.");
+        throw new InvalidDataException(Loc.T("Pracovník překročil limit průběžných odpovědí."));
     }
 
     private static async Task<(ServiceActionHeader Header, byte[] Payload)> ReadAsync(Process process, byte[] request, ServiceActionPlan? plan, CancellationToken cancellation)
@@ -66,7 +66,7 @@ internal sealed partial class ServiceActionsSession : IDisposable
             await process.StandardOutput.BaseStream.ReadExactlyAsync(payload, cancellation).ConfigureAwait(false);
             return (header, payload);
         } catch (EndOfStreamException error) {
-            throw new IOException("Pracovník služeb skončil před dokončením odpovědi.", error);
+            throw new IOException(Loc.T("Pracovník služeb skončil před dokončením odpovědi."), error);
         }
     }
 
@@ -85,7 +85,7 @@ internal sealed partial class ServiceActionsSession : IDisposable
                     RedirectStandardInput = true, RedirectStandardOutput = true, StandardInputEncoding = new UTF8Encoding(false)
                 };
                 start.ArgumentList.Add("--stdio");
-                child = Process.Start(start) ?? throw new IOException("Pracovníka služeb nelze spustit.");
+                child = Process.Start(start) ?? throw new IOException(Loc.T("Pracovníka služeb nelze spustit."));
                 if (!AssignProcessToJobObject(owned, child.SafeHandle)) throw new Win32Exception(Marshal.GetLastPInvokeError());
                 return child;
             }

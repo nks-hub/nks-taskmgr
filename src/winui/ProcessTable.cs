@@ -47,7 +47,7 @@ public sealed partial class ProcessTable : Grid
             headings.Add(column.Id, button); cell.Children.Add(button);
             var area = new ColumnResizeArea { Width = 8, HorizontalAlignment = HorizontalAlignment.Right };
             var grip = new Thumb { Style = (Style)Application.Current.Resources["ColumnGripStyle"] }; area.Children.Add(grip);
-            AutomationProperties.SetName(grip, "Šířka sloupce " + column.Title);
+            AutomationProperties.SetName(grip, Loc.F("Šířka sloupce {0}", column.Title));
             double initial = 0, delta = 0;
             grip.DragStarted += (_, _) => { initial = Columns.WidthOf(column.Id); delta = 0; };
             grip.DragDelta += (_, args) => { delta += args.HorizontalChange; Columns.Resize(column.Id, initial + delta); };
@@ -68,12 +68,12 @@ public sealed partial class ProcessTable : Grid
         MenuFlyoutItem Item(string text, Action action) {
             var item = new MenuFlyoutItem { Text = text }; item.Click += (_, _) => action(); menu.Items.Add(item); return item;
         }
-        var left = Item("Přesunout doleva", () => Columns.Move(column.Id, -1));
-        var right = Item("Přesunout doprava", () => Columns.Move(column.Id, 1));
+        var left = Item(Loc.T("Přesunout doleva"), () => Columns.Move(column.Id, -1));
+        var right = Item(Loc.T("Přesunout doprava"), () => Columns.Move(column.Id, 1));
         menu.Items.Add(new MenuFlyoutSeparator());
-        var narrower = Item("Zúžit o 20 bodů", () => Columns.Resize(column.Id, Columns.WidthOf(column.Id) - 20));
-        var wider = Item("Rozšířit o 20 bodů", () => Columns.Resize(column.Id, Columns.WidthOf(column.Id) + 20));
-        if (column.Id != 0) { menu.Items.Add(new MenuFlyoutSeparator()); Item("Skrýt sloupec", () => Columns.SetVisible(column.Id, false)); }
+        var narrower = Item(Loc.T("Zúžit o 20 bodů"), () => Columns.Resize(column.Id, Columns.WidthOf(column.Id) - 20));
+        var wider = Item(Loc.T("Rozšířit o 20 bodů"), () => Columns.Resize(column.Id, Columns.WidthOf(column.Id) + 20));
+        if (column.Id != 0) { menu.Items.Add(new MenuFlyoutSeparator()); Item(Loc.T("Skrýt sloupec"), () => Columns.SetVisible(column.Id, false)); }
         menu.Opening += (_, _) => {
             left.IsEnabled = Columns.CanMove(column.Id, -1); right.IsEnabled = Columns.CanMove(column.Id, 1);
             narrower.IsEnabled = Columns.WidthOf(column.Id) > column.Minimum; wider.IsEnabled = Columns.WidthOf(column.Id) < (column.Id == 0 ? 1000 : 500);
@@ -90,7 +90,7 @@ public sealed partial class ProcessTable : Grid
             menu.Opening += (_, _) => item.IsChecked = column.Visible; menu.Items.Add(item);
         }
         menu.Items.Add(new MenuFlyoutSeparator());
-        var reset = new MenuFlyoutItem { Text = "Obnovit výchozí sloupce" }; reset.Click += (_, _) => Columns.Reset(); menu.Items.Add(reset);
+        var reset = new MenuFlyoutItem { Text = Loc.T("Obnovit výchozí sloupce") }; reset.Click += (_, _) => Columns.Reset(); menu.Items.Add(reset);
         return menu;
     }
 
@@ -111,15 +111,14 @@ public sealed partial class ProcessTable : Grid
         foreach (var column in Columns.Items) {
             var button = headings[column.Id];
             bool metric = column.Id >= 2;
-            string scope = metric ? branchValues ? ", proces s potomky" : ", vlastní hodnoty" : "";
+            string scope = metric ? branchValues ? Loc.T(", proces s potomky") : Loc.T(", vlastní hodnoty") : "";
             button.Content = column.Title + (column.Id == sortColumn ? descending ? " ↓" : " ↑" : "");
             AutomationProperties.SetName(button, column.Title + scope
-                + (column.Id == sortColumn ? descending ? ", sestupně" : ", vzestupně" : ", seřadit"));
-            string help = "Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další volby.";
-            if (metric) help += branchValues ? " Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené." : " Vlastní hodnota procesu bez potomků.";
-            if (branchValues && column.Id == 3) help += " Sdílené stránky RAM se mohou započítat opakovaně.";
-            if (column.Id == 7) help += " Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů,"
-                + " který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.";
+                + (column.Id == sortColumn ? descending ? Loc.T(", sestupně") : Loc.T(", vzestupně") : Loc.T(", seřadit")));
+            string help = Loc.T("Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další volby.");
+            if (metric) help += " " + (branchValues ? Loc.T("Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené.") : Loc.T("Vlastní hodnota procesu bez potomků."));
+            if (branchValues && column.Id == 3) help += " " + Loc.T("Sdílené stránky RAM se mohou započítat opakovaně.");
+            if (column.Id == 7) help += " " + Loc.T("Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.");
             ToolTipService.SetToolTip(button, help);
         }
     }
@@ -129,7 +128,7 @@ public sealed partial class ProcessTable : Grid
         content.Width = Columns.LayoutWidth;
         Columns.Apply(header);
         string? hiddenSort = Columns.Items.FirstOrDefault(column => column.Id == sortColumn && !column.Visible)?.Title;
-        AutomationProperties.SetHelpText(this, hiddenSort is null ? "" : "Řazeno podle skrytého sloupce " + hiddenSort + (descending ? " sestupně" : " vzestupně"));
+        AutomationProperties.SetHelpText(this, hiddenSort is null ? "" : descending ? Loc.F("Řazeno podle skrytého sloupce {0} sestupně", hiddenSort) : Loc.F("Řazeno podle skrytého sloupce {0} vzestupně", hiddenSort));
     }
 }
 
@@ -336,7 +335,7 @@ public sealed partial class ProcessNameCell : Grid
     }
     private void UpdateLabel()
     {
-        string text = row is null ? "" : row.Name + (row.Ended ? " · ukončeno" : row.Stale ? " · zastaralé" : "");
+        string text = row is null ? "" : row.Name + (row.Ended ? Loc.T(" · ukončeno") : row.Stale ? Loc.T(" · zastaralé") : "");
         if (name.Text != text) name.Text = text;
         double opacity = row?.HasChildren == true ? 1 : 0;
         if (branch.Opacity != opacity) branch.Opacity = opacity;
@@ -345,7 +344,7 @@ public sealed partial class ProcessNameCell : Grid
         if (branch.IsHitTestVisible != enabled) branch.IsHitTestVisible = enabled;
         double angle = row?.Collapsed == true ? 0 : 90;
         if (rotation.Angle != angle) rotation.Angle = angle;
-        string label = (row?.Collapsed == true ? "Rozbalit " : "Sbalit ") + row?.Name;
+        string label = row?.Collapsed == true ? Loc.F("Rozbalit {0}", row.Name) : Loc.F("Sbalit {0}", row?.Name);
         if (AutomationProperties.GetName(branch) != label) AutomationProperties.SetName(branch, label);
     }
     private void UpdateNote()

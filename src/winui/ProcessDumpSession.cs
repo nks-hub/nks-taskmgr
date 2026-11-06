@@ -24,7 +24,7 @@ internal sealed partial class ProcessDumpSession : IDisposable
             VerifyTarget(targetHandle, target);
             if (!IsWow64Process2(targetHandle, out ushort machine, out ushort nativeMachine)) throw new Win32Exception(Marshal.GetLastPInvokeError());
             var architecture = nativeMachine == 0x8664 ? machine switch { 0x14c => ProcessArchitecture.X86, 0 => ProcessArchitecture.X64, _ => ProcessArchitecture.Unknown } : ProcessArchitecture.Unknown;
-            if (architecture == ProcessArchitecture.Unknown) throw new IOException("Architektura cíle není pro dump x86/x64 podporovaná.");
+            if (architecture == ProcessArchitecture.Unknown) throw new IOException(Loc.T("Architektura cíle není pro dump x86/x64 podporovaná."));
             VerifyTarget(targetHandle, target); cancellation.ThrowIfCancellationRequested();
             file = new ProcessDumpFile(path, target, mode);
             // WOW64 may not expose ProcessSequenceNumber. The original x64 handle
@@ -41,9 +41,9 @@ internal sealed partial class ProcessDumpSession : IDisposable
             var response = new byte[ProcessDumpProtocol.ResponseBytes];
             await output.ReadExactlyAsync(response, cancellation).ConfigureAwait(false);
             var end = new byte[1];
-            if (await output.ReadAsync(end, cancellation).ConfigureAwait(false) != 0) throw new InvalidDataException("Pracovník vrátil data za výsledkem dumpu.");
+            if (await output.ReadAsync(end, cancellation).ConfigureAwait(false) != 0) throw new InvalidDataException(Loc.T("Pracovník vrátil data za výsledkem dumpu."));
             await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
-            if (process.ExitCode != 0) throw new IOException("Pracovník dumpu skončil bez ověřeného výsledku.");
+            if (process.ExitCode != 0) throw new IOException(Loc.T("Pracovník dumpu skončil bez ověřeného výsledku."));
             var result = ProcessDumpProtocol.Response(response, request, architecture, file.Identity);
             cancellation.ThrowIfCancellationRequested();
             if (result.State == ProcessDumpState.Captured) {
@@ -52,13 +52,13 @@ internal sealed partial class ProcessDumpSession : IDisposable
             }
             return result;
         } catch (Exception error) when (cancellation.IsCancellationRequested && error is IOException or Win32Exception or ObjectDisposedException) {
-            throw new OperationCanceledException("Čekání na dump bylo zrušeno.", error, cancellation);
+            throw new OperationCanceledException(Loc.T("Čekání na dump bylo zrušeno."), error, cancellation);
         } catch (EndOfStreamException error) {
-            throw new IOException("Pracovník dumpu skončil před dokončením odpovědi.", error);
+            throw new IOException(Loc.T("Pracovník dumpu skončil před dokončením odpovědi."), error);
         } catch (Win32Exception error) {
-            throw new IOException("Dump nebo bezpečné uložení souboru není dostupné (Windows " + error.NativeErrorCode + "): " + error.Message, error);
+            throw new IOException(Loc.F("Dump nebo bezpečné uložení souboru není dostupné (Windows {0}): {1}", error.NativeErrorCode, error.Message), error);
         } catch (NativeMonitorException error) {
-            throw new IOException("Identitu vybraného procesu nelze ověřit.", error);
+            throw new IOException(Loc.T("Identitu vybraného procesu nelze ověřit."), error);
         } finally {
             Cancel();
             Process? process;
@@ -68,7 +68,7 @@ internal sealed partial class ProcessDumpSession : IDisposable
             } finally {
                 try {
                     file?.Dispose();
-                    if (file?.ReadyPreserved == true) CleanupError = "Hotový nepublikovaný dump zůstal v přehledu nedokončených dumpů. Obnova je dostupná po ukončení původní aplikace.";
+                    if (file?.ReadyPreserved == true) CleanupError = Loc.T("Hotový nepublikovaný dump zůstal v přehledu nedokončených dumpů. Obnova je dostupná po ukončení původní aplikace.");
                 }
                 catch (IOException error) { CleanupError = error.Message; throw; }
             }
@@ -79,9 +79,9 @@ internal sealed partial class ProcessDumpSession : IDisposable
     {
         var key = target.Key; var actual = NativeMonitor.QueryProcessIdentity(process, key.Kind);
         if (actual.State != SampleState.Valid || actual.Boot != key.Boot || actual.Pid != key.Pid || actual.Kind != key.Kind || actual.Generation != key.Generation)
-            throw new IOException("Identita vybraného procesu se změnila nebo není ověřitelná.");
+            throw new IOException(Loc.T("Identita vybraného procesu se změnila nebo není ověřitelná."));
         if (!GetProcessTimes(process, out ulong created, out _, out _, out _)) throw new Win32Exception(Marshal.GetLastPInvokeError());
-        if (created != target.Created100ns || WaitForSingleObject(process, 0) != 258) throw new IOException("Vybraný proces už skončil nebo má jiný čas vytvoření.");
+        if (created != target.Created100ns || WaitForSingleObject(process, 0) != 258) throw new IOException(Loc.T("Vybraný proces už skončil nebo má jiný čas vytvoření."));
     }
 
     private Process Start(ProcessArchitecture architecture, CancellationToken cancellation)
@@ -101,7 +101,7 @@ internal sealed partial class ProcessDumpSession : IDisposable
                 RedirectStandardInput = true, RedirectStandardOutput = true, StandardInputEncoding = new UTF8Encoding(false)
             };
             start.ArgumentList.Add("--stdio");
-            var process = Process.Start(start) ?? throw new IOException("Pracovníka dumpu se nepodařilo spustit.");
+            var process = Process.Start(start) ?? throw new IOException(Loc.T("Pracovníka dumpu se nepodařilo spustit."));
             lock (sync) { child = process; cancellation.ThrowIfCancellationRequested(); ObjectDisposedException.ThrowIf(canceled, this); }
             if (!AssignProcessToJobObject(ownedJob, process.SafeHandle)) throw new Win32Exception(Marshal.GetLastPInvokeError());
             return process;
