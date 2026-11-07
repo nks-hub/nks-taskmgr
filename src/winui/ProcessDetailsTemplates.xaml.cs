@@ -30,7 +30,7 @@ public sealed partial class ProcessDetailsRow
         ProcessHandleInfo handle => "0x" + handle.GrantedAccess.ToString("X8"), _ => "" };
     public string Fourth => Source switch {
         ProcessThreadInfo thread => thread.TimesState == NksTaskMgr.Native.SampleState.Valid && thread.Created100ns is > 0 and <= long.MaxValue
-            ? DateTime.FromFileTimeUtc((long)thread.Created100ns).ToLocalTime().ToString("d. M. HH:mm:ss") : "—",
+            ? DateTime.FromFileTimeUtc((long)thread.Created100ns).ToLocalTime().ToString(Loc.Language == "cs" ? "d. M. HH:mm:ss" : "G", Loc.Culture) : "—",
         ProcessModuleInfo module => module.Path, ProcessMemoryRegion region => Loc.F("ochrana 0x{0}", region.Protection.ToString("X")), _ => "" };
 
     internal static string[] Headers(ProcessDetailsCommand mode) => mode switch {
