@@ -23,7 +23,7 @@ public static partial class WinUiChecks
         Require(notifications == 1 && row.Title == "Changed title" && row.Primary.Value == 4_000_000
             && ReferenceEquals(preview, row.Preview), "Mini-graph caching suppressed current resource metadata or values.");
         row.SetStale(true);
-        Require(row.Value == "Zastaralá data" && ReferenceEquals(preview, row.Preview), "Mini-graph caching suppressed stale state.");
+        Require(row.Value == Loc.T("Zastaralá data") && ReferenceEquals(preview, row.Preview), "Mini-graph caching suppressed stale state.");
         int before = notifications; row.RefreshPreview();
         Require(notifications == before, "An already published stale state caused another unchanged refresh notification.");
         row.Upload.Append(time + 250_000_000, upload with { Value = 20_000_000 }); row.RefreshPreview();
@@ -120,7 +120,7 @@ public sealed partial class ChartView
     internal void CheckDiskTransferSeries(HistorySeries read, HistorySeries write)
     {
         if (!ReferenceEquals(series, read) || !ReferenceEquals(secondary, write) || unit != ChartUnit.BytesPerSecond
-            || primaryName != "Čtení" || secondaryName != "Zápis")
+            || primaryName != Loc.T("Čtení") || secondaryName != Loc.T("Zápis"))
             throw new InvalidOperationException("Disk transfer graph did not use its collected read/write histories and byte-rate labels.");
     }
 
@@ -169,9 +169,9 @@ public sealed partial class ChartView
             Set(first, overlay, time + 1_500_000_000, 600, 1_073_741_824, 0x80c5c0);
             Require(startTime.Text == "10 min" && upper.Text.Contains("GiB", StringComparison.Ordinal) && legend.Text.Length > 0,
                 "Axis caching lost a range, unit, scale or secondary-series change.");
-            Configure("Čtení", ChartUnit.BytesPerSecond, secondName: "Zápis");
+            Configure(Loc.T("Čtení"), ChartUnit.BytesPerSecond, secondName: Loc.T("Zápis"));
             Set(first, overlay, time + 1_550_000_000, 600, 2_097_152, 0xdfaf76, area: false);
-            Require(upper.Text.Contains("MiB/s", StringComparison.Ordinal) && legend.Text == "Čtení · Zápis"
+            Require(upper.Text.Contains("MiB/s", StringComparison.Ordinal) && legend.Text == Loc.T("Čtení") + " · " + Loc.T("Zápis")
                 && Format(1_048_576).EndsWith(" MiB/s", StringComparison.Ordinal) && plotFrame.BorderThickness.Top == 1,
                 "Disk transfer axes retained bit units, network labels or an unframed plot.");
             Configure("Refresh bytes", ChartUnit.Bytes);

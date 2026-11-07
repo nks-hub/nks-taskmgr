@@ -39,7 +39,7 @@ internal static partial class ProcessDumpQaChecks
             bool busyRefused = false;
             _ = RequireInFlight(witness, child, creator, client, capture);
             try { _ = await client.CaptureAsync(child.Target, ProcessDumpMode.Full, refusedPath, cancellation).ConfigureAwait(false); }
-            catch (IOException error) when (error.Message == "Předchozí dump nebo jeho úklid ještě probíhá.") { busyRefused = true; }
+            catch (IOException error) when (error.Message == Loc.T("Předchozí dump nebo jeho úklid ještě probíhá.")) { busyRefused = true; }
             Require(busyRefused && !File.Exists(refusedPath), "The active client accepted another capture or created its destination.");
             var ownedTemporaries = Directory.EnumerateFiles(directory, ".nks-dump-*.tmp", SearchOption.TopDirectoryOnly).Take(2).ToArray();
             Require(ownedTemporaries.Length == 1 && StringComparer.OrdinalIgnoreCase.Equals(Path.GetFileName(ownedTemporaries[0]), Path.GetFileName(witness.Record.Temporary)),

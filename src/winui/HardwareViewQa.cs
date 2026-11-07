@@ -20,7 +20,7 @@ public sealed partial class MainWindow
             var kept = HardwareQaLine(panel, "QA zachovaný údaj");
             var reading = (TextBlock)changed.Children[1];
             var modelLine = HardwareQaLine(panel, "Model");
-            var status = HardwareQaLine(panel, "Stav CPU čidel");
+            var status = HardwareQaLine(panel, Loc.T("Stav CPU čidel"));
             cpuSensorDetails.IsExpanded = true;
 
             model.Hardware["cpu"] = new() { ["QA měněný údaj"] = "2", ["QA zachovaný údaj"] = "Stejné" };
@@ -44,7 +44,7 @@ public sealed partial class MainWindow
             var unchanged = panel.Children.ToArray();
             RefreshHardware();
             HardwareQaRequire(unchanged.SequenceEqual(panel.Children) && ReferenceEquals(modelLine, HardwareQaLine(panel, "Model"))
-                && ReferenceEquals(status, HardwareQaLine(panel, "Stav CPU čidel")), "Repeated hardware refresh replaced stable facts.");
+                && ReferenceEquals(status, HardwareQaLine(panel, Loc.T("Stav CPU čidel"))), "Repeated hardware refresh replaced stable facts.");
             HardwareQaRequire(cards.SequenceEqual(hardwareCards.Children) && ReferenceEquals(panel, hardwareSections["cpu"].Panel)
                 && ReferenceEquals(choice, cpuSensorChoice) && ReferenceEquals(details, cpuSensorDetails)
                 && ReferenceEquals(detailsPanel, cpuSensorDetailsRows.Panel) && cpuSensorDetails.IsExpanded,
@@ -55,7 +55,7 @@ public sealed partial class MainWindow
             var first = repeated.Panel.Children[0]; var second = repeated.Panel.Children[1];
             repeated.Update([new("Stejný název", "Změněné"), new("Stejný název", "Druhý")]);
             HardwareQaRequire(ReferenceEquals(first, repeated.Panel.Children[0]) && ReferenceEquals(second, repeated.Panel.Children[1])
-                && ((TextBlock)((Grid)first).Children[1]).Text == "Změněné"
+                && ((TextBlock)((Grid)first).Children[1]).Text == Loc.T("Změněné")
                 && ((TextBlock)((Grid)second).Children[1]).Text == "Druhý", "Equal hardware labels lost their distinct occurrences.");
         } finally {
             if (hadFacts) model.Hardware["cpu"] = previous!;
@@ -67,7 +67,7 @@ public sealed partial class MainWindow
     }
 
     private static Grid HardwareQaLine(StackPanel panel, string caption) => panel.Children.OfType<Grid>()
-        .Single(line => line.Children[0] is TextBlock text && text.Text == caption);
+        .Single(line => line.Children[0] is TextBlock text && text.Text == Loc.T(caption));
 
     private static void HardwareQaRequire(bool value, string message)
     {

@@ -185,7 +185,7 @@ public sealed partial class MainWindow
         foreach (var column in processTable.Columns.Items) {
             var button = NavigationSortButton(column.Id);
             string arrow = column.Id == expected.SortColumn ? expected.Descending ? " ↓" : " ↑" : "";
-            string order = column.Id == expected.SortColumn ? expected.Descending ? ", sestupně" : ", vzestupně" : ", seřadit";
+            string order = column.Id == expected.SortColumn ? expected.Descending ? Loc.T(", sestupně") : Loc.T(", vzestupně") : Loc.T(", seřadit");
             NavigationRequire(button.Content is string text && text == column.Title + arrow
                 && AutomationProperties.GetName(button).StartsWith(column.Title, StringComparison.Ordinal)
                 && AutomationProperties.GetName(button).EndsWith(order, StringComparison.Ordinal),

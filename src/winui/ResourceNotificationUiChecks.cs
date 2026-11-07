@@ -60,7 +60,7 @@ public sealed partial class MainWindow
             Check(notifications == 1 && !ReferenceEquals(row.Preview, originalGeometry), "A resource return did not publish fresh bindings exactly once.");
             row.RefreshPreview(); Check(notifications == 1, "A duplicate resource return notified its template again.");
             row.SetStale(true); row.RefreshPreview(); await Rendered(); Fresh();
-            Check(notifications == 2 && labels[2].Text == "Zastaralá data", "A stale resource changed more than its value notification or kept old text.");
+            Check(notifications == 2 && labels[2].Text == Loc.T("Zastaralá data"), "A stale resource changed more than its value notification or kept old text.");
             row.SetStale(false, notify: false); row.RefreshPreview(); await Rendered(); Fresh();
             Check(notifications == 3, "A deferred stale-state return did not update its bound value.");
             originalGeometry = row.Preview;

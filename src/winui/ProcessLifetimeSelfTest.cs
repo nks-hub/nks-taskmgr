@@ -207,8 +207,8 @@ public static partial class WinUiChecks
         var store = LifetimeStore();
         store.ObserveBatch(LifetimeInfo(0), [LifetimeEvent(1, ProcessEventKind.Started, 1000), LifetimeEvent(2, ProcessEventKind.Stopped, 2000)], 0);
         var row = store.Values.Single();
-        Require(LifetimeEntry(row).Paired && LifetimeEntry(row).DurationSeconds is null && row.DurationText == "Délka neurčena"
-            && row.StartedText.Contains("nedostupný", StringComparison.Ordinal), "Missing QPC frequency became a numeric duration or timestamp.");
+        Require(LifetimeEntry(row).Paired && LifetimeEntry(row).DurationSeconds is null && row.DurationText == Loc.T("Délka neurčena")
+            && row.StartedText.Contains(Loc.T("čas nedostupný"), StringComparison.Ordinal), "Missing QPC frequency became a numeric duration or timestamp.");
 
         store = LifetimeStore(); var info = LifetimeInfo();
         store.ObserveBatch(info, [LifetimeEvent(1, ProcessEventKind.Started, 1000)], 1000);

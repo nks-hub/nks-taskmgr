@@ -65,7 +65,7 @@ public static partial class WinUiChecks
         Change(() => tertiary = tertiary with { Source = MetricSource.PerformanceCounter }, "tertiary source");
 
         int previous = notifications; row.SetStale(true); row.RefreshPreview();
-        Require(notifications == previous + 1 && row.Stale && row.Value == "Zastaralá data", "An unchanged refresh repeated a published stale notification.");
+        Require(notifications == previous + 1 && row.Stale && row.Value == Loc.T("Zastaralá data"), "An unchanged refresh repeated a published stale notification.");
         row.SetStale(true); Require(notifications == previous + 1, "An unchanged stale flag notified twice.");
         previous = notifications; row.SetStale(false, notify: false);
         Require(notifications == previous && !row.Stale, "A silent stale transition published a current binding update.");

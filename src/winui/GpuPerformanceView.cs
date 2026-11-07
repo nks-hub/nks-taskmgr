@@ -109,7 +109,7 @@ public sealed partial class MainWindow
                 var diskCells = facts.Children.ToArray(); diskDetails.IsExpanded = true; root.UpdateLayout();
                 CheckScrollablePerformanceViewport();
                 foreach (var detail in diskDetailValues)
-                    if (detail.Value.Text != Loc.T(resource.HardwareFacts[detail.Key])) throw new InvalidOperationException("Disk detail lost a native value.");
+                    if (detail.Value.Text != Loc.Native(resource.HardwareFacts[detail.Key])) throw new InvalidOperationException("Disk detail lost a native value.");
                 RefreshPerformance();
                 if (!diskDetails.IsExpanded || !diskCells.SequenceEqual(facts.Children)) throw new InvalidOperationException("Disk refresh recreated expanded facts.");
                 var originalFacts = resource.HardwareFacts;

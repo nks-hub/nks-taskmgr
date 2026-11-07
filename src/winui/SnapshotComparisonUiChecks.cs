@@ -41,14 +41,14 @@ internal static class SnapshotComparisonUiChecks
             await ComparisonRendered(1);
             Require(window.IsBusy, "The cancellation check did not observe a running snapshot import after a rendered frame.");
             window.CancelComparison(); await canceled;
-            Require(!window.IsBusy && window.ResultsList.Items.Count == 0 && window.StatusText.Contains("zrušeno", StringComparison.Ordinal),
+            Require(!window.IsBusy && window.ResultsList.Items.Count == 0 && window.StatusText.Contains(Loc.T("Načítání nebo porovnání bylo zrušeno."), StringComparison.Ordinal),
                 "Cancelling the production comparison path left partial results or a busy window.");
             var heartbeat = new TaskCompletionSource<bool>();
             window.DispatcherQueue.TryEnqueue(() => heartbeat.TrySetResult(window.IsBusy));
             var imported = window.CompareFilesAsync(before, after);
             Require(await heartbeat.Task.WaitAsync(TimeSpan.FromSeconds(5)), "Snapshot import blocked the UI queue.");
             await imported; await ComparisonRendered();
-            Require(window.ResultsList.Items.Count == 10_000 && window.StatusText == "Porovnání dokončeno.", "The production import path lost snapshot rows.");
+            Require(window.ResultsList.Items.Count == 10_000 && window.StatusText == Loc.T("Porovnání dokončeno."), "The production import path lost snapshot rows.");
             Require(!((string)window.ResultsList.Items[0]).EndsWith("\ud83d…", StringComparison.Ordinal), "A comparison label split a Unicode scalar.");
             Require(window.SummaryText.IndexOf("12:00:00.000 UTC", StringComparison.Ordinal) < window.SummaryText.IndexOf("11:00:00.000 UTC", StringComparison.Ordinal),
                 "The UI reversed snapshots according to their wall-clock times.");
@@ -63,7 +63,7 @@ internal static class SnapshotComparisonUiChecks
             window.StatusFilter.SelectedIndex = 0;
             Require(window.ResultsList.Items.Count == 10_000, "The all-status filter lost imported rows.");
             window.StatusFilter.SelectedIndex = 3;
-            Require(window.ResultsList.Items.Count == 0 && window.DetailText == "Vyberte proces ze seznamu.", "An empty filter kept the previous detail.");
+            Require(window.ResultsList.Items.Count == 0 && window.DetailText == Loc.T("Vyberte proces ze seznamu."), "An empty filter kept the previous detail.");
             window.StatusFilter.SelectedIndex = 0;
             window.AppWindow.ResizeDip(720, 500); await ComparisonRendered(); window.Root.UpdateLayout();
             foreach (var button in window.Commands) {
@@ -73,9 +73,9 @@ internal static class SnapshotComparisonUiChecks
             }
             Require(window.ResultsList.ActualHeight > 20, "Small comparison windows lost the scrollable result list.");
             var denied = new ImportedMetric("bytesPerSecond", MetricSource.NativeProcess, SampleState.AccessDenied);
-            Require(SnapshotComparisonView.MetricText(denied).Contains("Chybí oprávnění", StringComparison.Ordinal)
+            Require(SnapshotComparisonView.MetricText(denied).Contains(Loc.T("Chybí oprávnění"), StringComparison.Ordinal)
                 && !SnapshotComparisonView.MetricText(denied).Contains("0 B/s", StringComparison.Ordinal), "Unavailable imported data became measured zero in the UI.");
-            Require(SnapshotComparisonView.DeltaText(new ComparedMetric("readIo", denied, denied, null, null)) == "Nelze určit.",
+            Require(SnapshotComparisonView.DeltaText(new ComparedMetric("readIo", denied, denied, null, null)) == Loc.T("Nelze určit."),
                 "The UI invented an unavailable difference.");
             var original = await SnapshotComparison.ReadAsync(before);
             var otherBoot = new BootIdentifier(3, 4);
@@ -83,16 +83,16 @@ internal static class SnapshotComparisonUiChecks
                 Processes = original.Processes.Take(1).Select(process => process with { Key = process.Key with { Boot = otherBoot } }).ToArray() };
             var single = original with { Processes = original.Processes.Take(1).ToArray() };
             window.ShowResult(await SnapshotComparison.CompareAsync(single, different));
-            Require(window.SummaryText.Contains("různých spuštění systému", StringComparison.Ordinal)
-                && window.DetailText.Contains("různých spuštění systému", StringComparison.Ordinal), "The UI hid why historical processes cannot be compared.");
+            Require(window.SummaryText.Contains(Loc.T("Snímky pocházejí z různých spuštění systému."), StringComparison.Ordinal)
+                && window.DetailText.Contains(Loc.T("Snímky pocházejí z různých spuštění systému."), StringComparison.Ordinal), "The UI hid why historical processes cannot be compared.");
             await window.CompareFilesAsync(invalid, after);
-            Require(window.ResultsList.Items.Count == 0 && !window.IsBusy && window.StatusText.StartsWith("Původní snímek:", StringComparison.Ordinal),
+            Require(window.ResultsList.Items.Count == 0 && !window.IsBusy && window.StatusText.StartsWith(Loc.T("Původní snímek") + ":", StringComparison.Ordinal),
                 "An import failure retained old results or lost the original file role.");
             await window.CompareFilesAsync(unicode, after);
-            Require(window.ResultsList.Items.Count == 0 && !window.IsBusy && window.StatusText.StartsWith("Původní snímek:", StringComparison.Ordinal),
+            Require(window.ResultsList.Items.Count == 0 && !window.IsBusy && window.StatusText.StartsWith(Loc.T("Původní snímek") + ":", StringComparison.Ordinal),
                 "Invalid Unicode escaped the comparison import error boundary.");
             await window.CompareFilesAsync(before, after);
-            Require(window.ResultsList.Items.Count == 10_000 && !window.IsBusy && window.StatusText == "Porovnání dokončeno.",
+            Require(window.ResultsList.Items.Count == 10_000 && !window.IsBusy && window.StatusText == Loc.T("Porovnání dokončeno."),
                 "The comparison window did not recover after an invalid snapshot.");
             App.Trace($"Snapshot comparison UI passed: production import and cancel; responsive queue; {realized}/10000 realized rows; status filters; reversed UTC; read-only detail; unavailable metrics; 720x500; invalid JSON/Unicode and retry");
         } finally {
