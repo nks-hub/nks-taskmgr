@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.31)
-project(NksTaskManager VERSION 0.2.2 LANGUAGES C CXX)
+project(NksTaskManager VERSION 0.2.3 LANGUAGES C CXX)
 find_package(Git QUIET)
 string(REPEAT "0" 40 nks_build_revision)
 if(GIT_FOUND)
