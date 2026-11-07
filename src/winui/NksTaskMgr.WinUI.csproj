@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <Version>0.2.4</Version>
+    <Version>0.2.5</Version>
     <Product>NKS Task Manager</Product>
     <Title>NKS Task Manager</Title>
     <AssemblyTitle>NKS Task Manager</AssemblyTitle>
