@@ -43,7 +43,7 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
         (double, SampleState, MetricSource) Tertiary, double Capacity, bool Stale, bool VirtualNetwork, bool NetworkConnected);
     private PublishedState? publishedState;
     private static (double, SampleState, MetricSource) MetricState(Metric value) => (value.Value, value.State, value.Source);
-    public string Value => Stale ? "Zastaralá data" : Kind == ResourceKind.Network && Primary.State == SampleState.Valid
+    public string Value => Stale ? Loc.T("Zastaralá data") : Kind == ResourceKind.Network && Primary.State == SampleState.Valid
         ? "↓ " + Display.Metric(Primary, "", 1_000_000) + "  ↑ " + Display.Metric(Secondary, " Mbit/s", 1_000_000)
         : Kind == ResourceKind.Network && Status == "Odpojeno" ? Status
         : Display.Metric(Primary, Kind == ResourceKind.Memory ? " GiB" : " %", Kind == ResourceKind.Memory ? 1073741824 : 1);
