@@ -53,8 +53,6 @@ public sealed partial class MainWindow : Window
     private readonly TextBlock resourceValue = Label(Loc.T("Načítám…"), 42, 0x80c5c0);
     private readonly TextBlock resourceUnit = Label("", 13, 0x95a4ad);
     private readonly List<ToggleButton> rangeButtons = [], cpuButtons = [];
-    private readonly TextBlock retained = Label("", 9, 0x95a4ad);
-    private readonly TextBlock resourceCount = Label("", 9, 0x95a4ad);
     private readonly StackPanel cpuModes = new() { Orientation = Orientation.Horizontal, Spacing = 3 };
     private readonly ToggleButton scaleChoice = Choice(Loc.T("Auto měřítko"));
     private readonly Grid plotToolbar = new() { Margin = new Thickness(0, 12, 0, 12), RowSpacing = 6 };
@@ -480,6 +478,7 @@ public sealed partial class MainWindow : Window
                     model.Processes.Count, Display.Number((NativeMonitor.MonotonicNowNs - model.ProcessTime) / 1_000_000_000d, " s"))
                     + (model.ProcessError.Length == 0 ? "" : " · " + model.ProcessError) + (model.ResourceError.Length == 0 ? "" : " · " + model.ResourceError);
                 if (model.HistoryWarning.Length != 0) footer.Text += " · " + model.HistoryWarning;
+                ToolTipService.SetToolTip(footer, Loc.T("Doba sběru") + " " + Display.Number(model.CollectionMs, " ms"));
             }
             RunSmoke();
             if (App.SortBenchmarkPath is not null && ticks >= 20 && model.Processes.Count > 0) RunSortBenchmark();

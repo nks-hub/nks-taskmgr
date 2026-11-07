@@ -61,7 +61,7 @@ public sealed partial class MainWindow
             for (int i = 0; i < (4 + columns - 1) / columns; ++i) gpuEngines.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             for (int i = 0; i < gpuTiles.Count; ++i) {
                 var tile = gpuTiles[i];
-                tile.Tile.Visibility = i < Math.Max(1, engines.Length) ? Visibility.Visible : Visibility.Collapsed;
+                tile.Tile.Visibility = i < engines.Length ? Visibility.Visible : Visibility.Collapsed;
                 Grid.SetColumn(tile.Tile, i % columns); Grid.SetRow(tile.Tile, i / columns);
                 string? selected = (tile.Choice.SelectedItem as ComboBoxItem)?.Tag as string;
                 tile.Choice.Items.Clear();
@@ -72,6 +72,7 @@ public sealed partial class MainWindow
                     ? Array.FindIndex(engines, engine => engine.Id == selected)
                     : defaults.Length > 0 ? Array.IndexOf(engines, defaults[Math.Min(i, defaults.Length - 1)]) : 0;
             }
+            gpuEngines.Visibility = engines.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
             rebuildingGpu = false;
         }
         foreach (var tile in gpuTiles) {

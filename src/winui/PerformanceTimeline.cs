@@ -47,8 +47,10 @@ public sealed partial class MainWindow
         timelineSelection.Text = performanceTimeline.Interval is { } interval
             ? Loc.F("Vybraný úsek {0} · historický pohled", Display.Number(interval.DurationNs / 1_000_000_000d, " s"))
             : state.RangeAnchorNs is not null ? Loc.T("První hranice úseku · Shift+klik nastaví druhou.")
-            : state.IsPinned ? Loc.T("Připnutý čas · historický pohled")
-            : Loc.T("Kliknutím vyberete čas · Shift vybere úsek.");
+            : state.IsPinned ? Loc.T("Připnutý čas · historický pohled") : "";
+        // The row appears only once a time is pinned; how to pin is in the range buttons' tooltip.
+        var visibility = timelineSelection.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (performanceTimelinePanel.Visibility != visibility) performanceTimelinePanel.Visibility = visibility;
     }
 
     private void OpenHistoricalProcesses()

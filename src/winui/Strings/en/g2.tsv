@@ -492,3 +492,9 @@ rozbaleno	expanded
 sbaleno	collapsed
 Nainstalujte aplikaci pro všechny uživatele; instalátor tuto volbu nabídne hned na začátku.	Install the app for all users; Setup offers this choice right at the start.
 Změna byla zrušena v okně UAC.	The change was cancelled in the UAC prompt.
+Swap	Swap
+Kliknutím do grafu připnete čas, Shift+kliknutím vyberete úsek.	Click the graph to pin a time, Shift+click to select a range.
+Čtení / zápis	Read / write
+Mezipaměť L1 / L2 / L3	L1 / L2 / L3 cache
+Rychlost linky	Link speed
+Procesy podle paměti	Processes by memory

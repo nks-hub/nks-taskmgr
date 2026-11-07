@@ -492,3 +492,9 @@ rozbaleno	erweitert
 sbaleno	reduziert
 Nainstalujte aplikaci pro všechny uživatele; instalátor tuto volbu nabídne hned na začátku.	Installieren Sie die App für alle Benutzer; das Setup bietet diese Wahl gleich zu Beginn an.
 Změna byla zrušena v okně UAC.	Die Änderung wurde in der UAC-Abfrage abgebrochen.
+Swap	Auslagerung
+Kliknutím do grafu připnete čas, Shift+kliknutím vyberete úsek.	Klicken Sie in den Graphen, um einen Zeitpunkt anzuheften; Umschalt+Klick wählt einen Abschnitt.
+Čtení / zápis	Lesen / Schreiben
+Mezipaměť L1 / L2 / L3	L1-/L2-/L3-Cache
+Rychlost linky	Verbindungsgeschwindigkeit
+Procesy podle paměti	Prozesse nach Arbeitsspeicher

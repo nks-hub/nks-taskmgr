@@ -27,15 +27,9 @@ public sealed partial class MainWindow
     {
         performancePage.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(262) });
         performancePage.ColumnDefinitions.Add(new ColumnDefinition()); performancePage.ColumnSpacing = 18;
-        var inventory = new Grid { Padding = new Thickness(0, 0, 10, 0), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 0, 1, 0) };
-        inventory.RowDefinitions.Add(new RowDefinition { Height = new GridLength(28) });
-        inventory.RowDefinitions.Add(new RowDefinition());
-        var inventoryHeader = new Grid { Margin = new Thickness(8, 0, 8, 0) };
-        var inventoryLabel = Label(Loc.T("Prostředky"), 11, 0x95a4ad); inventoryLabel.VerticalAlignment = VerticalAlignment.Center;
-        resourceCount.FontSize = 11; resourceCount.HorizontalAlignment = HorizontalAlignment.Right; resourceCount.VerticalAlignment = VerticalAlignment.Center;
-        inventoryHeader.Children.Add(inventoryLabel); inventoryHeader.Children.Add(resourceCount); inventory.Children.Add(inventoryHeader);
-        ConfigureNetworkFilters(inventoryHeader);
-        Grid.SetRow(resourceList, 1); inventory.Children.Add(resourceList); performancePage.Children.Add(inventory);
+        var inventory = new Grid { Padding = new Thickness(0, 4, 10, 0), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 0, 1, 0) };
+        ConfigureNetworkFilters(inventory);
+        inventory.Children.Add(resourceList); performancePage.Children.Add(inventory);
         performanceDetailScroll.Content = performanceBody;
         AutomationProperties.SetAutomationId(performanceDetailScroll, "performance-detail-scroll");
         AutomationProperties.SetAutomationId(performanceBody, "performance-detail-content");
@@ -53,7 +47,8 @@ public sealed partial class MainWindow
         var content = new StackPanel();
         performanceHeading.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); performanceHeading.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         performanceHeading.ColumnDefinitions.Add(new ColumnDefinition()); performanceHeading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var headingText = new StackPanel { Spacing = 3 };
+        performanceHeading.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        var headingText = performanceHeadingText;
         resourceTitle.FontSize = 20; resourceTitle.CharacterSpacing = -15; resourceTitle.TextTrimming = TextTrimming.CharacterEllipsis; headingText.Children.Add(resourceTitle);
         headingText.Children.Add(resourceDescription); resourceDescription.FontSize = 11; resourceDescription.TextTrimming = TextTrimming.CharacterEllipsis;
         performanceHeading.Children.Add(headingText);
@@ -83,7 +78,6 @@ public sealed partial class MainWindow
         pageFile.Visibility = pageFileTitle.Visibility = Visibility.Collapsed;
         pageFileTitle.Margin = new Thickness(0, 12, 0, 5);
         content.Children.Add(pageFileTitle); content.Children.Add(pageFile);
-        retained.FontSize = 11; retained.Margin = new Thickness(0, 5, 0, 0); content.Children.Add(retained);
         content.Children.Add(BuildPerformanceTimeline());
         chartGrid.Children.Add(content);
         performanceBody.Children.Add(chartGrid);
@@ -91,6 +85,19 @@ public sealed partial class MainWindow
         consumers.Spacing = 5; Grid.SetRow(consumers, 2); performanceBody.Children.Add(consumers);
         AutomationProperties.SetName(inventory, Loc.T("Připojené a zobrazené prostředky s historií využití"));
         page.Children.Add(performancePage);
+    }
+
+    private readonly StackPanel performanceHeadingText = new() { Spacing = 3 };
+
+    /// <summary>Puts the range and scale buttons beside the title, except for CPU whose view switch needs the toolbar row.</summary>
+    private void PlaceChartControls(bool toolbar)
+    {
+        Panel target = toolbar ? plotToolbar : performanceHeading;
+        if (ReferenceEquals(chartControls.Parent, target)) return;
+        (chartControls.Parent as Panel)?.Children.Remove(chartControls);
+        target.Children.Add(chartControls);
+        plotToolbar.Visibility = toolbar ? Visibility.Visible : Visibility.Collapsed;
+        ResizePerformanceDetail();
     }
 
     private void ResizePerformanceLayout(double width)
@@ -116,10 +123,13 @@ public sealed partial class MainWindow
         Grid.SetColumnSpan(performanceReading, stackedHeading ? 2 : 1);
         performanceReading.HorizontalAlignment = stackedHeading ? HorizontalAlignment.Left : HorizontalAlignment.Right;
         performanceHeading.RowSpacing = stackedHeading ? 3 : 0;
-        bool stackedToolbar = performanceDetailWidth < 560;
-        Grid.SetRow(chartControls, stackedToolbar ? 1 : 0); Grid.SetColumn(chartControls, stackedToolbar ? 0 : 1);
+        bool inHeading = ReferenceEquals(chartControls.Parent, performanceHeading);
+        bool stackedToolbar = inHeading ? stackedHeading : performanceDetailWidth < 560;
+        Grid.SetRowSpan(performanceHeadingText, inHeading && !stackedHeading ? 2 : 1);
+        Grid.SetRow(chartControls, inHeading ? stackedHeading ? 2 : 1 : stackedToolbar ? 1 : 0); Grid.SetColumn(chartControls, stackedToolbar ? 0 : 1);
         Grid.SetColumnSpan(chartControls, stackedToolbar ? 2 : 1);
         chartControls.HorizontalAlignment = stackedToolbar ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+        chartControls.Margin = inHeading ? new Thickness(0, 4, 0, 6) : new Thickness(0);
         chartControls.Orientation = cpuModes.Orientation = performanceDetailWidth < 240 ? Orientation.Vertical : Orientation.Horizontal;
         Grid.SetRow(historicalProcessesButton, stackedHeading ? 1 : 0); Grid.SetColumn(historicalProcessesButton, stackedHeading ? 0 : 1);
         Grid.SetColumnSpan(historicalProcessesButton, stackedHeading ? 2 : 1);

@@ -32,7 +32,7 @@ public sealed partial class MainWindow
                 ?? throw new InvalidOperationException("The resource preview probe has no realized item.");
             var labels = PreviewElements(container).OfType<StackPanel>()
                 .Select(panel => panel.Children.OfType<TextBlock>().ToArray())
-                .Single(items => items.Length == 3 && items[0].Text == row.Title);
+                .Single(items => items.Length == 2 && items[0].Text == row.Title);
             var template = VisualTreeHelper.GetParent(labels[0].Parent) as Grid
                 ?? throw new InvalidOperationException("The resource preview probe has no production template grid.");
             var paths = PreviewElements(template).OfType<Microsoft.UI.Xaml.Shapes.Path>().ToArray();
@@ -42,7 +42,7 @@ public sealed partial class MainWindow
             {
                 var tooltip = ToolTipService.GetToolTip(template);
                 string? description = tooltip is ToolTip control ? control.Content as string : tooltip as string;
-                Check(ReadTexts().SequenceEqual(new[] { row.Title, row.Description, row.Summary }) && description == row.Description
+                Check(ReadTexts().SequenceEqual(new[] { row.Title, row.Summary }) && description == row.Description
                     && Shows(paths[0], row.PreviewFill) && Shows(paths[1], row.Preview) && Shows(paths[2], row.UploadPreview)
                     && !ReferenceEquals(paths[0].Data, paths[1].Data) && ReferenceEquals(probe.ContainerFromItem(row), container),
                     "The production resource template retained stale labels, tooltip or graphs, or replaced its container.");
@@ -60,7 +60,7 @@ public sealed partial class MainWindow
             Check(notifications == 1 && !ReferenceEquals(row.Preview, originalGeometry), "A resource return did not publish fresh bindings exactly once.");
             row.RefreshPreview(); Check(notifications == 1, "A duplicate resource return notified its template again.");
             row.SetStale(true); row.RefreshPreview(); await Rendered(); Fresh();
-            Check(notifications == 2 && labels[2].Text == Loc.T("Zastaralá data"), "A stale resource changed more than its value notification or kept old text.");
+            Check(notifications == 2 && labels[1].Text == Loc.T("Zastaralá data"), "A stale resource changed more than its value notification or kept old text.");
             row.SetStale(false, notify: false); row.RefreshPreview(); await Rendered(); Fresh();
             Check(notifications == 3, "A deferred stale-state return did not update its bound value.");
             originalGeometry = row.Preview;

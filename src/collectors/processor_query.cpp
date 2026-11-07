@@ -70,14 +70,17 @@ ProcessorSpeed::~ProcessorSpeed() { if (query) PdhCloseQuery(static_cast<PDH_HQU
 
 std::vector<HardwareFact> ProcessorSpeed::collect()
 {
-    if (!query || !nominal || PdhCollectQueryData(static_cast<PDH_HQUERY>(query)) != ERROR_SUCCESS) return {};
+    if (!query || !nominal || PdhCollectQueryData(static_cast<PDH_HQUERY>(query)) != ERROR_SUCCESS) return last;
     const auto read = [](void* counter) {
         PDH_FMT_COUNTERVALUE value{};
         if (!counter || PdhGetFormattedCounterValue(static_cast<PDH_HCOUNTER>(counter), PDH_FMT_DOUBLE | PDH_FMT_NOCAP100, nullptr, &value) != ERROR_SUCCESS
             || (value.CStatus != PDH_CSTATUS_VALID_DATA && value.CStatus != PDH_CSTATUS_NEW_DATA)) return std::numeric_limits<double>::quiet_NaN();
         return value.doubleValue;
     };
-    return processorSpeedFacts(read(nominal), read(performance));
+    // Two reads close together can yield no rate; the previous speed stays shown instead of blinking out.
+    auto facts = processorSpeedFacts(read(nominal), read(performance));
+    if (facts.size() == 2 || last.empty()) last = facts;
+    return last;
 }
 
 }

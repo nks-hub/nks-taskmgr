@@ -14,8 +14,8 @@ public sealed partial class MainWindow
     private sealed class PerformanceConsumerCard
     {
         internal readonly Button Button = MainWindow.Button("");
-        internal readonly TextBlock Title = Label("", 11, 0xe9eef0), Pid = Label("", 9, 0x95a4ad), Value = Label("", 12, 0xe9eef0);
-        private readonly Border icon = new() { Width = 20, Height = 20, VerticalAlignment = VerticalAlignment.Center };
+        internal readonly TextBlock Title = Label("", 12, 0xe9eef0), Value = Label("", 12, 0xe9eef0);
+        private readonly Border icon = new() { Width = 18, Height = 18, VerticalAlignment = VerticalAlignment.Center };
         private readonly int index;
         private uint? color;
         private ProcessRow? boundRow;
@@ -25,16 +25,13 @@ public sealed partial class MainWindow
         {
             this.index = index;
             var content = new Grid { ColumnSpacing = 7 };
-            foreach (var width in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
+            foreach (var width in new[] { GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
                 content.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
-            var order = Label((index + 1).ToString("00"), 9, 0x95a4ad);
-            order.VerticalAlignment = VerticalAlignment.Center; content.Children.Add(order);
-            Grid.SetColumn(icon, 1); content.Children.Add(icon);
-            var name = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
-            Title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold; name.Children.Add(Title); name.Children.Add(Pid);
-            Grid.SetColumn(name, 2); content.Children.Add(name);
-            Value.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(Value, 3); content.Children.Add(Value);
-            Button.Content = content; Button.Height = 38; Button.Padding = new Thickness(4, 2, 4, 2);
+            content.Children.Add(icon);
+            Title.VerticalAlignment = VerticalAlignment.Center; Title.TextTrimming = TextTrimming.CharacterEllipsis;
+            Grid.SetColumn(Title, 1); content.Children.Add(Title);
+            Value.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(Value, 2); content.Children.Add(Value);
+            Button.Content = content; Button.Height = 30; Button.Padding = new Thickness(4, 2, 4, 2);
             Button.BorderThickness = new Thickness(0); Button.CornerRadius = new CornerRadius(0); Button.Background = Display.Brush(0x171d21);
             Button.HorizontalAlignment = HorizontalAlignment.Stretch; Button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
             Button.Click += (_, _) => clicked(this);
@@ -46,10 +43,10 @@ public sealed partial class MainWindow
             var visibility = row is null ? Visibility.Collapsed : Visibility.Visible;
             if (Button.Visibility != visibility) Button.Visibility = visibility;
             if (row is null) return;
-            SetConsumerText(Title, row.Name); SetConsumerText(Pid, "PID " + row.PidText);
+            SetConsumerText(Title, row.Name);
             SetConsumerText(Value, memory ? row.WorkingText : row.CpuText);
             string label = $"{index + 1}. {row.Name}, PID {row.PidText}, {Value.Text}";
-            if (AutomationProperties.GetName(Button) != label) AutomationProperties.SetName(Button, label);
+            if (AutomationProperties.GetName(Button) != label) { AutomationProperties.SetName(Button, label); ToolTipService.SetToolTip(Button, label); }
             if (color != nextColor) { icon.Child = UiIcon.Create(false, nextColor, 18); color = nextColor; }
         }
 
@@ -70,7 +67,9 @@ public sealed partial class MainWindow
         if (consumers.Children.Count == 0) {
             consumers.Children.Add(consumerCaption); consumers.Children.Add(consumerCards);
         }
-        SetConsumerText(consumerCaption, memory ? Loc.T("Pracovní sada včetně sdílených stránek") : Loc.T("Procesy podle CPU"));
+        SetConsumerText(consumerCaption, memory ? Loc.T("Procesy podle paměti") : Loc.T("Procesy podle CPU"));
+        string captionHelp = memory ? Loc.T("Pracovní sada včetně sdílených stránek") : "";
+        if (ToolTipService.GetToolTip(consumerCaption) as string != captionHelp) ToolTipService.SetToolTip(consumerCaption, captionHelp.Length == 0 ? null : captionHelp);
         var rows = model.TopConsumers(memory).ToArray();
         bool stacked = performanceDetailWidth < 720;
         if (consumerLayout != (stacked, rows.Length)) {

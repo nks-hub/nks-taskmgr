@@ -22,7 +22,6 @@ public sealed partial class MainWindow
     {
         var heading = new Grid { ColumnSpacing = 10 };
         heading.ColumnDefinitions.Add(new ColumnDefinition()); heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var title = Label(Loc.T("Čtení a zápis"), 11, 0x95a4ad); title.VerticalAlignment = VerticalAlignment.Center; heading.Children.Add(title);
         CompactPerformanceChoice(diskTransferScale); diskTransferScale.Height = 23; diskTransferScale.FontSize = 11;
         diskTransferScale.IsChecked = true;
         ToolTipService.SetToolTip(diskTransferScale, Loc.T("Automatické měřítko podle čtení i zápisu. Vypnutí podrží aktuální rozsah osy."));

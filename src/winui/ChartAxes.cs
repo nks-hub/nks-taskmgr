@@ -58,7 +58,7 @@ public sealed partial class ChartView
 
     private string Format(double value)
     {
-        if (unit == ChartUnit.Percent) return Display.Number(value, " %");
+        if (unit == ChartUnit.Percent) return Display.Number(value, " %", value % 1 == 0 ? 0 : 1);
         double divisor = unit is ChartUnit.Bytes or ChartUnit.BytesPerSecond ? 1024 : 1000;
         string[] suffixes = unit == ChartUnit.Bytes ? [" B", " KiB", " MiB", " GiB", " TiB"]
             : unit == ChartUnit.BytesPerSecond ? [" B/s", " KiB/s", " MiB/s", " GiB/s", " TiB/s"] : [" bit/s", " kbit/s", " Mbit/s", " Gbit/s", " Tbit/s"];

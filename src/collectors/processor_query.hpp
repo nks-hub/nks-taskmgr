@@ -38,6 +38,7 @@ private:
     void* query{};
     void* performance{};
     void* nominal{};
+    std::vector<HardwareFact> last;
 };
 
 }

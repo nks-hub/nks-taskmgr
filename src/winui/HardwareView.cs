@@ -69,7 +69,7 @@ public sealed partial class MainWindow
             if (key == "cpu") facts = new Dictionary<string, string> {
                 ["Model"] = model.CpuModel.Length > 0 ? model.CpuModel : "Načítání…",
                 ["Logické procesory"] = model.LogicalProcessors > 0 ? model.LogicalProcessors.ToString() : "Načítání…"
-            }.Concat(facts.Where(fact => fact.Key != "Model" && fact.Key != "Logické procesory")).ToDictionary(fact => fact.Key, fact => fact.Value);
+            }.Concat(facts.Where(fact => fact.Key is not ("Model" or "Logické procesory" or "Rychlost"))).ToDictionary(fact => fact.Key, fact => fact.Value);
             result[key] = facts;
         }
         return result;
