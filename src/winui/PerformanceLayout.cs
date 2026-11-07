@@ -78,7 +78,7 @@ public sealed partial class MainWindow
         chartControls.Spacing = 4; plotToolbar.Margin = new Thickness(0, 7, 0, 8); plotToolbar.RowSpacing = 5;
         plotToolbar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); plotToolbar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         plotToolbar.ColumnDefinitions.Add(new ColumnDefinition()); plotToolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        plotToolbar.Children.Add(cpuModes); Grid.SetColumn(chartControls, 1); plotToolbar.Children.Add(chartControls);
+        plotToolbar.Children.Add(cpuModes); Grid.SetColumn(chartControls, 1); plotToolbar.Children.Add(chartControls); chartControlsHost = plotToolbar;
         content.Children.Add(plotToolbar); content.Children.Add(chart); content.Children.Add(processors); content.Children.Add(BuildGpu()); content.Children.Add(BuildDiskTransfers());
         processors.Visibility = gpuPanel.Visibility = diskTransferPanel.Visibility = Visibility.Collapsed;
         pageFile.Visibility = pageFileTitle.Visibility = Visibility.Collapsed;
@@ -94,14 +94,16 @@ public sealed partial class MainWindow
     }
 
     private readonly StackPanel performanceHeadingText = new() { Spacing = 3 };
+    private Panel chartControlsHost = null!;
 
     /// <summary>Puts the range and scale buttons beside the title, except for CPU whose view switch needs the toolbar row.</summary>
     private void PlaceChartControls(bool toolbar)
     {
         Panel target = toolbar ? plotToolbar : performanceHeading;
-        if (ReferenceEquals(chartControls.Parent, target)) return;
-        (chartControls.Parent as Panel)?.Children.Remove(chartControls);
-        target.Children.Add(chartControls);
+        if (ReferenceEquals(chartControlsHost, target)) return;
+        // Parent stays null until the page is loaded, so a hidden page would add the controls to a second panel.
+        chartControlsHost.Children.Remove(chartControls);
+        target.Children.Add(chartControls); chartControlsHost = target;
         plotToolbar.Visibility = toolbar ? Visibility.Visible : Visibility.Collapsed;
         ResizePerformanceDetail();
     }
@@ -129,7 +131,7 @@ public sealed partial class MainWindow
         Grid.SetColumnSpan(performanceReading, stackedHeading ? 2 : 1);
         performanceReading.HorizontalAlignment = stackedHeading ? HorizontalAlignment.Left : HorizontalAlignment.Right;
         performanceHeading.RowSpacing = stackedHeading ? 3 : 0;
-        bool inHeading = ReferenceEquals(chartControls.Parent, performanceHeading);
+        bool inHeading = ReferenceEquals(chartControlsHost, performanceHeading);
         bool stackedToolbar = inHeading ? stackedHeading : performanceDetailWidth < 560;
         Grid.SetRowSpan(performanceHeadingText, inHeading && !stackedHeading ? 2 : 1);
         Grid.SetRow(chartControls, inHeading ? stackedHeading ? 2 : 1 : stackedToolbar ? 1 : 0); Grid.SetColumn(chartControls, stackedToolbar ? 0 : 1);
