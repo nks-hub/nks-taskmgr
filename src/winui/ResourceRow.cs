@@ -14,7 +14,7 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     }
     public string Id { get; }
     public ResourceKind Kind { get; }
-    public double PreviewRowHeight => 46;
+    public double PreviewRowHeight => Kind == ResourceKind.Network ? 60 : 50;
     public bool IsVirtualNetwork => Kind == ResourceKind.Network && HardwareFacts.TryGetValue("Druh rozhraní", out var type)
         && type is "Virtuální" or "Pomocné / virtuální";
     public bool IsNetworkConnected => Kind == ResourceKind.Network && (HardwareFacts.TryGetValue("Stav rozhraní Windows", out var state)

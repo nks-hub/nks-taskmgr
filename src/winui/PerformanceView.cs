@@ -25,6 +25,7 @@ public sealed partial class MainWindow
         if (resourceChanged && root.ActualWidth > 0) ResizePerformanceLayout(root.ActualWidth);
         long now = model.Paused ? Math.Max(model.ProcessTime, model.ResourceTime) : NativeMonitor.MonotonicNowNs;
         uint color = Display.ResourceColor(resource.Kind);
+        resourceCount.Text = Loc.F("{0} zařízení", model.Resources.Count);
         resourceTitle.Text = resource.Title;
         resourceDescription.Text = resource.Kind == ResourceKind.Cpu ? model.CpuModel
             : resource.Kind == ResourceKind.Memory && model.Memory.State == SampleState.Valid

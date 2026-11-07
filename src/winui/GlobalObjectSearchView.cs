@@ -43,7 +43,7 @@ public sealed partial class MainWindow
     private bool OpenObjectOwner(ProcessKey key)
     {
         if (CurrentObjectOwner(key) is not { } row) return false;
-        processQuery = ""; model.SetQuery(""); model.SetMode(ProcessMode.All); ShowView(false); SelectProcess(row); Activate();
+        RevealProcess(row); Activate();
         return true;
     }
 }

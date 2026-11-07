@@ -27,9 +27,15 @@ public sealed partial class MainWindow
     {
         performancePage.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(262) });
         performancePage.ColumnDefinitions.Add(new ColumnDefinition()); performancePage.ColumnSpacing = 18;
-        var inventory = new Grid { Padding = new Thickness(0, 4, 10, 0), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 0, 1, 0) };
-        ConfigureNetworkFilters(inventory);
-        inventory.Children.Add(resourceList); performancePage.Children.Add(inventory);
+        var inventory = new Grid { Padding = new Thickness(0, 0, 10, 0), BorderBrush = Display.Brush(0x2c363d), BorderThickness = new Thickness(0, 0, 1, 0) };
+        inventory.RowDefinitions.Add(new RowDefinition { Height = new GridLength(28) });
+        inventory.RowDefinitions.Add(new RowDefinition());
+        var inventoryHeader = new Grid { Margin = new Thickness(8, 0, 8, 0) };
+        var inventoryLabel = Label(Loc.T("Prostředky"), 11, 0x95a4ad); inventoryLabel.VerticalAlignment = VerticalAlignment.Center;
+        resourceCount.FontSize = 11; resourceCount.HorizontalAlignment = HorizontalAlignment.Right; resourceCount.VerticalAlignment = VerticalAlignment.Center;
+        inventoryHeader.Children.Add(inventoryLabel); inventoryHeader.Children.Add(resourceCount); inventory.Children.Add(inventoryHeader);
+        ConfigureNetworkFilters(inventoryHeader);
+        Grid.SetRow(resourceList, 1); inventory.Children.Add(resourceList); performancePage.Children.Add(inventory);
         performanceDetailScroll.Content = performanceBody;
         AutomationProperties.SetAutomationId(performanceDetailScroll, "performance-detail-scroll");
         AutomationProperties.SetAutomationId(performanceBody, "performance-detail-content");

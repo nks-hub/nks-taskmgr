@@ -48,6 +48,7 @@ public sealed partial class MainWindow : Window
     private readonly Grid performancePage = new(), processPage = new();
     private ProcessTable processTable = null!;
     private readonly Grid performanceBody = new(), chartGrid = new();
+    private readonly TextBlock resourceCount = Label("", 9, 0x95a4ad);
     private readonly TextBlock resourceEyebrow = Label(Loc.T("PROCESOR"), 9, 0x95a4ad);
     private readonly TextBlock resourceTitle = Label(Loc.T("Procesor"), 20, 0xe9eef0), resourceDescription = Label("", 10, 0x95a4ad);
     private readonly TextBlock resourceValue = Label(Loc.T("Načítám…"), 42, 0x80c5c0);
@@ -365,6 +366,7 @@ public sealed partial class MainWindow : Window
     private void ShowView(bool value) => ShowView(value ? DesktopView.Performance : DesktopView.Processes);
     private void ShowView(DesktopView next)
     {
+        pendingReveal = null;
         if (view == DesktopView.Processes && model.Mode != ProcessMode.Applications && next != DesktopView.Processes && next != DesktopView.Applications) {
             var state = CaptureProcessNavigation(); CancelNavigationRestore();
             processNavigation = pendingNavigationRestore = state;

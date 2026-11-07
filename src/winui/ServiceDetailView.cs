@@ -69,8 +69,7 @@ public sealed partial class MainWindow
     private void OpenServiceHost()
     {
         if (servicesModel?.Host(model) is not { } host) return;
-        processQuery = ""; model.SetQuery(""); model.SetMode(ProcessMode.All); ShowView(false);
-        SelectProcess(host);
+        RevealProcess(host);
     }
     private void RefreshServiceDetail()
     {

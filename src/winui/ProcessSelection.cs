@@ -19,6 +19,36 @@ public sealed partial class MainWindow
         if (model.Mode is ProcessMode.Tree or ProcessMode.Applications && row.HasChildren && model.IsCurrent(row)) model.Toggle(row);
     }
 
+    /// <summary>Opens Procesy with every process listed and selects the row; a parked selection from the last visit must not replace it.</summary>
+    private void RevealProcess(ProcessRow row)
+    {
+        CancelNavigationRestore();
+        processQuery = ""; model.SetQuery("");
+        if (model.Mode != ProcessMode.All) model.SetMode(ProcessMode.All);
+        ShowView(DesktopView.Processes);
+        CancelNavigationRestore();
+        pendingReveal = row;
+        // A list shown for the first time drops a selection made before it loads, so it selects once loaded.
+        if (processList.IsLoaded) ApplyPendingReveal();
+        else processList.Loaded += RevealOnLoaded;
+    }
+
+    private void RevealOnLoaded(object sender, RoutedEventArgs args)
+    {
+        processList.Loaded -= RevealOnLoaded;
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, ApplyPendingReveal);
+    }
+
+    private void ApplyPendingReveal()
+    {
+        if (pendingReveal is not { } row || view != DesktopView.Processes || !slotsByRow.ContainsKey(row)) return;
+        pendingReveal = null;
+        SelectProcess(row);
+        if (processList.ContainerFromItem(processList.SelectedItem) is ListViewItem item) item.Focus(FocusState.Programmatic);
+    }
+
+    private ProcessRow? pendingReveal;
+
     private void SelectProcess(ProcessRow row, bool scroll = true)
     {
         processList.SelectedItems.Clear();
@@ -79,7 +109,9 @@ public sealed partial class MainWindow
             slotsAssignMs = Stopwatch.GetElapsedTime(began, assigned).TotalMilliseconds;
             slotsRestoreMs = Stopwatch.GetElapsedTime(assigned, restored).TotalMilliseconds;
             slotsFocusMs = Stopwatch.GetElapsedTime(restored).TotalMilliseconds;
-            updatingProcessSlots = false; RefreshSelection();
+            updatingProcessSlots = false;
+            if (pendingReveal is not null && processList.IsLoaded) ApplyPendingReveal();
+            RefreshSelection();
         }
         source.VisibleProcesses.Replacing += Replacing;
         source.VisibleProcesses.Replaced += Replaced;

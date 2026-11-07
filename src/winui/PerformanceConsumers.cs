@@ -90,8 +90,7 @@ public sealed partial class MainWindow
     private void OpenPerformanceConsumer(PerformanceConsumerCard card)
     {
         if (card.Current(model) is not { } row) return;
-        search.Text = string.Empty; model.SetMode(ProcessMode.All); ShowView(false);
-        SelectProcess(row);
+        RevealProcess(row);
     }
 
     private static void SetConsumerText(TextBlock label, string text) { if (label.Text != text) label.Text = text; }
