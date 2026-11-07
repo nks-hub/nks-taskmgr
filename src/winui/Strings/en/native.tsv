@@ -44,3 +44,10 @@ Teplotní čidla typu CPU; °C, poslední publikovaný vzorek, nikoli ACPI therm
 Čtení čidel překročilo časový limit	Reading the sensors timed out
 Rychlost linky ↓	Link speed ↓
 Rychlost linky ↑	Link speed ↑
+ · publikovaný vzorek	 · published sample
+ · zastaralé nebo nejistý čas	 · stale or uncertain time
+ · publikovaný čas je v budoucnu	 · published time is in the future
+ · stáří 	 · age 
+Neznámý stav 	Unknown state 
+Upozornění 0x	Warning 0x
+Virtuální · 	Virtual · 

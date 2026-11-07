@@ -28,6 +28,9 @@ internal static class Loc
     internal static string T(string text) => table.TryGetValue(text, out var value) ? value : text;
 
     private static readonly string[] nativeSuffixes = [" operací/s", " požadavků", " logických procesorů"];
+    // Parts of longer native texts composed with numbers or names.
+    private static readonly string[] nativeFragments = [" · publikovaný vzorek", " · zastaralé nebo nejistý čas", " · publikovaný čas je v budoucnu",
+        " · stáří ", "Neznámý stav ", "Upozornění 0x", "Virtuální · "];
 
     /// <summary>Translates a fixed Czech value produced by the native collectors, or only its unit after a number.</summary>
     internal static string Native(string value)
@@ -35,6 +38,9 @@ internal static class Loc
         if (table.TryGetValue(value, out var translated)) return translated;
         foreach (var suffix in nativeSuffixes)
             if (value.EndsWith(suffix, StringComparison.Ordinal)) return value[..^suffix.Length] + T(suffix);
+        if (Language == "cs") return value;
+        foreach (var fragment in nativeFragments)
+            if (value.Contains(fragment, StringComparison.Ordinal)) value = value.Replace(fragment, T(fragment), StringComparison.Ordinal);
         return value;
     }
 

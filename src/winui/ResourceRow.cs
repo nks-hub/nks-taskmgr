@@ -75,7 +75,8 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
 
     internal void Update(in ResourceInfo source, long time, bool notify, bool recordHistory)
     {
-        Update(RetainText(source.Title, Title), RetainText(source.Description, Description), RetainText(source.Status, Status),
+        // Native titles and states are Czech; the comparison in RetainText only saves allocations when no translation applies.
+        Update(Loc.Native(RetainText(source.Title, Title)), RetainText(source.Description, Description), Loc.Native(RetainText(source.Status, Status)),
             source.Primary, source.Secondary, source.Tertiary, source.Capacity, time, notify, recordHistory);
     }
 

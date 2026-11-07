@@ -44,3 +44,10 @@ Teplotní čidla typu CPU; °C, poslední publikovaný vzorek, nikoli ACPI therm
 Čtení čidel překročilo časový limit	Der Sensorabruf hat das Zeitlimit überschritten
 Rychlost linky ↓	Verbindungsgeschwindigkeit ↓
 Rychlost linky ↑	Verbindungsgeschwindigkeit ↑
+ · publikovaný vzorek	 · veröffentlichter Messwert
+ · zastaralé nebo nejistý čas	 · veraltete oder unsichere Zeit
+ · publikovaný čas je v budoucnu	 · veröffentlichte Zeit liegt in der Zukunft
+ · stáří 	 · Alter 
+Neznámý stav 	Unbekannter Status 
+Upozornění 0x	Warnung 0x
+Virtuální · 	Virtuell · 
