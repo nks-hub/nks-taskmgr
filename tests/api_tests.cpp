@@ -130,7 +130,7 @@ void verify()
     NksSessionData sessions{};
     require(nks_frame_get_session_data(nullptr, sizeof(sessions), &sessions) == NKS_INVALID_ARGUMENT, "Null session frame was accepted");
     require(nks_frame_get_session_data(processFrame.get(), sizeof(sessions) - 1, &sessions) == NKS_ABI_MISMATCH, "Wrong session layout was accepted");
-    require((processes.flags & NKS_RESOURCE_DATA) || nks_frame_get_session_data(resourceFrame.get(), sizeof(sessions), &sessions) == NKS_NO_DATA,
+    require((resources.flags & NKS_PROCESS_DATA) || nks_frame_get_session_data(resourceFrame.get(), sizeof(sessions), &sessions) == NKS_NO_DATA,
         "A resource-only frame reported sessions");
     require(nks_frame_get_session_data(processFrame.get(), sizeof(sessions), &sessions) == NKS_OK && sessions.state == NKS_SAMPLE_VALID
         && sessions.process_count == p.process_count, "Session data depended on the destroyed monitor");
