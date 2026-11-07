@@ -75,10 +75,15 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
 
     internal void Update(in ResourceInfo source, long time, bool notify, bool recordHistory)
     {
-        // Native titles and states are Czech; the comparison in RetainText only saves allocations when no translation applies.
-        Update(Loc.Native(RetainText(source.Title, Title)), RetainText(source.Description, Description), Loc.Native(RetainText(source.Status, Status)),
+        // Native titles and states are Czech: keep the native text to skip allocations and translate only when it changes.
+        string title = RetainText(source.Title, nativeTitle), status = RetainText(source.Status, nativeStatus);
+        if (!ReferenceEquals(title, nativeTitle)) { nativeTitle = title; translatedTitle = Loc.Native(title); }
+        if (!ReferenceEquals(status, nativeStatus)) { nativeStatus = status; translatedStatus = Loc.Native(status); }
+        Update(translatedTitle, RetainText(source.Description, Description), translatedStatus,
             source.Primary, source.Secondary, source.Tertiary, source.Capacity, time, notify, recordHistory);
     }
+
+    private string nativeTitle = string.Empty, translatedTitle = string.Empty, nativeStatus = string.Empty, translatedStatus = string.Empty;
 
     private static unsafe string RetainText(String16 source, string current)
     {
