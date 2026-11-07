@@ -33,7 +33,7 @@ public static partial class WinUiChecks
                 Status = new String16 { Data = status, Length = 8 } }, 201, false, false);
         }
         GC.Collect();
-        Require(row.Title == "Renamed" && row.Description.Length == 0 && row.Status == "Odpojeno",
+        Require(row.Title == "Renamed" && row.Description.Length == 0 && row.Status == Loc.Native("Odpojeno"),
             "Changed or empty resource text retained borrowed native storage or obsolete values.");
         ResourceMembershipRefresh();
         App.Trace("Resource refresh reuse passed: stable owned text without allocations, changed metrics/history and network membership");

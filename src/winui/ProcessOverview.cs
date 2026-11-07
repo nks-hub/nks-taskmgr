@@ -25,7 +25,7 @@ public sealed partial class MainWindow
         UpdateProcessOverview(ResourceKind.Disk, Loc.T("Disky · maximum"), disk?.Value ?? Loc.F("{0} zařízení", disks.Length), disk,
             disk is null ? Loc.T("Aktivita disků právě není dostupná.") : Loc.F("Nejvyšší aktuální aktivita: {0} · {1}", disk.Title, disk.Description));
 
-        var network = model.Resources.Where(row => row.Kind == ResourceKind.Network && row.Status == "Připojeno")
+        var network = model.Resources.Where(row => row.Kind == ResourceKind.Network && ResourceRow.IsNativeStatus(row.Status, "Připojeno"))
             .OrderByDescending(row => Rate(row.Primary) + Rate(row.Secondary)).FirstOrDefault();
         UpdateProcessOverview(ResourceKind.Network, Loc.T("Síť"), network?.Value ?? Loc.T("Žádné připojení"), network,
             network is null ? Loc.T("Žádný připojený adaptér v tomto pohledu.")

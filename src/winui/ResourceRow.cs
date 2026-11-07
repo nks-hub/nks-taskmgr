@@ -18,7 +18,7 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     public bool IsVirtualNetwork => Kind == ResourceKind.Network && HardwareFacts.TryGetValue("Druh rozhraní", out var type)
         && type is "Virtuální" or "Pomocné / virtuální";
     public bool IsNetworkConnected => Kind == ResourceKind.Network && (HardwareFacts.TryGetValue("Stav rozhraní Windows", out var state)
-        ? state == "1" : Status == "Připojeno");
+        ? state == "1" : IsNativeStatus(Status, "Připojeno"));
     public GpuModel? Gpu { get; }
     public string Title { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
@@ -45,7 +45,7 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     private static (double, SampleState, MetricSource) MetricState(Metric value) => (value.Value, value.State, value.Source);
     public string Value => Stale ? Loc.T("Zastaralá data") : Kind == ResourceKind.Network && Primary.State == SampleState.Valid
         ? "↓ " + Display.Metric(Primary, "", 1_000_000) + "  ↑ " + Display.Metric(Secondary, " Mbit/s", 1_000_000)
-        : Kind == ResourceKind.Network && Status == "Odpojeno" ? Status
+        : Kind == ResourceKind.Network && IsNativeStatus(Status, "Odpojeno") ? Status
         : Display.Metric(Primary, Kind == ResourceKind.Memory ? " GiB" : " %", Kind == ResourceKind.Memory ? 1073741824 : 1);
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -82,6 +82,9 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
         Update(translatedTitle, RetainText(source.Description, Description), translatedStatus,
             source.Primary, source.Secondary, source.Tertiary, source.Capacity, time, notify, recordHistory);
     }
+
+    /// <summary>Compares a displayed state with a fixed Czech native state in any UI language.</summary>
+    internal static bool IsNativeStatus(string status, string czech) => status == czech || status == Loc.Native(czech);
 
     private string nativeTitle = string.Empty, translatedTitle = string.Empty, nativeStatus = string.Empty, translatedStatus = string.Empty;
 
