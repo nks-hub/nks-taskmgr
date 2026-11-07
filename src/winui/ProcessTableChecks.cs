@@ -106,7 +106,7 @@ public static partial class WinUiChecks
             throw CaptureProcessTableBindingFailure(list, item, loopIndex);
         }
         Check(ReferenceEquals(name.Row, current) && name.Margin == current.Indent, "A recycled process name retained another row or depth.");
-        string expectedName = current.Name + (current.Ended ? " · ukončeno" : current.Stale ? " · zastaralé" : "");
+        string expectedName = current.Name + (current.Ended ? Loc.T(" · ukončeno") : current.Stale ? Loc.T(" · zastaralé") : "");
         Check(name.NameLabel.Text == expectedName, "A recycled process label retained another name or status.");
         if (visible) {
             string[] expected = [expectedName, current.PidText, current.TableCpuText, current.TableWorkingText,

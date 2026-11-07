@@ -226,7 +226,7 @@ public sealed partial class MainWindow
                     Require(original[0].Cpu.Value == 5 && original[0].WorkingBytes == 256 * 1024 * 1024
                         && changed.Contains(nameof(ProcessRow.CpuText)) && changed.Contains(nameof(ProcessRow.WorkingText)),
                         "A held native frame stopped updating process values.");
-                    Require(original[1].Ended && original[1].CpuText == "Ukončeno" && !source.IsCurrent(original[1])
+                    Require(original[1].Ended && original[1].CpuText == Loc.T("Ukončeno") && !source.IsCurrent(original[1])
                         && source.IsCurrent(original[0]) && source.IsCurrent(current) && !source.VisibleProcesses.Contains(current),
                         "A held native frame lost the ended row or exposed its replacement.");
                     Require(SelectedProcess == original[0] && processList.SelectedItems.Count == 2

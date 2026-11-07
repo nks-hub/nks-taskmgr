@@ -121,16 +121,17 @@ internal static class ReplacementTextChecks
     {
         ReplacementState State(ReplacementStatus status, bool backup = false, bool restorable = false, uint error = 0, string debugger = "")
             => new(status, backup, restorable, error, debugger);
-        Require(ReplacementText.Title(State(ReplacementStatus.NotRegistered)) == "Nenastaveno", "Unregistered state text changed.");
-        Require(ReplacementText.Title(State(ReplacementStatus.ThisInstall)) == "Nastaveno na tuto instalaci", "This-install state text changed.");
-        Require(ReplacementText.Title(State(ReplacementStatus.OtherNks)).StartsWith("Nastaveno na jinou instalaci NKS", StringComparison.Ordinal), "Other-install state text changed.");
-        Require(ReplacementText.Title(State(ReplacementStatus.Foreign)) == "Nastaveno na jiný program", "Foreign state text changed.");
-        Require(ReplacementText.Title(State(ReplacementStatus.NotRegistered, error: 5)) == "Stav se nepodařilo přečíst", "A read failure was shown as a state.");
-        Require(ReplacementText.Detail(State(ReplacementStatus.Foreign, debugger: "\"C:\\Tools\\procexp.exe\"\u0007")).Contains("Příkaz: \"C:\\Tools\\procexp.exe\" ", StringComparison.Ordinal),
+        Require(ReplacementText.Title(State(ReplacementStatus.NotRegistered)) == Loc.T("Nenastaveno"), "Unregistered state text changed.");
+        Require(ReplacementText.Title(State(ReplacementStatus.ThisInstall)) == Loc.T("Nastaveno na tuto instalaci"), "This-install state text changed.");
+        Require(ReplacementText.Title(State(ReplacementStatus.OtherNks)) == Loc.T("Nastaveno na jinou instalaci NKS (stará cesta)"), "Other-install state text changed.");
+        Require(ReplacementText.Title(State(ReplacementStatus.Foreign)) == Loc.T("Nastaveno na jiný program"), "Foreign state text changed.");
+        Require(ReplacementText.Title(State(ReplacementStatus.NotRegistered, error: 5)) == Loc.T("Stav se nepodařilo přečíst"), "A read failure was shown as a state.");
+        Require(ReplacementText.Detail(State(ReplacementStatus.Foreign, debugger: "\"C:\\Tools\\procexp.exe\"\u0007")).Contains(Loc.F("Příkaz: {0}", "\"C:\\Tools\\procexp.exe\" "), StringComparison.Ordinal),
             "The foreign command was not shown with control characters neutralized.");
-        Require(ReplacementText.Detail(State(ReplacementStatus.ThisInstall, true, false)).Contains("jen odstraní", StringComparison.Ordinal), "An unrestorable backup was promised as restorable.");
-        Require(ElevationBrokerClient.Status(0xe04e0004) == "Náhradu lze zapnout jen z instalace v Program Files."
-            && ElevationBrokerClient.Status(0xe04e0005) == "Složka instalace není chráněná proti zápisu běžných uživatelů.", "Replacement refusal codes lost their text.");
+        Require(ReplacementText.Detail(State(ReplacementStatus.ThisInstall, true, false)).Contains(Loc.T("Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto se nebude obnovovat; vypnutím se registrace jen odstraní."), StringComparison.Ordinal),
+            "An unrestorable backup was promised as restorable.");
+        Require(ElevationBrokerClient.Status(0xe04e0004) == Loc.T("Náhradu lze zapnout jen z instalace v Program Files.")
+            && ElevationBrokerClient.Status(0xe04e0005) == Loc.T("Složka instalace není chráněná proti zápisu běžných uživatelů."), "Replacement refusal codes lost their text.");
 
         var key = new ProcessKey(new(1, 2), 100, GenerationKind.CreationTime, 7);
         var request = ProcessActionsProtocol.Request(new(ProcessActionCommand.TaskManager, [new(key, 7)], 1));

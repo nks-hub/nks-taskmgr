@@ -131,7 +131,7 @@ public static partial class WinUiChecks
         Require(description.Length > 0 && tooltipText == description && AutomationProperties.GetHelpText(grid) == description,
             "The production row lost its branch membership and metric-availability description.");
         var header = ((Grid)table.Header.Children[2]).Children.OfType<Button>().Single();
-        Require(AutomationProperties.GetName(header).Contains(branch ? "proces s potomky" : "vlastní hodnoty", StringComparison.Ordinal),
+        Require(AutomationProperties.GetName(header).Contains(branch ? Loc.T(", proces s potomky") : Loc.T(", vlastní hodnoty"), StringComparison.Ordinal),
             "The accessible metric heading does not explain the displayed value scope.");
         if (!branch) Require(expected.TableCpuText == expected.CpuText && expected.TableWorkingText == expected.WorkingText
             && expected.TablePrivateText == expected.PrivateText && expected.TableReadText == expected.ReadText

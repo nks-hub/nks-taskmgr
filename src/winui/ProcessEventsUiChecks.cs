@@ -114,7 +114,7 @@ internal sealed partial class ProcessEventsWindow
             Log($"events-ui initial={initial.State};win32={initial.Win32Error};{batches.Counters}");
             if (initial.State is ProcessEventMonitorState.AccessDenied or ProcessEventMonitorState.Unsupported) {
                 EventCheck(!elevated && initial.Win32Error != 0, "Elevated check did not obtain real capture or denial lacked its native error.");
-                EventCheck(status.Text.Contains(initial.State == ProcessEventMonitorState.AccessDenied ? "zamítnutý" : "podporovaný", StringComparison.Ordinal)
+                EventCheck(status.Text.Contains(StateText(initial.State), StringComparison.Ordinal)
                     && start.IsEnabled && !stop.IsEnabled, "Actual denied/unsupported UI did not preserve the failure and available retry.");
                 modes.SelectedIndex = 2; await Task.Delay(100, cancellationToken);
                 EventCheck(list.ItemTemplate == (DataTemplate)templates["ProcessLifetime"] && visible.Count == 0,
@@ -125,7 +125,7 @@ internal sealed partial class ProcessEventsWindow
                 Log($"events-ui verified explicit={initial.State};captureClaimed=False;{batches.Counters}"); passed = true;
             } else {
                 EventCheck(initial.State == ProcessEventMonitorState.Running, "Actual event window failed to capture.");
-                EventCheck(!start.IsEnabled && stop.IsEnabled && status.Text.Contains("Záznam běží", StringComparison.Ordinal),
+                EventCheck(!start.IsEnabled && stop.IsEnabled && status.Text.Contains(Loc.T("Záznam běží"), StringComparison.Ordinal),
                     "Actual running status and Start/Stop controls disagree with capture state.");
                 timer.Stop();
                 int retainedBefore = retained.Count;
@@ -145,7 +145,7 @@ internal sealed partial class ProcessEventsWindow
                 EventCheck(await StopForCloseAsync(), "Actual StopForClose did not confirm cleanup and drain."); cleaned = true;
                 cancellationToken.ThrowIfCancellationRequested();
                 batches.Draining = false;
-                EventCheck(state == ProcessEventMonitorState.Stopped && status.Text.Contains("Záznam zastavený", StringComparison.Ordinal)
+                EventCheck(state == ProcessEventMonitorState.Stopped && status.Text.Contains(Loc.T("Záznam zastavený"), StringComparison.Ordinal)
                     && !NeedsCleanup && batches.Drains.Count >= 3
                     && batches.Drains[0].Lifecycle == 512 && batches.DrainLifecycle >= 600
                     && batches.Drains[^1] == (0, 0), "Stopped lifecycle backlog was not drained across the 512-record frame boundary.");
@@ -218,7 +218,7 @@ internal sealed partial class ProcessEventsWindow
         EventCheck(texts.Contains(selected.StartedText) && texts.Contains(selected.EndedText) && texts.Contains(selected.DurationText),
             "The real lifetime template did not bind its start, stop and duration.");
         EventCheck(ReferenceEquals(list.SelectedItem, selected) && detail.Text.Contains("PID " + children[0].Key.Pid, StringComparison.Ordinal)
-            && detail.Text.Contains("0x0000002A", StringComparison.Ordinal) && detail.Text.Contains("Žádné živé akce", StringComparison.Ordinal),
+            && detail.Text.Contains("0x0000002A", StringComparison.Ordinal) && detail.Text.Contains(Loc.T("CPU a RAM se zde neměří. Žádné živé akce ani vyhledání současného vlastníka stejného PID."), StringComparison.Ordinal),
             "Actual lifetime selection did not show its own read-only endpoint details.");
         search.Text = "PID " + children[0].Key.Pid;
         await Task.Delay(200, cancellationToken);

@@ -20,7 +20,7 @@ public static partial class WinUiChecks
             Require(changed.Count == 0, "An unchanged process snapshot invalidated its bindings.");
             source.CpuPercent = new Metric { State = SampleState.Valid, Source = MetricSource.NativeProcess };
             row.Update(source);
-            Require(row.CpuText == "0,0 %" && changed.Contains(nameof(ProcessRow.CpuText)) && !changed.Contains(nameof(ProcessRow.WorkingText)), "First-to-zero CPU did not update only the affected cells.");
+            Require(row.CpuText == 0d.ToString("N1", Loc.Culture) + " %" && changed.Contains(nameof(ProcessRow.CpuText)) && !changed.Contains(nameof(ProcessRow.WorkingText)), "First-to-zero CPU did not update only the affected cells.");
             changed.Clear(); source.WorkingSetBytes = 64 * 1024 * 1024; row.Update(source);
             Require(row.WorkingText == "64 MiB" && changed.Contains(nameof(ProcessRow.WorkingText)) && !changed.Contains(nameof(ProcessRow.CpuText)), "A memory update invalidated unrelated cells.");
             changed.Clear(); source.CpuPercent.Value = 0.01; source.WorkingSetBytes += 1; row.Update(source);
@@ -30,9 +30,9 @@ public static partial class WinUiChecks
                 "A raw value change that leaves the cell text identical invalidated the text bindings.");
             source.WorkingSetBytes = 64 * 1024 * 1024;
             row.SetStatus(false, true); changed.Clear(); row.Update(source);
-            Require(row.CpuText == "0,0 %" && changed.Any(string.IsNullOrEmpty), "Returning from stale data left stale cell text.");
+            Require(row.CpuText == 0d.ToString("N1", Loc.Culture) + " %" && changed.Any(string.IsNullOrEmpty), "Returning from stale data left stale cell text.");
             row.SetStatus(true, false); row.Update(source);
-            Require(!row.Ended && !row.DisplayName.Contains("ukončeno", StringComparison.Ordinal), "A fresh snapshot retained ended process text.");
+            Require(!row.Ended && !row.DisplayName.Contains(Loc.T(" · ukončeno"), StringComparison.Ordinal), "A fresh snapshot retained ended process text.");
         }
     }
 
@@ -122,9 +122,9 @@ public static partial class WinUiChecks
         }
         model.SetMode(ProcessMode.All); model.SetHeld(true); model.Sort(2);
         Require(!model.Held, "Held rows prevented explicit sorting.");
-        Require(Display.Metric(new Metric { State = SampleState.Unavailable }, " GiB") == "Měření nedostupné",
+        Require(Display.Metric(new Metric { State = SampleState.Unavailable }, " GiB") == Loc.T("Měření nedostupné"),
             "Unavailable measurement became a numeric value.");
-        Require(Display.Metric(new Metric { State = SampleState.Valid, Value = 0 }, " %") == "0,0 %", "Measured zero was lost.");
+        Require(Display.Metric(new Metric { State = SampleState.Valid, Value = 0 }, " %") == 0d.ToString("N1", Loc.Culture) + " %", "Measured zero was lost.");
         Require(model.TopConsumers(false).All(row => row.Key.Pid != 0 && row.Cpu.State == SampleState.Valid), "Idle time was shown as CPU consumption.");
         ProcessRefresh();
         ProcessViewVisibility();
@@ -180,7 +180,7 @@ public static partial class WinUiChecks
         }
         Require(!row.Matches(ServiceFilter.Stopped, "") && row.Matches(ServiceFilter.Other, "SÍŤOVÁ"), "Paused service or Unicode search is incorrect.");
         row.Update(new ServiceInfo { State = 4, Pid = 314, Config = new ServiceConfigInfo { Error = 5 } });
-        Require(row.Startup == "Chybí oprávnění (5)", "Service access denial became a startup value.");
+        Require(row.Startup == Loc.T("Chybí oprávnění (5)"), "Service access denial became a startup value.");
         var host = new ProcessRow(new ProcessKey(new(1, 2), 314, GenerationKind.CreationTime, 100));
         host.SetCreatedTime(100);
         var detail = new ServiceDetailData(NativeMonitor.MonotonicNowNs, "demosvc", "", ServiceConfiguration.Empty, 0, 0, 0, 0, 314, 4, 100, []) {

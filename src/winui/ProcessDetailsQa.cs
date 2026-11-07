@@ -79,9 +79,9 @@ internal sealed partial class ProcessDetailsView
             var container = list.ContainerFromIndex(0) as ListViewItem;
             if (first is null || container is null || !DetailsText(container).Any(text => text.Text == first.First && text.ActualWidth > 0 && text.ActualHeight > 0))
                 throw new InvalidOperationException("Actual process details text was blank after GC.");
-            if (!ReferenceEquals(SelectedRow, first.Source) || detail.Text.Length == 0 || detail.Text == "Vyberte řádek ze seznamu.")
+            if (!ReferenceEquals(SelectedRow, first.Source) || detail.Text.Length == 0 || detail.Text == Loc.T("Vyberte řádek ze seznamu."))
                 throw new InvalidOperationException("Selected details row did not reach the inspector.");
-            if (first.Source is ProcessHandleInfo typed && first.Second.StartsWith("typ ", StringComparison.Ordinal))
+            if (first.Source is ProcessHandleInfo typed && first.Second == Loc.F("typ {0}", typed.TypeIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)))
                 throw new InvalidOperationException("Handle object type index " + typed.TypeIndex + " has no type name.");
             log($"process-details mode={selectedMode};generation={Key.Kind};nativeRows={expected};visibleText=True;inspector=True;gc=True;second={first.Second}");
             string query = selectedMode switch {
@@ -97,7 +97,7 @@ internal sealed partial class ProcessDetailsView
             await SetDetailsQueryAsync("no-match-" + Guid.NewGuid().ToString("N"), "Empty filter");
             object? selectedItem = list.SelectedItem;
             log($"process-details empty mode={selectedMode};query={Flat(find.Text)};items={list.Items.Count};selectedNull={selectedItem is null};selectedType={selectedItem?.GetType().FullName};selectedText={Flat((selectedItem as ProcessDetailsRow)?.Text ?? "")};sourceType={SelectedRow?.GetType().FullName};detailText={Flat(detail.Text)};timerRunning={searchTimer.IsRunning};filterPending={filterOperation is not null}");
-            if (list.Items.Count != 0 || selectedItem is not null || SelectedRow is not null || detail.Text != "Seznam je prázdný. Zkontrolujte hledání a filtr.")
+            if (list.Items.Count != 0 || selectedItem is not null || SelectedRow is not null || detail.Text != Loc.T("Seznam je prázdný. Zkontrolujte hledání a filtr."))
                 throw new InvalidOperationException("An empty result retained a selection or blank inspector.");
             await SetDetailsQueryAsync("", "Reset filter");
             if (list.Items.Count != expected || SelectedRow is null || detail.Text.Length == 0)

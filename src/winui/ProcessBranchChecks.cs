@@ -149,14 +149,14 @@ public static partial class WinUiChecks
         second.ParentPid = 0; second.ReadIoBytesPerSecond.State = SampleState.First;
         var unavailable = BranchRow(second, 200); totals = ProcessBranchTotals.Calculate([unavailable]);
         unavailable.SetBranchValues(totals[0], true, false);
-        Require(totals[0].Cpu.Known == 0 && unavailable.TableCpuText == "Měření nedostupné"
-            && unavailable.TableReadText == "Měření nedostupné", "A wholly unknown metric was displayed as a numeric branch sum.");
+        Require(totals[0].Cpu.Known == 0 && unavailable.TableCpuText == Loc.T("Měření nedostupné")
+            && unavailable.TableReadText == Loc.T("Měření nedostupné"), "A wholly unknown metric was displayed as a numeric branch sum.");
         first.WorkingSetBytes = ulong.MaxValue; first.CpuPercent.Value = double.MaxValue;
         second.ParentPid = 10; second.WorkingSetBytes = 1; second.CpuPercent.State = SampleState.Valid; second.CpuPercent.Value = double.MaxValue;
         root = BranchRow(first, 100); var overflow = BranchRow(second, 200);
         totals = ProcessBranchTotals.Calculate([root, overflow]); root.SetBranchValues(totals[0], true, false);
-        Require(totals[0].Working.Overflow && totals[0].Cpu.Overflow && root.TableWorkingText == "Přetečení součtu"
-            && root.TableCpuText == "Přetečení součtu" && double.IsNegativeInfinity(totals[0].Cpu.SortValue),
+        Require(totals[0].Working.Overflow && totals[0].Cpu.Overflow && root.TableWorkingText == Loc.T("Přetečení součtu")
+            && root.TableCpuText == Loc.T("Přetečení součtu") && double.IsNegativeInfinity(totals[0].Cpu.SortValue),
             "Byte or floating-point overflow produced a wrapped or infinite branch value.");
         second.CpuPercent.Value = -1; second.ReadIoBytesPerSecond.State = SampleState.Valid;
         second.ReadIoBytesPerSecond.Value = double.PositiveInfinity;

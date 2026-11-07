@@ -18,9 +18,10 @@ public static partial class WinUiChecks
         var rows = new ProcessTrafficRows();
         rows.Upsert(owner, 1000, 0, new(1, 2));
         var retained = rows.Values.Single();
-        Require(retained.IdentityText.Contains("vlastník vydávajícího vlákna", StringComparison.Ordinal)
-            && retained.Detail.Contains("Nejde o důkaz obecného žadatele I/O", StringComparison.Ordinal)
-            && !retained.IdentityText.Contains("přímá", StringComparison.Ordinal),
+        string ownerText = Loc.T("Pozorovaná podmnožina · vlastník vydávajícího vlákna při zahájení");
+        Require(retained.IdentityText.Contains(ownerText, StringComparison.Ordinal)
+            && retained.Detail.Contains(Loc.T("INIT a dokončení téhož I/O doložily životnost vlastníka vydávajícího vlákna při zahájení. Nejde o důkaz obecného žadatele I/O; vlákno může být připojené k jinému procesu."), StringComparison.Ordinal)
+            && !retained.IdentityText.Contains(Loc.T("Pozorovaná podmnožina · PID z události, generace z nepřerušené evidence"), StringComparison.Ordinal),
             "The issuing thread owner was presented as the I/O requestor or a direct event identity.");
 
         var revoked = owner with { Attribution = ProcessTrafficAttribution.Unknown,
@@ -30,16 +31,16 @@ public static partial class WinUiChecks
         var current = rows.Values.Single();
         Require(rows.Count == 1 && current.SelectionIdentity == retained.SelectionIdentity
             && current.Traffic == revoked && retained.Traffic == owner
-            && current.IdentityText.Contains("přiřazení odvoláno", StringComparison.Ordinal)
-            && !current.IdentityText.Contains("vlastník vydávajícího vlákna", StringComparison.Ordinal),
+            && current.IdentityText.Contains(Loc.T("dřívější přiřazení odvoláno"), StringComparison.Ordinal)
+            && !current.IdentityText.Contains(ownerText, StringComparison.Ordinal),
             "Revoking a disk owner retained its identity, added a duplicate row or changed a held historical row.");
 
         var network = owner with { SampleId = 2, Source = ProcessTrafficSource.Tcp,
             Direction = ProcessTrafficDirection.Sent, Attribution = ProcessTrafficAttribution.Correlated,
             IdentityState = SampleState.Unavailable };
         rows.Upsert(network, 1000, 0, new(1, 2));
-        Require(rows.Values.Last().IdentityText.Contains("životnost nepotvrzená", StringComparison.Ordinal)
-            && rows.Values.Last().Detail.Contains("není důkaz stejné životnosti", StringComparison.Ordinal),
+        Require(rows.Values.Last().IdentityText.Contains(Loc.T("Částečné · korelace PID/času · životnost nepotvrzená"), StringComparison.Ordinal)
+            && rows.Values.Last().Detail.Contains(Loc.T("Kandidát podle historického PID a času; není důkaz stejné životnosti."), StringComparison.Ordinal),
             "Disk owner evidence incorrectly confirmed a network process lifetime.");
         App.Trace("Process traffic labels passed: issuing owner, requestor distinction, revocation upsert and unverified network identity");
         ProcessNetworkRates(owner);
@@ -67,7 +68,7 @@ public static partial class WinUiChecks
         var row = new ProcessRow(key);
         row.SetNetwork(rates![key], partial, totalPartial, false);
         Require(rates[key] == new ProcessNetworkRate(0, 500, 2500) && partial && totalPartial && row.NetworkText.StartsWith("≥ ", StringComparison.Ordinal)
-            && row.TableMetricsDescription.Contains("≥ 2,4 KiB", StringComparison.Ordinal), "A revoked network sample stayed in the sum or the partial window was not marked.");
+            && row.TableMetricsDescription.Contains("≥ " + (2500 / 1024d).ToString("N1", Loc.Culture) + " KiB", StringComparison.Ordinal), "A revoked network sample stayed in the sum or the partial window was not marked.");
         ProcessNetwork.Observe(running with { State = ProcessEventMonitorState.Stopped }, null);
         row.SetNetwork(null, false, false, false);
         Require(ProcessNetwork.Rates(out _, out _, later) is null && row.NetworkText == "—", "Network rates survived the end of the ETW capture.");

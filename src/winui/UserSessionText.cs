@@ -57,8 +57,9 @@ internal static class UserSessionText
     internal static void Check()
     {
         static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
-        Require(State(SessionConnectState.Shadow) == "Stínový provoz" && State(SessionConnectState.Disconnected) == "Odpojeno"
-            && State((SessionConnectState)99) == "Neznámý", "A session state lost its native wording.");
+        // Loc.T is the identity in Czech, so these still pin the native Czech wording there.
+        Require(State(SessionConnectState.Shadow) == Loc.T("Stínový provoz") && State(SessionConnectState.Disconnected) == Loc.T("Odpojeno")
+            && State((SessionConnectState)99) == Loc.T("Neznámý"), "A session state lost its native wording.");
         Require(Title("jana", 12) == "jana (12)", "The row title does not follow „%1 (%2)“.");
         Require(Name("jan", "PC", "Jan Novák", false) == "jan" && Name("jan", "PC", "Jan Novák", true) == "Jan Novák (PC\\jan)"
             && Name("jan", "PC", "", true) == "PC\\jan" && Name("jan", "", "", true) == "jan", "The full account name toggle is wrong.");
@@ -67,13 +68,17 @@ internal static class UserSessionText
             "Disconnect is offered outside Active and Connected.");
         Require(CanRun(UserSessionAction.Logoff, SessionConnectState.Disconnected) && !CanRun(UserSessionAction.Message, SessionConnectState.Disconnected),
             "Log off or message availability is wrong.");
-        Require(MessageTitle("jana", new DateTime(2026, 11, 4, 9, 5, 0)).StartsWith("Zpráva od jana – ", StringComparison.Ordinal), "The message title lost its native format.");
-        Require(Confirmation(UserSessionAction.Disconnect) == ("Opravdu chcete odpojit vybrané uživatele?", "", "Odpojit uživatele")
-            && Confirmation(UserSessionAction.Logoff).Confirm == "Odhlásit uživatele", "A confirmation text changed.");
+        var sent = new DateTime(2026, 11, 4, 9, 5, 0);
+        Require(MessageTitle("jana", sent) == Loc.F("Zpráva od {0} – {1:g}", "jana", sent)
+            && (Loc.Language != "cs" || MessageTitle("jana", sent).StartsWith("Zpráva od jana – ", StringComparison.Ordinal)), "The message title lost its native format.");
+        Require(Confirmation(UserSessionAction.Disconnect) == (Loc.T("Opravdu chcete odpojit vybrané uživatele?"), "", Loc.T("Odpojit uživatele"))
+            && Confirmation(UserSessionAction.Logoff).Confirm == Loc.T("Odhlásit uživatele"), "A confirmation text changed.");
         string denied = Failure(UserSessionAction.Disconnect, "PC\\jan", 3, AccessDenied);
-        Require(denied.StartsWith("Uživatele PC\\jan (id relace=3) se nepodařilo odpojit.\nPřístup byl odepřen.", StringComparison.Ordinal)
-            && denied.Contains("jako správce", StringComparison.Ordinal), "Access denied lost the native wording.");
-        Require(Failure(UserSessionAction.Message, "x", 7, 1).StartsWith("Zprávu uživateli (SessionId=7) nelze odeslat.\nWindows 1 (0x00000001)", StringComparison.Ordinal),
+        Require(denied == Loc.F("Uživatele {0} (id relace={1}) se nepodařilo odpojit.", "PC\\jan", 3) + "\n"
+            + Loc.T("Přístup byl odepřen. K dokončení této úlohy potřebujete oprávnění správce. Zavřete NKS Task Manager, pak ho spusťte znovu jako správce a zkuste to znovu.")
+            && (Loc.Language != "cs" || denied.StartsWith("Uživatele PC\\jan (id relace=3) se nepodařilo odpojit.\nPřístup byl odepřen.", StringComparison.Ordinal)
+                && denied.Contains("jako správce", StringComparison.Ordinal)), "Access denied lost the native wording.");
+        Require(Failure(UserSessionAction.Message, "x", 7, 1).StartsWith(Loc.F("Zprávu uživateli (SessionId={0}) nelze odeslat.", 7) + "\nWindows 1 (0x00000001)", StringComparison.Ordinal),
             "The message failure text changed.");
     }
 }
