@@ -253,7 +253,7 @@ Aktualizace a návrat předchozí verze	Aktualizacje i powrót do poprzedniej we
 Verze aplikace a možnosti aktualizace	Wersja aplikacji i opcje aktualizacji
 Aktualizace nelze otevřít	Nie można otworzyć aktualizacji
 Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej.	Poprzednie żądanie z podwyższonymi uprawnieniami nie zostało jeszcze zamknięte. Nie powtarzaj go.
-TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv.	TrustNotConfigured: podwyższanie uprawnień nie jest skonfigurowane. Brak przypiętego podpisu wydawcy; ta kompilacja deweloperska pozostaje bez podwyższonych uprawnień.
+Akce s právy správce nejsou v této verzi dostupné, protože vydání není podepsané.	Działania z uprawnieniami administratora nie są dostępne w tej wersji, ponieważ wydanie nie jest podpisane.
 Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.	Podpis, plik lub rzeczywisty partner nie został wiarygodnie zweryfikowany. Podwyższenie uprawnień zostało odrzucone.
 Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána.	Własne potwierdzenie administratora zostało anulowane, upłynął jego limit lub klient już nie działa. Akcja nie została wysłana.
 Náhradu lze zapnout jen z instalace v Program Files.	Zastąpienie Menedżera zadań można włączyć tylko z instalacji w Program Files.

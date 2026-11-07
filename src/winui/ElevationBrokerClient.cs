@@ -40,7 +40,7 @@ internal sealed class ElevationBrokerClient : IDisposable
     }
 
     internal static string Status(uint error) => error switch {
-        0xe04e0001 => Loc.T("TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv."),
+        0xe04e0001 => Loc.T("Akce s právy správce nejsou v této verzi dostupné, protože vydání není podepsané."),
         0xe04e0002 => Loc.T("Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto."),
         0xe04e0003 => Loc.T("Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána."),
         0xe04e0004 => Loc.T("Náhradu lze zapnout jen z instalace v Program Files."),

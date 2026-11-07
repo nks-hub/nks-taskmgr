@@ -88,30 +88,58 @@ public sealed partial class MainWindow
             string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
             bool installed = programFiles.Length > 0 && path.StartsWith(programFiles.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase);
             bool trusted = PublisherTrust.IsConfigured(PublisherPolicy.Broker), readable = state.Error == 0;
-            bool canEnable = trusted && identity && installed && readable && state.Status != ReplacementStatus.ThisInstall;
-            bool canDisable = trusted && identity && readable && state.Status is ReplacementStatus.ThisInstall or ReplacementStatus.OtherNks;
+            // Without a signed broker the change runs once through UAC in the installed update worker.
+            bool ready = !trusted || identity;
+            bool canEnable = ready && installed && readable && state.Status != ReplacementStatus.ThisInstall;
+            bool canDisable = ready && readable && state.Status is ReplacementStatus.ThisInstall or ReplacementStatus.OtherNks;
 
             var content = new StackPanel { Spacing = 10, MinWidth = 320 };
             content.Children.Add(ActionText(Loc.T("Ctrl+Shift+Esc, Ctrl+Alt+Del → Správce úloh, hlavní panel, Win+X a Win+R taskmgr pak otevřou NKS Task Manager.")
                 + " " + Loc.T("Systémový soubor se nemění, zabezpečená obrazovka Windows zůstává stejná.")));
             content.Children.Add(ActionText(Loc.F("Stav: {0}", ReplacementText.Title(state)), 0xe9eef0));
             content.Children.Add(ActionText(ReplacementText.Detail(state)));
-            if (!trusted) content.Children.Add(ActionText(ElevationBrokerClient.Status(0xe04e0001)));
-            else if (!identity) content.Children.Add(ActionText(Loc.T("Vlastní proces ještě není v seznamu s ověřenou identitou. Zkuste to za chvíli.")));
-            if (!installed) content.Children.Add(ActionText(ElevationBrokerClient.Status(0xe04e0004)));
-            content.Children.Add(ActionText(Loc.T("Změna platí pro celý počítač a vyžaduje správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí zvýšeně.")));
+            if (trusted && !identity) content.Children.Add(ActionText(Loc.T("Vlastní proces ještě není v seznamu s ověřenou identitou. Zkuste to za chvíli.")));
+            if (!installed) content.Children.Add(ActionText(ElevationBrokerClient.Status(0xe04e0004) + " "
+                + Loc.T("Nainstalujte aplikaci pro všechny uživatele; instalátor tuto volbu nabídne hned na začátku."), 0xe9eef0));
+            if (canEnable || canDisable)
+                content.Children.Add(ActionText(Loc.T("Změna platí pro celý počítač a vyžaduje správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí zvýšeně.")));
 
             var dialog = ActionDialog(Loc.T("Nahradit Správce úloh Windows"), content);
-            dialog.PrimaryButtonText = Loc.T("Zapnout…"); dialog.IsPrimaryButtonEnabled = canEnable;
-            dialog.SecondaryButtonText = Loc.T("Vypnout (obnovit předchozí)…"); dialog.IsSecondaryButtonEnabled = canDisable;
+            if (canEnable || canDisable) {
+                dialog.PrimaryButtonText = Loc.T("Zapnout…"); dialog.IsPrimaryButtonEnabled = canEnable;
+                dialog.SecondaryButtonText = Loc.T("Vypnout…"); dialog.IsSecondaryButtonEnabled = canDisable;
+            }
             dialog.CloseButtonText = Loc.T("Zavřít"); dialog.DefaultButton = ContentDialogButton.Close;
             processActionDialog = dialog;
             var choice = await dialog.ShowAsync(); processActionDialog = null;
-            if (choice == ContentDialogResult.None || processActionsClosed || own is null) return;
+            if (choice == ContentDialogResult.None || processActionsClosed) return;
+            if (!trusted) { await RunReplacementWorkerAsync(choice == ContentDialogResult.Primary); return; }
+            if (own is null) return;
             await ExecuteProcessActionAsync(ActionRequest(ProcessActionCommand.TaskManager, [own], choice == ContentDialogResult.Primary ? 1ul : 2ul), [own], operation, elevated: true);
         } finally {
             processActionOperation = null; processActionDialog = null; processActionDispatched = false; replacementBusy = false;
         }
+    }
+
+    /// <summary>Enables or releases the replacement through the installed update worker, elevated by UAC.</summary>
+    private async Task RunReplacementWorkerAsync(bool enable)
+    {
+        string text;
+        try {
+            var start = new System.Diagnostics.ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, "nks-update-worker.exe"), enable ? "--enable-taskmgr" : "--release-taskmgr") {
+                UseShellExecute = true, Verb = "runas", WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            };
+            using var worker = System.Diagnostics.Process.Start(start) ?? throw new InvalidOperationException();
+            await worker.WaitForExitAsync();
+            text = worker.ExitCode switch {
+                0 => Loc.T("Registrace Správce úloh Windows byla změněna."),
+                4 => ElevationBrokerClient.Status(0xe04e0005),
+                _ => Loc.T("Změna registrace skončila chybou.")
+            };
+        } catch (System.ComponentModel.Win32Exception error) {
+            text = error.NativeErrorCode == 1223 ? Loc.T("Změna byla zrušena v okně UAC.") : Loc.T("Změna registrace skončila chybou.");
+        }
+        footer.Text = text + " " + Loc.F("Stav: {0}", CurrentReplacementText());
     }
 }
 

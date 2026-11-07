@@ -62,6 +62,20 @@ int settleTaskManager(bool keep, std::wstring_view previousDirectory)
     const auto result = nks::replacement::settleSystem(self.substr(0, self.rfind(L'\\')) + L"\\NksTaskMgr.WinUI.exe", previousDirectory, root);
     return result.error == ERROR_INVALID_PARAMETER ? 2 : result.error ? 3 : 0;
 }
+/// Elevated by UAC from the GUI of an unsigned build: 0 enabled, 4 when this installation is not a protected Program Files folder.
+int enableTaskManager()
+{
+    std::wstring self(32768, L'\0');
+    const DWORD size = GetModuleFileNameW(nullptr, self.data(), static_cast<DWORD>(self.size()));
+    if (!size || size >= self.size()) return 3;
+    self.resize(size);
+    std::wstring root; PWSTR folder = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_ProgramFiles, KF_FLAG_DEFAULT, nullptr, &folder))) root = folder;
+    CoTaskMemFree(folder);
+    const auto gui = self.substr(0, self.rfind(L'\\')) + L"\\NksTaskMgr.WinUI.exe";
+    if (root.empty() || nks::replacement::machineLocation(gui, root) != nks::replacement::Location::safe) return 4;
+    return nks::replacement::applySystem(true, gui).error ? 3 : 0;
+}
 int cleanupSession(HANDLE input, HANDLE output, const Header& request, Cache& cache, const Context& context, std::atomic<ULONGLONG>& deadline) noexcept
 {
     Header reply = request; bool accepted = false;
@@ -208,6 +222,7 @@ int wmain(int argc, wchar_t** argv)
         catch (...) { return 3; }
     }
     if (argc == 2 && std::wstring_view(argv[1]) == L"--release-taskmgr") return settleTaskManager(false, {});
+    if (argc == 2 && std::wstring_view(argv[1]) == L"--enable-taskmgr") return enableTaskManager();
     if ((argc == 2 || argc == 3) && std::wstring_view(argv[1]) == L"--keep-taskmgr") return settleTaskManager(true, argc == 3 ? argv[2] : L"");
     return 2;
 }

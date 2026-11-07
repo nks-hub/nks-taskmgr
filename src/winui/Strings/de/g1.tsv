@@ -253,7 +253,7 @@ Aktualizace a návrat předchozí verze	Updates und Rückkehr zur vorherigen Ver
 Verze aplikace a možnosti aktualizace	App-Version und Updateoptionen
 Aktualizace nelze otevřít	Updates können nicht geöffnet werden
 Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej.	Die vorherige Anforderung mit erhöhten Rechten ist noch nicht abgeschlossen. Wiederholen Sie sie nicht.
-TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv.	TrustNotConfigured: Rechteerhöhung ist nicht konfiguriert. Die angeheftete Herausgebersignatur fehlt; dieser Entwicklungsbuild bleibt ohne erhöhte Rechte.
+Akce s právy správce nejsou v této verzi dostupné, protože vydání není podepsané.	Aktionen mit Administratorrechten sind in dieser Version nicht verfügbar, weil das Release nicht signiert ist.
 Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.	Signatur, Datei oder tatsächliche Gegenstelle wurden nicht vertrauenswürdig überprüft. Die Rechteerhöhung wurde abgelehnt.
 Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána.	Die eigene Administratorbestätigung wurde abgebrochen, ist abgelaufen oder der Client läuft nicht mehr. Die Aktion wurde nicht gesendet.
 Náhradu lze zapnout jen z instalace v Program Files.	Das Ersetzen des Task-Managers kann nur aus einer Installation in Program Files aktiviert werden.

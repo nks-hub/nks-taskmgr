@@ -253,7 +253,7 @@ Aktualizace a návrat předchozí verze	Updates and rollback to the previous ver
 Verze aplikace a možnosti aktualizace	App version and update options
 Aktualizace nelze otevřít	Updates cannot be opened
 Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej.	The previous elevated request is not closed yet. Do not repeat it.
-TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv.	TrustNotConfigured: elevation is not configured. The pinned publisher signature is missing; this development build stays without elevation.
+Akce s právy správce nejsou v této verzi dostupné, protože vydání není podepsané.	Administrator actions are not available in this version because the release is not signed.
 Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.	The signature, file or actual peer was not verified as trusted. Elevation was refused.
 Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána.	The app's own administrator confirmation was canceled, timed out, or the client is no longer running. The action was not sent.
 Náhradu lze zapnout jen z instalace v Program Files.	Replacing Task Manager can be enabled only from an installation in Program Files.

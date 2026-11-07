@@ -253,7 +253,7 @@ Aktualizace a návrat předchozí verze	Aktualizácie a návrat predchádzajúce
 Verze aplikace a možnosti aktualizace	Verzia aplikácie a možnosti aktualizácie
 Aktualizace nelze otevřít	Aktualizácie nemožno otvoriť
 Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej.	Predchádzajúca zvýšená požiadavka ešte nie je uzavretá. Neopakujte ju.
-TrustNotConfigured: zvýšení práv není nakonfigurované. Chybí připnutý podpis vydavatele; tento vývojový build zůstává bez zvýšení práv.	TrustNotConfigured: zvýšenie práv nie je nakonfigurované. Chýba pripnutý podpis vydavateľa; tento vývojový build zostáva bez zvýšenia práv.
+Akce s právy správce nejsou v této verzi dostupné, protože vydání není podepsané.	Akcie s právami správcu nie sú v tejto verzii dostupné, pretože vydanie nie je podpísané.
 Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.	Podpis, súbor alebo skutočný náprotivok nebol dôveryhodne overený. Zvýšenie práv bolo odmietnuté.
 Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána.	Vlastné potvrdenie správcu bolo zrušené, vypršal jeho limit alebo klient už nebeží. Akcia nebola odoslaná.
 Náhradu lze zapnout jen z instalace v Program Files.	Náhradu možno zapnúť len z inštalácie v Program Files.

@@ -375,7 +375,7 @@ Vlastní proces ještě není v seznamu s ověřenou identitou. Zkuste to za chv
 Změna platí pro celý počítač a vyžaduje správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí zvýšeně.	Zmena platí pre celý počítač a vyžaduje správcu: nasleduje UAC a vlastné potvrdenie. Po zapnutí pobeží NKS s právami správcu vždy, keď sa Správca úloh spustí so zvýšenými právami.
 Nahradit Správce úloh Windows	Nahradiť Správcu úloh Windows
 Zapnout…	Zapnúť…
-Vypnout (obnovit předchozí)…	Vypnúť (obnoviť predchádzajúci)…
+Vypnout…	Vypnúť…
 Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik rozbalí procesy.	Aplikácie podľa overených okien a počet ich procesov. Šípka alebo dvojklik rozbalí procesy.
 Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.	Súčet CPU všetkých procesov aplikácie. ≥ označuje známu časť, keď niektorý proces nemá aktuálnu vzorku.
 Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky.	Súčet pracovných množín všetkých procesov aplikácie. Presné hodnoty v MB sú v popise bunky.
@@ -490,3 +490,5 @@ procesy	procesy
 procesů	procesov
 rozbaleno	rozbalené
 sbaleno	zbalené
+Nainstalujte aplikaci pro všechny uživatele; instalátor tuto volbu nabídne hned na začátku.	Nainštalujte aplikáciu pre všetkých používateľov; inštalátor túto voľbu ponúkne hneď na začiatku.
+Změna byla zrušena v okně UAC.	Zmena bola zrušená v okne UAC.
