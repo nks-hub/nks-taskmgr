@@ -24,6 +24,13 @@ public static partial class WinUiChecks
             && ReferenceEquals(preview, row.Preview), "Mini-graph caching suppressed current resource metadata or values.");
         row.SetStale(true);
         Require(row.Value == Loc.T("Zastaralá data") && ReferenceEquals(preview, row.Preview), "Mini-graph caching suppressed stale state.");
+        var speed = new ResourceRow("graph-refresh-cpu", ResourceKind.Cpu) { HardwareFacts = new Dictionary<string, string> { ["Rychlost"] = "3814 MHz" } };
+        speed.Update("CPU", "", "", new Metric { Value = 12, State = SampleState.Valid }, default, default, 100, time, false, false);
+        var ram = new ResourceRow("graph-refresh-ram", ResourceKind.Memory);
+        ram.Update("RAM", "", "", new Metric { Value = 4294967296, State = SampleState.Valid }, default, default, 17179869184, time, false, false);
+        Require(speed.Summary == Display.Number(12, " %") + " · " + Display.Number(3.814, " GHz", 2) && Display.Frequency("Nehlášeno") == "Nehlášeno"
+            && ram.Summary == Display.Number(4, "") + "/" + Display.Number(16, " GiB") + " · " + Display.Number(25, " %"),
+            "A resource tile lost the CPU speed or the used memory share.");
         int before = notifications; row.RefreshPreview();
         Require(notifications == before, "An already published stale state caused another unchanged refresh notification.");
         row.Upload.Append(time + 250_000_000, upload with { Value = 20_000_000 }); row.RefreshPreview();

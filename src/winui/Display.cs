@@ -22,6 +22,10 @@ public static partial class Display
         >= 1UL << 10 => Number(value / 1024d, " KiB", 1),
         _ => value.ToString("N0", Loc.Culture) + " B"
     };
+    /// <summary>Shows a native "3200 MHz" fact as "3,20 GHz"; any other text is returned unchanged.</summary>
+    public static string Frequency(string value) => value.EndsWith(" MHz", StringComparison.Ordinal)
+        && int.TryParse(value.AsSpan(0, value.Length - 4), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int mhz)
+        ? Number(mhz / 1000d, " GHz", 2) : value;
     public static SolidColorBrush Brush(uint color) => ThemePalette.Brush(color);
     public static uint ResourceColor(ResourceKind kind) => kind switch {
         ResourceKind.Cpu => 0x80c5c0, ResourceKind.Memory => 0xabb0f1, ResourceKind.Disk => 0x83bca0,

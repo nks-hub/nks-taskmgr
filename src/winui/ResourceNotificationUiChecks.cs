@@ -42,7 +42,7 @@ public sealed partial class MainWindow
             {
                 var tooltip = ToolTipService.GetToolTip(template);
                 string? description = tooltip is ToolTip control ? control.Content as string : tooltip as string;
-                Check(ReadTexts().SequenceEqual(new[] { row.Title, row.Description, row.Value }) && description == row.Description
+                Check(ReadTexts().SequenceEqual(new[] { row.Title, row.Description, row.Summary }) && description == row.Description
                     && Shows(paths[0], row.PreviewFill) && Shows(paths[1], row.Preview) && Shows(paths[2], row.UploadPreview)
                     && !ReferenceEquals(paths[0].Data, paths[1].Data) && ReferenceEquals(probe.ContainerFromItem(row), container),
                     "The production resource template retained stale labels, tooltip or graphs, or replaced its container.");

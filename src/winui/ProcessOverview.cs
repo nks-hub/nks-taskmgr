@@ -13,11 +13,7 @@ public sealed partial class MainWindow
         UpdateProcessOverview(ResourceKind.Cpu, "CPU", cpu?.Value ?? Loc.T("Načítám…"), cpu, Loc.T("Celkové využití procesoru; otevřít graf procesoru."));
 
         var memory = model.Resources.FirstOrDefault(row => row.Kind == ResourceKind.Memory);
-        string memoryValue = memory?.Value ?? Loc.T("Načítám…");
-        if (memory is { Stale: false, Capacity: > 0 } && memory.Primary.State == SampleState.Valid)
-            memoryValue = Display.Number(memory.Primary.Value / 1073741824, "") + "/" + Display.Number(memory.Capacity / 1073741824, " GiB")
-                + " · " + Display.Number(memory.Primary.Value / memory.Capacity * 100, " %");
-        UpdateProcessOverview(ResourceKind.Memory, "RAM", memoryValue, memory, Loc.T("Použitá a celková fyzická paměť; otevřít graf paměti."));
+        UpdateProcessOverview(ResourceKind.Memory, "RAM", memory?.Summary ?? Loc.T("Načítám…"), memory, Loc.T("Použitá a celková fyzická paměť; otevřít graf paměti."));
 
         var disks = model.Resources.Where(row => row.Kind == ResourceKind.Disk).ToArray();
         var disk = disks.Where(row => !row.Stale && row.Primary.State == SampleState.Valid)

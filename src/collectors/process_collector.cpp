@@ -130,7 +130,8 @@ ProcessSnapshot ProcessCollector::collect(bool includeProcesses)
         MeasurementBasis::gauge, measurementTime(result.measuredAt));
     const auto parsedAt = std::chrono::steady_clock::now();
     static const auto memoryFacts = memoryHardware(), cpuFacts = processorHardware(), boardFacts = boardHardware();
-    result.memoryFacts = memoryFacts; result.cpuFacts = cpuFacts; result.boardFacts = boardFacts;
+    result.memoryFacts = memoryFacts; result.cpuFacts = speed.collect(); result.boardFacts = boardFacts;
+    result.cpuFacts.insert(result.cpuFacts.end(), cpuFacts.begin(), cpuFacts.end());
     result.logicalProcessors = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
     result.measurements.processCpu.normalizationDivisor = result.logicalProcessors;
     static const auto model = processorName();

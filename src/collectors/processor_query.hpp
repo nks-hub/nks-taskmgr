@@ -22,4 +22,22 @@ struct ProcessorTimes {
 using ProcessorGroupQuery = LONG (NTAPI*)(USHORT, void*, ULONG, ULONG*);
 ProcessorTimes queryProcessorTimes(std::span<const ProcessorGroup> groups, ProcessorGroupQuery query);
 
+/// "Rychlost" and "Základní rychlost" in whole MHz; the current speed is the nominal frequency scaled by
+/// the processor performance percentage (above 100 % in turbo), as Windows Task Manager reports it.
+std::vector<HardwareFact> processorSpeedFacts(double nominalMhz, double performancePercent);
+
+/// Reads the _Total Processor Information frequency counters; the first call after construction has no rate yet.
+class ProcessorSpeed {
+public:
+    ProcessorSpeed();
+    ~ProcessorSpeed();
+    ProcessorSpeed(const ProcessorSpeed&) = delete;
+    ProcessorSpeed& operator=(const ProcessorSpeed&) = delete;
+    std::vector<HardwareFact> collect();
+private:
+    void* query{};
+    void* performance{};
+    void* nominal{};
+};
+
 }

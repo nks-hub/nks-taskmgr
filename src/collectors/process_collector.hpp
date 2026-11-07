@@ -2,6 +2,7 @@
 
 #include "core/process.hpp"
 #include "process_identity.hpp"
+#include "processor_query.hpp"
 #include <windows.h>
 
 namespace nks {
@@ -16,6 +17,7 @@ public:
     ProcessSnapshot collect(bool includeProcesses = true);
 
 private:
+    ProcessorSpeed speed;
     void* buffer{};
     ULONG capacity{};
     void* basicBuffer{};

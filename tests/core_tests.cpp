@@ -285,7 +285,13 @@ int main() {
                 "Topology gap retained the previous valid sample as baseline");
         }},
         {"processor groups are summed without partial results", [] { failSecondGroup = false; const std::array<nks::ProcessorGroup, 2> groups{{{0, 2}, {1, 3}}}; const auto result = nks::queryProcessorTimes(groups, fakeGroup); require(result.state == nks::SampleState::valid && result.kernel100ns == 150 && result.user100ns == 100 && result.idle100ns == 50, "Processor group counters were not combined"); }},
-        {"failed processor group invalidates the complete sample", [] { failSecondGroup = true; const std::array<nks::ProcessorGroup, 2> groups{{{0, 2}, {1, 3}}}; const auto result = nks::queryProcessorTimes(groups, fakeGroup); require(result.state != nks::SampleState::valid && result.kernel100ns == 0, "Partial processor groups were reported as a whole machine"); }},
+        {"processor speed scales the nominal frequency like Task Manager", [] {
+            const auto turbo = nks::processorSpeedFacts(2900, 131.5);
+            require(turbo.size() == 2 && turbo[0].name == L"Rychlost" && turbo[0].value == L"3814 MHz" && turbo[1].value == L"2900 MHz", "Turbo speed was not scaled from the nominal frequency");
+            const auto first = nks::processorSpeedFacts(2900, std::nan(""));
+            require(first.size() == 1 && first[0].name == L"Základní rychlost", "A missing performance rate produced a current speed");
+            require(nks::processorSpeedFacts(0, 100).empty() && nks::processorSpeedFacts(std::nan(""), 100).empty(), "A missing nominal frequency produced speed facts"); }},
+        {"failed processor group invalidates the complete sample",[] { failSecondGroup = true; const std::array<nks::ProcessorGroup, 2> groups{{{0, 2}, {1, 3}}}; const auto result = nks::queryProcessorTimes(groups, fakeGroup); require(result.state != nks::SampleState::valid && result.kernel100ns == 0, "Partial processor groups were reported as a whole machine"); }},
         {"system kernel time includes idle", [] { nks::ProcessSampler s; auto a = sample(); a.processorState = nks::SampleState::valid; a.systemKernel100ns = 100; a.systemUser100ns = 100; a.systemIdle100ns = 40; s.apply(a); auto b = a; b.measuredAt += std::chrono::seconds(1); b.systemKernel100ns += 100; b.systemUser100ns += 100; b.systemIdle100ns += 40; s.apply(b); require(b.systemCpuPercent.valid() && std::abs(b.systemCpuPercent.value - 80) < .001, "Idle was subtracted from the wrong system total"); }},
         {"stationary logical core does not break valid total CPU", [] {
             nks::ProcessSampler sampler;

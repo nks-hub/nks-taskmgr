@@ -103,12 +103,13 @@ public sealed partial class MainWindow : Window
         if (App.SmokePath is not null) App.Trace("Presenter=" + AppWindow.Presenter.GetType().FullName + ";overlapped=" + (AppWindow.Presenter is OverlappedPresenter));
         Title = "NKS Task Manager";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
-        AppWindow.ResizeDip(1440, 920);
         ExtendsContentIntoTitleBar = true;
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Standard;
         Application.Current.Resources["ContentControlThemeFontFamily"] = UiTypography.Font;
         Application.Current.Resources["TextControlThemeFontFamily"] = UiTypography.Font;
         ConfigureResources(); ConfigureSnapshotExport(); ConfigureSnapshotComparison(); ConfigureProcessDetails(); ConfigureProcessActions(); ConfigureProcessDump(); ConfigureProcessEvents(); ConfigureGlobalObjectSearch(); BuildShell(); ConfigureAppearance(); ConfigureUpdates(); BuildPerformance(); BuildProcesses(); BuildServices(); BuildHardware(); BuildUsers(); BuildStartup(); InitializeContextMenus();
+        // Wide enough for the sidebar, page margins and the process columns without horizontal scrolling.
+        AppWindow.ResizeDip((int)Math.Ceiling(sidebarWidth + 32 + processTable.Columns.MinimumWidth), 760);
         App.Trace("Window layout created");
         Content = root;
         App.Trace("Content assigned");

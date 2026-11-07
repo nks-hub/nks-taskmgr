@@ -40,13 +40,24 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
     private PreviewState? previewState;
     private readonly record struct PublishedState(string Title, string Description, string Status,
         (double, SampleState, MetricSource) Primary, (double, SampleState, MetricSource) Secondary,
-        (double, SampleState, MetricSource) Tertiary, double Capacity, bool Stale, bool VirtualNetwork, bool NetworkConnected);
+        (double, SampleState, MetricSource) Tertiary, double Capacity, bool Stale, bool VirtualNetwork, bool NetworkConnected,
+        IReadOnlyDictionary<string, string> Facts, (double, SampleState, MetricSource) Temperature);
     private PublishedState? publishedState;
     private static (double, SampleState, MetricSource) MetricState(Metric value) => (value.Value, value.State, value.Source);
     public string Value => Stale ? Loc.T("Zastaralá data") : Kind == ResourceKind.Network && Primary.State == SampleState.Valid
         ? "↓ " + Display.Metric(Primary, "", 1_000_000) + "  ↑ " + Display.Metric(Secondary, " Mbit/s", 1_000_000)
         : Kind == ResourceKind.Network && IsNativeStatus(Status, "Odpojeno") ? Status
         : Display.Metric(Primary, Kind == ResourceKind.Memory ? " GiB" : " %", Kind == ResourceKind.Memory ? 1073741824 : 1);
+    /// <summary>Tile line: the value with the speed, used share, transfer rate or temperature Task Manager shows beside it.</summary>
+    public string Summary => Stale || Primary.State != SampleState.Valid ? Value : Kind switch {
+        ResourceKind.Cpu when HardwareFacts.TryGetValue("Rychlost", out var speed) => Value + " · " + Display.Frequency(speed),
+        ResourceKind.Memory when Capacity > 0 => Display.Number(Primary.Value / 1073741824, "") + "/" + Display.Number(Capacity / 1073741824, " GiB")
+            + " · " + Display.Number(Primary.Value / Capacity * 100, " %"),
+        ResourceKind.Disk when Secondary.State == SampleState.Valid && Tertiary.State == SampleState.Valid
+            => Value + " · " + Display.Number((Secondary.Value + Tertiary.Value) / 1048576, " MiB/s"),
+        ResourceKind.Gpu when Gpu is { Temperature.State: SampleState.Valid } => Value + " · " + Display.Metric(Gpu.Temperature, " °C"),
+        _ => Value
+    };
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public bool SetStale(bool value, bool notify = true)
@@ -56,7 +67,8 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
         if (notify) {
             // This event leaves other unpublished fields pending for RefreshPreview.
             if (publishedState is { } previous) publishedState = previous with { Stale = value };
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value)));
+            // The tile binds Summary, which includes Value.
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Summary)));
         }
         return true;
     }
@@ -108,7 +120,7 @@ public sealed partial class ResourceRow : INotifyPropertyChanged
             previewState = state;
         }
         var published = new PublishedState(Title, Description, Status, MetricState(Primary), MetricState(Secondary),
-            MetricState(Tertiary), Capacity, Stale, IsVirtualNetwork, IsNetworkConnected);
+            MetricState(Tertiary), Capacity, Stale, IsVirtualNetwork, IsNetworkConnected, HardwareFacts, MetricState(Gpu?.Temperature ?? default));
         if (!previewChanged && publishedState == published) return;
         publishedState = published;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));

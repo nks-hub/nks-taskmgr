@@ -140,7 +140,8 @@ public sealed partial class MainWindow
             }
         }
         foreach (var fact in resource.HardwareFacts) {
-            if (resource.Kind != ResourceKind.Disk && (!cpu || fact.Key == "Fyzická jádra" || fact.Key == "Patice" || fact.Key.StartsWith("Mezipaměť", StringComparison.Ordinal))) Fact(fact.Key, Loc.Native(fact.Value));
+            if (cpu && fact.Key is "Rychlost" or "Základní rychlost") Fact(fact.Key, Display.Frequency(fact.Value));
+            else if (resource.Kind != ResourceKind.Disk && (!cpu || fact.Key == "Fyzická jádra" || fact.Key == "Patice" || fact.Key.StartsWith("Mezipaměť", StringComparison.Ordinal))) Fact(fact.Key, Loc.Native(fact.Value));
         }
         if (memory && model.Memory.State == SampleState.Valid && model.Memory.InstalledBytes >= model.Memory.PhysicalBytes)
             Fact(Loc.T("Rezervováno hardwarem"), Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));

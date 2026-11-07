@@ -1,7 +1,10 @@
 #include <phnt_windows.h>
 #include <phnt.h>
 #include "processor_query.hpp"
+#include <pdh.h>
+#include <pdhmsg.h>
 
+#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -40,6 +43,41 @@ ProcessorTimes queryProcessorTimes(std::span<const ProcessorGroup> groups, Proce
     }
     result.state = SampleState::valid;
     return result;
+}
+
+std::vector<HardwareFact> processorSpeedFacts(double nominalMhz, double performancePercent)
+{
+    if (!std::isfinite(nominalMhz) || nominalMhz < 1) return {};
+    std::vector<HardwareFact> result;
+    if (std::isfinite(performancePercent) && performancePercent > 0)
+        result.push_back({L"Rychlost", std::to_wstring(std::lround(nominalMhz * performancePercent / 100)) + L" MHz"});
+    result.push_back({L"Základní rychlost", std::to_wstring(std::lround(nominalMhz)) + L" MHz"});
+    return result;
+}
+
+ProcessorSpeed::ProcessorSpeed()
+{
+    PDH_HQUERY handle{};
+    if (PdhOpenQueryW(nullptr, 0, &handle) != ERROR_SUCCESS) return;
+    query = handle;
+    PDH_HCOUNTER counter{};
+    if (PdhAddEnglishCounterW(handle, L"\\Processor Information(_Total)\\% Processor Performance", 0, &counter) == ERROR_SUCCESS) performance = counter;
+    if (PdhAddEnglishCounterW(handle, L"\\Processor Information(_Total)\\Processor Frequency", 0, &counter) == ERROR_SUCCESS) nominal = counter;
+    PdhCollectQueryData(handle);
+}
+
+ProcessorSpeed::~ProcessorSpeed() { if (query) PdhCloseQuery(static_cast<PDH_HQUERY>(query)); }
+
+std::vector<HardwareFact> ProcessorSpeed::collect()
+{
+    if (!query || !nominal || PdhCollectQueryData(static_cast<PDH_HQUERY>(query)) != ERROR_SUCCESS) return {};
+    const auto read = [](void* counter) {
+        PDH_FMT_COUNTERVALUE value{};
+        if (!counter || PdhGetFormattedCounterValue(static_cast<PDH_HCOUNTER>(counter), PDH_FMT_DOUBLE | PDH_FMT_NOCAP100, nullptr, &value) != ERROR_SUCCESS
+            || (value.CStatus != PDH_CSTATUS_VALID_DATA && value.CStatus != PDH_CSTATUS_NEW_DATA)) return std::numeric_limits<double>::quiet_NaN();
+        return value.doubleValue;
+    };
+    return processorSpeedFacts(read(nominal), read(performance));
 }
 
 }
