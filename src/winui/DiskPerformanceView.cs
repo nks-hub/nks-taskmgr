@@ -51,22 +51,40 @@ public sealed partial class MainWindow
         diskTransfers.Set(resource.DiskReadHistory, resource.DiskWriteHistory, now, rangeSeconds, diskTransferMaximum, 0xdfaf76, area: false);
     }
 
+    private Grid diskDetailGrid = new();
+    private readonly List<FrameworkElement> diskDetailCells = [];
+
+    /// <summary>Lays the expanded disk details out in the same columns as the facts above them.</summary>
+    private void ArrangeDiskDetails()
+    {
+        int columns = Math.Max(1, performanceFactColumns);
+        if (diskDetailGrid.ColumnDefinitions.Count != columns) {
+            diskDetailGrid.ColumnDefinitions.Clear();
+            for (int i = 0; i < columns; ++i) diskDetailGrid.ColumnDefinitions.Add(new ColumnDefinition());
+        }
+        int rows = (diskDetailCells.Count + columns - 1) / columns;
+        while (diskDetailGrid.RowDefinitions.Count < rows) diskDetailGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        while (diskDetailGrid.RowDefinitions.Count > rows) diskDetailGrid.RowDefinitions.RemoveAt(diskDetailGrid.RowDefinitions.Count - 1);
+        for (int i = 0; i < diskDetailCells.Count; ++i) { Grid.SetColumn(diskDetailCells[i], i % columns); Grid.SetRow(diskDetailCells[i], i / columns); }
+    }
+
     private void RefreshDiskFacts(ResourceRow resource, Action<string, string> fact)
     {
         foreach (string name in DiskSummary)
             fact(Loc.T(name), resource.Stale ? Loc.T("Zastaralé") : resource.HardwareFacts.TryGetValue(name, out string? value) ? Loc.Native(value) : Loc.T("Měření nedostupné"));
         if (diskDetails is null) {
             diskDetailValues.Clear();
-            var content = new StackPanel { Spacing = 8 };
+            diskDetailCells.Clear(); diskDetailGrid = new Grid { ColumnSpacing = 16, RowSpacing = 8, HorizontalAlignment = HorizontalAlignment.Stretch };
             foreach (var detail in resource.HardwareFacts.Where(pair => !DiskSummary.Contains(pair.Key))) {
-                var field = new StackPanel { Spacing = 3 };
-                field.Children.Add(Label(Loc.T(detail.Key), 11, 0x95a4ad));
-                var value = Label(Loc.T(detail.Value), 12, 0xe9eef0); value.TextWrapping = TextWrapping.Wrap;
-                field.Children.Add(value); diskDetailValues.Add(detail.Key, value); content.Children.Add(field);
+                var field = new StackPanel { Spacing = 1 };
+                var caption = Label(Loc.T(detail.Key), 10, 0x95a4ad); caption.TextWrapping = TextWrapping.Wrap; field.Children.Add(caption);
+                var value = Label(Loc.T(detail.Value), 13, 0xe9eef0); value.TextWrapping = TextWrapping.Wrap;
+                field.Children.Add(value); diskDetailValues.Add(detail.Key, value); diskDetailGrid.Children.Add(field); diskDetailCells.Add(field);
             }
-            diskDetails = new Expander { Header = Label(Loc.T("Další údaje a SMART"), 11, 0xe9eef0), Content = content,
-                Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = flatPerformanceBackground,
-                HorizontalAlignment = HorizontalAlignment.Stretch, IsExpanded = diskDetailsExpanded };
+            diskDetails = new Expander { Header = Label(Loc.T("Další údaje a SMART"), 11, 0xe9eef0), Content = diskDetailGrid,
+                Padding = new Thickness(0, 8, 0, 4), BorderThickness = new Thickness(0), Background = flatPerformanceBackground,
+                HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch, IsExpanded = diskDetailsExpanded };
+            ArrangeDiskDetails();
             diskDetailsResource = resource.Id;
             facts.Children.Add(diskDetails);
         }

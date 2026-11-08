@@ -498,3 +498,5 @@ Kliknutím do grafu připnete čas, Shift+kliknutím vyberete úsek.	Kliknutím 
 Mezipaměť L1 / L2 / L3	Vyrovnávacia pamäť L1 / L2 / L3
 Rychlost linky	Rýchlosť linky
 Procesy podle paměti	Procesy podľa pamäte
+Procesy podle čtení a zápisu	Procesy podľa čítania a zápisu
+Čtení a zápis procesu na všech discích dohromady	Čítanie a zápis procesu na všetkých diskoch spolu

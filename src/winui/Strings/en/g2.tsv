@@ -498,3 +498,5 @@ Kliknutím do grafu připnete čas, Shift+kliknutím vyberete úsek.	Click the g
 Mezipaměť L1 / L2 / L3	L1 / L2 / L3 cache
 Rychlost linky	Link speed
 Procesy podle paměti	Processes by memory
+Procesy podle čtení a zápisu	Processes by disk read and write
+Čtení a zápis procesu na všech discích dohromady	Process reads and writes on all disks combined

@@ -10,6 +10,7 @@ public static partial class WinUiChecks
         BranchVerifiedIdentities();
         BranchCompletenessLooksDownward();
         BranchLayoutKeepsKnownLifetimes();
+        NestedKeepsSiblingOrder();
         BranchIncompleteMetrics();
         BranchCyclesAndDepth();
         App.Trace("Process branch values passed: full-tree sums, filtering, held updates, own values, verified identities, partial data and bounded cycles/depth");
@@ -186,6 +187,17 @@ public static partial class WinUiChecks
         totals = ProcessBranchTotals.Calculate([leaf, unknown]); leaf.SetBranchValues(totals[0], true, false);
         Require(totals[0].Members == 1 && totals[0].Incomplete && leaf.TableCpuText.StartsWith("≥ ", StringComparison.Ordinal)
             && totals[1].Cpu.Known == 0, "A genuinely unverified possible descendant lost its partial-membership warning.");
+    }
+
+    private static void NestedKeepsSiblingOrder()
+    {
+        var parent = BranchRow(BranchProcess(10, 100, 1), 100);
+        var child = BranchRow(BranchProcess(20, 200, 1, 10), 200);
+        var grandchild = BranchRow(BranchProcess(30, 300, 1, 20), 300);
+        var sibling = BranchRow(BranchProcess(40, 400, 1, 10), 400);
+        var nested = ProcessTree.Nested([sibling, grandchild, child, parent]);
+        Require(nested.Select(item => (item.Row.Key.Pid, item.Depth)).SequenceEqual([(10u, 0), (40u, 1), (20u, 1), (30u, 2)]) && parent.Depth == 0 && child.Depth == 0,
+            "Application children lost their parent nesting, sibling order, or changed the shared tree state.");
     }
 
     private static void BranchLayoutKeepsKnownLifetimes()

@@ -92,6 +92,10 @@ public sealed partial class MonitorModel : IDisposable
     public void Sort(int column) { held = false; descending = sortColumn == column ? !descending : column > 1; sortColumn = column; Rebuild(true); }
     public void Toggle(ProcessRow row) { held = false; if (!collapsed.Add(row.Key)) collapsed.Remove(row.Key); Rebuild(true); }
     public bool IsCurrent(ProcessRow row) => !row.Ended && processes.TryGetValue(row.Key, out var current) && ReferenceEquals(row, current);
+    /// <summary>Processes with the highest read plus write rate over all disks; idle ones are left out.</summary>
+    public IEnumerable<ProcessRow> TopDiskConsumers() => processes.Values
+        .Where(row => row.Key.Pid != 0 && row.ReadIo.State == SampleState.Valid && row.WriteIo.State == SampleState.Valid && row.ReadIo.Value + row.WriteIo.Value > 0)
+        .OrderByDescending(row => row.ReadIo.Value + row.WriteIo.Value).Take(3);
     public IEnumerable<ProcessRow> TopConsumers(bool memory) => memory
         ? processes.Values.Where(row => row.Key.Pid != 0).OrderByDescending(row => row.WorkingBytes).Take(3)
         : processes.Values.Where(row => row.Key.Pid != 0 && row.Cpu.State == SampleState.Valid).OrderByDescending(row => row.Cpu.Value).Take(3);

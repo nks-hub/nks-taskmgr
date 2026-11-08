@@ -90,9 +90,12 @@ public sealed partial class MainWindow
             wanted.Add(line);
             var key = (ProcessKey)line.Group; liveGroups.Add(key);
             if (!expandedApps.Contains(key) || groups.FirstOrDefault(group => group.Key == key) is not { } application) continue;
-            var children = application.Members.Where(row => !row.Ended).Select(row => { liveProcesses.Add(row.Key); return AppProcessLine(key, row); }).ToList();
-            children.Sort((a, b) => GroupLine.Compare(a, b, appSortColumn, appSortDescending));
-            wanted.AddRange(children);
+            // Processes nest under their parent; siblings keep name and PID order so the live values do not reshuffle the rows.
+            var members = application.Members.Where(row => !row.Ended).OrderBy(row => row.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(row => row.Key.Pid).ToArray();
+            foreach (var (row, depth) in ProcessTree.Nested(members)) {
+                liveProcesses.Add(row.Key);
+                var child = AppProcessLine(key, row); child.SetDepth(depth); wanted.Add(child);
+            }
         }
         foreach (var key in appGroupItems.Keys.Where(key => !liveGroups.Contains(key)).ToArray()) appGroupItems.Remove(key);
         foreach (var key in appProcessItems.Keys.Where(key => !liveProcesses.Contains(key)).ToArray()) appProcessItems.Remove(key);

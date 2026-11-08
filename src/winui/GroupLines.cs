@@ -24,7 +24,14 @@ public sealed partial class GroupLine : INotifyPropertyChanged
     public ProcessRow? IconRow { get; }
     public Visibility ProcessIconVisibility => IconRow is null ? Visibility.Collapsed : Visibility.Visible;
     public Visibility UserIconVisibility => IconRow is null ? Visibility.Visible : Visibility.Collapsed;
-    public Thickness Indent => new(IsGroup ? 0 : 20, 0, 0, 0);
+    public Thickness Indent => new(IsGroup ? 0 : 20 + Depth * 14, 0, 0, 0);
+    internal int Depth { get; private set; }
+
+    internal void SetDepth(int depth)
+    {
+        if (Depth == depth) return;
+        Depth = depth; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Indent)));
+    }
     public FontWeight TitleWeight => IsGroup ? FontWeights.SemiBold : FontWeights.Normal;
 
     public string Chevron { get; private set; } = "";

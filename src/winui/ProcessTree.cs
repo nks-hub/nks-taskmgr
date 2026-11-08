@@ -50,6 +50,28 @@ public static class ProcessTree
         return parents;
     }
 
+    /// <summary>Rows as parent-first nesting with depth; siblings keep their input order and no row state is touched.</summary>
+    internal static List<(ProcessRow Row, int Depth)> Nested(IReadOnlyList<ProcessRow> rows)
+    {
+        var parents = ParentIndices(rows, out _, currentOnly: false);
+        var children = new List<int>?[rows.Count];
+        for (int i = 0; i < rows.Count; ++i) if (parents[i] >= 0) (children[parents[i]] ??= []).Add(i);
+        var result = new List<(ProcessRow, int)>(rows.Count); var visited = new bool[rows.Count];
+        var pending = new Stack<(int Index, int Depth)>();
+        void Visit(int start)
+        {
+            pending.Push((start, 0));
+            while (pending.TryPop(out var entry)) {
+                if (visited[entry.Index]) continue;
+                visited[entry.Index] = true; result.Add((rows[entry.Index], Math.Min(12, entry.Depth)));
+                if (children[entry.Index] is { } list) for (int i = list.Count - 1; i >= 0; --i) pending.Push((list[i], entry.Depth + 1));
+            }
+        }
+        for (int i = 0; i < rows.Count; ++i) if (parents[i] < 0) Visit(i);
+        for (int i = 0; i < rows.Count; ++i) if (!visited[i]) Visit(i);
+        return result;
+    }
+
     public static List<ProcessRow> Order(IReadOnlyList<ProcessRow> rows, IReadOnlySet<ProcessKey> collapsed)
     {
         // The retained layout can still show ended lifetimes with known raw parent chronology.

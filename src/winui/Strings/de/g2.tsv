@@ -498,3 +498,5 @@ Kliknutím do grafu připnete čas, Shift+kliknutím vyberete úsek.	Klicken Sie
 Mezipaměť L1 / L2 / L3	L1-/L2-/L3-Cache
 Rychlost linky	Verbindungsgeschwindigkeit
 Procesy podle paměti	Prozesse nach Arbeitsspeicher
+Procesy podle čtení a zápisu	Prozesse nach Lesen und Schreiben
+Čtení a zápis procesu na všech discích dohromady	Lese- und Schreibvorgänge des Prozesses auf allen Datenträgern zusammen

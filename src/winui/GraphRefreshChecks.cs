@@ -230,24 +230,24 @@ public sealed partial class MainWindow
         using var source = new MonitorModel();
         WinUiChecks.ApplyProcesses(source, WinUiChecks.Process(901, 100, 1));
         var old = source.Processes.Single();
-        var card = new PerformanceConsumerCard(0, _ => { }); card.Update(old, false, 0x80c5c0);
+        var card = new PerformanceConsumerCard(0, _ => { }); card.Update(old, row => row.CpuText, 0x80c5c0);
         Require(ReferenceEquals(card.Current(source), old), "The process card lost its current full key.");
         WinUiChecks.ApplyProcesses(source, WinUiChecks.Process(901, 200, 2));
         Require(card.Current(source) is null, "A process card followed a recycled PID before being rebound.");
-        var current = source.Processes.Single(); card.Update(current, false, 0x80c5c0);
+        var current = source.Processes.Single(); card.Update(current, row => row.CpuText, 0x80c5c0);
         Require(ReferenceEquals(card.Current(source), current) && card.Key == current.Key, "The reused process card retained its old lifetime key.");
         current.SetStatus(true, false);
         Require(card.Current(source) is null, "An ended process card remained selectable.");
         var missing = WinUiChecks.Process(902, 0, 1); missing.GenerationKind = GenerationKind.Missing;
         WinUiChecks.ApplyProcesses(source, missing);
-        var unverified = source.Processes.Single(); card.Update(unverified, false, 0x80c5c0);
+        var unverified = source.Processes.Single(); card.Update(unverified, row => row.CpuText, 0x80c5c0);
         Require(ReferenceEquals(card.Current(source), unverified), "An unverified current row was lost before its observed lifetime ended.");
         WinUiChecks.ApplyProcesses(source);
         WinUiChecks.ApplyProcesses(source, missing);
         var replacement = source.Processes.Single();
         Require(!ReferenceEquals(replacement, unverified) && card.Current(source) is null,
             "A process card followed a replacement row with the same missing generation and PID.");
-        card.Update(replacement, false, 0x80c5c0);
+        card.Update(replacement, row => row.CpuText, 0x80c5c0);
         Require(ReferenceEquals(card.Current(source), replacement), "A process card could not bind the newly observed row explicitly.");
         App.Trace("Performance process cards passed: persistent controls, bound row/full key, recycled PID, missing generation and ended target rejection");
     }

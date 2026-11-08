@@ -98,7 +98,7 @@ public sealed partial class MainWindow
         var previous = resourceList.SelectedItem;
         foreach (var resource in model.Resources) {
             resourceList.SelectedItem = resource; RefreshPerformance(); root.UpdateLayout(); CheckPerformanceViewport();
-            bool expected = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory;
+            bool expected = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory or ResourceKind.Disk;
             if ((consumers.Visibility == Visibility.Visible) != expected || (!expected && consumers.Children.Count != 0))
                 throw new InvalidOperationException("CPU process cards were shown for an unrelated resource.");
             if (resource.Kind == ResourceKind.Disk) {

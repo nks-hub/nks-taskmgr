@@ -82,7 +82,8 @@ public sealed partial class MainWindow
                 ? Display.Number(model.Memory.PageFileUsedBytes / 1073741824d, " / ") + Display.Number(model.Memory.PageFileBytes / 1073741824d, " GiB")
                 : Display.Metric(new Metric { State = model.Memory.PageFileState }, string.Empty));
             pageFile.Configure(Loc.T("Použitý swap"), ChartUnit.Bytes);
-            pageFile.Set(model.PageFile, null, now, rangeSeconds, Math.Max(1, model.Memory.PageFileBytes), 0xdfaf76, autoScale: scaleChoice.IsChecked == true);
+            // Used swap is usually a few percent of the page file, so its graph always scales to what is used.
+            pageFile.Set(model.PageFile, null, now, rangeSeconds, Math.Max(1, model.Memory.PageFileBytes), 0xdfaf76, autoScale: true);
         }
         double duration = resource.History.Count == 0 ? 0 : (resource.History.LastTime - resource.History.FirstTime) / 1_000_000_000d;
         string history = Loc.F("Historie {0} · {1} vzorků · zobrazeno {2} s", Display.Number(duration, " s"), resource.History.Count, rangeSeconds)
@@ -144,7 +145,7 @@ public sealed partial class MainWindow
         if (memory && model.Memory.State == SampleState.Valid && model.Memory.InstalledBytes >= model.Memory.PhysicalBytes)
             Fact(Loc.T("Rezervováno hardwarem"), Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));
         ArrangePerformanceFacts();
-        RefreshConsumers(cpu, memory, color);
+        RefreshConsumers(cpu, memory, color, resource.Kind == ResourceKind.Disk);
     }
 
     // Raw Windows codes stay in the model for filtering; the two link directions become one fact.

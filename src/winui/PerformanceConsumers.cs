@@ -37,14 +37,14 @@ public sealed partial class MainWindow
             Button.Click += (_, _) => clicked(this);
         }
 
-        internal void Update(ProcessRow? row, bool memory, uint nextColor)
+        internal void Update(ProcessRow? row, Func<ProcessRow, string> value, uint nextColor)
         {
             boundRow = row; Key = row?.Key;
             var visibility = row is null ? Visibility.Collapsed : Visibility.Visible;
             if (Button.Visibility != visibility) Button.Visibility = visibility;
             if (row is null) return;
             SetConsumerText(Title, row.Name);
-            SetConsumerText(Value, memory ? row.WorkingText : row.CpuText);
+            SetConsumerText(Value, value(row));
             string label = $"{index + 1}. {row.Name}, PID {row.PidText}, {Value.Text}";
             if (AutomationProperties.GetName(Button) != label) { AutomationProperties.SetName(Button, label); ToolTipService.SetToolTip(Button, label); }
             if (color != nextColor) { icon.Child = UiIcon.Create(false, nextColor, 18); color = nextColor; }
@@ -53,11 +53,11 @@ public sealed partial class MainWindow
         internal ProcessRow? Current(MonitorModel source) => boundRow is { } row && Key == row.Key && source.IsCurrent(row) ? row : null;
     }
 
-    private void RefreshConsumers(bool cpu, bool memory, uint color)
+    private void RefreshConsumers(bool cpu, bool memory, uint color, bool disk = false)
     {
-        var visibility = cpu || memory ? Visibility.Visible : Visibility.Collapsed;
+        var visibility = cpu || memory || disk ? Visibility.Visible : Visibility.Collapsed;
         if (consumers.Visibility != visibility) consumers.Visibility = visibility;
-        if (!cpu && !memory) { if (consumers.Children.Count != 0) consumers.Children.Clear(); return; }
+        if (!cpu && !memory && !disk) { if (consumers.Children.Count != 0) consumers.Children.Clear(); return; }
         if (consumerItems.Count == 0) {
             for (int i = 0; i < 3; ++i) {
                 var card = new PerformanceConsumerCard(i, OpenPerformanceConsumer);
@@ -67,10 +67,12 @@ public sealed partial class MainWindow
         if (consumers.Children.Count == 0) {
             consumers.Children.Add(consumerCaption); consumers.Children.Add(consumerCards);
         }
-        SetConsumerText(consumerCaption, memory ? Loc.T("Procesy podle paměti") : Loc.T("Procesy podle CPU"));
-        string captionHelp = memory ? Loc.T("Pracovní sada včetně sdílených stránek") : "";
+        SetConsumerText(consumerCaption, disk ? Loc.T("Procesy podle čtení a zápisu") : memory ? Loc.T("Procesy podle paměti") : Loc.T("Procesy podle CPU"));
+        string captionHelp = disk ? Loc.T("Čtení a zápis procesu na všech discích dohromady") : memory ? Loc.T("Pracovní sada včetně sdílených stránek") : "";
         if (ToolTipService.GetToolTip(consumerCaption) as string != captionHelp) ToolTipService.SetToolTip(consumerCaption, captionHelp.Length == 0 ? null : captionHelp);
-        var rows = model.TopConsumers(memory).ToArray();
+        var rows = (disk ? model.TopDiskConsumers() : model.TopConsumers(memory)).ToArray();
+        Func<ProcessRow, string> value = disk ? row => Display.Number((row.ReadIo.Value + row.WriteIo.Value) / 1048576, " MiB/s")
+            : memory ? row => row.WorkingText : row => row.CpuText;
         bool stacked = performanceDetailWidth < 720;
         if (consumerLayout != (stacked, rows.Length)) {
             consumerCards.ColumnDefinitions.Clear(); consumerCards.RowDefinitions.Clear();
@@ -84,7 +86,7 @@ public sealed partial class MainWindow
             }
             consumerLayout = (stacked, rows.Length);
         }
-        for (int i = 0; i < consumerItems.Count; ++i) consumerItems[i].Update(i < rows.Length ? rows[i] : null, memory, color);
+        for (int i = 0; i < consumerItems.Count; ++i) consumerItems[i].Update(i < rows.Length ? rows[i] : null, value, color);
     }
 
     private void OpenPerformanceConsumer(PerformanceConsumerCard card)

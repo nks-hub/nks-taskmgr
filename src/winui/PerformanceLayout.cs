@@ -165,6 +165,7 @@ public sealed partial class MainWindow
         for (int i = 0; i < performanceFactCells.Count; ++i) {
             Grid.SetColumn(performanceFactCells[i], i % columns); Grid.SetRow(performanceFactCells[i], i / columns);
         }
+        ArrangeDiskDetails();
     }
 
     private void SelectPerformanceScale(ResourceRow resource)
