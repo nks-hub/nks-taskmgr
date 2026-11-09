@@ -26,8 +26,26 @@ jobs:
       - name: Build native core and run tests
         run: ./scripts/build.ps1 -Configuration Release -Test
 
+      - name: Import signing certificate
+        env:
+          SIGNING_PFX_BASE64: ${{ secrets.SIGNING_PFX_BASE64 }}
+          SIGNING_PFX_PASSWORD: ${{ secrets.SIGNING_PFX_PASSWORD }}
+        run: |
+          if (!$env:SIGNING_PFX_BASE64) { Write-Output 'No signing secrets; building unsigned.'; exit 0 }
+          $pfx = Join-Path $env:RUNNER_TEMP 'signing.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:SIGNING_PFX_BASE64))
+          $password = ConvertTo-SecureString $env:SIGNING_PFX_PASSWORD -AsPlainText -Force
+          $certificate = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          Remove-Item $pfx
+          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1
+          if (!$signTool) { throw 'signtool.exe was not found.' }
+          "NKS_SIGN_THUMBPRINT=$($certificate.Thumbprint)" >> $env:GITHUB_ENV
+          "NKS_SIGNTOOL=$($signTool.FullName)" >> $env:GITHUB_ENV
+
       - name: Publish WinUI Native AOT application
-        run: ./scripts/build.ps1 -Configuration Release -WinUI
+        run: |
+          $signing = if ($env:NKS_SIGN_THUMBPRINT) { @{ SigningCertificateThumbprint = $env:NKS_SIGN_THUMBPRINT; SignTool = $env:NKS_SIGNTOOL } } else { @{} }
+          ./scripts/build.ps1 -Configuration Release -WinUI @signing
 
       - name: Install Inno Setup 7.1.1
         run: |
@@ -37,7 +55,9 @@ jobs:
           Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$env:RUNNER_TEMP\inno" -Wait
 
       - name: Build installer and portable ZIP
-        run: ./scripts/package.ps1 -Compiler "$env:RUNNER_TEMP\inno\ISCC.exe"
+        run: |
+          $signing = if ($env:NKS_SIGN_THUMBPRINT) { @{ SigningCertificateThumbprint = $env:NKS_SIGN_THUMBPRINT; SignTool = $env:NKS_SIGNTOOL } } else { @{} }
+          ./scripts/package.ps1 -Compiler "$env:RUNNER_TEMP\inno\ISCC.exe" @signing
 
       - name: Check package version against tag
         if: startsWith(github.ref, 'refs/tags/v')

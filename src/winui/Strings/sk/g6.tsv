@@ -1,0 +1,29 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Vydání odkazuje na instalátor mimo repozitář aplikace.	Vydanie odkazuje na inštalátor mimo repozitára aplikácie.
+Instalátor ve vydání má neplatnou velikost.	Inštalátor vo vydaní má neplatnú veľkosť.
+Vydání {0} nemá instalátor pro Windows x64.	Vydanie {0} nemá inštalátor pre Windows x64.
+Stažený instalátor je větší, než vydání uvádí.	Stiahnutý inštalátor je väčší, než uvádza vydanie.
+Stažený instalátor není úplný.	Stiahnutý inštalátor nie je úplný.
+Přenosnou kopii aktualizujte ručně z balíčku ZIP.	Prenosnú kópiu aktualizujte ručne z balíka ZIP.
+Podepsaný instalátor má verzi {0}, očekávaná je {1}.	Podpísaný inštalátor má verziu {0}, očakávaná je {1}.
+Hledám novou verzi na GitHubu…	Hľadám novú verziu na GitHube…
+Zkontrolovat znovu	Skontrolovať znova
+Nová verze na GitHubu	Nová verzia na GitHube
+Verzi této aplikace nelze zjistit.	Verziu tejto aplikácie nemožno zistiť.
+Máte nejnovější vydanou verzi {0}.	Máte najnovšiu vydanú verziu {0}.
+K dispozici je verze {0}.	K dispozícii je verzia {0}.
+Přenosnou kopii nahraďte obsahem nového balíčku ZIP.	Prenosnú kópiu nahraďte obsahom nového balíka ZIP.
+Toto sestavení nemá ověřitelný podpis vydavatele, nainstalujte ji ručně.	Toto zostavenie nemá overiteľný podpis vydavateľa, nainštalujte ju ručne.
+Otevřít stránku vydání	Otvoriť stránku vydania
+K dispozici je verze {0}. Instalátor se stáhne z GitHubu, ověří se jeho podpis NKS a nainstaluje se ve stejném režimu jako tato kopie.	K dispozícii je verzia {0}. Inštalátor sa stiahne z GitHubu, overí sa jeho podpis NKS a nainštaluje sa v rovnakom režime ako táto kópia.
+Stáhnout a nainstalovat {0}	Stiahnuť a nainštalovať {0}
+Kontrola na GitHubu selhala: {0}	Kontrola na GitHube zlyhala: {0}
+Nainstalovat verzi {0}	Nainštalovať verziu {0}
+Aplikace se zavře. Instalátor požádá o oprávnění správce, nainstaluje novou verzi pro všechny uživatele a aplikaci znovu spustí.	Aplikácia sa zavrie. Inštalátor požiada o oprávnenie správcu, nainštaluje novú verziu pre všetkých používateľov a aplikáciu znova spustí.
+Aplikace se zavře, instalátor nainstaluje novou verzi a aplikaci znovu spustí.	Aplikácia sa zavrie, inštalátor nainštaluje novú verziu a aplikáciu znova spustí.
+Stáhnout a nainstalovat	Stiahnuť a nainštalovať
+Stahuji instalátor… {0} %	Sťahujem inštalátor… {0} %
+Ověřuji podpis instalátoru…	Overujem podpis inštalátora…
+Spuštění instalátoru bylo odmítnuto. Aplikace zůstává otevřená.	Spustenie inštalátora bolo odmietnuté. Aplikácia zostáva otvorená.
+Instalátor běží, aplikace se zavírá.	Inštalátor beží, aplikácia sa zatvára.
+Aktualizaci nelze dokončit: {0}	Aktualizáciu nemožno dokončiť: {0}

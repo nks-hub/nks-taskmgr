@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.UI.Xaml;
@@ -31,27 +32,35 @@ internal sealed partial class UpdateWindow : Window
     private UpdateCleanupSession? preparedCleanup;
     private ContentDialog? confirmation;
     private UpdateInventory? inventory;
-    private bool opened, closed, busy, handoffUncertain, cleanupUncertain;
+    private bool opened, closed, busy, handoffUncertain, cleanupUncertain, onlineBusy;
+    private readonly TextBlock onlineStatus = Text(Loc.T("Hledám novou verzi na GitHubu…"));
+    private readonly Button onlineAction = Command(Loc.T("Zkontrolovat znovu"));
+    private readonly StackPanel localTools = new() { Orientation = Orientation.Horizontal, Spacing = 8 }, localActions = new() { Orientation = Orientation.Horizontal, Spacing = 8 };
+    private OnlineRelease? onlineRelease;
+    // The update helper serves per-user and portable copies only; a Program Files install updates through the downloaded setup.
+    private static bool LocalPackages => UpdateWorkerClient.IsConfigured && OnlineUpdate.Kind != InstallKind.Machine;
 
     internal UpdateWindow(Action requestShutdown)
     {
         this.requestShutdown = requestShutdown;
         Title = Loc.T("Aktualizace · NKS Task Manager");
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
-        if (UpdateWorkerClient.IsConfigured) AppWindow.ResizeDip(920, 690); else AppWindow.ResizeDip(640, 440);
+        if (LocalPackages) AppWindow.ResizeDip(920, 760); else AppWindow.ResizeDip(640, 500);
         Appearance.Attach(this, root);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto })
             root.RowDefinitions.Add(new RowDefinition { Height = height });
         var heading = new StackPanel { Spacing = 7 };
         heading.Children.Add(Text(Loc.T("Aktualizace a návrat verze"), 23));
         heading.Children.Add(Text(Loc.F("Aktuální sestavení: {0}", CurrentVersion())));
-        heading.Children.Add(Text(UpdateWorkerClient.IsConfigured
-            ? Loc.T("Vyberte podepsaný instalátor. Ověřená instalace i přenosná kopie zachovají svůj režim. Nastavení mimo soubory aplikace se nepřepisuje.")
-            : StatusText(UpdateStatus.TrustMissing) + " " + Loc.T("Balíčky se bez něj neověřují ani nespouštějí.")));
+        if (!UpdateWorkerClient.IsConfigured) heading.Children.Add(Text(StatusText(UpdateStatus.TrustMissing) + " " + Loc.T("Balíčky se bez něj neověřují ani nespouštějí.")));
+        else if (LocalPackages) heading.Children.Add(Text(Loc.T("Vyberte podepsaný instalátor. Ověřená instalace i přenosná kopie zachovají svůj režim. Nastavení mimo soubory aplikace se nepřepisuje.")));
         heading.Children.Add(location);
+        var online = new StackPanel { Spacing = 8, Margin = new Thickness(0, 6, 0, 0) };
+        online.Children.Add(Text(Loc.T("Nová verze na GitHubu"), 16)); online.Children.Add(onlineStatus); online.Children.Add(onlineAction);
+        heading.Children.Add(online);
         root.Children.Add(heading);
         Grid.SetRow(status, 1); root.Children.Add(status);
-        var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var tools = localTools;
         tools.Children.Add(refresh); tools.Children.Add(add); tools.Children.Add(cleanup); tools.Children.Add(cancel);
         Grid.SetRow(tools, 2); root.Children.Add(tools);
         Grid.SetRow(packages, 3); root.Children.Add(packages);
@@ -59,7 +68,7 @@ internal sealed partial class UpdateWindow : Window
         emptyTitle.Foreground = Display.Brush(0xe9eef0); emptyContent.Children.Add(emptyTitle); emptyContent.Children.Add(emptyMessage);
         manualUpdate.Visibility = Visibility.Collapsed; emptyContent.Children.Add(manualUpdate); emptyState.Child = emptyContent;
         Grid.SetRow(emptyState, 3); root.Children.Add(emptyState);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var actions = localActions;
         actions.Children.Add(install); actions.Children.Add(rollback); Grid.SetRow(actions, 4); root.Children.Add(actions);
         root.SizeChanged += (_, args) => {
             tools.Orientation = actions.Orientation = args.NewSize.Width < 560 ? Orientation.Vertical : Orientation.Horizontal;
@@ -95,12 +104,19 @@ internal sealed partial class UpdateWindow : Window
         };
         cancel.Click += (_, _) => operation?.Cancel();
         close.Click += (_, _) => Close();
+        onlineAction.Click += async (_, _) => await OnlineAsync();
+        AutomationProperties.SetAutomationId(onlineAction, "update-online-action");
+        AutomationProperties.SetAutomationId(onlineStatus, "update-online-status");
         packages.SelectionChanged += (_, _) => RefreshButtons();
         timer.Tick += (_, _) => RefreshButtons();
         Activated += async (_, _) => {
             if (opened) return;
             opened = true;
-            if (!UpdateWorkerClient.IsConfigured) {
+            location.Text = Loc.F("Složka aplikace: {0}", AppContext.BaseDirectory);
+            _ = OnlineAsync();
+            if (!LocalPackages) {
+                localTools.Visibility = localActions.Visibility = Visibility.Collapsed;
+                if (UpdateWorkerClient.IsConfigured) { emptyState.Visibility = Visibility.Collapsed; status.Visibility = Visibility.Collapsed; return; }
                 ShowUnavailable(Loc.T("Toto sestavení používá ruční aktualizace."),
                     Loc.T("Aktualizace přímo z aplikace nejsou pro toto sestavení dostupné."), true);
                 status.Text = Loc.T("Ruční aktualizace"); RefreshButtons(); return;
@@ -132,7 +148,7 @@ internal sealed partial class UpdateWindow : Window
 
     private async Task RunAsync(Func<CancellationToken, Task> action)
     {
-        if (closed || busy || client.IsBusy || handoffUncertain || !UpdateWorkerClient.IsConfigured) return;
+        if (closed || busy || client.IsBusy || handoffUncertain || !LocalPackages) return;
         busy = true;
         using var cancellation = new CancellationTokenSource(); operation = cancellation;
         result.Text = ""; RefreshButtons();
@@ -265,6 +281,70 @@ internal sealed partial class UpdateWindow : Window
             status.Text = StatusText(handoff.Status);
             result.Text = handoff.MayHaveCommitted ? Loc.T("Výsledek předání není známý. Instalaci neopakujte, dokud neověříte stav předchozího požadavku.") : Bound(handoff.Detail);
         }
+    }
+
+    private static bool CanInstallOnline => PublisherTrust.IsConfigured(PublisherPolicy.Update) && OnlineUpdate.Kind != InstallKind.Portable;
+
+    /// <summary>Checks GitHub on first use; once a newer release is known the same button installs it or opens its page.</summary>
+    private async Task OnlineAsync()
+    {
+        if (closed || onlineBusy) return;
+        if (onlineRelease is { } known) {
+            if (CanInstallOnline) await InstallOnlineAsync(known);
+            else _ = Windows.System.Launcher.LaunchUriAsync(known.Page);
+            return;
+        }
+        onlineBusy = true; onlineAction.IsEnabled = false; onlineStatus.Text = Loc.T("Hledám novou verzi na GitHubu…");
+        try {
+            var current = OnlineUpdate.CurrentVersion() ?? throw new InvalidDataException(Loc.T("Verzi této aplikace nelze zjistit."));
+            onlineRelease = await OnlineUpdate.FindNewerAsync(current, CancellationToken.None);
+            if (closed) return;
+            if (onlineRelease is not { } release) {
+                onlineStatus.Text = Loc.F("Máte nejnovější vydanou verzi {0}.", current); onlineAction.Content = Loc.T("Zkontrolovat znovu");
+            } else if (!CanInstallOnline) {
+                onlineStatus.Text = Loc.F("K dispozici je verze {0}.", release.Version) + " " + (OnlineUpdate.Kind == InstallKind.Portable
+                    ? Loc.T("Přenosnou kopii nahraďte obsahem nového balíčku ZIP.") : Loc.T("Toto sestavení nemá ověřitelný podpis vydavatele, nainstalujte ji ručně."));
+                onlineAction.Content = Loc.T("Otevřít stránku vydání");
+            } else {
+                onlineStatus.Text = Loc.F("K dispozici je verze {0}. Instalátor se stáhne z GitHubu, ověří se jeho podpis NKS a nainstaluje se ve stejném režimu jako tato kopie.", release.Version);
+                onlineAction.Content = Loc.F("Stáhnout a nainstalovat {0}", release.Version);
+            }
+        } catch (Exception error) when (error is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException
+            or InvalidDataException or KeyNotFoundException or InvalidOperationException or IOException or UriFormatException) {
+            onlineRelease = null;
+            if (!closed) { onlineStatus.Text = Loc.F("Kontrola na GitHubu selhala: {0}", Bound(error.Message)); onlineAction.Content = Loc.T("Zkontrolovat znovu"); }
+        } finally { onlineBusy = false; if (!closed) onlineAction.IsEnabled = true; }
+    }
+
+    private async Task InstallOnlineAsync(OnlineRelease release)
+    {
+        var kind = OnlineUpdate.Kind;
+        var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = Loc.F("Nainstalovat verzi {0}", release.Version),
+            Content = Text(kind == InstallKind.Machine
+                ? Loc.T("Aplikace se zavře. Instalátor požádá o oprávnění správce, nainstaluje novou verzi pro všechny uživatele a aplikaci znovu spustí.")
+                : Loc.T("Aplikace se zavře, instalátor nainstaluje novou verzi a aplikaci znovu spustí.")),
+            PrimaryButtonText = Loc.T("Stáhnout a nainstalovat"), CloseButtonText = Loc.T("Zrušit"), DefaultButton = ContentDialogButton.Primary };
+        Appearance.Dialog(dialog); confirmation = dialog;
+        ContentDialogResult choice;
+        try { choice = await dialog.ShowAsync(); } finally { confirmation = null; }
+        if (choice != ContentDialogResult.Primary || closed) return;
+        onlineBusy = true; onlineAction.IsEnabled = false;
+        using var cancellation = new CancellationTokenSource();
+        Closed += (_, _) => cancellation.Cancel();
+        try {
+            var progress = new Progress<double>(value => { if (!closed) onlineStatus.Text = Loc.F("Stahuji instalátor… {0} %", (int)(value * 100)); });
+            string setup = await OnlineUpdate.DownloadAsync(release, progress, cancellation.Token);
+            if (closed) return;
+            onlineStatus.Text = Loc.T("Ověřuji podpis instalátoru…");
+            if (!await Task.Run(() => OnlineUpdate.Start(setup, release.Version, kind))) {
+                onlineStatus.Text = Loc.T("Spuštění instalátoru bylo odmítnuto. Aplikace zůstává otevřená."); return;
+            }
+            onlineStatus.Text = Loc.T("Instalátor běží, aplikace se zavírá.");
+            requestShutdown();
+        } catch (Exception error) when (error is HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidDataException
+            or IOException or Win32Exception or UnauthorizedAccessException or InvalidOperationException or CryptographicException) {
+            if (!closed) onlineStatus.Text = Loc.F("Aktualizaci nelze dokončit: {0}", Bound(error.Message));
+        } finally { onlineBusy = false; if (!closed) onlineAction.IsEnabled = true; }
     }
 
     private void RefreshButtons()

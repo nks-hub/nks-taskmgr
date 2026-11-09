@@ -1,0 +1,29 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Vydání odkazuje na instalátor mimo repozitář aplikace.	Das Release verweist auf ein Setup außerhalb des Anwendungs-Repositorys.
+Instalátor ve vydání má neplatnou velikost.	Das Setup im Release hat eine ungültige Größe.
+Vydání {0} nemá instalátor pro Windows x64.	Release {0} enthält kein Setup für Windows x64.
+Stažený instalátor je větší, než vydání uvádí.	Das heruntergeladene Setup ist größer als im Release angegeben.
+Stažený instalátor není úplný.	Das heruntergeladene Setup ist unvollständig.
+Přenosnou kopii aktualizujte ručně z balíčku ZIP.	Aktualisieren Sie eine portable Kopie manuell aus dem ZIP-Paket.
+Podepsaný instalátor má verzi {0}, očekávaná je {1}.	Das signierte Setup hat Version {0}, erwartet wurde {1}.
+Hledám novou verzi na GitHubu…	Suche nach einer neuen Version auf GitHub…
+Zkontrolovat znovu	Erneut prüfen
+Nová verze na GitHubu	Neue Version auf GitHub
+Verzi této aplikace nelze zjistit.	Die Version dieser Anwendung lässt sich nicht ermitteln.
+Máte nejnovější vydanou verzi {0}.	Sie haben die neueste veröffentlichte Version {0}.
+K dispozici je verze {0}.	Version {0} ist verfügbar.
+Přenosnou kopii nahraďte obsahem nového balíčku ZIP.	Ersetzen Sie die portable Kopie durch den Inhalt des neuen ZIP-Pakets.
+Toto sestavení nemá ověřitelný podpis vydavatele, nainstalujte ji ručně.	Dieser Build hat keine überprüfbare Herausgebersignatur; installieren Sie sie manuell.
+Otevřít stránku vydání	Release-Seite öffnen
+K dispozici je verze {0}. Instalátor se stáhne z GitHubu, ověří se jeho podpis NKS a nainstaluje se ve stejném režimu jako tato kopie.	Version {0} ist verfügbar. Das Setup wird von GitHub heruntergeladen, seine NKS-Signatur geprüft und im selben Modus wie diese Kopie installiert.
+Stáhnout a nainstalovat {0}	{0} herunterladen und installieren
+Kontrola na GitHubu selhala: {0}	Prüfung auf GitHub fehlgeschlagen: {0}
+Nainstalovat verzi {0}	Version {0} installieren
+Aplikace se zavře. Instalátor požádá o oprávnění správce, nainstaluje novou verzi pro všechny uživatele a aplikaci znovu spustí.	Die Anwendung wird geschlossen. Das Setup fordert Administratorrechte an, installiert die neue Version für alle Benutzer und startet die Anwendung erneut.
+Aplikace se zavře, instalátor nainstaluje novou verzi a aplikaci znovu spustí.	Die Anwendung wird geschlossen, das Setup installiert die neue Version und startet die Anwendung erneut.
+Stáhnout a nainstalovat	Herunterladen und installieren
+Stahuji instalátor… {0} %	Setup wird heruntergeladen… {0} %
+Ověřuji podpis instalátoru…	Signatur des Setups wird geprüft…
+Spuštění instalátoru bylo odmítnuto. Aplikace zůstává otevřená.	Der Start des Setups wurde abgelehnt. Die Anwendung bleibt geöffnet.
+Instalátor běží, aplikace se zavírá.	Das Setup läuft, die Anwendung wird geschlossen.
+Aktualizaci nelze dokončit: {0}	Die Aktualisierung kann nicht abgeschlossen werden: {0}

@@ -35,5 +35,21 @@ public sealed partial class MainWindow
         };
         sidebar.Children.Add(button);
         Closed += (_, _) => updateWindow?.Close();
+        if (!LaunchArguments.Parse(LaunchArguments.Current).Independent) _ = HighlightNewReleaseAsync();
+    }
+
+    /// <summary>One GitHub check shortly after start; a newer release turns the Updates button into an accent button.</summary>
+    private async Task HighlightNewReleaseAsync()
+    {
+        await Task.Delay(TimeSpan.FromSeconds(20));
+        try {
+            if (OnlineUpdate.CurrentVersion() is not { } current || await OnlineUpdate.FindNewerAsync(current, CancellationToken.None) is not { } release) return;
+            string text = Loc.F("K dispozici je verze {0}.", release.Version);
+            ToolTipService.SetToolTip(updatesButton, text); AutomationProperties.SetHelpText(updatesButton, text);
+            updatesButton.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
+        } catch (Exception error) when (error is System.Net.Http.HttpRequestException or TaskCanceledException or System.Text.Json.JsonException
+            or InvalidDataException or KeyNotFoundException or InvalidOperationException or IOException or UriFormatException) {
+            // Offline or rate-limited: the Updates window checks again when opened.
+        }
     }
 }

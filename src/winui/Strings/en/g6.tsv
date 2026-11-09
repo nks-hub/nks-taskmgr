@@ -1,0 +1,29 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Vydání odkazuje na instalátor mimo repozitář aplikace.	The release links to a setup outside the application repository.
+Instalátor ve vydání má neplatnou velikost.	The setup in the release has an invalid size.
+Vydání {0} nemá instalátor pro Windows x64.	Release {0} has no setup for Windows x64.
+Stažený instalátor je větší, než vydání uvádí.	The downloaded setup is larger than the release states.
+Stažený instalátor není úplný.	The downloaded setup is incomplete.
+Přenosnou kopii aktualizujte ručně z balíčku ZIP.	Update a portable copy manually from the ZIP package.
+Podepsaný instalátor má verzi {0}, očekávaná je {1}.	The signed setup has version {0}; {1} was expected.
+Hledám novou verzi na GitHubu…	Looking for a new version on GitHub…
+Zkontrolovat znovu	Check again
+Nová verze na GitHubu	New version on GitHub
+Verzi této aplikace nelze zjistit.	The version of this application cannot be determined.
+Máte nejnovější vydanou verzi {0}.	You have the latest released version {0}.
+K dispozici je verze {0}.	Version {0} is available.
+Přenosnou kopii nahraďte obsahem nového balíčku ZIP.	Replace the portable copy with the contents of the new ZIP package.
+Toto sestavení nemá ověřitelný podpis vydavatele, nainstalujte ji ručně.	This build has no verifiable publisher signature; install it manually.
+Otevřít stránku vydání	Open the release page
+K dispozici je verze {0}. Instalátor se stáhne z GitHubu, ověří se jeho podpis NKS a nainstaluje se ve stejném režimu jako tato kopie.	Version {0} is available. The setup is downloaded from GitHub, its NKS signature is verified and it installs in the same mode as this copy.
+Stáhnout a nainstalovat {0}	Download and install {0}
+Kontrola na GitHubu selhala: {0}	Checking GitHub failed: {0}
+Nainstalovat verzi {0}	Install version {0}
+Aplikace se zavře. Instalátor požádá o oprávnění správce, nainstaluje novou verzi pro všechny uživatele a aplikaci znovu spustí.	The application closes. Setup asks for administrator permission, installs the new version for all users and starts the application again.
+Aplikace se zavře, instalátor nainstaluje novou verzi a aplikaci znovu spustí.	The application closes, setup installs the new version and starts the application again.
+Stáhnout a nainstalovat	Download and install
+Stahuji instalátor… {0} %	Downloading setup… {0} %
+Ověřuji podpis instalátoru…	Verifying the setup signature…
+Spuštění instalátoru bylo odmítnuto. Aplikace zůstává otevřená.	Starting the setup was declined. The application stays open.
+Instalátor běží, aplikace se zavírá.	Setup is running; the application is closing.
+Aktualizaci nelze dokončit: {0}	The update cannot be completed: {0}

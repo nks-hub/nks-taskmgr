@@ -130,6 +130,7 @@ public static partial class WinUiChecks
         ProcessViewVisibility();
         HistoryRankingSelection();
         ProcessBranchValues();
+        OnlineUpdateRelease();
         ProcessLifetimes();
         ProcessTrafficAttributionLabels();
         ProcessEventCloseOwnership();

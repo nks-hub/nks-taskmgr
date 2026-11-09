@@ -68,6 +68,7 @@ Name: "{autodesktop}\NKS Task Manager"; Filename: "{app}\NksTaskMgr.WinUI.exe"; 
 
 [Run]
 Filename: "{app}\NksTaskMgr.WinUI.exe"; Description: "{cm:LaunchProgram,NKS Task Manager}"; Flags: nowait postinstall skipifsilent; Check: not IsTransactionMode
+Filename: "{app}\NksTaskMgr.WinUI.exe"; Flags: nowait postinstall runasoriginaluser; Check: IsRelaunchRequested
 
 [Code]
 const
@@ -85,6 +86,35 @@ end;
 function IsTransactionMode: Boolean;
 begin
   Result := ExpandConstant('{param:NKSTRANSACTION|0}') = '1';
+end;
+
+function OpenProcess(Access: DWORD; Inherit: BOOL; ProcessId: DWORD): THandle;
+  external 'OpenProcess@kernel32.dll stdcall';
+function WaitForSingleObject(Handle: THandle; Milliseconds: DWORD): DWORD;
+  external 'WaitForSingleObject@kernel32.dll stdcall';
+function CloseHandle(Handle: THandle): BOOL;
+  external 'CloseHandle@kernel32.dll stdcall';
+
+{ An in-app update starts Setup and then exits; Setup installs only after that process is gone. }
+procedure WaitForUpdatingApplication;
+var
+  ProcessId: Integer;
+  Handle: THandle;
+begin
+  ProcessId := StrToIntDef(ExpandConstant('{param:NKSWAITPID|0}'), 0);
+  if ProcessId <= 0 then
+    Exit;
+  Handle := OpenProcess($00100000, False, ProcessId);
+  if Handle = 0 then
+    Exit;
+  WaitForSingleObject(Handle, 60000);
+  CloseHandle(Handle);
+end;
+
+function IsRelaunchRequested: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:NKSRELAUNCH|0}') = '1') and
+    not IsPortableMode and not IsTransactionMode;
 end;
 
 function IsLocalDirectory(const Directory: String): Boolean;
@@ -159,6 +189,7 @@ var
   MarkerContent: AnsiString;
 begin
   Result := '';
+  WaitForUpdatingApplication;
   Directory := NormalizeDirectory(WizardDirValue);
   if IsTransactionMode and
      (CompareText(Directory, ExplicitDirectory) <> 0) then

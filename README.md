@@ -25,7 +25,7 @@ A Windows process and system monitor with a C#/WinUI 3 Native AOT interface and 
 - 🕒 **ETW events** - Process start/stop and disk/network attribution when run as administrator.
 - 🔁 **Task Manager replacement** - Optional IFEO registration for a machine-wide install, with restore of the previous value.
 - 🌐 **Languages** - Czech, English, German, Slovak and Polish, chosen from the Windows display language or set manually.
-- 📦 **Updates** - Local installer verification with rollback; works for installed and portable copies.
+- 📦 **Updates** - Checks GitHub Releases, downloads the signed setup and installs it in the same mode, including Program Files installs through UAC.
 
 Helpers run as separate processes with the user's own rights. Missing data is shown as unavailable, never as zero.
 
@@ -37,7 +37,7 @@ Helpers run as separate processes with the user's own rights. Missing data is sh
 
 ## Installation
 
-Download the setup or the portable ZIP from [Releases](https://github.com/nks-hub/nks-taskmgr/releases). The installer runs without administrator rights. Release builds are not code-signed, so SmartScreen asks on first start and the elevated broker and updater stay disabled.
+Download the setup or the portable ZIP from [Releases](https://github.com/nks-hub/nks-taskmgr/releases). The installer runs without administrator rights. Releases from 0.2.8 are signed with a self-signed NKS Hub certificate, so SmartScreen still asks on first start. In-app updates verify that signature against the key built into the application and need the certificate trusted on the machine; as administrator run `Import-Certificate docs\nks-hub-codesign.cer -CertStoreLocation Cert:\LocalMachine\Root` and the same for `Cert:\LocalMachine\TrustedPublisher`.
 
 Build from source:
 
