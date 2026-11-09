@@ -64,10 +64,10 @@ See [docs/building.md](docs/building.md) for all build, packaging and signing op
 | Processes | Services |
 | --- | --- |
 | ![Process table with search, columns and toolbar](docs/screenshots/processes.png) | ![Services with state filters and shared PID filter](docs/screenshots/services.png) |
-| **Hardware** | **Startup** |
-| ![Hardware view with CPU topology, memory and firmware](docs/screenshots/hardware.png) | ![Startup items with publisher signature and source key](docs/screenshots/startup.png) |
+| **System** | **Startup** |
+| ![System view with CPU topology, memory and firmware](docs/screenshots/hardware.png) | ![Startup items with publisher signature and source key](docs/screenshots/startup.png) |
 
-Captured on a Windows 11 virtual machine under a standard account.
+Captured on a Windows 11 virtual machine under a standard account with the interface set to English. Service and device names come from Windows itself, which is Czech on that machine.
 
 ## Usage
 
