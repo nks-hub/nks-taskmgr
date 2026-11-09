@@ -54,7 +54,7 @@ std::vector<HardwareFact> parseMemoryHardware(std::span<const std::byte> table)
         if (!rate) unknownRate = true; else rates.insert(rate);
     }
     std::vector<HardwareFact> result;
-    if (slots) result.push_back({L"Použité sloty", std::to_wstring(used) + L" z " + std::to_wstring(slots)});
+    if (slots) result.push_back({L"Použité sloty", std::to_wstring(used) + L" / " + std::to_wstring(slots)});
     if (!rates.empty() && !unknownRate) result.push_back({L"Rychlost RAM", std::to_wstring(*rates.begin())
         + (rates.size() > 1 ? L"–" + std::to_wstring(*rates.rbegin()) : L"") + L" MT/s"});
     else result.push_back({L"Rychlost RAM", L"Firmware nehlásí"});

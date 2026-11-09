@@ -37,7 +37,7 @@ int main()
             const auto found = std::find_if(facts.begin(), facts.end(), [&](const auto& fact) { return fact.name == name; });
             return found == facts.end() ? L"" : found->value;
         };
-        require(value(L"Použité sloty") == L"1 z 4" && value(L"Rychlost RAM") == L"3200 MT/s" && value(L"Typ paměti") == L"DDR4", "SMBIOS merged video RAM, empty slots or wrong speed");
+        require(value(L"Použité sloty") == L"1 / 4" && value(L"Rychlost RAM") == L"3200 MT/s" && value(L"Typ paměti") == L"DDR4", "SMBIOS merged video RAM, empty slots or wrong speed");
         require(value(L"Provedení") == L"DIMM", "SMBIOS form factor was confused with the WMI enumeration");
         for (const auto& [code, expected] : std::vector<std::pair<unsigned, std::wstring>>{{12, L"RIMM"}, {13, L"SODIMM"}, {18, L"CUDIMM"}}) {
             put(module + 14, code, 1);
