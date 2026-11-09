@@ -399,7 +399,8 @@ void networkLossGap()
     const auto next = store.baselineWanted();
     require(next && *next != *epoch, "Loss did not request a new baseline epoch");
     require(!store.baseline(*epoch, now(), entries), "A baseline from the lost epoch was applied");
-    at = now();
+    // The fresh snapshot must follow the traffic already seen at at + 20; a fast machine can get there in under 20 ticks.
+    for (const auto seen = at + 20; (at = now()) <= seen;) {}
     require(store.baseline(*next, at, entries), "A fresh baseline was rejected");
     store.traffic(tcp(10, at + 10, 13, 1));
     require(ownerOf(store.read().traffic, 13) == 1000, "Attribution did not recover after a fresh baseline");
@@ -425,7 +426,7 @@ void networkOutOfOrder()
         "Delivery order instead of timestamps chose the generation");
     const auto published = *std::find_if(batch.samples.begin(), batch.samples.end(), [](const auto& row) { return row.observedBytes == 12; });
     auto late = start(10, 2000, at + 300); late.kind = ProcessEventKind::stopped; store.push(late);
-    const auto& old = withId(store.read().traffic, published.sampleId);
+    const auto old = withId(store.read().traffic, published.sampleId);
     require(old.flags & trafficIdentityConflict, "Late metadata did not revoke as a conflict");
     revoked(published, old);
 }
