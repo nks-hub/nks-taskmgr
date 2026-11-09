@@ -198,6 +198,17 @@ public static partial class WinUiChecks
         var nested = ProcessTree.Nested([sibling, grandchild, child, parent]);
         Require(nested.Select(item => (item.Row.Key.Pid, item.Depth)).SequenceEqual([(10u, 0), (40u, 1), (20u, 1), (30u, 2)]) && parent.Depth == 0 && child.Depth == 0,
             "Application children lost their parent nesting, sibling order, or changed the shared tree state.");
+
+        // A process starting and another ending near the top of a long expanded application must stay two steps, not a full reset.
+        var lines = new GroupLines();
+        var rows = Enumerable.Range(0, 400).Select(i => new GroupLine(parent.Key, BranchRow(BranchProcess((uint)(1000 + i), (ulong)(1000 + i), 0), (ulong)(1000 + i)), null)).ToList();
+        lines.Sync(rows);
+        var started = new GroupLine(parent.Key, sibling, null);
+        var wanted = rows.Where((_, i) => i != 5).ToList(); wanted.Insert(2, started);
+        int resets = 0, steps = 0;
+        lines.CollectionChanged += (_, args) => { if (args.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset) ++resets; else ++steps; };
+        lines.Sync(wanted);
+        Require(resets == 0 && steps == 2 && lines.SequenceEqual(wanted), "A start and an end in a long application list rebuilt the whole list.");
     }
 
     private static void BranchLayoutKeepsKnownLifetimes()

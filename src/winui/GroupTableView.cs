@@ -45,6 +45,8 @@ public sealed partial class MainWindow
     private void ConfigureGroupList(ListView list, GroupLines items, Func<bool> networkShown)
     {
         list.ItemTemplate = (DataTemplate)groupTemplates["GroupLine"]; list.ItemsSource = items;
+        // Live inserts and removals would otherwise slide every row below them each refresh.
+        list.ItemContainerTransitions = new Microsoft.UI.Xaml.Media.Animation.TransitionCollection();
         var style = new Style { TargetType = typeof(ListViewItem) };
         style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0))); style.Setters.Add(new Setter(Control.MinHeightProperty, 0d));
         style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));

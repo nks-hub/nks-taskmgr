@@ -111,10 +111,8 @@ public sealed partial class GroupLines : ObservableCollection<GroupLine>
     internal void Sync(IReadOnlyList<GroupLine> wanted)
     {
         if (Count == wanted.Count && this.SequenceEqual(wanted)) return;
-        var keep = new HashSet<GroupLine>(wanted);
-        int changes = this.Count(line => !keep.Contains(line)) + Math.Abs(wanted.Count - Count);
-        for (int i = 0; i < Math.Min(Count, wanted.Count) && changes <= 64; ++i) if (!ReferenceEquals(this[i], wanted[i])) ++changes;
-        if (changes > 64) {
+        // Count real steps on a copy: one insert near the top shifts every row below it, which is still a single step.
+        if (Steps(new List<GroupLine>(this), wanted, 64) > 64) {
             bulk = true;
             try { Clear(); foreach (var line in wanted) Add(line); }
             finally { bulk = false; }
@@ -123,12 +121,26 @@ public sealed partial class GroupLines : ObservableCollection<GroupLine>
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
             return;
         }
-        for (int i = Count - 1; i >= 0; --i) if (!keep.Contains(this[i])) RemoveAt(i);
-        for (int i = 0; i < wanted.Count; ++i) {
-            if (i < Count && ReferenceEquals(this[i], wanted[i])) continue;
-            int at = IndexOf(wanted[i]);
-            if (at >= 0) Move(at, i); else Insert(i, wanted[i]);
+        Steps(this, wanted, int.MaxValue);
+    }
+
+    /// <summary>Turns <paramref name="current"/> into <paramref name="wanted"/> by removes, moves and inserts; stops once past <paramref name="limit"/> steps.</summary>
+    internal static int Steps(IList<GroupLine> current, IReadOnlyList<GroupLine> wanted, int limit)
+    {
+        var keep = new HashSet<GroupLine>(wanted); int steps = 0;
+        for (int i = current.Count - 1; i >= 0; --i) {
+            if (keep.Contains(current[i])) continue;
+            current.RemoveAt(i); if (++steps > limit) return steps;
         }
+        for (int i = 0; i < wanted.Count; ++i) {
+            if (i < current.Count && ReferenceEquals(current[i], wanted[i])) continue;
+            int at = current.IndexOf(wanted[i]);
+            if (at < 0) current.Insert(i, wanted[i]);
+            else if (current is GroupLines lines) lines.Move(at, i);
+            else { current.RemoveAt(at); current.Insert(i, wanted[i]); }
+            if (++steps > limit) return steps;
+        }
+        return steps;
     }
 
     protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e) { if (!bulk) base.OnCollectionChanged(e); }
