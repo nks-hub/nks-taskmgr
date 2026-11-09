@@ -37,6 +37,10 @@ jobs:
           $password = ConvertTo-SecureString $env:SIGNING_PFX_PASSWORD -AsPlainText -Force
           $certificate = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
           Remove-Item $pfx
+          # The self-signed publisher must chain to a trusted root on this runner, or signtool verify rejects the signatures it just made.
+          $public = Join-Path $env:RUNNER_TEMP 'signing.cer'
+          Export-Certificate -Cert $certificate -FilePath $public | Out-Null
+          foreach ($store in 'Root', 'TrustedPublisher') { Import-Certificate -FilePath $public -CertStoreLocation "Cert:\LocalMachine\$store" | Out-Null }
           $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1
           if (!$signTool) { throw 'signtool.exe was not found.' }
           "NKS_SIGN_THUMBPRINT=$($certificate.Thumbprint)" >> $env:GITHUB_ENV
