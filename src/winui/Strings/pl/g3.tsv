@@ -12,7 +12,7 @@ Model	Model
 Logické procesory	Procesory logiczne
 Dostupnost	Dostępność
 Windows nehlásí	Windows nie zgłasza
-Načítání…	Ładowanie…
+Načítání…	Wczytywanie…
 Údaje zatím nejsou dostupné	Dane nie są jeszcze dostępne
 Údaje RAM	Dane RAM
 Firmware nedostupný	Oprogramowanie układowe niedostępne
@@ -24,7 +24,7 @@ Patice	Gniazda
 Rodina / model / revize	Rodzina / model / wersja
 Instrukce CPU (CPUID)	Instrukcje CPU (CPUID)
 Virtualizace	Wirtualizacja
-Základní takt (CPUID)	Szybkość podstawowa (CPUID)
+Základní rychlost (CPUID)	Szybkość podstawowa (CPUID)
 Maximum (CPUID)	Maksimum (CPUID)
 Výrobce desky	Producent płyty
 Model desky	Model płyty
@@ -34,7 +34,7 @@ Verze BIOS	Wersja BIOS
 Datum BIOS	Data BIOS
 Výrobce systému	Producent systemu
 Model systému	Model systemu
-Režim firmware	Tryb oprogramowania układowego
+Režim firmwaru	Tryb oprogramowania układowego
 Neznámý	Nieznany
 Nehlášeno	Nie zgłoszono
 Nepodporováno	Nieobsługiwane
@@ -55,7 +55,7 @@ Neznámé	Nieznane
 Stav baterie	Stan baterii
 Kritická	Krytyczny
 Nabíjí se	Ładowanie
-Bez nabíjení	Nie ładuje
+Bez nabíjení	Nie ładuje się
 Nabití	Naładowanie
 Napětí baterie	Napięcie baterii
 Tok energie baterie	Przepływ energii baterii
@@ -77,8 +77,8 @@ Chyby média	Błędy nośnika
 Chybí oprávnění	Brak uprawnień
 Disk předpovídá selhání	Dysk przewiduje awarię
 Nepodporováno ovladačem	Nieobsługiwane przez sterownik
-Nečistá vypnutí	Niebezpieczne wyłączenia
-Obnova SMART / teploty	Odświeżanie SMART / temperatury
+Nekorektní vypnutí	Niebezpieczne wyłączenia
+Aktualizace SMART / teploty	Odświeżanie SMART / temperatury
 Parametry disku	Parametry dysku
 Provozní hodiny	Godziny pracy
 Přečteno celkem	Łącznie odczytano
@@ -87,7 +87,7 @@ Sektor logický / fyzický	Sektor logiczny / fizyczny
 Selhání není hlášeno	Nie zgłoszono awarii
 Virtuální	Wirtualny
 Využitá životnost	Zużyta żywotność
-Zapnutí	Włączenia
+Počet zapnutí	Włączenia
 Zapsáno celkem	Łącznie zapisano
 Zdroj stavu	Źródło stanu
 Přehled	Przegląd
@@ -100,7 +100,7 @@ Přehled procesu	Przegląd procesu
 Pracovní sada	Zestaw roboczy
 Disk	Dysk
 Vlákna	Wątki
-Handly	Dojścia
+Popisovače	Dojścia
 verze {0}	wersja {0}
 Popis souboru není dostupný.	Opis pliku jest niedostępny.
 Nedostupné	Niedostępne
@@ -135,14 +135,14 @@ Výsledek není potvrzený. Správce služeb mohl část požadavků přijmout.	
 Změna nebyla odeslána.	Zmiana nie została wysłana.
 Zavřít	Zamknij
 Plán zahrnuje {0}. Zkontrolujte všechny položky. Potvrzení má limit 60 sekund.	Plan obejmuje {0}. Sprawdź wszystkie pozycje. Na potwierdzenie jest 60 sekund.
-Správce služeb Windows může při spuštění nebo restartu automaticky spustit předpoklady uvedené v konfiguraci služby.	Podczas uruchamiania lub ponownego uruchamiania Menedżer sterowania usługami Windows może automatycznie uruchomić zależności podane w konfiguracji usługi.
+Správce služeb Windows může při spuštění nebo restartu automaticky spustit služby, na kterých tato služba závisí.	Podczas uruchamiania lub ponownego uruchamiania Menedżer sterowania usługami Windows może automatycznie uruchomić zależności podane w konfiguracji usługi.
 Stav: {0} → {1}	Stan: {0} → {1}
  · zastavení #{0}	 · zatrzymanie #{0}
  · spuštění #{0}	 · uruchomienie #{0}
 Účet: {0}	Konto: {0}
 neuveden	nie podano
 Příkaz: {0}	Polecenie: {0}
-Konfigurované předpoklady: {0}	Skonfigurowane zależności: {0}
+Služby potřebné ke spuštění: {0}	Skonfigurowane zależności: {0}
 žádné	brak
 Současně se zastaví tyto závislé služby: {0}	Jednocześnie zostaną zatrzymane te usługi zależne: {0}
 Souhlasím se zastavením všech těchto závislých služeb	Zgadzam się na zatrzymanie wszystkich tych usług zależnych
@@ -195,7 +195,7 @@ Před další operací načtěte aktuální přehled.	Przed kolejną operacją w
 Úklid dokončen.	Czyszczenie ukończone.
 Úklid skončil s omezením.	Czyszczenie zakończone z ograniczeniami.
 Odstraněno: {0}	Usunięto: {0}
-Počet odstraněných souborů a uvolněná velikost nejsou potvrzené.	Liczba usuniętych plików i zwolnione miejsce nie są potwierdzone.
+Počet odstraněných souborů a uvolněné místo nejsou potvrzené.	Liczba usuniętych plików i zwolnione miejsce nie są potwierdzone.
 Přeskočeno	Pominięto
 Chyby	Błędy
 Neověřeno	Nie zweryfikowano
@@ -221,33 +221,33 @@ Balíček předchozí verze se zachovává pro návrat.	Pakiet poprzedniej wersj
 Aktualizační pomocník ještě běží.	Proces pomocniczy aktualizacji wciąż działa.
 Instalátor ještě běží.	Instalator wciąż działa.
 Ukončení původního procesu není ověřené.	Zakończenie pierwotnego procesu nie jest zweryfikowane.
-Záznam nedokončené operace zůstává zachovaný.	Zapis nieukończonej operacji pozostaje zachowany.
-Doklad potřebný pro ověření obnovy zůstává zachovaný.	Dowód potrzebny do weryfikacji odzyskiwania pozostaje zachowany.
-Záznam potřebný pro historii této kopie aplikace zůstává zachovaný.	Zapis potrzebny do historii tej kopii aplikacji pozostaje zachowany.
+Záznam nedokončené operace zůstává zachovaný.	Wpis niedokończonej operacji pozostaje zachowany.
+Doklad potřebný pro ověření obnovy zůstává zachovaný.	Dowód potrzebny do weryfikacji naprawy pozostaje zachowany.
+Záznam potřebný pro historii této kopie aplikace zůstává zachovaný.	Wpis potrzebny do historii tej kopii aplikacji pozostaje zachowany.
 Složku aplikace nelze ověřit.	Nie można zweryfikować folderu aplikacji.
 Neznámá data se neodstraňují.	Nieznane dane nie są usuwane.
 Chybí důkaz pro bezpečné odstranění.	Brak dowodu na bezpieczne usunięcie.
 Pracovní složka je používaná nebo není prázdná.	Folder roboczy jest używany lub nie jest pusty.
 Položka se od náhledu změnila.	Pozycja zmieniła się od podglądu.
-Přístup k položce byl odmítnutý.	Odmówiono dostępu do pozycji.
+Přístup k položce byl odepřen.	Odmówiono dostępu do pozycji.
 Položku nelze zpracovat kvůli chybě souboru.	Nie można przetworzyć pozycji z powodu błędu pliku.
-Položku potřebuje jiný zachovaný záznam.	Ta pozycja jest potrzebna innemu zachowanemu zapisowi.
+Položku potřebuje jiný zachovaný záznam.	Ta pozycja jest potrzebna innemu zachowanemu wpisowi.
 Úklid byl zrušený.	Czyszczenie zostało anulowane.
-Starší záznam nemá všechny potřebné údaje.	Starszy zapis nie zawiera wszystkich potrzebnych danych.
+Starší záznam nemá všechny potřebné údaje.	Starszy wpis nie zawiera wszystkich potrzebnych danych.
 Položka už není přítomná; nepočítá se jako odstraněná tímto úklidem.	Pozycja już nie istnieje; nie jest liczona jako usunięta przez to czyszczenie.
 Důvod nebyl rozpoznaný; položka se neodstraňuje.	Nie rozpoznano powodu; pozycja nie zostanie usunięta.
-Záznamy se načtou po otevření přehledu.	Zapisy zostaną wczytane po otwarciu przeglądu.
+Záznamy se načtou po otevření přehledu.	Wpisy zostaną wczytane po otwarciu przeglądu.
 Obnovit přehled	Odśwież przegląd
 Dokončit uložení	Dokończ zapisywanie
 Odstranit dočasný soubor	Usuń plik tymczasowy
-Odstranit záznam	Usuń zapis
-Nedokončené dumpy · NKS Task Manager	Nieukończone zrzuty · NKS Task Manager
-Obnova nic nemaže automaticky. Vyberte záznam; před změnou se znovu ověří soubor i původní aplikace a pracovník.	Odzyskiwanie niczego nie usuwa automatycznie. Wybierz zapis; przed zmianą plik, pierwotna aplikacja i proces pomocniczy zostaną ponownie zweryfikowane.
-Omezený přehled nedokončených dumpů	Ograniczony przegląd nieukończonych zrzutów
-Cesty a ověřený stav vybraného záznamu obnovy	Ścieżki i zweryfikowany stan wybranego zapisu odzyskiwania
+Odstranit záznam	Usuń wpis
+Nedokončené dumpy · NKS Task Manager	Niedokończone zrzuty · NKS Task Manager
+Obnova nic nemaže automaticky. Vyberte záznam; před změnou se znovu ověří soubor i původní aplikace a pracovník.	Odzyskiwanie niczego nie usuwa automatycznie. Wybierz wpis; przed zmianą plik, pierwotna aplikacja i proces pomocniczy zostaną ponownie zweryfikowane.
+Omezený přehled nedokončených dumpů	Ograniczony przegląd niedokończonych zrzutów
+Cesty a ověřený stav vybraného záznamu obnovy	Ścieżki i zweryfikowany stan wybranego wpisu odzyskiwania
 Čtu omezený přehled…	Odczytywanie ograniczonego przeglądu…
-Žádné nedokončené transakce nejsou zaznamenané.	Nie zarejestrowano nieukończonych transakcji.
-Vyberte záznam. Neověřitelné soubory zůstanou zachované.	Wybierz zapis. Pliki, których nie można zweryfikować, zostaną zachowane.
+Žádné nedokončené transakce nejsou zaznamenané.	Nie zarejestrowano niedokończonych transakcji.
+Vyberte záznam. Neověřitelné soubory zůstanou zachované.	Wybierz wpis. Pliki, których nie można zweryfikować, zostaną zachowane.
 Čtení bylo zrušeno.	Odczyt został anulowany.
 Cílový soubor: {0}	Plik docelowy: {0}
 Dočasný soubor: {0}	Plik tymczasowy: {0}
@@ -263,10 +263,10 @@ identita nebyla zapsaná	tożsamość nie została zapisana
 Zjištěná velikost: {0}	Wykryty rozmiar: {0}
 Očekávaná velikost: {0} B	Oczekiwany rozmiar: {0} B
 Zapsané SHA-256: {0}	Zapisany SHA-256: {0}
-Ověřit hotový záznam	Zweryfikuj gotowy zapis
+Ověřit hotový záznam	Zweryfikuj gotowy wpis
 Odstraní pouze ověřený dočasný soubor. Jeho obsah paměti bude ztracen.	Usuwa tylko zweryfikowany plik tymczasowy. Jego zawartość pamięci zostanie utracona.
-Znovu ověří nepřítomnost dočasného i cílového souboru a odstraní pouze záznam této transakce.	Ponownie sprawdza brak pliku tymczasowego i docelowego oraz usuwa tylko zapis tej transakcji.
-Ověří velikost a SHA-256 již uloženého souboru. Potom odstraní pouze dokončený pomocný záznam. Finální dump se nemění.	Weryfikuje rozmiar i SHA-256 już zapisanego pliku. Następnie usuwa tylko ukończony zapis pomocniczy. Końcowy zrzut nie zostanie zmieniony.
+Znovu ověří nepřítomnost dočasného i cílového souboru a odstraní pouze záznam této transakce.	Ponownie sprawdza brak pliku tymczasowego i docelowego oraz usuwa tylko wpis tej transakcji.
+Ověří velikost a SHA-256 již uloženého souboru. Potom odstraní pouze dokončený pomocný záznam. Finální dump se nemění.	Weryfikuje rozmiar i SHA-256 już zapisanego pliku. Następnie usuwa tylko ukończony wpis pomocniczy. Końcowy zrzut nie zostanie zmieniony.
 Ověří velikost a SHA-256 hotového dočasného souboru. Potom jej uloží pod cílovým názvem bez přepsání existujících dat.	Weryfikuje rozmiar i SHA-256 gotowego pliku tymczasowego. Następnie zapisuje go pod nazwą docelową bez nadpisywania istniejących danych.
 Odstranit dočasný dump	Usuń tymczasowy zrzut
 Potvrdit obnovu	Potwierdź odzyskiwanie
@@ -300,7 +300,7 @@ Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další
 Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené.	Wartości procesu i zweryfikowanych potomków; brakujące dane są oznaczone.
 Vlastní hodnota procesu bez potomků.	Własna wartość procesu bez potomków.
 Sdílené stránky RAM se mohou započítat opakovaně.	Współdzielone strony RAM mogą być liczone wielokrotnie.
-Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.	Wysłane i odebrane bajty TCP/UDP tylko podczas własnego nagrywania ETW w oknie Zdarzenia procesów, które wymaga administratora; w przeciwnym razie niedostępne. Wartość dotyczy zamkniętej sekundy sprzed około 5 s; ≥ oznacza, że części ruchu nie udało się przypisać.
+Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje práva správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Wysłane i odebrane bajty TCP/UDP tylko podczas własnego przechwytywania ETW w oknie Zdarzenia procesów, które wymaga administratora; w przeciwnym razie niedostępne. Wartość dotyczy zamkniętej sekundy sprzed około 5 s; ≥ oznacza, że części ruchu nie udało się przypisać.
 Řazeno podle skrytého sloupce {0} sestupně	Posortowano według ukrytej kolumny {0} malejąco
 Řazeno podle skrytého sloupce {0} vzestupně	Posortowano według ukrytej kolumny {0} rosnąco
  · ukončeno	 · zakończony
@@ -370,7 +370,7 @@ Pracovník dumpu skončil bez ověřeného výsledku.	Proces pomocniczy zrzutu z
 Pracovník dumpu skončil před dokončením odpovědi.	Proces pomocniczy zrzutu zakończył się przed ukończeniem odpowiedzi.
 Dump nebo bezpečné uložení souboru není dostupné (Windows {0}): {1}	Zrzut lub bezpieczny zapis pliku jest niedostępny (Windows {0}): {1}
 Identitu vybraného procesu nelze ověřit.	Nie można zweryfikować tożsamości wybranego procesu.
-Hotový nepublikovaný dump zůstal v přehledu nedokončených dumpů. Obnova je dostupná po ukončení původní aplikace.	Gotowy nieopublikowany zrzut pozostał w przeglądzie nieukończonych zrzutów. Odzyskiwanie będzie dostępne po zamknięciu pierwotnej aplikacji.
+Hotový nepublikovaný dump zůstal v přehledu nedokončených dumpů. Obnova je dostupná po ukončení původní aplikace.	Gotowy nieopublikowany zrzut pozostał w przeglądzie niedokończonych zrzutów. Odzyskiwanie będzie dostępne po zamknięciu pierwotnej aplikacji.
 Identita vybraného procesu se změnila nebo není ověřitelná.	Tożsamość wybranego procesu zmieniła się lub nie można jej zweryfikować.
 Vybraný proces už skončil nebo má jiný čas vytvoření.	Wybrany proces już się zakończył lub ma inny czas utworzenia.
 Pracovníka dumpu se nepodařilo spustit.	Nie udało się uruchomić procesu pomocniczego zrzutu.
@@ -408,17 +408,17 @@ Výsledek není známý. Akce se mohla provést.	Wynik jest nieznany. Akcja mog�
 Pracovník neposlal úplný výsledek.	Proces pomocniczy nie wysłał pełnego wyniku.
 Pracovník požadavek nepřijal, zásah nebyl proveden.	Proces pomocniczy nie przyjął żądania; nic nie zostało wykonane.
 Výsledky známých cílů. Průchod není atomický a nedokazuje, že nezůstal žádný souběžně vzniklý potomek.	Wyniki znanych celów. Przebieg nie jest atomowy i nie dowodzi, że nie pozostał żaden równolegle utworzony potomek.
-Doložených cílů: {0} · průchodů: {1} · možných reziduí v posledním inventáři: {2}	Potwierdzone cele: {0} · przebiegi: {1} · możliwe pozostałości w ostatnim spisie: {2}
+Doložených cílů: {0} · průchodů: {1} · možných zbylých procesů v posledním inventáři: {2}	Potwierdzone cele: {0} · przebiegi: {1} · możliwe pozostałości w ostatnim spisie: {2}
 limit 256 cílů	limit 256 celów
 časový limit	limit czasu
 limit tří průchodů	limit trzech przebiegów
 nedostupný inventář	spis niedostępny
-zaniklá nebo neověřitelná vazba rodiče	utracone lub niezweryfikowane powiązanie z rodzicem
+zaniklá nebo neověřitelná vazba rodiče	utracone lub nieweryfikowalne powiązanie z rodzicem
 další neověřená pozorování potomků	kolejne niezweryfikowane obserwacje potomków
 Částečný výsledek: {0}.	Wynik częściowy: {0}.
 Pracovník plánu není dostupný.	Proces pomocniczy planu jest niedostępny.
 Opakované přijetí akce služeb.	Akcja usług została przyjęta ponownie.
-Pracovník nepotvrdil plán před průběhem.	Proces pomocniczy nie potwierdził planu przed postępem.
+Pracovník nepotvrdil plán před průběhem.	Proces pomocniczy nie potwierdził planu przed zgłoszeniem postępu.
 Neplatné pořadí odpovědí služeb.	Nieprawidłowa kolejność odpowiedzi usług.
 Data za koncem akce služeb.	Dane za końcem akcji usług.
 Pracovník nepotvrdil dokončení odpovědi.	Proces pomocniczy nie potwierdził ukończenia odpowiedzi.
@@ -433,14 +433,14 @@ Stav původního procesu nelze ověřit (Windows {0}). Soubor zůstane zachovan�
 Původní proces nelze spolehlivě ověřit. Soubor zůstane zachovaný.	Nie można wiarygodnie zweryfikować pierwotnego procesu. Plik zostanie zachowany.
 Původní aplikace nebo pracovník stále běží. Soubor se nebude měnit.	Pierwotna aplikacja lub proces pomocniczy nadal działa. Plik nie zostanie zmieniony.
 Fronta ukládání a obnovy dumpů je obsazená.	Kolejka zapisu i odzyskiwania zrzutów jest zajęta.
-Záznam obnovy nelze bezpečně zapsat nebo odstranit. Existující záznam zůstane zachovaný.	Nie można bezpiecznie zapisać ani usunąć zapisu odzyskiwania. Istniejący zapis zostanie zachowany.
+Záznam obnovy nelze bezpečně zapsat nebo odstranit. Existující záznam zůstane zachovaný.	Nie można bezpiecznie zapisać ani usunąć wpisu odzyskiwania. Istniejący wpis zostanie zachowany.
 Fronta podrobností procesu je obsazená. Zrušte předchozí dotaz nebo chvíli počkejte.	Kolejka szczegółów procesu jest zajęta. Anuluj poprzednie zapytanie lub chwilę poczekaj.
 Vypršel limit dotazu.	Upłynął limit czasu zapytania.
 Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz lze zopakovat.	Zapytanie o szczegóły przekroczyło limit 5 sekund. Proces pomocniczy jest zamykany; zapytanie można powtórzyć.
 Pracovník předčasně skončil.	Proces pomocniczy zakończył się przedwcześnie.
 Chyba spojení s pracovníkem.	Błąd połączenia z procesem pomocniczym.
 Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek.	Inne zapytanie lub akcja wciąż trwa. Poczekaj na wynik.
-Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.	Upłynął limit. Wynik trwającego zamykania drzewa jest nieznany.
+Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.	Upłynął limit. Wynik trwającego kończenia drzewa procesów jest nieznany.
 Čekání na zvýšení práv nebo výsledek skončilo. Výsledek případné akce není známý.	Oczekiwanie na podniesienie uprawnień lub wynik zakończyło się. Wynik ewentualnej akcji jest nieznany.
 Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.	Proces pomocniczy nie odpowiedział w ciągu 5 sekund. Wynik trwającej akcji jest nieznany.
 Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést.	Oczekiwanie zostało anulowane. Akcje na znanych i nowo wykrytych celach mogły zostać wykonane.
@@ -448,5 +448,5 @@ Chybí úplný ověřený výsledek stromu. Akce se mohly provést. {0}	Brak pe�
 Předání aktualizace se nesmí opakovat.	Przekazania aktualizacji nie wolno powtarzać.
 Platnost potvrzení aktualizace vypršela.	Potwierdzenie aktualizacji wygasło.
 Předání instalace nebylo potvrzené.	Przekazanie instalacji nie zostało potwierdzone.
-Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte v příštím spuštění.	Proces pomocniczy przejął plan. Instalacja rozpocznie się dopiero po faktycznym zakończeniu tego procesu; sprawdź ukończenie przy następnym uruchomieniu.
+Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte při příštím spuštění.	Proces pomocniczy przejął plan. Instalacja rozpocznie się dopiero po faktycznym zakończeniu tego procesu; sprawdź ukończenie przy następnym uruchomieniu.
 Potvrzení pracovníka nedorazilo. Plán mohl být předán; neopakujte požadavek a zkontrolujte deník. {0}	Potwierdzenie procesu pomocniczego nie dotarło. Plan mógł zostać przekazany; nie powtarzaj żądania i sprawdź dziennik. {0}

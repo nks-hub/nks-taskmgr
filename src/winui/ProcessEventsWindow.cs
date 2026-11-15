@@ -67,7 +67,7 @@ internal sealed partial class ProcessEventsWindow : Window
         var details = new Button { Content = "ⓘ", Width = 32, Height = 28, MinHeight = 0, Padding = new Thickness(0), FontSize = 14, Background = Display.Brush(0x1d252a),
             Flyout = new Flyout { Content = new ScrollViewer { Content = information, MaxHeight = 360, Padding = new Thickness(0, 0, 16, 0) } } };
         AutomationProperties.SetName(details, Loc.T("Čítače a vysvětlení záznamu")); AutomationProperties.SetAutomationId(details, "events-info");
-        ToolTipService.SetToolTip(details, Loc.T("Čítače záznamu, vytěsnění, rozpočet paměti a vysvětlení."));
+        ToolTipService.SetToolTip(details, Loc.T("Čítače záznamu, vytěsnění, limit paměti a vysvětlení."));
         status.TextTrimming = TextTrimming.CharacterEllipsis; status.VerticalAlignment = VerticalAlignment.Center; status.IsTextSelectionEnabled = true;
         var messages = new Grid { ColumnSpacing = 6 };
         messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); messages.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -166,8 +166,8 @@ internal sealed partial class ProcessEventsWindow : Window
                 lifetimes.Count, ProcessLifetimeStore.MaximumRows, lifetimes.Trimmed, lifetimes.Unverified, lifetimes.Conflicts, lifetimes.Late, lifetimes.MissingSequences, lifetimes.GapBoundaries);
             if (hold.IsChecked == true) counters.Text += "\n" + Loc.F("Zobrazení je podržené; vytěsněno z podrženého seznamu {0}.", heldTrimmed);
             notice.Text = TrafficMode
-                ? Loc.T("Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používají i sloupec Síť v Procesech a Uživatelích.")
-                : LifetimeMode ? Loc.T("Start a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří.")
+                ? Loc.T("Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používá i sloupec Síť v Procesech a Uživatelích.")
+                : LifetimeMode ? Loc.T("Vznik a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří.")
                 : Loc.T("CreateTime přímo z události s ověřeným bootem určuje historickou životnost. Ostatní řádky zůstávají neověřené.");
             notice.Text += " " + Loc.T("Žádné živé akce podle PID. Čas je relativní QPC; nové spuštění nahradí seznam. Nový základní seznam nezpřesní dřívější nejasné přenosy.");
             if (!trafficSupported) notice.Text += " " + Loc.T("Přenosy tato verze nativní DLL neposkytuje; záznam vzniku a ukončení pokračuje.");
@@ -249,7 +249,7 @@ internal sealed partial class ProcessEventsWindow : Window
         try {
             visible.Apply(remaining);
             list.SelectedItem = selected is not null && remaining.Contains(selected) ? selected : null;
-            if (selected is not null && list.SelectedItem is null) { selections.Remove(modes.SelectedIndex); detail.Text = Loc.T("Vybraný podržený záznam byl vytěsněn rozpočtem uchování."); }
+            if (selected is not null && list.SelectedItem is null) { selections.Remove(modes.SelectedIndex); detail.Text = Loc.T("Vybraný podržený záznam byl vytěsněn kvůli limitu uchování."); }
         } finally { refreshing = false; }
     }
 
@@ -282,7 +282,7 @@ internal sealed partial class ProcessEventsWindow : Window
 
     private static string SampleText(SampleState value) => value switch {
         SampleState.Valid => Loc.T("dostupný"), SampleState.First => Loc.T("čeká na data"), SampleState.Gap => Loc.T("částečný proud"),
-        SampleState.AccessDenied => Loc.T("přístup zamítnut"), SampleState.Unsupported => Loc.T("nepodporovaný"),
+        SampleState.AccessDenied => Loc.T("přístup odepřen"), SampleState.Unsupported => Loc.T("nepodporovaný"),
         SampleState.Stale => Loc.T("zastaralý"), SampleState.Error => Loc.T("chyba"), _ => Loc.T("nedostupný")
     };
 
@@ -353,7 +353,7 @@ internal sealed partial class ProcessEventsWindow : Window
     private static string StateText(ProcessEventMonitorState value) => value switch {
         ProcessEventMonitorState.Idle => Loc.T("Záznam není spuštěný"), ProcessEventMonitorState.Starting => Loc.T("Spouštím vlastní relaci"),
         ProcessEventMonitorState.Running => Loc.T("Záznam běží"), ProcessEventMonitorState.Stopping => Loc.T("Zastavuji vlastní relaci"),
-        ProcessEventMonitorState.Stopped => Loc.T("Záznam zastavený"), ProcessEventMonitorState.AccessDenied => Loc.T("Přístup k ETW byl zamítnutý; aplikace pokračuje bez něj"),
+        ProcessEventMonitorState.Stopped => Loc.T("Záznam zastavený"), ProcessEventMonitorState.AccessDenied => Loc.T("Přístup k ETW byl odepřen; aplikace pokračuje bez něj"),
         ProcessEventMonitorState.Unsupported => Loc.T("Zdroj ETW není na tomto systému podporovaný"), ProcessEventMonitorState.Busy => Loc.T("Předchozí relace se ještě uklízí"),
         ProcessEventMonitorState.StopTimedOut => Loc.T("Zastavení překročilo časový limit"), ProcessEventMonitorState.CleanupFailed => Loc.T("Windows nepotvrdil úklid relace"),
         _ => Loc.T("Záznam skončil chybou")

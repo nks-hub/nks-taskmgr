@@ -5,8 +5,8 @@ Duplicitní PID v jednom snímku.	Zduplikowany PID w jednej migawce.
 Duplicitní logický procesor.	Zduplikowany procesor logiczny.
 Duplicitní vlastnost JSON objektu.	Zduplikowana właściwość obiektu JSON.
 Duplicitní zdroj metriky.	Zduplikowane źródło metryki.
-Duplicitní životnost procesu.	Zduplikowany okres życia procesu.
-Neplatná boot identita.	Nieprawidłowa tożsamość rozruchu.
+Duplicitní životnost procesu.	Zduplikowany czas życia procesu.
+Neplatná identita spuštění systému.	Nieprawidłowa tożsamość rozruchu.
 Neplatná celočíselná metrika.	Nieprawidłowa metryka całkowita.
 Neplatná generace procesu.	Nieprawidłowa generacja procesu.
 Neplatná hodnota metriky.	Nieprawidłowa wartość metryki.
@@ -17,7 +17,7 @@ Neplatné pořadí zařízení.	Nieprawidłowa kolejność urządzeń.
 Neplatný druh GPU enginu.	Nieprawidłowy typ silnika GPU.
 Neplatný druh zařízení.	Nieprawidłowy typ urządzenia.
 Neplatný seznam polí.	Nieprawidłowa lista pól.
-Neplatný stav boot identity.	Nieprawidłowy stan tożsamości rozruchu.
+Neplatný stav identity spuštění systému.	Nieprawidłowy stan tożsamości rozruchu.
 Neplatný čas snímku.	Nieprawidłowy czas migawki.
 Neplatný čas {0}.	Nieprawidłowy czas {0}.
 Nepodporovaná verze snímku.	Nieobsługiwana wersja migawki.
@@ -53,12 +53,12 @@ Měření nedostupné	Pomiar niedostępny
 Nadpis zprávy:	Tytuł wiadomości:
 Nastavení uživatelských účtů se nepodařilo otevřít. {0}	Nie można otworzyć ustawień kont użytkowników. {0}
 Načítám relace…	Wczytywanie sesji…
-Nedostupné bez správce	Niedostępne bez administratora
+Nedostupné bez práv správce	Niedostępne bez uprawnień administratora
 Neznámý uživatel	Nieznany użytkownik
-Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	Bajty TCP/UDP wysłane i odebrane. Mierzone tylko podczas własnego przechwytywania ETW jako administrator.
+Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW s právy správce.	Bajty TCP/UDP wysłane i odebrane. Mierzone tylko podczas własnego przechwytywania ETW jako administrator.
 Odeslat zprávu	Wyślij wiadomość
 Odeslat zprávu…	Wyślij wiadomość…
-Odhlásit se	Wyloguj
+Odhlásit se	Wyloguj się
 Odhlásit vybraného uživatele. Neuložená data jeho programů se mohou ztratit.	Wyloguj wybranego użytkownika. Niezapisane dane jego programów mogą zostać utracone.
 Odhlásit	Wyloguj
 Odpojit vybraného uživatele. Jeho relace a programy dál běží.	Rozłącz wybranego użytkownika. Jego sesja i programy nadal działają.
@@ -74,8 +74,8 @@ Seznam relací Windows je nedostupný; relace jsou odvozené jen z procesů.	Lis
 Seznam relací Windows vyžaduje oprávnění; relace jsou odvozené jen z procesů.	Lista sesji systemu Windows wymaga uprawnień; sesje są ustalane tylko na podstawie procesów.
 Služby systému	Usługi systemowe
 Součet CPU procesů. ≥ označuje známou část, když některý proces nemá aktuální vzorek.	Suma CPU procesów. ≥ oznacza znaną część, gdy któryś proces nie ma bieżącej próbki.
-Součet pracovních sad procesů. Přesné hodnoty v MB jsou v popisku buňky.	Suma zestawów roboczych procesów. Dokładne wartości w MB są w etykiecie komórki.
-Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory).	Suma odczytów i zapisów wszystkich operacji we/wy procesów (pliki, urządzenia, pliki sieciowe).
+Součet pracovních sad procesů. Přesné hodnoty v MB jsou v popisku buňky.	Suma zestawów roboczych procesów. Dokładne wartości w MB są w podpowiedzi komórki.
+Součet čtení a zápisu veškerého I/O procesů (soubory, zařízení, síťové soubory).	Suma odczytów i zapisów wszystkich operacji we/wy procesów (pliki, urządzenia, pliki sieciowe).
 Spravovat uživatelské účty	Zarządzaj kontami użytkowników
 Stav relace Windows.	Stan sesji systemu Windows.
 Uživatel	Użytkownik
@@ -94,20 +94,20 @@ rozbaleno	rozwinięte
 sbaleno	zwinięte
 {0} · relace {1} · {2}	{0} · sesja {1} · {2}
 {0}, {1}, relace {2}, {3}, {4}	{0}, {1}, sesja {2}, {3}, {4}
-{0}: {1} ({2})\nPrivátní paměť: {3} ({4})	{0}: {1} ({2})\nPamięć prywatna: {3} ({4})
+{0}: {1} ({2})\nSoukromá paměť: {3} ({4})	{0}: {1} ({2})\nPamięć prywatna: {3} ({4})
 \nÚdaje o uživateli této relace vyžadují oprávnění správce.	\nDane użytkownika tej sesji wymagają uprawnień administratora.
 \nZnámé aktuální vzorky: CPU {0}/{3}, paměť {1}/{3}, I/O {2}/{3}.	\nZnane bieżące próbki: CPU {0}/{3}, pamięć {1}/{3}, we/wy {2}/{3}.
 \n≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.	\n≥ oznacza znaną część niepełnej sumy. Współdzielone strony RAM mogą być liczone wielokrotnie.
 Paměť	Pamięć
-Handly	Dojścia
+Popisovače	Dojścia
 Zjistit typ a název objektu	Ustal typ i nazwę obiektu
 vlákna	wątki
 moduly	moduły
 oblasti paměti	regiony pamięci
-handly	dojścia
+popisovače	dojścia
 podrobnosti	szczegóły
 Mapa virtuální paměti procesu	Mapa pamięci wirtualnej procesu
-Handly procesu	Dojścia procesu
+Popisovače procesu	Dojścia procesu
 Zjistit aktuální typ a název duplikovaného objektu	Ustal bieżący typ i nazwę zduplikowanego obiektu
 Filtrovat pouze již načtené výsledky	Filtruj tylko już wczytane wyniki
 Stav nebo vlastnost načtených výsledků	Stan lub właściwość wczytanych wyników
@@ -137,7 +137,7 @@ Sestupně	Malejąco
 Vzestupně	Rosnąco
 Přehled není dostupný	Przegląd niedostępny
 Načítám aplikace…	Wczytywanie aplikacji…
-{0} skupin · 	{0} grup ·
+{0} skupin · 	Grupy: {0} · 
 zastaralý přehled	nieaktualny przegląd
 částečný přehled	częściowy przegląd
 podle oken	według okien
@@ -145,9 +145,9 @@ podle oken	według okien
 Některá okna, vazby procesů nebo údaje nemusí být dostupné. ≥ u CPU označuje částečný součet.	Niektóre okna, powiązania procesów lub dane mogą być niedostępne. ≥ przy CPU oznacza sumę częściową.
 Skupiny vycházejí z ověřených vlastníků viditelných oken a jejich potomků.	Grupy opierają się na zweryfikowanych właścicielach widocznych okien i ich potomkach.
 \nKořen PID {0} · {1} · generace {2}	\nKorzeń PID {0} · {1} · generacja {2}
- · balíček: 	 · pakiet:
-\nHostitel pozorovaný v inventáři: PID {0}; sdílený host se nezapočítává více aplikacím.	\nHost zaobserwowany w spisie: PID {0}; współdzielony host nie jest liczony dla wielu aplikacji.
-\nCPU je součet dostupných validních hodnot.\n\n	\nCPU to suma dostępnych prawidłowych wartości.\n\n
+ · balíček: 	 · pakiet: 
+\nHostitel pozorovaný v inventáři: PID {0}; sdílený hostitel se nezapočítává více aplikacím.	\nHost zaobserwowany w spisie: PID {0}; współdzielony host nie jest liczony dla wielu aplikacji.
+\nCPU je součet dostupných platných hodnot.\n\n	\nCPU to suma dostępnych prawidłowych wartości.\n\n
 Historické procesy · NKS Task Manager	Procesy historyczne · NKS Task Manager
 Podrobnosti o uchovaných datech	Szczegóły przechowywanych danych
 Řadit podle CPU	Sortuj według CPU
@@ -170,8 +170,8 @@ mezer	przerw
 \nZnámé vynechané revize předání: {0}	\nZnane pominięte rewizje przekazania: {0}
 \nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM a 8 s nejvyšším I/O.	\nZapisano {0} z {1} wierszy. Każda klatka zapisuje tylko 8 procesów z najwyższym CPU, 8 z największą RAM i 8 z największym we/wy.
 \nVe snímku bylo původně {0}–{1} procesů.	\nKlatka pierwotnie zawierała {0}–{1} procesów.
-\nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} z 4 MiB.	\nZachowany zakres {0} – {1}: {2} klatek, {3} wierszy, {4} z 4 MiB.
-\nVytěsněno {0} snímků ({1} řádků).	\nUsunięto {0} klatek ({1} wierszy).
+\nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} ze 4 MiB.	\nZachowany zakres {0} – {1}: klatki: {2}, wiersze: {3}, {4} z 4 MiB.
+\nVytěsněno {0} snímků ({1} řádků).	\nUsunięte klatki: {0} (wiersze: {1}).
 \nÚplnost číslování předání nelze určit.	\nNie można ustalić kompletności numeracji przekazań.
 \nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit.	\nOgólne we/wy procesu nie jest przypisywane do dysku, sieci ani GPU; nie można potwierdzić kompletności pierwotnego zbierania.
 {0} z {1} procesů	{0} z {1} procesów
@@ -189,7 +189,7 @@ Dump x64 nebo 32bitového procesu po potvrzení obsahu a cílového souboru	Zrzu
 Zahrnout úplnou paměť procesu	Uwzględnij pełną pamięć procesu
 Úplná paměť procesu, ve výchozím stavu vypnuto	Pełna pamięć procesu, domyślnie wyłączone
 Dump ukládá informace o procesu, vláknech, modulech a části paměti. Může obsahovat hesla, osobní údaje i obsah otevřených dokumentů.	Zrzut zapisuje informacje o procesie, wątkach, modułach i części pamięci. Może zawierać hasła, dane osobowe i zawartość otwartych dokumentów.
-Úplný dump obsahuje veškerou dostupnou paměť a může zabrat mnoho GiB. Vytváření může krátce pozastavit odezvu procesu. Limit je 32 GiB a 60 sekund.	Pełny zrzut zawiera całą dostępną pamięć i może zająć wiele GiB. Tworzenie może na chwilę wstrzymać działanie procesu. Limit to 32 GiB i 60 sekund.
+Úplný dump obsahuje veškerou dostupnou paměť a může zabrat mnoho GiB. Proces při tom může krátce přestat reagovat. Limit je 32 GiB a 60 sekund.	Pełny zrzut zawiera całą dostępną pamięć i może zająć wiele GiB. Tworzenie może na chwilę wstrzymać działanie procesu. Limit to 32 GiB i 60 sekund.
 Ukládejte pouze do místního adresáře, kterému důvěřujete. Existující soubor se nepřepíše; odkazy a přesměrované adresáře se odmítnou.	Zapisuj tylko w zaufanym folderze lokalnym. Istniejący plik nie zostanie nadpisany; łącza i przekierowane foldery są odrzucane.
 Vytvořit dump procesu	Utwórz plik zrzutu
 Vybrat soubor…	Wybierz plik…
@@ -198,8 +198,8 @@ Dump nebyl zahájen	Zrzut nie został rozpoczęty
 Výběr se změnil nebo proces skončil. Vyberte znovu živý proces.	Zaznaczenie się zmieniło lub proces się zakończył. Wybierz ponownie działający proces.
 Dump nebyl dokončen	Zrzut nie został ukończony
 Čekání bylo zrušeno. Výsledek není potvrzený.	Oczekiwanie anulowano. Wynik nie jest potwierdzony.
-Vytvářím úplný dump. Soubor se zveřejní až po dokončení a ověření.	Tworzenie pełnego zrzutu. Plik pojawi się dopiero po ukończeniu i weryfikacji.
-Vytvářím běžný dump. Soubor se zveřejní až po dokončení a ověření.	Tworzenie standardowego zrzutu. Plik pojawi się dopiero po ukończeniu i weryfikacji.
+Vytvářím úplný dump. Soubor se uloží pod cílovým názvem až po dokončení a ověření.	Tworzenie pełnego zrzutu. Plik pojawi się dopiero po ukończeniu i weryfikacji.
+Vytvářím běžný dump. Soubor se uloží pod cílovým názvem až po dokončení a ověření.	Tworzenie standardowego zrzutu. Plik pojawi się dopiero po ukończeniu i weryfikacji.
 Limit 60 sekund · 32 GiB	Limit 60 sekund · 32 GiB
 Dump procesu · PID {0}	Zrzut procesu · PID {0}
 Zrušit čekání	Anuluj oczekiwanie
@@ -215,7 +215,7 @@ Dump překročil limit 32 GiB.	Zrzut przekroczył limit 32 GiB.
 Vytváření bylo zrušeno nebo překročilo časový limit.	Tworzenie anulowano lub przekroczyło limit czasu.
 Pracovník odmítl neplatný požadavek nebo nesouhlasící soubor.	Proces pomocniczy odrzucił nieprawidłowe żądanie lub niezgodny plik.
 Dump se nepodařilo ověřit.	Nie można zweryfikować zrzutu.
- Soubor nebyl zveřejněn.	 Plik nie został opublikowany.
+ Soubor nebyl uložen.	 Plik nie został opublikowany.
 Pracovník vrátil více než jeden datový rámec.	Proces pomocniczy zwrócił więcej niż jedną ramkę danych.
 Pracovník nedokončil dotaz správně.	Proces pomocniczy nie zakończył zapytania poprawnie.
 Dotaz byl zrušen.	Zapytanie zostało anulowane.
@@ -243,21 +243,21 @@ nedostupné ({0})	niedostępne ({0})
 Události procesů ETW	Zdarzenia procesów ETW
 Události vzniku a ukončení procesů	Zdarzenia uruchomienia i zakończenia procesów
 Záznam událostí a síťového provozu (ETW) vyžaduje práva správce.	Rejestrowanie zdarzeń i ruchu sieciowego (ETW) wymaga uprawnień administratora.
-Zastavení a dočtení záznamu nebylo potvrzené	Nie potwierdzono zatrzymania i odczytania reszty zapisu
+Zastavení a dočtení záznamu nebylo potvrzené	Nie potwierdzono zatrzymania i doczytania przechwytywania
 Zavřít i tak	Zamknij mimo to
 Ponechat aplikaci otevřenou	Pozostaw aplikację otwartą
-Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Aplikaci lze ponechat otevřenou a zkusit zastavení znovu.	Nie udało się potwierdzić sprzątania własnej sesji ETW ani odczytania jej zdarzeń. Sesja może nadal rejestrować, a przy zamknięciu mogą zostać utracone jeszcze nieodczytane zdarzenia. Możesz pozostawić aplikację otwartą i spróbować zatrzymać ponownie.
+Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Aplikaci lze ponechat otevřenou a zkusit zastavení znovu.	Nie udało się potwierdzić uprzątnięcia własnej sesji ETW ani doczytania jej zdarzeń. Sesja może nadal rejestrować, a przy zamknięciu mogą zostać utracone jeszcze nieodczytane zdarzenia. Możesz pozostawić aplikację otwartą i spróbować zatrzymać ponownie.
 Aktualizace	Aktualizacje
-Aktualizace a návrat předchozí verze	Aktualizacje i powrót do poprzedniej wersji
+Aktualizace a návrat k předchozí verzi	Aktualizacje i powrót do poprzedniej wersji
 Verze aplikace a možnosti aktualizace	Wersja aplikacji i opcje aktualizacji
 Aktualizace nelze otevřít	Nie można otworzyć aktualizacji
-Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej.	Poprzednie żądanie z podwyższonymi uprawnieniami nie zostało jeszcze zamknięte. Nie powtarzaj go.
+Předchozí požadavek se zvýšenými právy ještě není dokončený. Neopakujte jej.	Poprzednie żądanie z podniesionymi uprawnieniami nie zostało jeszcze zamknięte. Nie powtarzaj go.
 Akce s právy správce nejsou v této verzi dostupné, protože vydání není podepsané.	Działania z uprawnieniami administratora nie są dostępne w tej wersji, ponieważ wydanie nie jest podpisane.
-Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.	Podpis, plik lub rzeczywisty partner nie został wiarygodnie zweryfikowany. Podwyższenie uprawnień zostało odrzucone.
+Podpis, soubor nebo skutečný protějšek nebyl důvěryhodně ověřen. Zvýšení práv bylo odmítnuto.	Podpis, plik lub rzeczywista druga strona nie zostały wiarygodnie zweryfikowane. Podniesienie uprawnień zostało odrzucone.
 Vlastní potvrzení správce bylo zrušeno, vypršel jeho limit nebo už klient neběží. Akce nebyla odeslána.	Własne potwierdzenie administratora zostało anulowane, upłynął jego limit lub klient już nie działa. Akcja nie została wysłana.
 Náhradu lze zapnout jen z instalace v Program Files.	Zastąpienie Menedżera zadań można włączyć tylko z instalacji w Program Files.
 Složka instalace není chráněná proti zápisu běžných uživatelů.	Folder instalacji nie jest chroniony przed zapisem przez zwykłych użytkowników.
-Zvýšení práv bylo v UAC zrušeno. Akce nebyla odeslána.	Podwyższenie uprawnień anulowano w UAC. Akcja nie została wysłana.
+Zvýšení práv bylo v UAC zrušeno. Akce nebyla odeslána.	Podniesienie uprawnień anulowano w UAC. Akcja nie została wysłana.
 Neplatná vazba okna na aplikaci.	Nieprawidłowe powiązanie okna z aplikacją.
 Neplatný stav metadat aplikace.	Nieprawidłowy stan metadanych aplikacji.
 Výsledek aplikací obsahuje data mimo rámec.	Wynik aplikacji zawiera dane poza ramką.
@@ -280,25 +280,25 @@ Síť	Sieć
 Žádné připojení	Brak połączenia
 Žádný připojený adaptér v tomto pohledu.	Brak podłączonej karty w tym widoku.
 Největší aktuální provoz: {0}. Příjem a odesílání tohoto adaptéru; hodnoty adaptérů se nesčítají.	Największy bieżący ruch: {0}. Odbieranie i wysyłanie tej karty; wartości kart nie są sumowane.
-Uložený balíček neodpovídá drženému zdroji.	Zapisany pakiet nie odpowiada trzymanemu źródłu.
-Nejasný záznam pro obnovu už není dostupný.	Niejasny zapis odzyskiwania nie jest już dostępny.
-Zánik původního pracovníka nebo instalátoru nebyl prokázaný. Obnova nebyla připravena.	Nie wykazano zakończenia pierwotnego procesu pomocniczego ani instalatora. Odzyskiwanie nie zostało przygotowane.
+Uložený balíček neodpovídá drženému zdroji.	Zapisany pakiet nie odpowiada przechowywanemu źródłu.
+Nejasný záznam pro obnovu už není dostupný.	Niejasny wpis naprawy nie jest już dostępny.
+Zánik původního pracovníka nebo instalátoru nebyl prokázaný. Obnova nebyla připravena.	Nie wykazano zakończenia pierwotnego procesu pomocniczego ani instalatora. Naprawa nie została przygotowana.
 Plán neodpovídá výběru ani ověřenému běžícímu obrazu.	Plan nie odpowiada wyborowi ani zweryfikowanemu uruchomionemu obrazowi.
 Balíček v plánu nebyl shodně ověřený.	Pakiet w planie nie został zgodnie zweryfikowany.
 Pracovník nepřipravil stejný plán.	Proces pomocniczy nie przygotował tego samego planu.
 Nesprávná fáze odpovědi aktualizace.	Nieprawidłowa faza odpowiedzi aktualizacji.
 Přehled aktualizací patří jinému kořeni nebo podepsanému obrazu.	Przegląd aktualizacji należy do innego katalogu głównego lub podpisanego obrazu.
 Chybí ověřitelný rozsah přehledu aktualizací.	Brak weryfikowalnego zakresu przeglądu aktualizacji.
-Obnova byla nabídnuta pro jinou kopii aplikace.	Odzyskiwanie zaproponowano dla innej kopii aplikacji.
-Klient aktualizací nemá ověřenou životnost.	Klient aktualizacji nie ma zweryfikowanego okresu życia.
+Obnova byla nabídnuta pro jinou kopii aplikace.	Naprawę zaproponowano dla innej kopii aplikacji.
+Klient aktualizací nemá ověřenou životnost.	Klient aktualizacji nie ma zweryfikowanego czasu życia.
 Obraz klienta není známý.	Obraz klienta jest nieznany.
 Aktualizace nejsou nakonfigurované. Chybí připnutý podpis vydavatele; pracovník nebyl spuštěn.	Aktualizacje nie są skonfigurowane. Brak przypiętego podpisu wydawcy; proces pomocniczy nie został uruchomiony.
 Předchozí aktualizace nebo její ukončování ještě probíhá.	Poprzednia aktualizacja lub jej kończenie nadal trwa.
 Čekání na pracovníka vypršelo. Dokud není ověřen jeho konec, nevznikne další požadavek. {0}	Upłynął czas oczekiwania na proces pomocniczy. Dopóki jego zakończenie nie zostanie zweryfikowane, nie powstanie kolejne żądanie. {0}
 Pracovník neposkytl ověřitelný rozsah v protokolu 2; tento výsledek nepovoluje změnu instalace.	Proces pomocniczy nie dostarczył weryfikowalnego zakresu w protokole 2; ten wynik nie pozwala na zmianę instalacji.
-Podepsané části nemají stejnou vydanou verzi. Dostupný je pouze přehled, uložení ověřeného balíčku a výslovná obnova.	Podpisane części nie mają tej samej wydanej wersji. Dostępny jest tylko przegląd, zapisanie zweryfikowanego pakietu i jawne odzyskiwanie.
+Podepsané části nemají stejnou vydanou verzi. Dostupný je pouze přehled, uložení ověřeného balíčku a výslovná obnova.	Podpisane części nie mają tej samej wydanej wersji. Dostępny jest tylko przegląd, zapisanie zweryfikowanego pakietu i jawna naprawa.
 Původ adresáře nebyl prokázaný; standardní změna je zakázaná.	Nie wykazano pochodzenia folderu; standardowa zmiana jest zablokowana.
-Nejasný výsledek vyžaduje výslovné posouzení obnovy; standardní změna se nezkouší znovu.	Niejasny wynik wymaga jawnej oceny odzyskiwania; standardowa zmiana nie jest ponawiana.
+Nejasný výsledek vyžaduje výslovné posouzení obnovy; standardní změna se nezkouší znovu.	Niejasny wynik wymaga jawnej oceny naprawy; standardowa zmiana nie jest ponawiana.
 položka|položky|položek	element|elementy|elementów
 (výchozí hodnota)	(wartość domyślna)
 Povoleno	Włączone
@@ -373,8 +373,8 @@ Ukončení	Zakończenie
 Čas ETW nedostupný	Czas ETW niedostępny
 Název není dostupný	Nazwa niedostępna
 PID {0} · rodič {1}	PID {0} · rodzic {1}
-CreateTime přímo ze zdroje · ověřená historická životnost	CreateTime bezpośrednio ze źródła · zweryfikowany historyczny okres życia
-Historický záznam · životnost není ověřená	Zapis historyczny · okres życia niezweryfikowany
+CreateTime přímo ze zdroje · ověřená historická životnost	CreateTime bezpośrednio ze źródła · zweryfikowany historyczny czas życia
+Historický záznam · životnost není ověřená	Zapis historyczny · czas życia niezweryfikowany
 Pořadí ve zdroji: {0}\nČas ETW (QPC): {1}\nFrekvence QPC: {2}\nPřijato (monotónní ns): {3}\nStav identity: {4}\nDruh generace: {5} · generace {6}\nPříznaky události: {7}	Kolejność w źródle: {0}\nCzas ETW (QPC): {1}\nCzęstotliwość QPC: {2}\nOdebrano (monotoniczne ns): {3}\nStan tożsamości: {4}\nRodzaj generacji: {5} · generacja {6}\nFlagi zdarzenia: {7}
 \nNávratový kód: 0x{0}	\nKod zakończenia: 0x{0}
 \nNávratový kód není dostupný.	\nKod zakończenia niedostępny.
@@ -386,7 +386,7 @@ Pokračovat ve sběru	Wznów zbieranie
 Pozastavit sběr	Wstrzymaj zbieranie
 Obnovovat každých 250 ms	Odświeżaj co 250 ms
 Obnovovat každou 1 s	Odświeżaj co 1 s
-Časové okno	Zakres czasu
+Časové okno	Okno czasowe
 60 sekund	60 sekund
 10 minut	10 minut
 Zobrazení procesoru	Widok procesora

@@ -1,7 +1,7 @@
 # Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
 Výkon	Performance
 Načítám živá data…	Loading live data…
-Hledat název nebo PID	Search name or PID
+Hledat název nebo PID	Search by name or PID
 Pozastavit	Pause
 Procesy	Processes
 Služby	Services
@@ -10,12 +10,12 @@ Aplikace	Apps
 PROCESOR	PROCESSOR
 Procesor	Processor
 Načítám…	Loading…
-Auto měřítko	Auto scale
+Automatické měřítko	Automatic scale
 Pokračovat	Continue
 Hledat (Ctrl+F)	Search (Ctrl+F)
 Jednotlivé prostředky systému	Individual system resources
 Živé procesy	Live processes
-Hledat název procesu nebo PID	Search process name or PID
+Hledat název procesu nebo PID	Search by process name or PID
 Po spuštění	Startup apps
 Uživatelé	Users
 Spuštění	Startup
@@ -33,7 +33,7 @@ Porovnat	Compare
 Podrobnosti	Details
 Hledat objekty	Find objects
 Události	Events
-Hledat službu, účet nebo PID	Search service, account or PID
+Hledat službu, účet nebo PID	Search by service, account or PID
 {0} · {1} procesů · stáří {2}	{0} · {1} processes · age {2}
 Pozastaveno	Paused
 Živá data	Live data
@@ -100,7 +100,7 @@ Popisovače	Handles
 Platné	Valid
 První vzorek	First sample
 Nedostupné	Unavailable
-Chybí oprávnění	Missing permission
+Chybí oprávnění	Access denied
 Nepodporováno	Not supported
 Zastaralé	Stale
 Chyba	Error
@@ -112,14 +112,14 @@ Akce	Actions
 Akce s vybranými živými procesy	Actions for the selected live processes
 Se zvýšenými právy správce	With administrator rights
 {0} jako správce…	{0} as administrator…
-Čekám na ukončení vlastního pracovníka nebo zvýšeného požadavku. Neopakujte akci.	Waiting for the app's worker or the elevated request to finish. Do not repeat the action.
+Čekám na ukončení vlastního pracovníka nebo požadavku se zvýšenými právy. Neopakujte akci.	Waiting for the app's worker or the elevated request to finish. Do not repeat the action.
 Vyberte nejvýše 64 procesů.	Select at most 64 processes.
-Zavření oken, ukončení, pozastavení, priorita a afinita živých procesů stejného uživatele a relace	Close windows, end, suspend, priority and affinity of live processes of the same user and session
-Ukončit strom	End process tree
+Zavření oken, ukončení, pozastavení, priorita a spřažení živých procesů stejného uživatele a relace	Close windows, end, suspend, priority and affinity of live processes of the same user and session
+Ukončit strom procesů	End process tree
 Vyberte jeden živý kořen. Potomky znovu zjistí a ověří pracovník.	Select one live root. The worker finds and verifies the descendants again.
 Vyberte jeden proces. Každý proces má vlastní přiřazení procesorů.	Select one process. Each process has its own processor assignment.
 Načítám výchozí CPU sets a dostupné logické procesory…	Loading default CPU sets and available logical processors…
-Načítám současnou prioritu a afinitu vybraných procesů…	Loading the current priority and affinity of the selected processes…
+Načítám současnou prioritu a spřažení vybraných procesů…	Loading the current priority and affinity of the selected processes…
 Nastavení procesu není dostupné	Process settings are unavailable
 Výběr se změnil	The selection changed
 Akce nebyla odeslána. Vyberte znovu živý proces.	The action was not sent. Select a live process again.
@@ -127,15 +127,15 @@ Dotaz na nastavení nebyl dokončen	The settings query did not finish
 Výběr už není aktuální nebo byl dotaz zrušen. Změna nebyla odeslána.	The selection is no longer current or the query was canceled. No change was sent.
 {0} Změna nebyla odeslána.	{0} No change was sent.
 Nízká	Low
-Nižší než normální	Below normal
+Podprůměrná	Below normal
 Normální	Normal
-Vyšší než normální	Above normal
+Nadprůměrná	Above normal
 Vysoká	High
 {0}: současná priorita {1}	{0}: current priority {1}
 nedostupná	unavailable
 Nová priorita procesu	New process priority
 Vysoká priorita může omezit odezvu ostatních aplikací.	High priority can reduce the responsiveness of other apps.
-Afinita není dostupná	Affinity is unavailable
+Spřažení není dostupné	Affinity is unavailable
 Toto nastavení vyžaduje jedinou ověřenou skupinu procesorů a dostupné masky procesu i systému. Výchozí CPU sets napříč skupinami mají samostatnou nabídku.	This setting requires a single verified processor group and available process and system masks. Default CPU sets across groups have a separate menu item.
 Skupina {0} · současná maska 0x{1} · dostupná 0x{2}	Group {0} · current mask 0x{1} · available 0x{2}
 Vyberte alespoň jeden procesor. CPU sets se tímto ovládáním nenastavují.	Select at least one processor. This control does not set CPU sets.
@@ -145,33 +145,33 @@ Zrušit	Cancel
 Výslovně žádáte zvýšení práv. Následuje UAC (nejvýše 90 s) a vlastní potvrzení správce (60 s); samotná akce má limit 5 s. Nepotvrzený požadavek se automaticky neopakuje.	You are explicitly requesting elevation. UAC follows (at most 90 s), then the app's own administrator confirmation (60 s); the action itself has a 5 s limit. An unconfirmed request is not repeated automatically.
 Zrušit čekání	Stop waiting
 Čekání bylo zrušeno nebo se změnil vybraný proces.	The wait was canceled or the selected process changed.
-Výsledek není známý. Akce se mohla provést. {0}	The result is unknown. The action may have been performed. {0}
+Výsledek není známý. Akce se mohla provést. {0}	The result is unknown. The action may have been carried out. {0}
 Zavřít	Close
 Výsledky procesové akce jsou v dialogu.	The process action results are in the dialog.
 nízká	low
-nižší než normální	below normal
+podprůměrná	below normal
 normální	normal
-vyšší než normální	above normal
+nadprůměrná	above normal
 vysoká	high
-reálný čas (nelze nastavit)	realtime (cannot be set)
+v reálném čase (nelze nastavit)	realtime (cannot be set)
 Požádat o zavření oken	Ask windows to close
 Ukončit proces	End process
 Pozastavit proces	Suspend process
 Obnovit běh procesu	Resume process
 Změnit prioritu	Set priority
-Afinita procesorů	Processor affinity
+Spřažení procesorů	Processor affinity
 Výchozí CPU sets	Default CPU sets
 Zavřít handle v procesu	Close handle in process
 Správce úloh Windows	Windows Task Manager
 Nastavení procesu	Process settings
-Pošle požadavek zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.	Sends a close request to the visible windows of the selected processes. The app may offer to save; actual closing is not guaranteed.
+Pošle požadavek na zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.	Sends a close request to the visible windows of the selected processes. The app may offer to save; actual closing is not guaranteed.
 Ukončí vybrané procesy bez nabídky uložení. Neuložená data mohou být ztracena.	Ends the selected processes without offering to save. Unsaved data may be lost.
 Pracovník znovu zjistí potomky tohoto kořene a ukončí ověřené děti před rodičem. Neuložená data mohou být ztracena. Nejvýše 256 cílů, tři průchody a pět sekund. Průchod není atomický; nově vzniklé nebo neověřitelné potomky nemusí zahrnout. Zrušení čekání provedené zásahy nevrací.	The worker finds the descendants of this root again and ends verified children before their parent. Unsaved data may be lost. At most 256 targets, three passes and five seconds. The pass is not atomic; it may miss newly created or unverifiable descendants. Canceling the wait does not undo actions already taken.
 Požádá systém o pozastavení procesu. Jeho okna přestanou reagovat a prostředky zůstanou obsazené.	Asks the system to suspend the process. Its windows stop responding and its resources stay in use.
 Požádá systém o obnovení procesu. Výsledek nezaručuje běh všech vláken pozastavených jinými nástroji.	Asks the system to resume the process. The result does not guarantee that threads suspended by other tools run.
-Nastaví prioritu plánování času CPU u vybraných procesů. Priorita reálného času není v nabídce.	Sets the CPU scheduling priority of the selected processes. Realtime priority is not offered.
+Nastaví prioritu plánování času CPU u vybraných procesů. Priorita V reálném čase není v nabídce.	Sets the CPU scheduling priority of the selected processes. Realtime priority is not offered.
 Omezí proces na vybrané logické procesory v jediné skupině.	Limits the process to the selected logical processors in a single group.
-Nastaví výchozí výběr logických procesorů i napříč skupinami. Výslovné volby jednotlivých vláken a pevná afinita mají přednost. Potvrzení nastavení není důkaz, na kterém procesoru se vlákno skutečně spustilo.	Sets the default choice of logical processors, also across groups. Explicit choices of individual threads and hard affinity take precedence. Confirming the setting does not prove which processor a thread actually ran on.
+Nastaví výchozí výběr logických procesorů i napříč skupinami. Výslovné volby jednotlivých vláken a pevné spřažení mají přednost. Potvrzení nastavení neříká, na kterém procesoru vlákno skutečně běží.	Sets the default choice of logical processors, also across groups. Explicit choices of individual threads and hard affinity take precedence. Confirming the setting does not prove which processor a thread actually ran on.
 Odpověď {0} · {1}	Response {0} · {1}
 Výsledek není známý. Akce se mohla provést.	The result is unknown. The action may have been carried out.
 Pracovník požadavek nepřijal; akce nebyla provedena.	The worker did not accept the request; the action was not performed.
@@ -179,10 +179,10 @@ Aktuální stav: {0}	Current state: {0}
 Nastavení bylo načteno.	The settings were read.
 Konec tohoto procesu byl potvrzen.	The end of this process was confirmed.
 Handle byl zavřen. Název nebo otisk zavřeného objektu odpovídá potvrzenému objektu.	The handle was closed. The name or fingerprint of the closed object matches the confirmed object.
-Zavřen objekt stejného typu a přístupu; totožnost s potvrzeným objektem nelze prokázat.	An object of the same type and access was closed; its identity with the confirmed object cannot be proven.
+Zavřen objekt stejného typu a přístupu; totožnost s potvrzeným objektem nelze prokázat.	An object of the same type and access was closed; it cannot be proven to be the confirmed object.
 Změna byla ověřena zpětným čtením.	The change was verified by reading it back.
-Požadavek zavření byl odeslán; zavření není potvrzené.	The close request was sent; closing is not confirmed.
-Požadavek ukončení byl přijat; konec procesu zatím není potvrzený.	The end request was accepted; the end of the process is not confirmed yet.
+Požadavek na zavření byl odeslán; zavření není potvrzené.	The close request was sent; closing is not confirmed.
+Požadavek na ukončení byl přijat; konec procesu zatím není potvrzený.	The end request was accepted; the end of the process is not confirmed yet.
 Systém přijal požadavek. Stav všech vláken není potvrzený.	The system accepted the request. The state of all threads is not confirmed.
 Akce byla odmítnuta.	The action was refused.
 Identita procesu se změnila; výsledek není ověřený.	The process identity changed; the result is not verified.
@@ -190,13 +190,13 @@ Identita procesu se změnila. Akce nebyla provedena.	The process identity change
 Proces už skončil.	The process has already ended.
 Zásah nebyl proveden.	No action was taken.
 Operace není pro tento cíl podporovaná.	The operation is not supported for this target.
-Výsledek nebyl ověřen. Akce se mohla provést.	The result was not verified. The action may have been performed.
+Výsledek nebyl ověřen. Akce se mohla provést.	The result was not verified. The action may have been carried out.
 Akce skončila chybou.	The action failed.
-Akce se mohla provést.	The action may have been performed.
+Akce se mohla provést.	The action may have been carried out.
 Odesláno oknům: {0}, chyby odeslání: {1}.	Sent to windows: {0}, send errors: {1}.
 Neplatný cíl.	Invalid target.
 Pracovník ani řídicí aplikace nejsou povoleným cílem.	Neither the worker nor the controlling app is an allowed target.
-Systémový nebo služební proces.	System or service process.
+Systémový proces nebo proces služby.	System or service process.
 Kritický proces systému.	Critical system process.
 Chráněný proces.	Protected process.
 Cíl patří jinému uživateli nebo relaci.	The target belongs to another user or session.
@@ -246,7 +246,7 @@ Ruším hledání…	Canceling search…
 Historické pozorování: shodný aktuální proces není dostupný. Žádná akce nebyla provedena.	Historical observation: a matching current process is unavailable. No action was taken.
 Pole obsahují nový dotaz. Výsledky patří předchozímu hledání; použijte Spustit.	The fields contain a new query. The results belong to the previous search; use Start.
 Identitu spuštění Windows zatím nelze ověřit. Počkejte na sběr dat a zkuste to znovu.	The Windows boot identity cannot be verified yet. Wait for data collection and try again.
-{0} výsledků · pouze čtení	{0} results · read-only
+{0} výsledků · pouze pro čtení	{0} results · read-only
 Načítám vlastníky otevřených objektů…	Loading owners of open objects…
 Limity: 2 minuty, 25 000 dotazů, 4 096 objektů na vlastníka, 5 000 výsledků a 8 MiB textu. Nedostupné položky se přeskočí.	Limits: 2 minutes, 25,000 queries, 4,096 objects per owner, 5,000 results and 8 MiB of text. Unavailable items are skipped.
 Hledání bylo zrušené; výsledky jsou neúplná historická pozorování.	The search was canceled; the results are incomplete historical observations.
@@ -266,7 +266,7 @@ Typ: {0} · {1} · NTSTATUS 0x{2}	Type: {0} · {1} · NTSTATUS 0x{2}
 Pozorovaný název: {0}	Observed name: {0}
 (bez názvu)	(no name)
 Stav názvu: {0} · NTSTATUS 0x{1}	Name state: {0} · NTSTATUS 0x{1}
-DOS/UNC zobrazení: {0}	DOS/UNC form: {0}
+Zobrazení DOS/UNC: {0}	DOS/UNC form: {0}
 Přístup ze seznamu: 0x{0} · atributy 0x{1}	Access from the list: 0x{0} · attributes 0x{1}
 Přijato: {0}	Received: {0}
 Boot: {0}	Boot: {0}
@@ -283,8 +283,8 @@ Stav: {0}\nZdroj: {1}	State: {0}\nSource: {1}
 Kontext měření není dostupný.	Measurement context is unavailable.
 Jednotka vzorku: {0}\nVýpočet: {1}	Sample unit: {0}\nCalculation: {1}
 Normalizace: {0}	Normalization: {0}
-100 % znamená celý počítač	100 % means the whole computer
-100 % znamená jeden logický procesor	100 % means one logical processor
+100 % znamená celý počítač	100% means the whole computer
+100 % znamená jeden logický procesor	100% means one logical processor
 nejvytíženější GPU engine	busiest GPU engine
 aktivní čas zařízení	device active time
 bez normalizace	no normalization
@@ -352,8 +352,8 @@ Odpověď aktualizací nepatří požadavku nebo ověřenému klientovi.	The upd
 Neúplný rámec aktualizace.	Incomplete update frame.
 Neplatný identifikátor obnovy.	Invalid recovery identifier.
 Identifikátor obnovy nesmí být nulový.	The recovery identifier must not be zero.
-Neplatný SHA256 balíčku.	Invalid package SHA256.
-SHA256 balíčku nesmí být nulový.	The package SHA256 must not be zero.
+Neplatný SHA-256 balíčku.	Invalid package SHA256.
+SHA-256 balíčku nesmí být nulový.	The package SHA256 must not be zero.
 Pracovník nevrátil kanonickou místní cestu.	The worker did not return a canonical local path.
 Neplatný text aktualizace.	Invalid update text.
 Pracovník vrátil neplatná metadata aktualizace.	The worker returned invalid update metadata.
@@ -368,18 +368,18 @@ Chyba souboru nebo komunikace	File or communication error
 Aplikace stále běží; instalace nebyla zahájena	The app is still running; installation was not started
 Instalátor ohlásil chybu	The installer reported an error
 Ověření instalace selhalo	Installation verification failed
-Jiná aktualizace probíhá	Another update is in progress
+Probíhá jiná aktualizace	Another update is in progress
 Výsledek není známý	The result is unknown
 Využití	Utilization
 Odesílání	Send
-{0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.	{0}. Arrow keys move through history, Enter pins a time. Shift and click or Shift and Enter select the two ends of an interval. Escape clears the selection.
+{0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce úseku. Escape výběr zruší.	{0}. Arrow keys move through history, Enter pins a time. Shift and click or Shift and Enter select the two ends of an interval. Escape clears the selection.
 nyní	now
 Soukromé úložiště obnovy nemá ověřeného vlastníka nebo ochranu přístupu.	The private recovery store has no verified owner or access protection.
 Úložiště obnovy má neočekávaná oprávnění. Záznamy zůstávají zachované.	The recovery store has unexpected permissions. The records are kept.
 Zámek úložiště obnovy není ověřitelný.	The recovery store lock cannot be verified.
 Neplatný název záznamu obnovy.	Invalid recovery record name.
 Úložiště obnovy překročilo omezený počet souborů. Nic se nebude měnit.	The recovery store exceeded the file limit. Nothing will be changed.
-Vlastník záznamu obnovy nesouhlasí.	The recovery record owner does not match.
+Vlastník záznamu obnovy neodpovídá.	The recovery record owner does not match.
 Záznam obnovy má nepovolenou velikost.	The recovery record has a size that is not allowed.
 Úložiště překročilo limit 1 MiB. Nic se nebude měnit.	The store exceeded the 1 MiB limit. Nothing will be changed.
 Záznam obnovy je neúplný.	The recovery record is incomplete.
@@ -414,7 +414,7 @@ Podepsaný soubor nemá jednoznačné platné prostředky verze PE.	The signed f
 Předchozí dump nebo jeho úklid ještě probíhá.	A previous dump or its cleanup is still running.
 Dump uložen	Dump saved
 Dump neuložen: {0}	Dump not saved: {0}
-přístup odmítnut	access denied
+přístup odepřen	access denied
 nepodporováno	not supported
 proces skončil nebo se změnil	the process ended or changed
 cíl nedostupný	target unavailable
@@ -422,19 +422,19 @@ překročen limit velikosti	size limit exceeded
 zrušeno nebo překročen čas	canceled or timed out
 neplatný požadavek	invalid request
 výsledek nepotvrzen	result not confirmed
-Dump překročil limit 60 sekund. Výsledek není potvrzený; pracovník se ukončuje a vlastní dočasný soubor se uklízí.	The dump exceeded the 60-second limit. The result is not confirmed; the worker is ending and the app's temporary file is being cleaned up.
-Rodičovský adresář nelze ověřit. Soubor i záznam zůstanou zachované.	The parent folder cannot be verified. The file and the record will be kept.
-Rodičovský adresář má jinou identitu. Soubor zůstane zachovaný.	The parent folder has a different identity. The file will be kept.
+Dump překročil limit 60 sekund. Výsledek není potvrzený; pracovník se ukončuje a vlastní dočasný soubor se uklízí.	The dump exceeded the 60-second limit. The result is not confirmed; the worker is being stopped and the app's own temporary file is being cleaned up.
+Nadřazený adresář nelze ověřit. Soubor i záznam zůstanou zachované.	The parent folder cannot be verified. The file and the record will be kept.
+Nadřazený adresář má jinou identitu. Soubor zůstane zachovaný.	The parent folder has a different identity. The file will be kept.
 Cesta souboru neodpovídá záznamu. Soubor zůstane zachovaný.	The file path does not match the record. The file will be kept.
-Identita nebo vlastník souboru nesouhlasí. Soubor zůstane zachovaný.	The file identity or owner does not match. The file will be kept.
+Identita nebo vlastník souboru neodpovídá. Soubor zůstane zachovaný.	The file identity or owner does not match. The file will be kept.
 Velikost souboru překračuje limit obnovy.	The file size exceeds the recovery limit.
 Soubor se během ověřování změnil.	The file changed during verification.
 Velikost souboru se během ověřování změnila.	The file size changed during verification.
 Přejmenování vyžaduje jeden platný název souboru.	Renaming requires one valid file name.
-Soubor neleží v ověřeném rodičovském adresáři.	The file is not in the verified parent folder.
+Soubor neleží v ověřeném nadřazeném adresáři.	The file is not in the verified parent folder.
 Soubor má nepovolený typ nebo více odkazů. Zůstane zachovaný.	The file has a type that is not allowed or more than one link. It will be kept.
 Prostředky	Resources
-Automaticky podle uložených vzorků. Vypnuto: 0–100 %, kapacita paměti nebo rychlost připojení.	Automatic from stored samples. Off: 0–100 %, memory capacity or link speed.
+Automaticky podle uložených vzorků. Vypnuto: 0–100 %, kapacita paměti nebo rychlost připojení.	Automatic from stored samples. Off: 0–100%, memory capacity or link speed.
 Celkem	Overall
 Logické	Logical
 Překrytí	Overlay

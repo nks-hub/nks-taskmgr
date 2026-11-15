@@ -59,7 +59,7 @@ internal static partial class ProcessActionsProtocol
             throw new ArgumentException(Loc.T("Ukončení stromu vyžaduje jeden potvrzený kořen."), nameof(request));
         if (request.Command == ProcessActionCommand.Affinity) {
             if (request.Targets.Length != 1 || request.Argument == 0 || request.Group > ushort.MaxValue)
-                throw new ArgumentException(Loc.T("Afinita vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů."), nameof(request));
+                throw new ArgumentException(Loc.T("Spřažení vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů."), nameof(request));
         } else if (request.Command != ProcessActionCommand.TaskManager && (request.Group != 0 || (request.Command == ProcessActionCommand.Priority
             ? !PriorityAllowed(request.Argument) : request.Argument != 0))) throw new ArgumentException(Loc.T("Neplatná hodnota akce."), nameof(request));
         var bytes = new byte[64 + 48 * request.Targets.Length];

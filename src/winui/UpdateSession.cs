@@ -41,7 +41,7 @@ internal sealed class UpdateSession : IDisposable
                 throw new UpdateException(result.Status, result.Detail.Length > 0 ? result.Detail : Loc.T("Předání instalace nebylo potvrzené."), result.Error);
             Interlocked.Exchange(ref accepted, 1);
             return new(true, true, result.Status, result.Error, result.JournalState,
-                Loc.T("Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte v příštím spuštění."));
+                Loc.T("Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte při příštím spuštění."));
         } catch (Exception error) when (error is IOException or InvalidDataException or Win32Exception or OperationCanceledException or ObjectDisposedException) {
             return new(false, CommitSent, error is UpdateException update ? update.Status : UpdateStatus.Unknown,
                 error is UpdateException known ? known.Error : 0, CommitSent ? UpdateJournalState.Unknown : UpdateJournalState.Rejected,

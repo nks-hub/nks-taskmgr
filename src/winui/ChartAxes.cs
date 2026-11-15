@@ -50,7 +50,7 @@ public sealed partial class ChartView
         if (configuration?.Axes != showAxes) scale.Visibility = timeline.Visibility = axes ? Visibility.Visible : Visibility.Collapsed;
         if (configuration?.Interactive != interactive) { IsTabStop = interactive; IsHitTestVisible = interactive; }
         if (configuration?.Name != name)
-            AutomationProperties.SetName(this, Loc.F("{0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.", name));
+            AutomationProperties.SetName(this, Loc.F("{0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce úseku. Escape výběr zruší.", name));
         configuration = next;
         UpdateAxes();
         ApplyTimeline();

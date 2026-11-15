@@ -78,7 +78,7 @@ std::vector<HardwareFact> processorHardware()
     result.push_back({L"Virtualizace", virtualizationState(probe)});
     if (maximumLeaf >= 0x16) {
         __cpuid(info, 0x16);
-        if ((info[0] & 65535) > 0) result.push_back({L"Základní takt (CPUID)", std::to_wstring(info[0] & 65535) + L" MHz"});
+        if ((info[0] & 65535) > 0) result.push_back({L"Základní rychlost (CPUID)", std::to_wstring(info[0] & 65535) + L" MHz"});
         if ((info[1] & 65535) > 0) result.push_back({L"Maximum (CPUID)", std::to_wstring(info[1] & 65535) + L" MHz"});
     }
     return result;
@@ -96,7 +96,7 @@ std::vector<HardwareFact> boardHardware()
     read(L"BIOSVendor", L"Výrobce BIOS"); read(L"BIOSVersion", L"Verze BIOS"); read(L"BIOSReleaseDate", L"Datum BIOS");
     read(L"SystemManufacturer", L"Výrobce systému"); read(L"SystemProductName", L"Model systému");
     FIRMWARE_TYPE type{};
-    if (GetFirmwareType(&type)) facts.push_back({L"Režim firmware", type == FirmwareTypeUefi ? L"UEFI" : type == FirmwareTypeBios ? L"BIOS" : L"Neznámý"});
+    if (GetFirmwareType(&type)) facts.push_back({L"Režim firmwaru", type == FirmwareTypeUefi ? L"UEFI" : type == FirmwareTypeBios ? L"BIOS" : L"Neznámý"});
     return facts;
 }
 

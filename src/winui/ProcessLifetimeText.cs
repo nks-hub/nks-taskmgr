@@ -11,7 +11,7 @@ internal static class ProcessLifetimeText
     {
         if (entry.Issues.HasFlag(ProcessLifetimeIssues.Conflict)) return Loc.T("Konfliktní záznam");
         if (entry.Key is null) return entry.Start is null ? Loc.T("Neověřené ukončení") : Loc.T("Neověřený vznik");
-        if (entry.Paired) return entry.DurationSeconds is null ? Loc.T("Čas nelze porovnat") : Loc.T("Vznik i konec zachycen");
+        if (entry.Paired) return entry.DurationSeconds is null ? Loc.T("Čas nelze porovnat") : Loc.T("Vznik i konec zachyceny");
         if (entry.Start is null) return Loc.T("Vznik nezachycen");
         return entry.CaptureState == ProcessEventMonitorState.Stopped ? Loc.T("Bez konce při zastavení")
             : entry.Issues.HasFlag(ProcessLifetimeIssues.Boundary) ? Loc.T("Oddělená část · bez konce") : Loc.T("Konec zatím nezachycen");
@@ -33,7 +33,7 @@ internal static class ProcessLifetimeText
         string identity = entry.Key is { } key ? "Boot: " + key.Boot.High.ToString("X16", CultureInfo.InvariantCulture)
             + key.Boot.Low.ToString("X16", CultureInfo.InvariantCulture) + "\nPID " + key.Pid + " · " + key.Kind + " " + key.Generation
             : Loc.T("Identita není ověřená. Událost se nepáruje podle PID, názvu ani blízkého času.");
-        string duration = entry.DurationSeconds is { } seconds ? Loc.F("{0} s mezi skutečnými QPC událostmi.", seconds.ToString("N6", Loc.Culture))
+        string duration = entry.DurationSeconds is { } seconds ? Loc.F("{0} s mezi skutečnými událostmi QPC.", seconds.ToString("N6", Loc.Culture))
             : Loc.T("Délka není dostupná: chybí jednoznačný pár, společná platná frekvence QPC nebo správné časové pořadí.");
         return State(entry) + Issues(entry) + "\n" + identity + "\n" + Loc.F("Záznam {0} · oddělená část {1}", entry.Capture, entry.Segment)
             + "\n" + Endpoint(Loc.T("Vznik"), entry.Start) + "\n" + Endpoint(Loc.T("Konec"), entry.Stop) + "\n" + Loc.F("Délka: {0}", duration)
@@ -43,7 +43,7 @@ internal static class ProcessLifetimeText
             + (entry.Issues.HasFlag(ProcessLifetimeIssues.SequenceReset) ? "\n" + Loc.T("Hranice propojení: pořadí zdroje se opakovalo nebo vrátilo zpět.") : "")
             + (entry.Issues.HasFlag(ProcessLifetimeIssues.CounterReset) ? "\n" + Loc.T("Hranice propojení: čítače zdroje se vrátily zpět.") : "")
             + "\n" + Loc.T("Nezachycený konec neznamená, že proces právě běží. Osamocený konec neurčuje čas vzniku.")
-            + "\n" + Loc.T("Ztráty nelze přesně umístit do intervalu. Vytěsněné řádky už nejsou k propojení; dřívější konflikt nelze vyloučit.")
+            + "\n" + Loc.T("Ztráty nelze přesně umístit do intervalu. Vytěsněné řádky už nelze propojit; dřívější konflikt nelze vyloučit.")
             + "\n" + Loc.T("CPU a RAM se zde neměří. Žádné živé akce ani vyhledání současného vlastníka stejného PID.");
     }
     private static string Endpoint(string name, ProcessLifetimeObservation? observation)

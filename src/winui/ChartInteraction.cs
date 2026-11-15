@@ -114,7 +114,7 @@ public sealed partial class ChartView
     private void UpdateCursor()
     {
         if (cursorTime is not { } time) {
-            HideCursor(); AutomationProperties.SetHelpText(this, Loc.T("Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu.")); return;
+            HideCursor(); AutomationProperties.SetHelpText(this, Loc.T("Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce úseku.")); return;
         }
         if (canvas.ActualWidth <= 0) { HideCursor(); return; }
         double fraction = (time - (double)renderedAt + seconds * 1_000_000_000d) / (seconds * 1_000_000_000d);

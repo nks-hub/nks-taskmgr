@@ -23,14 +23,14 @@ internal sealed partial class ProcessDumpFile
     {
         var held = HoldDirectory(Path.GetDirectoryName(record.Destination[4..])!);
         if (ReadIdentity(held.Parent) == record.ParentId) return held;
-        held.Dispose(); throw new IOException(Loc.T("Rodičovský adresář nelze ověřit. Soubor i záznam zůstanou zachované."));
+        held.Dispose(); throw new IOException(Loc.T("Nadřazený adresář nelze ověřit. Soubor i záznam zůstanou zachované."));
     }
     private ProcessDumpFile(DumpRecoveryRecord record, string proof, bool destination, bool writable)
     {
         fileName = ""; preserve = true;
         try {
             fileName = PrepareDirectories(record.Destination[4..]);
-            if (ReadIdentity(Parent) != record.ParentId) throw new IOException(Loc.T("Rodičovský adresář má jinou identitu. Soubor zůstane zachovaný."));
+            if (ReadIdentity(Parent) != record.ParentId) throw new IOException(Loc.T("Nadřazený adresář má jinou identitu. Soubor zůstane zachovaný."));
             Temporary = record.Temporary; Identity = record.FileId; Journal = DumpRecoveryJournal.Attach(record, proof);
             Handle = OpenRelative(Parent, Path.GetFileName(destination ? record.Destination : record.Temporary), writable ? 0xc0110000u : 0x80100000u, 0, 1, 0x00200060, 0);
             VerifyOwned(record);
@@ -41,7 +41,7 @@ internal sealed partial class ProcessDumpFile
     internal void VerifyOwned(DumpRecoveryRecord record)
     {
         if (ReadIdentity(Parent) != record.ParentId || ReadIdentity(Handle) != record.FileId || Owner(Handle) != record.FileOwnerSid)
-            throw new IOException(Loc.T("Identita nebo vlastník souboru nesouhlasí. Soubor zůstane zachovaný."));
+            throw new IOException(Loc.T("Identita nebo vlastník souboru neodpovídá. Soubor zůstane zachovaný."));
         CheckSingleFile(Handle);
     }
     internal string Hash(CancellationToken cancellation)
@@ -74,7 +74,7 @@ internal sealed partial class ProcessDumpFile
         CheckDirectory(parent);
         string directory = FinalName(parent).TrimEnd('\\') + "\\", source = FinalName(file);
         if (!StringComparer.OrdinalIgnoreCase.Equals(source[..(source.LastIndexOf('\\') + 1)], directory))
-            throw new IOException(Loc.T("Soubor neleží v ověřeném rodičovském adresáři."));
+            throw new IOException(Loc.T("Soubor neleží v ověřeném nadřazeném adresáři."));
         var data = new byte[checked(24 + name.Length * 2)]; data[0] = replace ? (byte)1 : (byte)0;
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(16), (uint)name.Length * 2); System.Text.Encoding.Unicode.GetBytes(name, data.AsSpan(20));
         // A leaf with no root renames within the held source directory. Reopening

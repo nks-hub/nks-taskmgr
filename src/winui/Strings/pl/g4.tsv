@@ -11,7 +11,7 @@ Sledovat konec	Śledź najnowsze
 Vyberte událost.	Wybierz zdarzenie.
 Události procesů	Zdarzenia procesów
 Čítače a vysvětlení záznamu	Liczniki i objaśnienie przechwytywania
-Čítače záznamu, vytěsnění, rozpočet paměti a vysvětlení.	Liczniki przechwytywania, usunięcia, budżet pamięci i objaśnienie.
+Čítače záznamu, vytěsnění, limit paměti a vysvětlení.	Liczniki przechwytywania, usunięcia, budżet pamięci i objaśnienie.
 Záznam ETW vyžaduje správce. NKS se spustí znovu jako správce po potvrzení výzvy UAC.	Przechwytywanie ETW wymaga administratora. NKS uruchomi się ponownie jako administrator po potwierdzeniu monitu UAC.
 Vznik a ukončení	Uruchomienia i zakończenia
 Diskové a síťové přenosy	Transfery dyskowe i sieciowe
@@ -33,8 +33,8 @@ chyba Windows {0}	błąd Windows {0}
 Události {0}/{1} · vytěsněno v okně {2} · ztracené události ETW {3} · ztracené buffery {4} · přeplnění fronty {5} · chyby dekódování {6} · nejasné záznamy {7}	Zdarzenia {0}/{1} · usunięte w oknie {2} · utracone zdarzenia ETW {3} · utracone bufory {4} · przepełnienia kolejki {5} · błędy dekodowania {6} · niejednoznaczne rekordy {7}
 Životnosti {0}/{1} · vytěsněno {2} · neověřené události {3} · konflikty {4} · opožděné pořadí {5} · vynechané pořadí zdroje {6} · označení nejistoty {7}	Czasy życia {0}/{1} · usunięte {2} · niezweryfikowane zdarzenia {3} · konflikty {4} · opóźniona kolejność {5} · pominięta sekwencja źródła {6} · oznaczenia niepewności {7}
 Zobrazení je podržené; vytěsněno z podrženého seznamu {0}.	Widok jest wstrzymany; usunięte z wstrzymanej listy: {0}.
-Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používají i sloupec Síť v Procesech a Uživatelích.	Tylko zaobserwowane częściowe bajty własnej sesji ETW, a nie cały ruch karty sieciowej ani ogólne we/wy procesów. TCP/UDP jest przypisywane do generacji tylko przy nieprzerwanym śledzeniu czasów życia; podczas przechwytywania korzysta z nich też kolumna Sieć w Procesach i Użytkownikach.
-Start a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří.	Początek i koniec są parowane tylko przez zweryfikowane Boot + PID + CreateTime w tym samym przechwytywaniu i segmencie źródła. Brak przechwyconego końca nie oznacza, że proces nadal działa. CPU i RAM nie są tu mierzone.
+Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používá i sloupec Síť v Procesech a Uživatelích.	Tylko zaobserwowane częściowe bajty własnej sesji ETW, a nie cały ruch karty sieciowej ani ogólne we/wy procesów. TCP/UDP jest przypisywane do generacji tylko przy nieprzerwanym śledzeniu czasów życia; podczas przechwytywania korzysta z nich też kolumna Sieć w Procesach i Użytkownikach.
+Vznik a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří.	Początek i koniec są parowane tylko przez zweryfikowane Boot + PID + CreateTime w tym samym przechwytywaniu i segmencie źródła. Brak przechwyconego końca nie oznacza, że proces nadal działa. CPU i RAM nie są tu mierzone.
 CreateTime přímo z události s ověřeným bootem určuje historickou životnost. Ostatní řádky zůstávají neověřené.	CreateTime pobrany bezpośrednio ze zdarzenia ze zweryfikowanym rozruchem określa historyczny czas życia. Pozostałe wiersze pozostają niezweryfikowane.
 Žádné živé akce podle PID. Čas je relativní QPC; nové spuštění nahradí seznam. Nový základní seznam nezpřesní dřívější nejasné přenosy.	Brak działań na żywo według PID. Czas to względny QPC; nowe przechwytywanie zastępuje listę. Nowa lista bazowa nie doprecyzuje wcześniejszych niejednoznacznych transferów.
 Přenosy tato verze nativní DLL neposkytuje; záznam vzniku a ukončení pokračuje.	Ta wersja natywnej biblioteki DLL nie udostępnia transferów; przechwytywanie uruchomień i zakończeń trwa dalej.
@@ -50,12 +50,12 @@ Bez vzniku	Bez początku
 Neověřené	Niezweryfikowane
 Konfliktní	Sprzeczne
 Opožděné	Opóźnione
-S mezerou	Z luką
+S mezerou	Z przerwą
 Všechny přenosy	Wszystkie transfery
 Fyzický disk	Dysk fizyczny
 Filtrovat PID, disk, TCP, UDP nebo nejistotu	Filtruj według PID, dysku, TCP, UDP lub niepewności
 Filtrovat název, PID nebo stav	Filtruj według nazwy, PID lub stanu
-Vybraný podržený záznam byl vytěsněn rozpočtem uchování.	Wybrany wstrzymany rekord został usunięty przez budżet przechowywania.
+Vybraný podržený záznam byl vytěsněn kvůli limitu uchování.	Wybrany wstrzymany rekord został usunięty przez budżet przechowywania.
 Přenosy {0}/{1} · vytěsněno v okně {2}	Transfery {0}/{1} · usunięte w oknie {2}
 Odhad uchovaných dat: jednotlivé události do 3 MiB, přenosy do 3 MiB, životnosti do 2 MiB; podržený seznam do 3 MiB navíc.	Szacunek przechowywanych danych: pojedyncze zdarzenia do 3 MiB, transfery do 3 MiB, czasy życia do 2 MiB; wstrzymana lista dodatkowo do 3 MiB.
 Souhrn životností a jeho počty jsou od posledního vymazání; nejde o úplnou historii systému.	Podsumowanie czasów życia i jego liczniki obejmują okres od ostatniego wyczyszczenia; to nie jest pełna historia systemu.
@@ -64,29 +64,29 @@ Nativní sdílený rozpočet kontejnerů a rámců {0}/{1} B; paměť Windows ET
 dostupný	dostępny
 čeká na data	czeka na dane
 částečný proud	strumień częściowy
-přístup zamítnut	odmowa dostępu
+přístup odepřen	odmowa dostępu
 nepodporovaný	nieobsługiwany
 zastaralý	nieaktualny
 chyba	błąd
 nedostupný	niedostępny
 Úklid záznamu nebyl potvrzený: {0}	Uprzątnięcie przechwytywania nie zostało potwierdzone: {0}
-Zastavení a dočtení záznamu nebylo potvrzené	Nie potwierdzono zatrzymania i odczytania reszty zapisu
+Zastavení a dočtení záznamu nebylo potvrzené	Nie potwierdzono zatrzymania i doczytania przechwytywania
 Ponechat otevřené	Pozostaw otwarte
 Zavřít i tak	Zamknij mimo to
 Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu.	Nie udało się potwierdzić uprzątnięcia własnej sesji ETW ani doczytania jej zdarzeń. Sesja może nadal rejestrować, a przy zamknięciu mogą zostać utracone jeszcze nieodczytane zdarzenia. Możesz pozostawić okno otwarte i spróbować zatrzymać ponownie.
 Záznam není spuštěný	Przechwytywanie nie jest uruchomione
 Spouštím vlastní relaci	Uruchamianie własnej sesji
-Záznam běží	Rejestrowanie trwa
+Záznam běží	Przechwytywanie trwa
 Zastavuji vlastní relaci	Zatrzymywanie własnej sesji
-Záznam zastavený	Rejestrowanie zatrzymane
-Přístup k ETW byl zamítnutý; aplikace pokračuje bez něj	Odmówiono dostępu do ETW; aplikacja działa dalej bez niego
+Záznam zastavený	Przechwytywanie zatrzymane
+Přístup k ETW byl odepřen; aplikace pokračuje bez něj	Odmówiono dostępu do ETW; aplikacja działa dalej bez niego
 Zdroj ETW není na tomto systému podporovaný	Źródło ETW nie jest obsługiwane w tym systemie
 Předchozí relace se ještě uklízí	Poprzednia sesja jest jeszcze sprzątana
 Zastavení překročilo časový limit	Przekroczono limit czasu zatrzymania
 Windows nepotvrdil úklid relace	System Windows nie potwierdził uprzątnięcia sesji
 Záznam skončil chybou	Przechwytywanie zakończyło się błędem
 Podrobnosti vybraného procesu	Szczegóły wybranego procesu
-Vlákna, moduly, paměť a handly procesu	Wątki, moduły, pamięć i dojścia procesu
+Vlákna, moduly, paměť a popisovače procesu	Wątki, moduły, pamięć i dojścia procesu
 Podrobnosti procesů jiných uživatelů a systému vyžadují práva správce.	Szczegóły procesów innych użytkowników i systemu wymagają uprawnień administratora.
 Podrobnosti nelze otevřít	Nie można otworzyć szczegółów
 Zavřít	Zamknij
@@ -175,7 +175,7 @@ Aktuálně zachycený typ: {0}	Obecnie przechwycony typ: {0}
 Aktuálně zachycený název: {0}	Obecnie przechwycona nazwa: {0}
 Otisk objektu: {0}	Odcisk obiektu: {0}
 Pozorováno: {0}	Zaobserwowano: {0}
-Typ a název objektu zatím nebyly dotázané.	Typ i nazwa obiektu nie zostały jeszcze odpytane.
+Typ a název objektu zatím nebyly zjištěné.	Nie wysłano jeszcze zapytania o typ i nazwę obiektu.
 Dotaz zachytí objekt aktuálně duplikovaný pod touto hodnotou. Po uzavření a opětovném použití handle může jít o jiný objekt než ve snímku.	Zapytanie przechwytuje obiekt obecnie zduplikowany pod tą wartością. Po zamknięciu i ponownym użyciu dojścia może to być inny obiekt niż w migawce.
 Nepojmenovaný objekt	Obiekt bez nazwy
 Prázdný typ	Pusty typ
@@ -190,7 +190,7 @@ Spuštění / kopie při zápisu	Wykonanie / kopiowanie przy zapisie
 Neuvedena	Nieokreślona
 Zavřít handle jako správce…	Zamknij dojście jako administrator…
 Zavřít handle v procesu…	Zamknij dojście w procesie…
-Zavřít vybraný handle v cílovém procesu se zvýšenými právy	Zamknij wybrane dojście w procesie docelowym z podwyższonymi uprawnieniami
+Zavřít vybraný handle v cílovém procesu se zvýšenými právy	Zamknij wybrane dojście w procesie docelowym z podniesionymi uprawnieniami
 Zavřít vybraný handle v cílovém procesu	Zamknij wybrane dojście w procesie docelowym
 Typ objektu nelze ověřit, proto handle nelze bezpečně zavřít.	Nie można zweryfikować typu obiektu, więc dojścia nie można bezpiecznie zamknąć.
 Název souboru nelze přečíst, proto handle nelze bezpečně zavřít.	Nie można odczytać nazwy pliku, więc dojścia nie można bezpiecznie zamknąć.
@@ -221,18 +221,18 @@ Hostitelský proces	Proces hosta
 Přehled	Przegląd
 Závislosti	Zależności
 Stav služby	Stan usługi
-Hostitel podle správce služeb	Host według menedżera sterowania usługami
+Hostitel podle správce služeb	Host według Menedżera sterowania usługami
 Spouštění	Typ uruchomienia
 Účet	Konto
 Další služby se stejným hlášeným PID	Inne usługi z tym samym zgłoszonym PID
 Skupina	Grupa
 Příkaz	Polecenie
 Výběr v seznamu otevře konfiguraci a závislosti služby.	Wybór na liście otwiera konfigurację i zależności usługi.
-Obnovte sběr pro načtení detailu.	Wznów zbieranie, aby wczytać szczegóły.
+Detail se načte po obnovení sběru.	Wznów zbieranie, aby wczytać szczegóły.
 Načítám detail…	Wczytywanie szczegółów…
 Bez skupiny	Brak grupy
 Otevřít hostitelský proces.	Otwórz proces hosta.
-Obnovte sběr pro otevření hostitele.	Wznów zbieranie, aby otworzyć hosta.
+Hostitele lze otevřít po obnovení sběru.	Wznów zbieranie, aby otworzyć hosta.
 Hostitele nelze ověřit: {0}	Nie można zweryfikować hosta: {0}
 Služba není spuštěná.	Usługa nie jest uruchomiona.
 Hostitelský proces se změnil nebo data nejsou aktuální.	Proces hosta zmienił się lub dane nie są aktualne.
@@ -273,10 +273,10 @@ Příznaky: {0}	Flagi: {0}
 Generace: {0} · {1}	Generacja: {0} · {1}
 Kandidát generace: {0} · {1}	Kandydat generacji: {0} · {1}
 Agregační okno QPC: [{0}, {1}) · frekvence {2}	Okno agregacji QPC: [{0}, {1}) · częstotliwość {2}
-Výpočetní interval: {0} ns · jednotka {1}	Interwał obliczeń: {0} ns · jednostka {1}
+Výpočetní interval: {0} ns · jednotka {1}	Przedział obliczeń: {0} ns · jednostka {1}
 Přijato (monotónní ns): {0}	Odebrano (monotoniczne ns): {0}
 Jde pouze o události zachycené vlastní relací ETW, nikoli o celkový provoz adaptéru ani obecné procesové I/O.	Są to tylko zdarzenia przechwycone przez własną sesję ETW, a nie cały ruch karty sieciowej ani ogólne we/wy procesów.
-Síťový počet vychází z velikostí událostí TCP/UDP; není zárukou počtu aplikačních bajtů.	Liczba sieciowa opiera się na rozmiarach zdarzeń TCP/UDP; nie gwarantuje liczby bajtów aplikacji.
+Počet síťových bajtů vychází z velikostí událostí TCP/UDP; nemusí odpovídat počtu bajtů aplikace.	Liczba sieciowa opiera się na rozmiarach zdarzeń TCP/UDP; nie gwarantuje liczby bajtów aplikacji.
 Potvrzení nového základního seznamu nezpřesní dřívější nejasné přenosy. Žádné živé akce podle PID.	Potwierdzenie nowej listy bazowej nie doprecyzuje wcześniejszych niejednoznacznych transferów. Brak działań na żywo według PID.
 nezachyceno	nie przechwycono
 čas nedostupný	czas niedostępny
@@ -284,12 +284,12 @@ Konfliktní záznam	Sprzeczny rekord
 Neověřené ukončení	Niezweryfikowane zakończenie
 Neověřený vznik	Niezweryfikowane uruchomienie
 Čas nelze porovnat	Nie można porównać czasu
-Vznik i konec zachycen	Przechwycono początek i koniec
+Vznik i konec zachyceny	Przechwycono początek i koniec
 Vznik nezachycen	Nie przechwycono początku
 Bez konce při zastavení	Bez końca przy zatrzymaniu
 Oddělená část · bez konce	Oddzielny segment · bez końca
 Konec zatím nezachycen	Koniec jeszcze nie przechwycony
-proud s mezerou	strumień z luką
+proud s mezerou	strumień z przerwą
 opožděné pořadí	opóźniona kolejność
 rozporné události	sprzeczne zdarzenia
 opakováno {0}	powtórzono {0}
@@ -297,7 +297,7 @@ oddělená část zdroje	oddzielny segment źródła
 částečná událost	zdarzenie częściowe
 starší údaje vytěsněny	starsze dane usunięte
 Identita není ověřená. Událost se nepáruje podle PID, názvu ani blízkého času.	Tożsamość nie jest zweryfikowana. Zdarzenie nie jest parowane według PID, nazwy ani zbliżonego czasu.
-{0} s mezi skutečnými QPC událostmi.	{0} s między rzeczywistymi zdarzeniami QPC.
+{0} s mezi skutečnými událostmi QPC.	{0} s między rzeczywistymi zdarzeniami QPC.
 Délka není dostupná: chybí jednoznačný pár, společná platná frekvence QPC nebo správné časové pořadí.	Czas trwania niedostępny: brak jednoznacznej pary, wspólnej prawidłowej częstotliwości QPC lub poprawnej kolejności czasowej.
 Záznam {0} · oddělená část {1}	Przechwytywanie {0} · segment {1}
 Vznik	Uruchomienie
@@ -309,7 +309,7 @@ Hranice propojení: změnil se identifikátor bootu.	Granica powiązania: zmieni
 Hranice propojení: pořadí zdroje se opakovalo nebo vrátilo zpět.	Granica powiązania: sekwencja źródła powtórzyła się lub cofnęła.
 Hranice propojení: čítače zdroje se vrátily zpět.	Granica powiązania: liczniki źródła cofnęły się.
 Nezachycený konec neznamená, že proces právě běží. Osamocený konec neurčuje čas vzniku.	Brak przechwyconego końca nie oznacza, że proces właśnie działa. Samotny koniec nie określa czasu uruchomienia.
-Ztráty nelze přesně umístit do intervalu. Vytěsněné řádky už nejsou k propojení; dřívější konflikt nelze vyloučit.	Strat nie można dokładnie umiejscowić w przedziale. Usunięte wiersze nie są już dostępne do powiązania; nie można wykluczyć wcześniejszego konfliktu.
+Ztráty nelze přesně umístit do intervalu. Vytěsněné řádky už nelze propojit; dřívější konflikt nelze vyloučit.	Strat nie można dokładnie umiejscowić w przedziale. Usunięte wiersze nie są już dostępne do powiązania; nie można wykluczyć wcześniejszego konfliktu.
 CPU a RAM se zde neměří. Žádné živé akce ani vyhledání současného vlastníka stejného PID.	CPU i RAM nie są tu mierzone. Brak działań na żywo i wyszukiwania bieżącego właściciela tego samego PID.
 {0}: událost nezachycena.	{0}: nie przechwycono zdarzenia.
 {0}: {1} · QPC {2} · frekvence {3}	{0}: {1} · QPC {2} · częstotliwość {3}
@@ -350,13 +350,13 @@ Ochrana	Ochrona
 Handle	Dojście
 Typ objektu	Typ obiektu
 Přístup	Dostęp
-Skupina {0} · CPU {1} · jádro {2} · třída efektivity {3} · ID {4}	Grupa {0} · CPU {1} · rdzeń {2} · klasa wydajności {3} · ID {4}
+Skupina {0} · CPU {1} · jádro {2} · třída efektivity {3} · ID {4}	Grupa {0} · CPU {1} · rdzeń {2} · klasa efektywności {3} · ID {4}
 rezervováno jinému procesu	zarezerwowane dla innego procesu
 zaparkováno	zaparkowane
 Skupiny: {0} · CPU sets: {1} · nyní výslovně vybráno: {2}	Grupy: {0} · zestawy CPU: {1} · obecnie jawnie wybrane: {2}
 Zrušit výchozí výběr CPU sets	Wyczyść domyślny wybór zestawów CPU
 Výchozí logické procesory procesu včetně čísla skupiny	Domyślne procesory logiczne procesu wraz z numerem grupy
-Zrušení výběru obnoví plánování bez výchozího omezení CPU sets. Samostatná nastavení vláken ani pevná afinita se tím nemění. Při změně topologie nebo původního výběru se požadavek odmítne a je nutný nový náhled.	Wyczyszczenie wyboru przywraca planowanie bez domyślnego ograniczenia zestawów CPU. Osobne ustawienia wątków ani stała koligacja nie zmieniają się. Przy zmianie topologii lub pierwotnego wyboru żądanie zostanie odrzucone i potrzebny będzie nowy podgląd.
+Zrušení výběru obnoví plánování bez výchozího omezení CPU sets. Samostatná nastavení vláken ani pevné spřažení se tím nemění. Při změně topologie nebo původního výběru se požadavek odmítne a je nutný nový náhled.	Wyczyszczenie wyboru przywraca planowanie bez domyślnego ograniczenia zestawów CPU. Osobne ustawienia wątków ani stała koligacja nie zmieniają się. Przy zmianie topologii lub pierwotnego wyboru żądanie zostanie odrzucone i potrzebny będzie nowy podgląd.
 Výchozí CPU sets	Domyślne zestawy CPU
 Nastavit výchozí výběr	Ustaw domyślny wybór
 Požadavek: zrušit výchozí výběr CPU sets.	Żądanie: wyczyść domyślny wybór zestawów CPU.
@@ -367,7 +367,7 @@ Pracovník požadavek nepřijal; nastavení nebylo změněno.	Proces pomocniczy 
 Výchozí výběr CPU sets byl potvrzen zpětným čtením.	Domyślny wybór zestawów CPU został potwierdzony odczytem zwrotnym.
 Proces nemá výchozí omezení CPU sets.	Proces nie ma domyślnego ograniczenia zestawów CPU.
 Skupina {0}: {1}	Grupa {0}: {1}
-Jde o načtené výchozí přiřazení. Explicitní volby vláken a pevná afinita mohou jeho použití omezit.	To odczytane domyślne przypisanie. Jawne wybory wątków i stała koligacja mogą ograniczyć jego użycie.
+Jde o načtené výchozí přiřazení. Výslovné volby vláken a pevné spřažení mohou jeho použití omezit.	To odczytane domyślne przypisanie. Jawne wybory wątków i stała koligacja mogą ograniczyć jego użycie.
 okno	okno
 okna	okna
 oken	okien
@@ -419,7 +419,7 @@ Výběr CPU sets nepatří k této akci.	Wybór zestawów CPU nie dotyczy tego d
 Handle nepatří k této akci.	Dojście nie dotyczy tego działania.
 Akce vyžaduje 1 až 64 vybraných procesů.	Działanie wymaga od 1 do 64 wybranych procesów.
 Ukončení stromu vyžaduje jeden potvrzený kořen.	Zakończenie drzewa procesów wymaga jednego potwierdzonego korzenia.
-Afinita vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů.	Koligacja wymaga jednego procesu, niepustej maski i jednej grupy procesorów.
+Spřažení vyžaduje jeden proces, neprázdnou masku a jednu skupinu procesorů.	Koligacja wymaga jednego procesu, niepustej maski i jednej grupy procesorów.
 Neplatná hodnota akce.	Nieprawidłowa wartość działania.
 Výběr obsahuje proces bez ověřitelné identity.	Wybór zawiera proces bez weryfikowalnej tożsamości.
 Pracovník vrátil jiný požadavek nebo neplatnou hlavičku.	Proces pomocniczy zwrócił inne żądanie lub nieprawidłowy nagłówek.
@@ -434,9 +434,9 @@ Pracovník zaměnil již doložený cíl plánu.	Proces pomocniczy zamienił ju�
 Výsledek přidal cíl mimo poslední potvrzený plán.	Wynik dodał cel spoza ostatniego potwierdzonego planu.
 Výsledek neodpovídá pořadí děti před rodiči.	Wynik nie zachowuje kolejności dzieci przed rodzicami.
 Neplatný nebo neověřený výsledek cíle stromu.	Nieprawidłowy lub niezweryfikowany wynik celu drzewa.
-U zvoleného času není dostupný uchovaný procesový snímek.	Dla wybranego czasu nie ma zapisanej klatki procesów.
-Ve zvoleném intervalu není uchovaný procesový snímek.	W wybranym przedziale nie ma zapisanej klatki procesów.
-Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	Najbliższa faktycznie zapisana klatka procesów; wartości nie zostały interpolowane do kursora.
+Pro zvolený čas není uchovaný žádný snímek procesů.	Dla wybranego czasu nie ma zapisanej klatki procesów.
+Ve zvoleném úseku není uchovaný žádný snímek procesů.	W wybranym przedziale nie ma zapisanej klatki procesów.
+Nejbližší skutečně uchovaný snímek procesů; hodnoty nebyly dopočítané ke kurzoru.	Najbliższa faktycznie zapisana klatka procesów; wartości nie zostały interpolowane do kursora.
 Průměr a maximum počítáme jen z uložených vzorků. Hodnoty mimo ně neznáme.	Średnią i maksimum liczymy tylko z zapisanych próbek. Wartości spoza nich są nieznane.
 CPU Ø / max	CPU śr. / maks.
 RAM Ø / max	RAM śr. / maks.
@@ -446,3 +446,5 @@ V kolika snímcích úseku se proces objevil	Liczba klatek w zakresie, w któryc
 Systém Ø / max: {0}	System śr. / maks.: {0}
 {0} snímek	{0} klatka
 {0} snímky	{0} klatki
+Pouze spuštění	Tylko wykonanie
+Spuštění služby	Uruchomienie

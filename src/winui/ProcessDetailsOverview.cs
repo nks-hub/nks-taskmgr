@@ -63,7 +63,7 @@ internal sealed partial class ProcessDetailsView
         overview.RowDefinitions.Add(new RowDefinition());
         overviewDescription.TextWrapping = TextWrapping.Wrap; overviewDescription.IsTextSelectionEnabled = true;
         overview.Children.Add(overviewDescription);
-        string[] tiles = ["CPU", "Paměť", "Disk", "Vlákna", "Handly"];
+        string[] tiles = ["CPU", "Paměť", "Disk", "Vlákna", "Popisovače"];
         for (int i = 0; i < tiles.Length; ++i) {
             overviewTiles.ColumnDefinitions.Add(new ColumnDefinition());
             var panel = new StackPanel { Spacing = 4, Padding = new Thickness(12, 10, 12, 10) };
@@ -129,7 +129,7 @@ internal sealed partial class ProcessDetailsView
         ToolTipService.SetToolTip(tileValues["Paměť"], MainWindow.MemoryTip(Loc.T("Pracovní sada"), row.WorkingBytes, row.PrivateBytes));
         tileValues["Disk"].Text = MainWindow.DiskText(row, out _);
         tileValues["Vlákna"].Text = row.Threads.ToString("N0", Loc.Culture);
-        tileValues["Handly"].Text = row.Handles.ToString("N0", Loc.Culture);
+        tileValues["Popisovače"].Text = row.Handles.ToString("N0", Loc.Culture);
     }
 
     private async Task LoadOverviewAsync()

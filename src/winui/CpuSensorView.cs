@@ -18,11 +18,11 @@ public sealed partial class MonitorModel
         try { monitor.SetCpuSensors(enabled); }
         catch (EntryPointNotFoundException) {
             CpuSensorsEnabled = false;
-            cpuSensorError = Loc.T("Tato knihovna čtení CPU čidel nepodporuje");
+            cpuSensorError = Loc.T("Tato knihovna čtení čidel CPU nepodporuje");
         }
         catch (NativeMonitorException) {
             CpuSensorsEnabled = false;
-            cpuSensorError = Loc.T("Změnu čtení CPU čidel knihovna nepotvrdila");
+            cpuSensorError = Loc.T("Změnu čtení čidel CPU knihovna nepotvrdila");
         }
     }
 
@@ -33,7 +33,7 @@ public sealed partial class MonitorModel
         : ResourceTime == 0 || NativeMonitor.MonotonicNowNs - ResourceTime > StaleAfterNs
             ? Loc.T("Čeká na aktuální sběr prostředků")
         : Hardware.TryGetValue("cpu-sensors", out var facts) && facts.GetValueOrDefault("Stav")?.StartsWith("Vypnuto", StringComparison.Ordinal) == true
-            ? Loc.T("Čeká na odpověď po zapnutí CPU čidel") : null;
+            ? Loc.T("Čeká na odpověď po zapnutí čidel CPU") : null;
 
     internal string CpuSensorStatus => CpuSensorGate
         ?? (Hardware.TryGetValue("cpu-sensors", out var facts) ? facts.GetValueOrDefault("Stav") switch {
@@ -46,7 +46,7 @@ public sealed partial class MonitorModel
 
     internal IEnumerable<KeyValuePair<string, string>> CpuSensorSummaryFacts()
     {
-        yield return new(Loc.T("Stav CPU čidel"), CpuSensorStatus);
+        yield return new(Loc.T("Stav čidel CPU"), CpuSensorStatus);
         if (CpuSensorGate is not null || !Hardware.TryGetValue("cpu-sensors", out var facts)) yield break;
         foreach (var (name, value) in facts) {
             if (name is "Stav" or "Zdroj" or "Adresa čtení" or "Poslední čtení API" or "Význam měření" or "Platnost čtení" or "Aktualizace" or "Omezení") continue;
@@ -64,8 +64,8 @@ public sealed partial class MonitorModel
 
     internal Dictionary<string, string> CpuSensorFacts()
     {
-        if (CpuSensorGate is { } gate) return new() { [Loc.T("Stav CPU čidel")] = gate };
-        if (!Hardware.TryGetValue("cpu-sensors", out var facts)) return new() { [Loc.T("Stav CPU čidel")] = CpuSensorStatus };
+        if (CpuSensorGate is { } gate) return new() { [Loc.T("Stav čidel CPU")] = gate };
+        if (!Hardware.TryGetValue("cpu-sensors", out var facts)) return new() { [Loc.T("Stav čidel CPU")] = CpuSensorStatus };
         return facts.ToDictionary(pair => Loc.F("Čidla · {0}", Loc.Native(pair.Key)), pair => Loc.Native(pair.Value));
     }
 }

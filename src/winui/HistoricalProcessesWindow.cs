@@ -84,7 +84,7 @@ internal sealed class HistoricalProcessesWindow : Window
         ToolTipService.SetToolTip(info, value.Notice
             + Loc.F("\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM a 8 s nejvyšším I/O.", value.StoredRows, value.OriginalRows)
             + (value.FrameCount == 0 ? "" : Loc.F("\nVe snímku bylo původně {0}–{1} procesů.", value.MinimumOriginalCount, value.MaximumOriginalCount))
-            + Loc.F("\nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} z 4 MiB.", ProcessHistoryText.Mono(value.FirstRetainedNs), ProcessHistoryText.Mono(value.LastRetainedNs),
+            + Loc.F("\nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} ze 4 MiB.", ProcessHistoryText.Mono(value.FirstRetainedNs), ProcessHistoryText.Mono(value.LastRetainedNs),
                 value.RetainedFrames, value.RetainedRows, Display.Number(value.AccountedBytes / 1048576d, "", 2))
             + Loc.F("\nVytěsněno {0} snímků ({1} řádků).", value.EvictedFrames, value.EvictedRows)
             + (value.DeliverySequenceUnknown ? Loc.T("\nÚplnost číslování předání nelze určit.") : "")

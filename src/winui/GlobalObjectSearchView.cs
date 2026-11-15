@@ -136,7 +136,7 @@ internal sealed class GlobalObjectSearchView : Window
         if (getBoot() is not { } boot) { status.Text = Loc.T("Identitu spuštění Windows zatím nelze ověřit. Počkejte na sběr dat a zkuste to znovu."); return; }
         using var current = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token); operation = current;
         results.Clear(); lastProgress = null; dirty = false; liveLinks = true; detail.Text = Loc.T("Vyberte výsledek ze seznamu.");
-        count.Text = Loc.F("{0} výsledků · pouze čtení", 0);
+        count.Text = Loc.F("{0} výsledků · pouze pro čtení", 0);
         status.Text = Loc.T("Načítám vlastníky otevřených objektů…"); progress.Text = Loc.T("Limity: 2 minuty, 25 000 dotazů, 4 096 objektů na vlastníka, 5 000 výsledků a 8 MiB textu. Nedostupné položky se přeskočí.");
         UpdateAvailability();
         try { await coordinator.SearchAsync(boot, new(name.Text, type.Text), DeliverAsync, current.Token); }
@@ -181,7 +181,7 @@ internal sealed class GlobalObjectSearchView : Window
             : value.Partial ? Loc.T("Průchod není úplný; chybějící shoda neznamená, že objekt není otevřený.")
             : Loc.T("Průchod dokončen. Výsledky jsou pozorování v době dotazu.");
         if (value.Cancelled) liveLinks = false;
-        count.Text = Loc.F("{0} výsledků · pouze čtení", results.Count);
+        count.Text = Loc.F("{0} výsledků · pouze pro čtení", results.Count);
         UpdateAvailability();
     }
 
@@ -205,7 +205,7 @@ internal sealed class GlobalObjectSearchView : Window
             .AppendLine(Loc.F("Typ: {0} · {1} · NTSTATUS 0x{2}", item.Type, GlobalObjectSearchText.State(item.TypeState), item.TypeNtStatus.ToString("X8")))
             .AppendLine(Loc.F("Pozorovaný název: {0}", item.NameState == SampleState.Valid && item.Name.Length == 0 ? Loc.T("(bez názvu)") : item.Name))
             .AppendLine(Loc.F("Stav názvu: {0} · NTSTATUS 0x{1}", GlobalObjectSearchText.State(item.NameState), item.NameNtStatus.ToString("X8")));
-        if (item.NameState == SampleState.Valid && row.DisplayName != item.Name) text.AppendLine(Loc.F("DOS/UNC zobrazení: {0}", row.DisplayName));
+        if (item.NameState == SampleState.Valid && row.DisplayName != item.Name) text.AppendLine(Loc.F("Zobrazení DOS/UNC: {0}", row.DisplayName));
         text.AppendLine(Loc.F("Přístup ze seznamu: 0x{0} · atributy 0x{1}", row.Handle.GrantedAccess.ToString("X8"), row.Handle.Attributes.ToString("X")))
             .AppendLine(Loc.F("Přijato: {0}", row.ReceivedAt.ToLocalTime().ToString("G", Loc.Culture)))
             .AppendLine(Loc.F("Boot: {0}", row.Owner.Boot.Low.ToString("X16") + row.Owner.Boot.High.ToString("X16")))

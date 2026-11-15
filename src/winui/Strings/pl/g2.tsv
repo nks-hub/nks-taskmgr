@@ -16,9 +16,9 @@ Dostupné grafické čítače lze číst bez zvýšení práv.	Dostępne licznik
 Oprávnění sama nezajistí podporu virtuálního adaptéru.	Same uprawnienia nie zapewnią obsługi wirtualnej karty.
 Čítače musí poskytovat grafický ovladač.	Liczniki musi udostępniać sterownik grafiki.
 Teplota GPU	Temperatura GPU
-Čtení podporovaného senzoru grafického adaptéru.	Odczyt obsługiwanego czujnika karty graficznej.
-Zamítnutý přístup a nepodporovaný senzor jsou různé stavy.	Odmowa dostępu i nieobsługiwany czujnik to różne stany.
-Senzor musí poskytovat grafický ovladač.	Czujnik musi udostępniać sterownik grafiki.
+Čtení podporovaného čidla grafického adaptéru.	Odczyt obsługiwanego czujnika karty graficznej.
+Odepřený přístup a nepodporované čidlo jsou různé stavy.	Odmowa dostępu i nieobsługiwany czujnik to różne stany.
+Čidlo musí poskytovat grafický ovladač.	Czujnik musi udostępniać sterownik grafiki.
 CPU, RAM a základní deska	CPU, RAM i płyta główna
 Čtení údajů, které vystavuje Windows a firmware.	Odczyt danych udostępnianych przez Windows i oprogramowanie układowe.
 Chybějící údaj firmwaru může zůstat nedostupný.	Brakująca wartość oprogramowania układowego może pozostać niedostępna.
@@ -30,7 +30,7 @@ Používá se stávající ovladač zařízení.	Używany jest istniejący stero
 Stavy a konfigurace služeb	Stany i konfiguracja usług
 Čtení služeb dostupných aktuálnímu účtu.	Odczyt usług dostępnych dla bieżącego konta.
 Záleží na oprávněních nastavených u konkrétní služby.	Zależy od uprawnień ustawionych dla danej usługi.
-Používá se správce služeb Windows, bez dalšího ovladače.	Używany jest menedżer usług Windows, bez dodatkowego sterownika.
+Používá se správce služeb Windows, bez dalšího ovladače.	Używany jest Menedżer sterowania usługami Windows, bez dodatkowego sterownika.
 Vlákna procesu	Wątki procesu
 Dostupnost závisí na právech ke konkrétnímu cíli.	Dostępność zależy od uprawnień do konkretnego celu.
 Některé chráněné cíle zůstanou omezené.	Niektóre chronione cele pozostaną ograniczone.
@@ -41,7 +41,7 @@ Zvýšení práv nemusí zpřístupnit chráněný proces.	Podniesienie uprawnie
 Mapa paměti procesu	Mapa pamięci procesu
 Čtení rozložení při dostupném přístupu k cíli.	Odczyt układu, gdy cel jest dostępny.
 Rozsah se posuzuje pro konkrétní cíl.	Zakres jest oceniany dla konkretnego celu.
-Jde o mapu oblastí, bez úprav jejich obsahu.	To mapa obszarów, bez zmiany ich zawartości.
+Jde o mapu oblastí, bez úprav jejich obsahu.	To mapa regionów, bez zmiany ich zawartości.
 Otevřené objekty procesu	Otwarte obiekty procesu
 Čtení dostupného výpisu handle vybraného procesu.	Odczyt dostępnej listy dojść wybranego procesu.
 Některé systémové cíle mohou dotaz odmítnout.	Niektóre cele systemowe mogą odrzucić zapytanie.
@@ -60,7 +60,7 @@ Události procesů ETW	Zdarzenia procesów ETW
 Spuštění vlastní relace se vyžádá až v okně událostí; Windows může přístup odmítnout.	Uruchomienie własnej sesji jest żądane dopiero w oknie zdarzeń; Windows może odmówić dostępu.
 Dostupnost určuje oprávnění k systémové relaci. Aplikace práva automaticky nezvyšuje.	Dostępność zależy od uprawnień do sesji systemowej. Aplikacja nie podnosi uprawnień automatycznie.
 Používá se systémový zdroj událostí; žádný další ovladač se neinstaluje.	Używane jest systemowe źródło zdarzeń; żaden dodatkowy sterownik nie jest instalowany.
-Akce nad živým procesem	Akcje na działającym procesie
+Akce s živým procesem	Akcje na działającym procesie
 Každý cíl se ověřuje na stejném handlu. Běžný pomocník pracuje jen s procesy stejného účtu a relace.	Każdy cel jest weryfikowany na tym samym dojściu. Zwykły proces pomocniczy działa tylko z procesami tego samego konta i sesji.
 Podepsaná varianta vyžaduje výslovné zvýšení a potvrzení správce. Odmítá systémovou či cizí relaci, kritické a chráněné cíle; bez důvěryhodného podpisu se nespustí.	Podpisany wariant wymaga jawnego podniesienia uprawnień i potwierdzenia administratora. Odrzuca sesję systemową lub cudzą oraz cele krytyczne i chronione; bez zaufanego podpisu się nie uruchomi.
 Používají se dostupná uživatelská rozhraní Windows, bez dalšího ovladače.	Używane są dostępne interfejsy trybu użytkownika Windows, bez dodatkowego sterownika.
@@ -71,11 +71,11 @@ Používá se systémové rozhraní Windows bez dalšího ovladače.	Używany je
 Ovládání služeb	Sterowanie usługami
 Právo určuje konkrétní služba. Závislé služby se zastaví jen podle výslovně schváleného plánu.	Uprawnienia określa konkretna usługa. Usługi zależne są zatrzymywane tylko według jawnie zatwierdzonego planu.
 Více práv nezaručuje možnost ovládat chráněnou systémovou službu.	Większe uprawnienia nie gwarantują możliwości sterowania chronioną usługą systemową.
-Používá se správce služeb Windows bez dalšího ovladače.	Używany jest menedżer usług Windows bez dodatkowego sterownika.
+Používá se správce služeb Windows bez dalšího ovladače.	Używany jest Menedżer sterowania usługami Windows bez dodatkowego sterownika.
 Teplota CPU	Temperatura CPU
 Volitelné čtení již běžícího místního HTTP API kompatibilního s LibreHardwareMonitor (127.0.0.1:8085). Výchozí stav je vypnutý.	Opcjonalny odczyt już działającego lokalnego HTTP API zgodnego z LibreHardwareMonitor (127.0.0.1:8085). Domyślnie wyłączony.
 Zvýšení práv samo nepřidá zdroj měření; aplikace je nevyžaduje.	Samo podniesienie uprawnień nie doda źródła pomiaru; aplikacja tego nie wymaga.
-Aplikace ovladač ani poskytovatele neinstaluje a nespouští. Čte publikované CPU vzorky s časem; identita poskytovatele není ověřena.	Aplikacja nie instaluje ani nie uruchamia sterownika ani dostawcy. Odczytuje opublikowane próbki CPU ze znacznikiem czasu; tożsamość dostawcy nie jest weryfikowana.
+Aplikace ovladač ani poskytovatele neinstaluje a nespouští. Čte publikované vzorky CPU s časem; identita poskytovatele není ověřena.	Aplikacja nie instaluje ani nie uruchamia sterownika ani dostawcy. Odczytuje opublikowane próbki CPU ze znacznikiem czasu; tożsamość dostawcy nie jest weryfikowana.
 Aktuální dostupnost měření a výsledky posledních operací. Změna oprávnění není automatická.	Bieżąca dostępność pomiarów i wyniki ostatnich operacji. Uprawnienia nie zmieniają się automatycznie.
 Zatím bez údaje	Brak danych
 {0}\nBěžný účet: {1}\nZvýšená práva: {2}\nOvladač / zdroj: {3}	{0}\nKonto standardowe: {1}\nPodniesione uprawnienia: {2}\nSterownik / źródło: {3}
@@ -94,7 +94,7 @@ Zastaralý výpis	Nieaktualna lista
 Zatím bez adaptéru či vzorku	Brak karty lub próbki
 platný údaj	prawidłowa wartość
 první vzorek	pierwsza próbka
-přístup zamítnut	odmowa dostępu
+přístup odepřen	odmowa dostępu
 nepodporováno	nieobsługiwane
 zastaralé	nieaktualne
 chyba	błąd
@@ -110,13 +110,13 @@ virtuální síťové rozhraní	wirtualny interfejs sieciowy
 Grafy logických procesorů:	Wykresy procesorów logicznych:
 Využití	Wykorzystanie
 Použito	W użyciu
-Aktivní čas	Czas aktywności
+Aktivní čas	Czas aktywny
 Příjem	Odbieranie
 Příjem ↓	Odbieranie ↓
 Odesílání ↑	Wysyłanie ↑
-Stránkovací soubor (swap)	Plik stronicowania (swap)
+Stránkovací soubor	Plik stronicowania
 Zastaralé údaje	Nieaktualne dane
-Použitý swap	Używany swap
+Použitý stránkovací soubor	Używany swap
 Historie {0} · {1} vzorků · zobrazeno {2} s	Historia {0} · próbki: {1} · widoczne {2} s
 Logické procesory	Procesory logiczne
 Procesy	Procesy
@@ -125,11 +125,11 @@ Vlákna	Wątki
 Instalováno	Zainstalowano
 Fyzická paměť	Pamięć fizyczna
 Dostupná paměť	Dostępna pamięć
-Potvrzeno / limit	Zatwierdzone / limit
+Potvrzeno / limit	Zadeklarowane / limit
 Stránkovaný fond	Pula stronicowana
 Nestránkovaný fond	Pula niestronicowana
 V mezipaměti	Buforowane
-Maximum swapu	Szczyt swapu
+Maximum stránkovacího souboru	Szczyt swapu
 Dostupnost	Dostępność
 Stav	Stan
 Zastaralé	Nieaktualne
@@ -141,18 +141,18 @@ Fyzické adaptéry od spuštění	Karty fizyczne od uruchomienia
 Čtení	Odczyt
 Zápis	Zapis
 Vyhrazená paměť	Pamięć dedykowana
-Sdílená paměť	Pamięć współdzielona
+Sdílená paměť	Pamięć udostępniona
 Kapacita VRAM	Pojemność VRAM
-Limit sdílené paměti	Limit pamięci współdzielonej
+Limit sdílené paměti	Limit pamięci udostępnionej
 Enginy	Silniki
 Celkové vytížení	Obciążenie całkowite
 Nejvytíženější engine	Najbardziej obciążony silnik
 Rezervováno hardwarem	Zarezerwowane dla sprzętu
 Logický procesor {0}:{1}	Procesor logiczny {0}:{1}
 Logické procesory · měření nedostupné	Procesory logiczne · pomiar niedostępny
-Načítání…	Ładowanie…
+Načítání…	Wczytywanie…
 Ověřuji dostupnost aktualizací	Sprawdzanie dostępności aktualizacji
-Načítám přehled místních instalačních balíčků.	Ładowanie listy lokalnych pakietów instalacyjnych.
+Načítám přehled místních instalačních balíčků.	Wczytywanie listy lokalnych pakietów instalacyjnych.
 Novou verzi nainstalujte ručně jejím instalátorem po zavření aplikace.	Zainstaluj nową wersję ręcznie jej instalatorem po zamknięciu aplikacji.
 Načíst balíčky	Wczytaj pakiety
 Přidat instalátor…	Dodaj instalator…
@@ -163,7 +163,7 @@ Obnovit nedokončenou instalaci…	Napraw niedokończoną instalację…
 Zrušit dotaz	Anuluj żądanie
 Zavřít	Zamknij
 Aktualizace · NKS Task Manager	Aktualizacje · NKS Task Manager
-Aktualizace a návrat verze	Aktualizacje i przywracanie wersji
+Aktualizace a návrat k předchozí verzi	Aktualizacje i powrót do poprzedniej wersji
 Aktuální sestavení: {0}	Bieżąca kompilacja: {0}
 Vyberte podepsaný instalátor. Ověřená instalace i přenosná kopie zachovají svůj režim. Nastavení mimo soubory aplikace se nepřepisuje.	Wybierz podpisany instalator. Zweryfikowana instalacja i kopia przenośna zachowają swój tryb. Ustawienia poza plikami aplikacji nie są nadpisywane.
 Balíčky se bez něj neověřují ani nespouštějí.	Bez niego pakiety nie są weryfikowane ani uruchamiane.
@@ -212,7 +212,7 @@ Cílová instalace: {0}	Instalacja docelowa: {0}
 Zůstane přenosná kopie. Nevytváří se registrace odinstalátoru ani zástupci aplikace.	Pozostanie kopia przenośna. Nie jest tworzona rejestracja dezinstalatora ani skróty aplikacji.
 Zůstane instalace pro aktuálního uživatele.	Pozostanie instalacja dla bieżącego użytkownika.
 Znovu se nainstaluje ověřená původní verze. Dřívější nejasný výsledek se považuje za vyřešený až po dokončení a ověření nové instalace.	Zweryfikowana pierwotna wersja zostanie zainstalowana ponownie. Wcześniejszy niejasny wynik uznaje się za rozwiązany dopiero po ukończeniu i weryfikacji nowej instalacji.
-Po potvrzení se tento program zavře a otevře se ověřený instalátor. Pomocník vyčká na skutečný zánik procesu. Pokud program zůstane otevřený, instalace se po 30 sekundách nespustí. Nastavení mimo instalační složku se nepřepisuje.	Po potwierdzeniu ten program zostanie zamknięty i otworzy się zweryfikowany instalator. Proces pomocniczy poczeka na faktyczne zakończenie procesu. Jeśli program pozostanie otwarty, instalacja po 30 sekundach się nie rozpocznie. Ustawienia poza folderem instalacji nie są nadpisywane.
+Po potvrzení se tento program zavře a otevře se ověřený instalátor. Pomocník počká, až proces opravdu skončí. Pokud program zůstane otevřený, instalace se po 30 sekundách nespustí. Nastavení mimo instalační složku se nepřepisuje.	Po potwierdzeniu ten program zostanie zamknięty i otworzy się zweryfikowany instalator. Proces pomocniczy poczeka na faktyczne zakończenie procesu. Jeśli program pozostanie otwarty, instalacja po 30 sekundach się nie rozpocznie. Ustawienia poza folderem instalacji nie są nadpisywane.
 Obnovit nedokončenou instalaci	Napraw niedokończoną instalację
 Vrátit předchozí verzi	Przywróć poprzednią wersję
 Nainstalovat aktualizaci	Zainstaluj aktualizację
@@ -281,7 +281,7 @@ Zprávu uživateli (SessionId={0}) nelze odeslat.	Nie można wysłać wiadomośc
 Přístup byl odepřen. K dokončení této úlohy potřebujete oprávnění správce. Zavřete NKS Task Manager, pak ho spusťte znovu jako správce a zkuste to znovu.	Odmowa dostępu. Do wykonania tego zadania potrzebne są uprawnienia administratora. Zamknij NKS Task Manager, uruchom go ponownie jako administrator i spróbuj jeszcze raz.
 Část údajů chybí	Brakuje części danych
 Dotaz dokončen	Zapytanie ukończone
-Přístup zamítnut	Odmowa dostępu
+Přístup odepřen	Odmowa dostępu
 Nepodporováno	Nieobsługiwane
 Cíl už neodpovídá původnímu procesu	Cel nie odpowiada już pierwotnemu procesowi
 Dosažen limit čtení	Osiągnięto limit odczytu
@@ -290,13 +290,13 @@ Požadavek nebylo možné přijmout	Nie można było przyjąć żądania
 Dotaz skončil chybou	Zapytanie zakończone błędem
 Zatím nespuštěno	Jeszcze nie uruchomiono
 Spouští se	Uruchamianie
-Záznam běží	Rejestrowanie trwa
+Záznam běží	Przechwytywanie trwa
 Zastavuje se	Zatrzymywanie
-Záznam zastavený	Rejestrowanie zatrzymane
+Záznam zastavený	Przechwytywanie zatrzymane
 Předchozí relace není uklizená	Poprzednia sesja nie została uprzątnięta
 Zastavení překročilo limit	Zatrzymywanie przekroczyło limit
 Úklid nebyl potvrzený	Czyszczenie niepotwierdzone
-Chyba záznamu	Błąd rejestrowania
+Chyba záznamu	Błąd przechwytywania
 Požadavek nedokončený · Windows {0}	Żądanie nieukończone · Windows {0}
 ověřený dotaz	zweryfikowane zapytanie
 potvrzená změna	potwierdzona zmiana
@@ -309,7 +309,7 @@ již skončeno	już zakończony
 neověřeno	niezweryfikowane
 nedostupný	niedostępny
 platný	prawidłowy
-přístup odmítnut	odmowa dostępu
+přístup odepřen	odmowa dostępu
 nepodporované	nieobsługiwane
 měřicí okno není uložené	okno pomiaru nie jest zapisane
 měřicí okno {0}	okno pomiaru {0}
@@ -323,22 +323,22 @@ Původní Created100ns: {0}	Pierwotne Created100ns: {0}
 Čas pozorování: {0} · monotónní {1} ns	Czas obserwacji: {0} · monotoniczny {1} ns
 Pracovní sada: {0} B · {1}	Zestaw roboczy: {0} B · {1}
 Soukromé bajty: {0} B · {1}	Bajty prywatne: {0} B · {1}
-Procesové I/O čtení: {0} · {1}	Odczyt we/wy procesu: {0} · {1}
-Procesové I/O zápis: {0} · {1} · {2}	Zapis we/wy procesu: {0} · {1} · {2}
+Čtení I/O procesu: {0} · {1}	Odczyt we/wy procesu: {0} · {1}
+Zápis I/O procesu: {0} · {1} · {2}	Zapis we/wy procesu: {0} · {1} · {2}
 Vzorek byl při přijetí opožděný nebo označený jako zastaralý.	Próbka dotarła z opóźnieniem lub została oznaczona jako nieaktualna.
 Uložená normalizace CPU: {0} · dělitel {1}	Zapisana normalizacja CPU: {0} · dzielnik {1}
-Tato knihovna čtení CPU čidel nepodporuje	Ta biblioteka nie obsługuje odczytu czujników CPU
-Změnu čtení CPU čidel knihovna nepotvrdila	Biblioteka nie potwierdziła zmiany odczytu czujników CPU
+Tato knihovna čtení čidel CPU nepodporuje	Ta biblioteka nie obsługuje odczytu czujników CPU
+Změnu čtení čidel CPU knihovna nepotvrdila	Biblioteka nie potwierdziła zmiany odczytu czujników CPU
 Vypnuto; žádné dotazy na čidla	Wyłączone; brak zapytań do czujników
 Sběr je pozastavený; aktuální teplota není dostupná	Zbieranie wstrzymane; bieżąca temperatura jest niedostępna
 Čtení prostředků selhalo; aktuální teplota není dostupná	Odczyt zasobów nie powiódł się; bieżąca temperatura jest niedostępna
 Čeká na aktuální sběr prostředků	Oczekiwanie na bieżące zbieranie zasobów
-Čeká na odpověď po zapnutí CPU čidel	Oczekiwanie na odpowiedź po włączeniu czujników CPU
+Čeká na odpověď po zapnutí čidel CPU	Oczekiwanie na odpowiedź po włączeniu czujników CPU
 Externí program s čidly neběží nebo není dostupný	Zewnętrzny program czujników nie działa lub jest niedostępny
 Externí program neposkytl použitelné údaje z čidel	Zewnętrzny program nie dostarczył użytecznych danych z czujników
 Externí program neposkytuje podporované teplotní čidlo CPU	Zewnętrzny program nie udostępnia obsługiwanego czujnika temperatury CPU
 Čeká na první odpověď externího programu s čidly	Oczekiwanie na pierwszą odpowiedź zewnętrznego programu czujników
-Stav CPU čidel	Stan czujników CPU
+Stav čidel CPU	Stan czujników CPU
 zastaralý nebo nejistý vzorek	nieaktualna lub niepewna próbka
 Teplota · {0}	Temperatura · {0}
 Čidla · {0}	Czujniki · {0}
@@ -354,7 +354,7 @@ Nastaveno na jinou instalaci NKS (stará cesta)	Ustawiono na inną instalację N
 Nastaveno na jiný program	Ustawiono na inny program
 Vypnutím se obnoví původní program.	Wyłączenie przywróci pierwotny program.
 Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto se nebude obnovovat; vypnutím se registrace jen odstraní.	Pierwotnego programu brakuje lub mogą go zmieniać zwykli użytkownicy, dlatego nie zostanie przywrócony; wyłączenie tylko usunie rejestrację.
-Vypnutím se registrace odstraní a Správce úloh Windows se spouští jako dříve.	Wyłączenie usunie rejestrację, a Menedżer zadań Windows będzie uruchamiany jak dawniej.
+Vypnutím se registrace odstraní a Správce úloh Windows se bude spouštět jako dříve.	Wyłączenie usunie rejestrację, a Menedżer zadań Windows będzie uruchamiany jak dawniej.
 Správce úloh Windows se spouští jako dříve.	Menedżer zadań Windows jest uruchamiany jak dawniej.
 Příkaz: {0}	Polecenie: {0}
 Zapnutím se cesta opraví na tuto instalaci.	Włączenie poprawi ścieżkę na tę instalację.
@@ -372,15 +372,15 @@ Ctrl+Shift+Esc, Ctrl+Alt+Del → Správce úloh, hlavní panel, Win+X a Win+R ta
 Systémový soubor se nemění, zabezpečená obrazovka Windows zůstává stejná.	Żaden plik systemowy nie jest zmieniany; bezpieczny ekran Windows pozostaje bez zmian.
 Stav: {0}	Stan: {0}
 Vlastní proces ještě není v seznamu s ověřenou identitou. Zkuste to za chvíli.	Własny proces nie jest jeszcze na liście ze zweryfikowaną tożsamością. Spróbuj ponownie za chwilę.
-Změna platí pro celý počítač a vyžaduje správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí zvýšeně.	Zmiana dotyczy całego komputera i wymaga administratora: nastąpi UAC i własne potwierdzenie. Po włączeniu NKS będzie działać z uprawnieniami administratora za każdym razem, gdy Menedżer zadań zostanie uruchomiony z podniesionymi uprawnieniami.
+Změna platí pro celý počítač a vyžaduje práva správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí se zvýšenými právy.	Zmiana dotyczy całego komputera i wymaga administratora: nastąpi UAC i własne potwierdzenie. Po włączeniu NKS będzie działać z uprawnieniami administratora za każdym razem, gdy Menedżer zadań zostanie uruchomiony z podniesionymi uprawnieniami.
 Nahradit Správce úloh Windows	Zastąp Menedżera zadań Windows
 Zapnout…	Włącz…
 Vypnout…	Wyłącz…
-Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik rozbalí procesy.	Aplikacje według zweryfikowanych okien i liczba ich procesów. Strzałka lub dwuklik rozwija procesy.
+Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik rozbalí procesy.	Aplikacja według zweryfikowanych okien i liczba jej procesów. Strzałka lub dwukrotne kliknięcie rozwija procesy.
 Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek.	Suma CPU wszystkich procesów aplikacji. ≥ oznacza znaną część, gdy któryś proces nie ma bieżącej próbki.
-Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky.	Suma zestawów roboczych wszystkich procesów aplikacji. Dokładne wartości w MB są w etykiecie komórki.
+Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky.	Suma zestawów roboczych wszystkich procesów aplikacji. Dokładne wartości w MB są w podpowiedzi komórki.
 Součet čtení a zápisu všech procesů aplikace.	Suma odczytów i zapisów wszystkich procesów aplikacji.
-Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.	Bajty TCP/UDP wysłane i odebrane. Mierzone tylko podczas własnego przechwytywania ETW jako administrator.
+Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW s právy správce.	Bajty TCP/UDP wysłane i odebrane. Mierzone tylko podczas własnego przechwytywania ETW jako administrator.
 Aplikace	Aplikacje
 Aplikace a jejich procesy	Aplikacje i ich procesy
 Pracovní sada všech procesů	Zestaw roboczy wszystkich procesów
@@ -390,15 +390,15 @@ Přetečení součtu	Przepełnienie sumy
 Měření nedostupné	Pomiar niedostępny
 Proces a ověření potomci: {0} procesů.	Proces i zweryfikowani potomkowie, liczba procesów: {0}.
 Neúplné členství: některé vztahy nebo identity nelze ověřit.	Niepełne członkostwo: niektórych relacji lub tożsamości nie można zweryfikować.
-Známé aktuální vzorky: CPU {1}/{0}, RAM {2}/{0}, privátní paměť {3}/{0}, čtení {4}/{0}, zápis {5}/{0}, síť {6}/{0}.	Znane bieżące próbki: CPU {1}/{0}, RAM {2}/{0}, pamięć prywatna {3}/{0}, odczyt {4}/{0}, zapis {5}/{0}, sieć {6}/{0}.
+Známé aktuální vzorky: CPU {1}/{0}, RAM {2}/{0}, soukromá paměť {3}/{0}, čtení {4}/{0}, zápis {5}/{0}, síť {6}/{0}.	Znane bieżące próbki: CPU {1}/{0}, RAM {2}/{0}, pamięć prywatna {3}/{0}, odczyt {4}/{0}, zapis {5}/{0}, sieć {6}/{0}.
 ≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.	≥ oznacza znaną część niepełnej sumy. Współdzielone strony RAM mogą być liczone wielokrotnie.
 Přetečený součet je nedostupný.	Przepełniona suma jest niedostępna.
 Proces byl ukončen; hodnoty již nejsou aktuální.	Proces został zakończony; wartości nie są już aktualne.
 Procesový inventář je zastaralý.	Spis procesów jest nieaktualny.
 Vlastní hodnoty PID {0}, bez potomků.	Własne wartości PID {0}, bez potomków.
 Ukončeno	Zakończono
-Síť od začátku záznamu ETW:	Sieć od początku rejestrowania ETW:
-Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu.	Nie wybrano czasu. Shift+kliknięcie lub Shift+Enter wybiera dwa końce przedziału.
+Síť od začátku záznamu ETW:	Sieć od początku przechwytywania ETW:
+Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce úseku.	Nie wybrano czasu. Shift+kliknięcie lub Shift+Enter wybiera dwa końce przedziału.
 Vybraný čas {0} je mimo zobrazenou historii tohoto grafu.	Wybrany czas {0} jest poza historią widoczną na tym wykresie.
 Bez vzorku	Brak próbki
 5 nejvytíženějších z {0}	5 najbardziej obciążonych z {0}
@@ -428,10 +428,10 @@ Zobrazit pomocná/virtuální rozhraní	Pokaż interfejsy pomocnicze/wirtualne
 Pohled sítě je změněný, ale volbu se nepodařilo uložit pro příští spuštění.	Widok sieci został zmieniony, ale nie udało się zapisać wyboru na następne uruchomienie.
 Proces	Proces
 Soukromá paměť	Pamięć prywatna
-Čtení I/O	Odczyt We/Wy
-Zápis I/O	Zapis We/Wy
+Čtení I/O	Odczyt we/wy
+Zápis I/O	Zapis we/wy
 Síť	Sieć
-Vznik: {0}	Start: {0}
+Vznik: {0}	Uruchomienie: {0}
 Konec: {0}	Koniec: {0}
 Délka neurčena	Czas trwania nieokreślony
 Název není dostupný	Nazwa niedostępna
@@ -457,7 +457,7 @@ Již uložený dump byl ověřen. Odstranil se pouze dokončený záznam obnovy.
 Hotový dump byl ověřen a uložen bez přepsání existujícího souboru.	Gotowy zrzut został zweryfikowany i zapisany bez nadpisywania istniejącego pliku.
 Identita dočasného souboru nebyla zapsaná. Soubor se nebude hledat ani měnit.	Tożsamość pliku tymczasowego nie została zapisana. Plik nie będzie wyszukiwany ani zmieniany.
 Soubor překračuje limit ověřování.	Plik przekracza limit weryfikacji.
-Zapsaný hotový dump; SHA-256 se ověří před dokončením.	Zapisany gotowy zrzut; SHA-256 zostanie zweryfikowane przed ukończeniem.
+Zapsaný hotový dump; SHA-256 se ověří před dokončením.	Zapisany gotowy zrzut; SHA-256 zostanie zweryfikowany przed ukończeniem.
 Nedokončený dočasný soubor s ověřenou identitou.	Niedokończony plik tymczasowy ze zweryfikowaną tożsamością.
 Cílový soubor nemá uložený důkaz dokončení. Zůstane zachovaný.	Plik docelowy nie ma zapisanego dowodu ukończenia. Zostanie zachowany.
 Velikost souboru překračuje limit ověřování.	Rozmiar pliku przekracza limit weryfikacji.
@@ -480,7 +480,7 @@ Neplatný výchozí výběr CPU sets.	Nieprawidłowy domyślny wybór zestawów 
 Proces po změně CPU sets nemá potvrzenou životnost.	Proces po zmianie zestawów CPU nie ma potwierdzonego czasu życia.
 Zpětné čtení CPU sets nepotvrdilo počet vybraných procesorů.	Ponowny odczyt zestawów CPU nie potwierdził liczby wybranych procesorów.
 Zpětné čtení CPU sets nepotvrdilo požadovaný výběr.	Ponowny odczyt zestawów CPU nie potwierdził żądanego wyboru.
-Požadavek úklidu se nesmí opakovat.	Żądanie czyszczenia nie może być powtarzane.
+Požadavek na úklid se nesmí opakovat.	Żądanie czyszczenia nie może być powtarzane.
 Platnost náhledu úklidu vypršela.	Podgląd czyszczenia wygasł.
 Přijetí úklidu nebylo potvrzené.	Przyjęcie czyszczenia nie zostało potwierdzone.
 Chybí konečný výsledek úklidu.	Brak ostatecznego wyniku czyszczenia.
@@ -492,7 +492,7 @@ rozbaleno	rozwinięte
 sbaleno	zwinięte
 Nainstalujte aplikaci pro všechny uživatele; instalátor tuto volbu nabídne hned na začátku.	Zainstaluj aplikację dla wszystkich użytkowników; instalator oferuje tę opcję na samym początku.
 Změna byla zrušena v okně UAC.	Zmiana została anulowana w oknie UAC.
-Swap	Swap
+Stránkovací soubor	Plik stronicowania
 Kliknutím do grafu připnete čas, Shift+kliknutím vyberete úsek.	Kliknij wykres, aby przypiąć czas; Shift+kliknięcie wybiera zakres.
 Čtení / zápis	Odczyt / zapis
 Mezipaměť L1 / L2 / L3	Pamięć podręczna L1 / L2 / L3

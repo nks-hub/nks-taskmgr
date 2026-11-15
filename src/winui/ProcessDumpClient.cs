@@ -36,7 +36,7 @@ internal sealed class ProcessDumpClient : IDisposable
                 TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             var result = await work.WaitAsync(token).ConfigureAwait(false);
             string status = result.State == ProcessDumpState.Captured && result.SavedPath is not null ? Loc.T("Dump uložen") : Loc.F("Dump neuložen: {0}", result.State switch {
-                ProcessDumpState.Denied => Loc.T("přístup odmítnut"), ProcessDumpState.Unsupported => Loc.T("nepodporováno"), ProcessDumpState.TargetChanged => Loc.T("proces skončil nebo se změnil"),
+                ProcessDumpState.Denied => Loc.T("přístup odepřen"), ProcessDumpState.Unsupported => Loc.T("nepodporováno"), ProcessDumpState.TargetChanged => Loc.T("proces skončil nebo se změnil"),
                 ProcessDumpState.Unavailable => Loc.T("cíl nedostupný"), ProcessDumpState.LimitExceeded => Loc.T("překročen limit velikosti"), ProcessDumpState.Canceled => Loc.T("zrušeno nebo překročen čas"),
                 ProcessDumpState.InvalidRequest => Loc.T("neplatný požadavek"), _ => Loc.T("výsledek nepotvrzen")
             }) + (result.Error == 0 ? "" : " (Windows/HRESULT 0x" + result.Error.ToString("X8") + ")");

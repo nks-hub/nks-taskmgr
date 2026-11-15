@@ -48,7 +48,7 @@ internal readonly record struct ProcessBranchTotal(int Members, bool Incomplete,
         Cpu.Add(other.Cpu), Working.Add(other.Working), Private.Add(other.Private), Read.Add(other.Read), Write.Add(other.Write), Network.Add(other.Network));
     internal string Description => Loc.F("Proces a ověření potomci: {0} procesů.", Members) + " "
         + (Incomplete ? Loc.T("Neúplné členství: některé vztahy nebo identity nelze ověřit.") + "\n" : "\n")
-        + Loc.F("Známé aktuální vzorky: CPU {1}/{0}, RAM {2}/{0}, privátní paměť {3}/{0}, čtení {4}/{0}, zápis {5}/{0}, síť {6}/{0}.",
+        + Loc.F("Známé aktuální vzorky: CPU {1}/{0}, RAM {2}/{0}, soukromá paměť {3}/{0}, čtení {4}/{0}, zápis {5}/{0}, síť {6}/{0}.",
             Members, Cpu.Known, Working.Known, Private.Known, Read.Known, Write.Known, Network.Known) + "\n"
         + Loc.T("≥ označuje známou část neúplného součtu. Sdílené stránky RAM mohou být započteny opakovaně.")
         + (Cpu.Overflow || Working.Overflow || Private.Overflow || Read.Overflow || Write.Overflow || Network.Overflow

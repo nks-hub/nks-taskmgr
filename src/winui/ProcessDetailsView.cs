@@ -23,7 +23,7 @@ public sealed partial class MainWindow
         processDetailsButton.Content = UiIcon.Create("processes", 0x95a4ad, 19);
         AutomationProperties.SetName(processDetailsButton, Loc.T("Podrobnosti vybraného procesu"));
         AutomationProperties.SetAutomationId(processDetailsButton, "process-details");
-        ToolTipService.SetToolTip(processDetailsButton, Loc.T("Vlákna, moduly, paměť a handly procesu"));
+        ToolTipService.SetToolTip(processDetailsButton, Loc.T("Vlákna, moduly, paměť a popisovače procesu"));
         processDetailsButton.Click += async (_, _) => {
             if (SelectedProcess is not { } row || !CanReadDetails(row)) return;
             try {

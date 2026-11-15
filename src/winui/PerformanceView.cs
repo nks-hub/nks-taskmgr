@@ -78,10 +78,10 @@ public sealed partial class MainWindow
         if (cpu && cpuMode > 0) RefreshProcessors(now);
         pageFile.Visibility = pageFileTitle.Visibility = memory ? Visibility.Visible : Visibility.Collapsed;
         if (memory) {
-            pageFileTitle.Text = Loc.T("Swap") + "   " + (resource.Stale ? Loc.T("Zastaralé údaje") : model.Memory.PageFileState == SampleState.Valid
+            pageFileTitle.Text = Loc.T("Stránkovací soubor") + "   " + (resource.Stale ? Loc.T("Zastaralé údaje") : model.Memory.PageFileState == SampleState.Valid
                 ? Display.Number(model.Memory.PageFileUsedBytes / 1073741824d, " / ") + Display.Number(model.Memory.PageFileBytes / 1073741824d, " GiB")
                 : Display.Metric(new Metric { State = model.Memory.PageFileState }, string.Empty));
-            pageFile.Configure(Loc.T("Použitý swap"), ChartUnit.Bytes);
+            pageFile.Configure(Loc.T("Použitý stránkovací soubor"), ChartUnit.Bytes);
             // Used swap is usually a few percent of the page file, so its graph always scales to what is used.
             pageFile.Set(model.PageFile, null, now, rangeSeconds, Math.Max(1, model.Memory.PageFileBytes), 0xdfaf76, autoScale: true);
         }
@@ -112,7 +112,7 @@ public sealed partial class MainWindow
             Fact(Loc.T("Stránkovaný fond"), Display.Number(model.Memory.PagedPoolBytes / 1073741824d, " GiB"));
             Fact(Loc.T("Nestránkovaný fond"), Display.Number(model.Memory.NonpagedPoolBytes / 1073741824d, " GiB"));
             Fact(Loc.T("V mezipaměti"), Display.Number(model.Memory.CacheBytes / 1073741824d, " GiB"));
-            Fact(Loc.T("Maximum swapu"), model.Memory.PageFileState == SampleState.Valid ? Display.Number(model.Memory.PageFilePeakBytes / 1073741824d, " GiB")
+            Fact(Loc.T("Maximum stránkovacího souboru"), model.Memory.PageFileState == SampleState.Valid ? Display.Number(model.Memory.PageFilePeakBytes / 1073741824d, " GiB")
                 : Display.Metric(new Metric { State = model.Memory.PageFileState }, string.Empty));
         } else if (memory) {
             Fact(Loc.T("Dostupnost"), Display.Metric(new Metric { State = model.Memory.State }, string.Empty));

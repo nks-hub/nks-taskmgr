@@ -30,7 +30,7 @@ public sealed partial class MainWindow
             Loc.T("Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik rozbalí procesy."), "",
             Loc.T("Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek."),
             Loc.T("Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky."),
-            Loc.T("Součet čtení a zápisu všech procesů aplikace."), Loc.T("Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.")];
+            Loc.T("Součet čtení a zápisu všech procesů aplikace."), Loc.T("Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW s právy správce.")];
         appsHeader = GroupHeader(Loc.T("Aplikace"), tips, appHeaders, column => {
             appSortDescending = appSortColumn == column ? !appSortDescending : column >= 2; appSortColumn = column; RefreshAppTable();
         });

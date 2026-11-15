@@ -55,7 +55,7 @@ public sealed partial class MainWindow : Window
     private readonly TextBlock resourceUnit = Label("", 13, 0x95a4ad);
     private readonly List<ToggleButton> rangeButtons = [], cpuButtons = [];
     private readonly StackPanel cpuModes = new() { Orientation = Orientation.Horizontal, Spacing = 3 };
-    private readonly ToggleButton scaleChoice = Choice(Loc.T("Auto měřítko"));
+    private readonly ToggleButton scaleChoice = Choice(Loc.T("Automatické měřítko"));
     private readonly Grid plotToolbar = new() { Margin = new Thickness(0, 12, 0, 12), RowSpacing = 6 };
     private readonly StackPanel chartControls = new() { Orientation = Orientation.Horizontal, Spacing = 3, HorizontalAlignment = HorizontalAlignment.Right };
     private readonly Grid processors = new();

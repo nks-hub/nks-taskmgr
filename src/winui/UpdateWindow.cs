@@ -50,7 +50,7 @@ internal sealed partial class UpdateWindow : Window
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto })
             root.RowDefinitions.Add(new RowDefinition { Height = height });
         var heading = new StackPanel { Spacing = 7 };
-        heading.Children.Add(Text(Loc.T("Aktualizace a návrat verze"), 23));
+        heading.Children.Add(Text(Loc.T("Aktualizace a návrat k předchozí verzi"), 23));
         heading.Children.Add(Text(Loc.F("Aktuální sestavení: {0}", CurrentVersion())));
         if (!UpdateWorkerClient.IsConfigured) heading.Children.Add(Text(StatusText(UpdateStatus.TrustMissing) + " " + Loc.T("Balíčky se bez něj neověřují ani nespouštějí.")));
         else if (LocalPackages) heading.Children.Add(Text(Loc.T("Vyberte podepsaný instalátor. Ověřená instalace i přenosná kopie zachovají svůj režim. Nastavení mimo soubory aplikace se nepřepisuje.")));
@@ -259,7 +259,7 @@ internal sealed partial class UpdateWindow : Window
             ? Loc.T("Zůstane přenosná kopie. Nevytváří se registrace odinstalátoru ani zástupci aplikace.")
             : Loc.T("Zůstane instalace pro aktuálního uživatele.")));
         if (plan.IsRecovery) content.Children.Add(Text(Loc.T("Znovu se nainstaluje ověřená původní verze. Dřívější nejasný výsledek se považuje za vyřešený až po dokončení a ověření nové instalace.")));
-        content.Children.Add(Text(Loc.T("Po potvrzení se tento program zavře a otevře se ověřený instalátor. Pomocník vyčká na skutečný zánik procesu. Pokud program zůstane otevřený, instalace se po 30 sekundách nespustí. Nastavení mimo instalační složku se nepřepisuje.")));
+        content.Children.Add(Text(Loc.T("Po potvrzení se tento program zavře a otevře se ověřený instalátor. Pomocník počká, až proces opravdu skončí. Pokud program zůstane otevřený, instalace se po 30 sekundách nespustí. Nastavení mimo instalační složku se nepřepisuje.")));
         var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = plan.IsRecovery ? Loc.T("Obnovit nedokončenou instalaci") : plan.Action == UpdateAction.Rollback ? Loc.T("Vrátit předchozí verzi") : Loc.T("Nainstalovat aktualizaci"),
             Content = content, PrimaryButtonText = Loc.T("Zavřít program a pokračovat"), CloseButtonText = Loc.T("Zrušit"), DefaultButton = ContentDialogButton.Close };
         Appearance.Dialog(dialog); confirmation = dialog;
@@ -303,7 +303,7 @@ internal sealed partial class UpdateWindow : Window
                 onlineStatus.Text = Loc.F("Máte nejnovější vydanou verzi {0}.", current); onlineAction.Content = Loc.T("Zkontrolovat znovu");
             } else if (!CanInstallOnline) {
                 onlineStatus.Text = Loc.F("K dispozici je verze {0}.", release.Version) + " " + (OnlineUpdate.Kind == InstallKind.Portable
-                    ? Loc.T("Přenosnou kopii nahraďte obsahem nového balíčku ZIP.") : Loc.T("Toto sestavení nemá ověřitelný podpis vydavatele, nainstalujte ji ručně."));
+                    ? Loc.T("Přenosnou kopii nahraďte obsahem nového balíčku ZIP.") : Loc.T("Toto sestavení nemá ověřitelný podpis vydavatele, novou verzi nainstalujte ručně."));
                 onlineAction.Content = Loc.T("Otevřít stránku vydání");
             } else {
                 onlineStatus.Text = Loc.F("K dispozici je verze {0}. Instalátor se stáhne z GitHubu, ověří se jeho podpis NKS a nainstaluje se ve stejném režimu jako tato kopie.", release.Version);

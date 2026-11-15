@@ -78,7 +78,7 @@ public sealed partial class MainWindow
         ResizeServices();
         serviceTitle.Text = row?.Title ?? Loc.T("Vyberte službu"); serviceName.Text = row?.Name ?? "";
         serviceDescription.Text = row is null ? Loc.T("Výběr v seznamu otevře konfiguraci a závislosti služby.") : detail is null
-            ? servicesModel!.DetailError.Length > 0 ? servicesModel.DetailError : model.Paused ? Loc.T("Obnovte sběr pro načtení detailu.") : Loc.T("Načítám detail…")
+            ? servicesModel!.DetailError.Length > 0 ? servicesModel.DetailError : model.Paused ? Loc.T("Detail se načte po obnovení sběru.") : Loc.T("Načítám detail…")
             : detail.DescriptionError != 0 ? ServiceText.Error(detail.DescriptionError) : detail.Description;
         var config = detail?.Config ?? row?.Config;
         serviceState.Text = row is null ? "—" : detail is not null && detail.StatusError != 0 ? ServiceText.Error(detail.StatusError) : ServiceText.State(detail?.State ?? row.State);
@@ -88,7 +88,7 @@ public sealed partial class MainWindow
         serviceCommand.Text = config is null ? "—" : config.Error != 0 ? ServiceText.Error(config.Error) : config.Command;
         serviceHost.IsEnabled = servicesModel?.Host(model) is not null;
         serviceHost.Visibility = serviceTabs.Visibility = row is null ? Visibility.Collapsed : Visibility.Visible;
-        string hostHint = serviceHost.IsEnabled ? Loc.T("Otevřít hostitelský proces.") : model.Paused ? Loc.T("Obnovte sběr pro otevření hostitele.")
+        string hostHint = serviceHost.IsEnabled ? Loc.T("Otevřít hostitelský proces.") : model.Paused ? Loc.T("Hostitele lze otevřít po obnovení sběru.")
             : detail?.HostError > 0 ? Loc.F("Hostitele nelze ověřit: {0}", ServiceText.Error(detail.HostError))
             : row?.State != 4 ? Loc.T("Služba není spuštěná.") : Loc.T("Hostitelský proces se změnil nebo data nejsou aktuální.");
         ToolTipService.SetToolTip(serviceHost, hostHint); AutomationProperties.SetHelpText(serviceHost, hostHint);

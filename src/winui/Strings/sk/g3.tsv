@@ -15,16 +15,16 @@ Windows nehlásí	Windows nehlási
 Načítání…	Načítava sa…
 Údaje zatím nejsou dostupné	Údaje zatiaľ nie sú dostupné
 Údaje RAM	Údaje RAM
-Firmware nedostupný	Firmware nedostupný
-Firmware nehlásí	Firmware nehlási
+Firmware nedostupný	Firmvér nedostupný
+Firmware nehlásí	Firmvér nehlási
 Čtení selhalo	Čítanie zlyhalo
-Neplatný firmware	Neplatný firmware
+Neplatný firmware	Neplatný firmvér
 Fyzická jádra	Fyzické jadrá
-Patice	Pätice
+Patice	Sokety
 Rodina / model / revize	Rodina / model / revízia
 Instrukce CPU (CPUID)	Inštrukcie CPU (CPUID)
 Virtualizace	Virtualizácia
-Základní takt (CPUID)	Základný takt (CPUID)
+Základní rychlost (CPUID)	Základný takt (CPUID)
 Maximum (CPUID)	Maximum (CPUID)
 Výrobce desky	Výrobca dosky
 Model desky	Model dosky
@@ -34,7 +34,7 @@ Verze BIOS	Verzia BIOS
 Datum BIOS	Dátum BIOS
 Výrobce systému	Výrobca systému
 Model systému	Model systému
-Režim firmware	Režim firmvéru
+Režim firmwaru	Režim firmvéru
 Neznámý	Neznámy
 Nehlášeno	Nehlásené
 Nepodporováno	Nepodporované
@@ -45,7 +45,7 @@ Virtuální počítač	Virtuálny počítač
 Typ paměti	Typ pamäte
 Rychlost RAM	Rýchlosť RAM
 Použité sloty	Použité sloty
-Provedení	Prevedenie
+Provedení	Vyhotovenie
 Ovladač UPS není dostupný	Ovládač UPS nie je dostupný
 Výrobce	Výrobca
 Napájení	Napájanie
@@ -77,18 +77,18 @@ Chyby média	Chyby média
 Chybí oprávnění	Chýba oprávnenie
 Disk předpovídá selhání	Disk predpovedá zlyhanie
 Nepodporováno ovladačem	Nepodporované ovládačom
-Nečistá vypnutí	Nečisté vypnutia
-Obnova SMART / teploty	Obnova SMART / teploty
+Nekorektní vypnutí	Nečisté vypnutia
+Aktualizace SMART / teploty	Obnova SMART / teploty
 Parametry disku	Parametre disku
 Provozní hodiny	Prevádzkové hodiny
-Přečteno celkem	Prečítané celkom
+Přečteno celkem	Prečítané spolu
 Rezervní kapacita	Rezervná kapacita
 Sektor logický / fyzický	Sektor logický / fyzický
 Selhání není hlášeno	Zlyhanie nie je hlásené
 Virtuální	Virtuálny
 Využitá životnost	Využitá životnosť
-Zapnutí	Zapnutia
-Zapsáno celkem	Zapísané celkom
+Počet zapnutí	Zapnutia
+Zapsáno celkem	Zapísané spolu
 Zdroj stavu	Zdroj stavu
 Přehled	Prehľad
 Otevřít umístění	Otvoriť umiestnenie
@@ -100,7 +100,7 @@ Přehled procesu	Prehľad procesu
 Pracovní sada	Pracovná množina
 Disk	Disk
 Vlákna	Vlákna
-Handly	Popisovače
+Popisovače	Popisovače
 verze {0}	verzia {0}
 Popis souboru není dostupný.	Popis súboru nie je dostupný.
 Nedostupné	Nedostupné
@@ -135,14 +135,14 @@ Výsledek není potvrzený. Správce služeb mohl část požadavků přijmout.	
 Změna nebyla odeslána.	Zmena nebola odoslaná.
 Zavřít	Zavrieť
 Plán zahrnuje {0}. Zkontrolujte všechny položky. Potvrzení má limit 60 sekund.	Plán zahŕňa {0}. Skontrolujte všetky položky. Potvrdenie má limit 60 sekúnd.
-Správce služeb Windows může při spuštění nebo restartu automaticky spustit předpoklady uvedené v konfiguraci služby.	Správca služieb Windows môže pri spustení alebo reštarte automaticky spustiť predpoklady uvedené v konfigurácii služby.
+Správce služeb Windows může při spuštění nebo restartu automaticky spustit služby, na kterých tato služba závisí.	Správca služieb Windows môže pri spustení alebo reštarte automaticky spustiť predpoklady uvedené v konfigurácii služby.
 Stav: {0} → {1}	Stav: {0} → {1}
  · zastavení #{0}	 · zastavenie #{0}
  · spuštění #{0}	 · spustenie #{0}
-Účet: {0}	Účet: {0}
+Účet: {0}	Konto: {0}
 neuveden	neuvedený
 Příkaz: {0}	Príkaz: {0}
-Konfigurované předpoklady: {0}	Konfigurované predpoklady: {0}
+Služby potřebné ke spuštění: {0}	Konfigurované predpoklady: {0}
 žádné	žiadne
 Současně se zastaví tyto závislé služby: {0}	Súčasne sa zastavia tieto závislé služby: {0}
 Souhlasím se zastavením všech těchto závislých služeb	Súhlasím so zastavením všetkých týchto závislých služieb
@@ -195,7 +195,7 @@ Před další operací načtěte aktuální přehled.	Pred ďalšou operáciou n
 Úklid dokončen.	Upratovanie dokončené.
 Úklid skončil s omezením.	Upratovanie skončilo s obmedzením.
 Odstraněno: {0}	Odstránené: {0}
-Počet odstraněných souborů a uvolněná velikost nejsou potvrzené.	Počet odstránených súborov a uvoľnená veľkosť nie sú potvrdené.
+Počet odstraněných souborů a uvolněné místo nejsou potvrzené.	Počet odstránených súborov a uvoľnená veľkosť nie sú potvrdené.
 Přeskočeno	Preskočené
 Chyby	Chyby
 Neověřeno	Neoverené
@@ -229,7 +229,7 @@ Neznámá data se neodstraňují.	Neznáme údaje sa neodstraňujú.
 Chybí důkaz pro bezpečné odstranění.	Chýba dôkaz na bezpečné odstránenie.
 Pracovní složka je používaná nebo není prázdná.	Pracovný priečinok sa používa alebo nie je prázdny.
 Položka se od náhledu změnila.	Položka sa od náhľadu zmenila.
-Přístup k položce byl odmítnutý.	Prístup k položke bol odmietnutý.
+Přístup k položce byl odepřen.	Prístup k položke bol odmietnutý.
 Položku nelze zpracovat kvůli chybě souboru.	Položku nemožno spracovať pre chybu súboru.
 Položku potřebuje jiný zachovaný záznam.	Položku potrebuje iný zachovaný záznam.
 Úklid byl zrušený.	Upratovanie bolo zrušené.
@@ -300,7 +300,7 @@ Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další
 Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené.	Hodnoty procesu a overených potomkov; chýbajúce údaje sú označené.
 Vlastní hodnota procesu bez potomků.	Vlastná hodnota procesu bez potomkov.
 Sdílené stránky RAM se mohou započítat opakovaně.	Zdieľané stránky RAM sa môžu započítať opakovane.
-Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.	Odoslané a prijaté bajty TCP/UDP len počas vlastného záznamu ETW v okne Udalosti procesov, ktorý vyžaduje správcu; inak nedostupné. Hodnota je za uzavretú sekundu asi 5 s späť; ≥ znamená, že časť prevádzky nebolo možné priradiť.
+Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje práva správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Odoslané a prijaté bajty TCP/UDP len počas vlastného záznamu ETW v okne Udalosti procesov, ktorý vyžaduje správcu; inak nedostupné. Hodnota je za uzavretú sekundu asi 5 s späť; ≥ znamená, že časť prevádzky nebolo možné priradiť.
 Řazeno podle skrytého sloupce {0} sestupně	Zoradené podľa skrytého stĺpca {0} zostupne
 Řazeno podle skrytého sloupce {0} vzestupně	Zoradené podľa skrytého stĺpca {0} vzostupne
  · ukončeno	 · ukončené
@@ -318,7 +318,7 @@ Procesy podle CPU	Procesy podľa CPU
 Inventář aplikací není dostupný: {0}	Inventár aplikácií nie je dostupný: {0}
 Broker nebyl spuštěn: {0}	Broker nebol spustený: {0}
 Chybí ověřený kořen souboru.	Chýba overený koreň súboru.
-Identitu drženého kořenového adresáře nelze ověřit.	Identitu drženého koreňového adresára nemožno overiť.
+Identitu drženého kořenového adresáře nelze ověřit.	Identitu držaného koreňového priečinka nemožno overiť.
 Neplatný rozsah v podepsaném souboru.	Neplatný rozsah v podpísanom súbore.
 Podepsaný soubor není úplný.	Podpísaný súbor nie je úplný.
 Podepsaný soubor překračuje velikostní limit.	Podpísaný súbor prekračuje veľkostný limit.
@@ -337,7 +337,7 @@ Neplatný podepisující certifikát.	Neplatný podpisujúci certifikát.
 Vydavatel souboru neodpovídá připnutému veřejnému klíči.	Vydavateľ súboru nezodpovedá pripnutému verejnému kľúču.
 Správce služeb: {0}, Windows {1}.	Správca služieb: {0}, Windows {1}.
 potvrzeno	potvrdené
-odepřený přístup	odopretý prístup
+odepřený přístup	odmietnutý prístup
 nepodporovaný stav	nepodporovaný stav
 plán se změnil	plán sa zmenil
 vypršel čas	vypršal čas
@@ -408,7 +408,7 @@ Výsledek není známý. Akce se mohla provést.	Výsledok nie je známy. Akcia 
 Pracovník neposlal úplný výsledek.	Pracovník neposlal úplný výsledok.
 Pracovník požadavek nepřijal, zásah nebyl proveden.	Pracovník požiadavku neprijal, zásah nebol vykonaný.
 Výsledky známých cílů. Průchod není atomický a nedokazuje, že nezůstal žádný souběžně vzniklý potomek.	Výsledky známych cieľov. Prechod nie je atomický a nedokazuje, že nezostal žiadny súbežne vzniknutý potomok.
-Doložených cílů: {0} · průchodů: {1} · možných reziduí v posledním inventáři: {2}	Doložených cieľov: {0} · prechodov: {1} · možných zvyškov v poslednom inventári: {2}
+Doložených cílů: {0} · průchodů: {1} · možných zbylých procesů v posledním inventáři: {2}	Doložených cieľov: {0} · prechodov: {1} · možných zvyškov v poslednom inventári: {2}
 limit 256 cílů	limit 256 cieľov
 časový limit	časový limit
 limit tří průchodů	limit troch prechodov
@@ -434,12 +434,12 @@ Původní proces nelze spolehlivě ověřit. Soubor zůstane zachovaný.	Pôvodn
 Původní aplikace nebo pracovník stále běží. Soubor se nebude měnit.	Pôvodná aplikácia alebo pracovník stále beží. Súbor sa nebude meniť.
 Fronta ukládání a obnovy dumpů je obsazená.	Front ukladania a obnovy výpisov je obsadený.
 Záznam obnovy nelze bezpečně zapsat nebo odstranit. Existující záznam zůstane zachovaný.	Záznam obnovy nemožno bezpečne zapísať ani odstrániť. Existujúci záznam zostane zachovaný.
-Fronta podrobností procesu je obsazená. Zrušte předchozí dotaz nebo chvíli počkejte.	Front podrobností procesu je obsadený. Zrušte predchádzajúci dotaz alebo chvíľu počkajte.
-Vypršel limit dotazu.	Vypršal limit dotazu.
-Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz lze zopakovat.	Dotaz na podrobnosti prekročil limit 5 sekúnd. Pracovník sa ukončuje; dotaz možno zopakovať.
+Fronta podrobností procesu je obsazená. Zrušte předchozí dotaz nebo chvíli počkejte.	Front podrobností procesu je obsadený. Zrušte predchádzajúci dopyt alebo chvíľu počkajte.
+Vypršel limit dotazu.	Vypršal limit dopytu.
+Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz lze zopakovat.	Dopyt na podrobnosti prekročil limit 5 sekúnd. Pracovník sa ukončuje; dopyt možno zopakovať.
 Pracovník předčasně skončil.	Pracovník predčasne skončil.
 Chyba spojení s pracovníkem.	Chyba spojenia s pracovníkom.
-Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek.	Iný dotaz alebo akcia ešte prebieha. Počkajte na výsledok.
+Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek.	Iný dopyt alebo akcia ešte prebieha. Počkajte na výsledok.
 Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.	Vypršal limit. Výsledok rozpracovaného ukončovania stromu nie je známy.
 Čekání na zvýšení práv nebo výsledek skončilo. Výsledek případné akce není známý.	Čakanie na zvýšenie práv alebo výsledok skončilo. Výsledok prípadnej akcie nie je známy.
 Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.	Pracovník neodpovedal do 5 sekúnd. Výsledok rozpracovanej akcie nie je známy.
@@ -448,5 +448,5 @@ Chybí úplný ověřený výsledek stromu. Akce se mohly provést. {0}	Chýba �
 Předání aktualizace se nesmí opakovat.	Odovzdanie aktualizácie sa nesmie opakovať.
 Platnost potvrzení aktualizace vypršela.	Platnosť potvrdenia aktualizácie vypršala.
 Předání instalace nebylo potvrzené.	Odovzdanie inštalácie nebolo potvrdené.
-Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte v příštím spuštění.	Pracovník prevzal plán. Inštalácia začne až po skutočnom ukončení tohto procesu; dokončenie overte pri ďalšom spustení.
+Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte při příštím spuštění.	Pracovník prevzal plán. Inštalácia začne až po skutočnom ukončení tohto procesu; dokončenie overte pri ďalšom spustení.
 Potvrzení pracovníka nedorazilo. Plán mohl být předán; neopakujte požadavek a zkontrolujte deník. {0}	Potvrdenie pracovníka neprišlo. Plán mohol byť odovzdaný; neopakujte požiadavku a skontrolujte denník. {0}

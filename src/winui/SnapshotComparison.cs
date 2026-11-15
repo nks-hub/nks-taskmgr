@@ -75,7 +75,7 @@ internal static class SnapshotComparison
             var bootState = State(root, "bootIdentityState");
             var bootValue = Property(root, "bootIdentifier");
             BootIdentifier? boot = bootState == SampleState.Valid ? Boot(bootValue) : null;
-            if (bootState != SampleState.Valid && bootValue.ValueKind != JsonValueKind.Null) throw Invalid(Loc.T("Neplatný stav boot identity."));
+            if (bootState != SampleState.Valid && bootValue.ValueKind != JsonValueKind.Null) throw Invalid(Loc.T("Neplatný stav identity spuštění systému."));
             var captured = Property(root, "capturedAtUtc");
             if (captured.ValueKind != JsonValueKind.String || !captured.TryGetDateTimeOffset(out var capturedAt)
                 || capturedAt.Offset != TimeSpan.Zero) throw Invalid(Loc.T("Neplatný čas snímku."));
@@ -352,6 +352,6 @@ internal static class SnapshotComparison
     private static T EnumValue<T>(JsonElement value) where T : struct, Enum { string text = Text(value); return Enum.TryParse<T>(text, out var result) && Enum.IsDefined(result) && result.ToString() == text ? result : throw Invalid(Loc.T("Neznámý stav nebo druh.")); }
     private static ulong UnsignedText(JsonElement value) { string text = Text(value); return ulong.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out ulong result) ? result : throw Invalid(Loc.T("Neplatná generace procesu.")); }
     private static long Time(JsonElement value, string name, bool signed = false) { string text = Text(value, name); return long.TryParse(text, signed ? NumberStyles.AllowLeadingSign : NumberStyles.None, CultureInfo.InvariantCulture, out long result) && (signed || result >= 0) ? result : throw Invalid(Loc.F("Neplatný čas {0}.", name)); }
-    private static BootIdentifier Boot(JsonElement value) { string text = Text(value); return text.Length == 32 && ulong.TryParse(text.AsSpan(0, 16), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong high) && ulong.TryParse(text.AsSpan(16, 16), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong low) ? new(low, high) : throw Invalid(Loc.T("Neplatná boot identita.")); }
+    private static BootIdentifier Boot(JsonElement value) { string text = Text(value); return text.Length == 32 && ulong.TryParse(text.AsSpan(0, 16), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong high) && ulong.TryParse(text.AsSpan(16, 16), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong low) ? new(low, high) : throw Invalid(Loc.T("Neplatná identita spuštění systému.")); }
     private static InvalidDataException Invalid(string message) => new(message);
 }

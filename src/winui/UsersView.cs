@@ -67,8 +67,8 @@ public sealed partial class MainWindow
             Loc.T("Přihlášený uživatel a počet jeho procesů. Šipka nebo dvojklik rozbalí procesy."), Loc.T("Stav relace Windows."),
             Loc.T("Součet CPU procesů. ≥ označuje známou část, když některý proces nemá aktuální vzorek."),
             Loc.T("Součet pracovních sad procesů. Přesné hodnoty v MB jsou v popisku buňky."),
-            Loc.T("Součet čtení a zápisu všech I/O procesů (soubory, zařízení, síťové soubory)."),
-            Loc.T("Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW se správcem.")];
+            Loc.T("Součet čtení a zápisu veškerého I/O procesů (soubory, zařízení, síťové soubory)."),
+            Loc.T("Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW s právy správce.")];
         usersHeader = GroupHeader(Loc.T("Uživatel"), tips, userHeaders, column => {
             userSortDescending = userSortColumn == column ? !userSortDescending : column >= 2; userSortColumn = column; RefreshUsers();
         });
@@ -140,7 +140,7 @@ public sealed partial class MainWindow
     };
 
     internal static string MemoryTip(string label, ulong working, ulong privateBytes)
-        => Loc.F("{0}: {1} ({2})\nPrivátní paměť: {3} ({4})", label, Display.Number(working / 1_000_000d, " MB"), Display.Bytes(working),
+        => Loc.F("{0}: {1} ({2})\nSoukromá paměť: {3} ({4})", label, Display.Number(working / 1_000_000d, " MB"), Display.Bytes(working),
             Display.Number(privateBytes / 1_000_000d, " MB"), Display.Bytes(privateBytes));
 
     private void RefreshUsers()
@@ -218,7 +218,7 @@ public sealed partial class MainWindow
         bool expanded = expandedSessions.Contains(session.Id);
         bool showFull = fullAccountName.IsChecked;
         string name = session.User.Length > 0 ? UserSessionText.Name(session.User, session.Domain, showFull ? FullName(session) : "", showFull)
-            : session.InfoState == SampleState.AccessDenied ? Loc.T("Nedostupné bez správce")
+            : session.InfoState == SampleState.AccessDenied ? Loc.T("Nedostupné bez práv správce")
             : session.Id == 0 ? Loc.T("Služby systému") : session.Station.Length > 0 ? session.Station : Loc.T("Neznámý uživatel");
         string protocol = session.Protocol switch {
             SessionProtocol.Console => Loc.T("konzole"), SessionProtocol.Rdp => "RDP", SessionProtocol.Ica => "ICA",

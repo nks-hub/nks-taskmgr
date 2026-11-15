@@ -20,7 +20,7 @@ public sealed partial class MainWindow
             var kept = HardwareQaLine(panel, "QA zachovaný údaj");
             var reading = (TextBlock)changed.Children[1];
             var modelLine = HardwareQaLine(panel, "Model");
-            var status = HardwareQaLine(panel, Loc.T("Stav CPU čidel"));
+            var status = HardwareQaLine(panel, Loc.T("Stav čidel CPU"));
             cpuSensorDetails.IsExpanded = true;
 
             model.Hardware["cpu"] = new() { ["QA měněný údaj"] = "2", ["QA zachovaný údaj"] = "Stejné" };
@@ -44,7 +44,7 @@ public sealed partial class MainWindow
             var unchanged = panel.Children.ToArray();
             RefreshHardware();
             HardwareQaRequire(unchanged.SequenceEqual(panel.Children) && ReferenceEquals(modelLine, HardwareQaLine(panel, "Model"))
-                && ReferenceEquals(status, HardwareQaLine(panel, Loc.T("Stav CPU čidel"))), "Repeated hardware refresh replaced stable facts.");
+                && ReferenceEquals(status, HardwareQaLine(panel, Loc.T("Stav čidel CPU"))), "Repeated hardware refresh replaced stable facts.");
             HardwareQaRequire(cards.SequenceEqual(hardwareCards.Children) && ReferenceEquals(panel, hardwareSections["cpu"].Panel)
                 && ReferenceEquals(choice, cpuSensorChoice) && ReferenceEquals(details, cpuSensorDetails)
                 && ReferenceEquals(detailsPanel, cpuSensorDetailsRows.Panel) && cpuSensorDetails.IsExpanded,

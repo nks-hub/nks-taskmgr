@@ -15,7 +15,7 @@ internal sealed partial class CapabilityPanel : UserControl
         new("network", Loc.T("Síťové adaptéry"), Loc.T("Čtení provozu a rychlosti linky."), Loc.T("Zvýšení práv nenahradí chybějící čítač adaptéru."), Loc.T("Údaje poskytuje síťový ovladač Windows.")),
         new("disk", Loc.T("Diskové čítače"), Loc.T("Čtení dostupných systémových čítačů."), Loc.T("Rozsah závisí také na zařízení a jeho zásadách."), Loc.T("Používá se stávající úložný ovladač.")),
         new("gpu", Loc.T("Vytížení GPU"), Loc.T("Dostupné grafické čítače lze číst bez zvýšení práv."), Loc.T("Oprávnění sama nezajistí podporu virtuálního adaptéru."), Loc.T("Čítače musí poskytovat grafický ovladač.")),
-        new("gpu-temperature", Loc.T("Teplota GPU"), Loc.T("Čtení podporovaného senzoru grafického adaptéru."), Loc.T("Zamítnutý přístup a nepodporovaný senzor jsou různé stavy."), Loc.T("Senzor musí poskytovat grafický ovladač.")),
+        new("gpu-temperature", Loc.T("Teplota GPU"), Loc.T("Čtení podporovaného čidla grafického adaptéru."), Loc.T("Odepřený přístup a nepodporované čidlo jsou různé stavy."), Loc.T("Čidlo musí poskytovat grafický ovladač.")),
         new("hardware", Loc.T("CPU, RAM a základní deska"), Loc.T("Čtení údajů, které vystavuje Windows a firmware."), Loc.T("Chybějící údaj firmwaru může zůstat nedostupný."), Loc.T("Další ovladač se pro tyto údaje nepoužívá.")),
         new("ups", Loc.T("UPS"), Loc.T("Čtení údajů standardního systémového rozhraní."), Loc.T("Záleží na připojeném zařízení a jeho rozhraní."), Loc.T("Používá se stávající ovladač zařízení.")),
         new("services", Loc.T("Stavy a konfigurace služeb"), Loc.T("Čtení služeb dostupných aktuálnímu účtu."), Loc.T("Záleží na oprávněních nastavených u konkrétní služby."), Loc.T("Používá se správce služeb Windows, bez dalšího ovladače.")),
@@ -27,10 +27,10 @@ internal sealed partial class CapabilityPanel : UserControl
         new("Signature", Loc.T("Podpis souboru modulu"), Loc.T("Ověření čitelného vybraného souboru na disku."), Loc.T("Oprávnění mohou pomoci s přístupem k souboru."), Loc.T("Používá se místní ověření podpisu a katalogů.")),
         new("Owners", Loc.T("Procesy pro hledání objektů"), Loc.T("Výpis vlastníků s ověřitelnou životností."), Loc.T("Nedostupní vlastníci se hlásí jako omezení výpisu."), Loc.T("Další ovladač se nepoužívá.")),
         new("Events", Loc.T("Události procesů ETW"), Loc.T("Spuštění vlastní relace se vyžádá až v okně událostí; Windows může přístup odmítnout."), Loc.T("Dostupnost určuje oprávnění k systémové relaci. Aplikace práva automaticky nezvyšuje."), Loc.T("Používá se systémový zdroj událostí; žádný další ovladač se neinstaluje.")),
-        new("Actions", Loc.T("Akce nad živým procesem"), Loc.T("Každý cíl se ověřuje na stejném handlu. Běžný pomocník pracuje jen s procesy stejného účtu a relace."), Loc.T("Podepsaná varianta vyžaduje výslovné zvýšení a potvrzení správce. Odmítá systémovou či cizí relaci, kritické a chráněné cíle; bez důvěryhodného podpisu se nespustí."), Loc.T("Používají se dostupná uživatelská rozhraní Windows, bez dalšího ovladače.")),
+        new("Actions", Loc.T("Akce s živým procesem"), Loc.T("Každý cíl se ověřuje na stejném handlu. Běžný pomocník pracuje jen s procesy stejného účtu a relace."), Loc.T("Podepsaná varianta vyžaduje výslovné zvýšení a potvrzení správce. Odmítá systémovou či cizí relaci, kritické a chráněné cíle; bez důvěryhodného podpisu se nespustí."), Loc.T("Používají se dostupná uživatelská rozhraní Windows, bez dalšího ovladače.")),
         new("Dumps", Loc.T("Dumpy procesů"), Loc.T("Čtení paměti vybraného procesu x64 nebo WOW64 až po potvrzení. Soubor může obsahovat citlivé údaje."), Loc.T("Přístup se posuzuje pro konkrétní cíl; tato cesta práva nemění."), Loc.T("Používá se systémové rozhraní Windows bez dalšího ovladače.")),
         new("ServiceActions", Loc.T("Ovládání služeb"), Loc.T("Právo určuje konkrétní služba. Závislé služby se zastaví jen podle výslovně schváleného plánu."), Loc.T("Více práv nezaručuje možnost ovládat chráněnou systémovou službu."), Loc.T("Používá se správce služeb Windows bez dalšího ovladače.")),
-        new("cpu-temperature", Loc.T("Teplota CPU"), Loc.T("Volitelné čtení již běžícího místního HTTP API kompatibilního s LibreHardwareMonitor (127.0.0.1:8085). Výchozí stav je vypnutý."), Loc.T("Zvýšení práv samo nepřidá zdroj měření; aplikace je nevyžaduje."), Loc.T("Aplikace ovladač ani poskytovatele neinstaluje a nespouští. Čte publikované CPU vzorky s časem; identita poskytovatele není ověřena."))
+        new("cpu-temperature", Loc.T("Teplota CPU"), Loc.T("Volitelné čtení již běžícího místního HTTP API kompatibilního s LibreHardwareMonitor (127.0.0.1:8085). Výchozí stav je vypnutý."), Loc.T("Zvýšení práv samo nepřidá zdroj měření; aplikace je nevyžaduje."), Loc.T("Aplikace ovladač ani poskytovatele neinstaluje a nespouští. Čte publikované vzorky CPU s časem; identita poskytovatele není ověřena."))
     ];
     private readonly Dictionary<string, TextBlock> statuses = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Button> commands = new(StringComparer.Ordinal);
@@ -109,7 +109,7 @@ internal sealed partial class CapabilityPanel : UserControl
     }
 
     private static string State(SampleState state) => state switch {
-        SampleState.Valid => Loc.T("platný údaj"), SampleState.First => Loc.T("první vzorek"), SampleState.AccessDenied => Loc.T("přístup zamítnut"),
+        SampleState.Valid => Loc.T("platný údaj"), SampleState.First => Loc.T("první vzorek"), SampleState.AccessDenied => Loc.T("přístup odepřen"),
         SampleState.Unsupported => Loc.T("nepodporováno"), SampleState.Stale => Loc.T("zastaralé"), SampleState.Error => Loc.T("chyba"),
         SampleState.Gap => Loc.T("mezera"), _ => Loc.T("nedostupné")
     };

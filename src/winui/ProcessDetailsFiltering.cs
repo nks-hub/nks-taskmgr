@@ -7,7 +7,7 @@ namespace NksTaskMgr.WinUI;
 
 internal sealed partial class ProcessDetailsView
 {
-    private readonly Button memory = Command(Loc.T("Paměť")), handles = Command(Loc.T("Handly")), observeObject = Command(Loc.T("Zjistit typ a název objektu"));
+    private readonly Button memory = Command(Loc.T("Paměť")), handles = Command(Loc.T("Popisovače")), observeObject = Command(Loc.T("Zjistit typ a název objektu"));
     private readonly TextBox find = new() { Height = 34, MinHeight = 0, FontFamily = UiTypography.Font, FontSize = 12 };
     private readonly ComboBox stateFilter = new() { Width = 170, MinHeight = 32 };
     private DispatcherQueueTimer searchTimer = null!;
@@ -23,7 +23,7 @@ internal sealed partial class ProcessDetailsView
     };
     private static string ModeName(ProcessDetailsCommand value) => value switch {
         ProcessDetailsCommand.Threads => Loc.T("vlákna"), ProcessDetailsCommand.Modules => Loc.T("moduly"),
-        ProcessDetailsCommand.Memory => Loc.T("oblasti paměti"), ProcessDetailsCommand.Handles => Loc.T("handly"), _ => Loc.T("podrobnosti")
+        ProcessDetailsCommand.Memory => Loc.T("oblasti paměti"), ProcessDetailsCommand.Handles => Loc.T("popisovače"), _ => Loc.T("podrobnosti")
     };
 
     private void ConfigureObjects(StackPanel modes)
@@ -33,7 +33,7 @@ internal sealed partial class ProcessDetailsView
         handles.Click += async (_, _) => await SelectModeAsync(ProcessDetailsCommand.Handles);
         observeObject.Click += async (_, _) => { if (SelectedHandle is { } handle) await ReadAsync(ProcessDetailsCommand.HandleInfo, handle: handle); };
         Identify(memory, "process-details-memory", Loc.T("Mapa virtuální paměti procesu"));
-        Identify(handles, "process-details-handles", Loc.T("Handly procesu"));
+        Identify(handles, "process-details-handles", Loc.T("Popisovače procesu"));
         Identify(observeObject, "process-details-object-name", Loc.T("Zjistit aktuální typ a název duplikovaného objektu"));
         inspector.Children.Add(observeObject);
         ConfigureHandleClose();

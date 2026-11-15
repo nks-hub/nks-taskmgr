@@ -33,7 +33,7 @@ public sealed partial class MainWindow
         AutomationProperties.SetAutomationId(list, "process-cpu-sets");
         content.Children.Add(list);
         var selection = ActionText(""); content.Children.Add(selection);
-        content.Children.Add(ActionText(Loc.T("Zrušení výběru obnoví plánování bez výchozího omezení CPU sets. Samostatná nastavení vláken ani pevná afinita se tím nemění. Při změně topologie nebo původního výběru se požadavek odmítne a je nutný nový náhled.")));
+        content.Children.Add(ActionText(Loc.T("Zrušení výběru obnoví plánování bez výchozího omezení CPU sets. Samostatná nastavení vláken ani pevné spřažení se tím nemění. Při změně topologie nebo původního výběru se požadavek odmítne a je nutný nový náhled.")));
         var dialog = ActionDialog(Loc.T("Výchozí CPU sets"), content);
         dialog.PrimaryButtonText = Loc.T("Nastavit výchozí výběr"); dialog.CloseButtonText = Loc.T("Zrušit");
         dialog.DefaultButton = ContentDialogButton.Close;
@@ -79,6 +79,6 @@ public sealed partial class MainWindow
                 content.Children.Add(ActionText(Loc.F("Skupina {0}: {1}", group.Key,
                     string.Join(", ", group.OrderBy(cpu => cpu.LogicalProcessor).Select(cpu => "CPU " + cpu.LogicalProcessor + " (ID " + cpu.Id + ")")))));
         }
-        content.Children.Add(ActionText(Loc.T("Jde o načtené výchozí přiřazení. Explicitní volby vláken a pevná afinita mohou jeho použití omezit.")));
+        content.Children.Add(ActionText(Loc.T("Jde o načtené výchozí přiřazení. Výslovné volby vláken a pevné spřažení mohou jeho použití omezit.")));
     }
 }

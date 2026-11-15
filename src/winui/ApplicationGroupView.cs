@@ -364,8 +364,8 @@ public sealed partial class MainWindow
         if (first.AppIdState == SampleState.Valid) text.Append("\nAUMID: ").Append(first.AppId);
         if (first.PackageState == SampleState.Valid) text.Append(Loc.T(" · balíček: ")).Append(first.Package);
         var hosts = group.Windows.Where(window => window.Host.HasValue).Select(window => window.Host!.Value.Pid).Distinct().ToArray();
-        if (hosts.Length > 0) text.Append(Loc.F("\nHostitel pozorovaný v inventáři: PID {0}; sdílený host se nezapočítává více aplikacím.", string.Join(", ", hosts)));
-        text.Append(Loc.T("\nCPU je součet dostupných validních hodnot.\n\n")).Append(ApplicationInventoryDetail());
+        if (hosts.Length > 0) text.Append(Loc.F("\nHostitel pozorovaný v inventáři: PID {0}; sdílený hostitel se nezapočítává více aplikacím.", string.Join(", ", hosts)));
+        text.Append(Loc.T("\nCPU je součet dostupných platných hodnot.\n\n")).Append(ApplicationInventoryDetail());
         return text.ToString();
     }
 

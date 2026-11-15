@@ -127,7 +127,7 @@ void Desktop::paintPerformance(float width, float height)
         const auto& memory = processes->memory;
         const bool pagingValid = memory.pageFileState == SampleState::valid && !processStale;
         const auto paging = pagingValid ? memory.pageFileBytes ? decimal(memory.pageFileUsedBytes / 1073741824., L" / ") + decimal(memory.pageFileBytes / 1073741824., L" GiB") : L"Vypnuto" : L"Měření nedostupné";
-        text(L"Stránkovací soubor (swap)", rect(x + 22, plot.bottom + 34, 250, 18), 10, muted);
+        text(L"Stránkovací soubor", rect(x + 22, plot.bottom + 34, 250, 18), 10, muted);
         text(paging, rect(x + w - 180, plot.bottom + 34, 158, 18), 10, color);
         graph(history.find(L"pagefile"), rect(x + 22, plot.bottom + 57, w - 44, 47), resourceColor(ResourceKind::network),
             std::max(1., static_cast<double>(memory.pageFileBytes)), true);
@@ -158,7 +158,7 @@ void Desktop::paintPerformance(float width, float height)
     } else if (item->kind == ResourceKind::memory && processes) {
         const auto& memory = processes->memory;
         facts = {{L"Dostupné systému", decimal(memory.physicalBytes / 1073741824., L" GiB")}, {L"Stránkovací soubor", memory.pageFileState == SampleState::valid ? decimal(memory.pageFileBytes / 1073741824., L" GiB") : L"Nezměřeno"},
-            {L"Maximum swapu", memory.pageFileState == SampleState::valid ? decimal(memory.pageFilePeakBytes / 1073741824., L" GiB") : L"Nezměřeno"}};
+            {L"Maximum stránkovacího souboru", memory.pageFileState == SampleState::valid ? decimal(memory.pageFilePeakBytes / 1073741824., L" GiB") : L"Nezměřeno"}};
         if (item->primary.valid()) stats = {{L"Dostupná", measured(item->secondary, 1073741824., L" GiB")}, {L"Potvrzeno", decimal(memory.committedBytes / 1073741824., L" GiB")},
             {L"Stránkovaný fond", decimal(memory.pagedPoolBytes / 1073741824., L" GiB")}, {L"Nestránkovaný fond", decimal(memory.nonpagedPoolBytes / 1073741824., L" GiB")},
             {L"Swap využitý", memory.pageFileState == SampleState::valid ? decimal(memory.pageFileUsedBytes / 1073741824., L" GiB") : L"Nezměřeno"}, {L"Limit potvrzení", decimal(memory.commitLimitBytes / 1073741824., L" GiB")}};

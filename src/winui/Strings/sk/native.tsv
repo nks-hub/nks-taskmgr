@@ -21,7 +21,7 @@ Poslední čtení API	Posledné čítanie API
 Platnost čtení	Platnosť čítania
 Význam měření	Význam merania
 Omezení	Obmedzenia
-Publikované CPU vzorky	Publikované vzorky CPU
+Publikované vzorky CPU	Publikované vzorky CPU
 Dosud neproběhlo	Zatiaľ neprebehlo
 Čeká na další čtení	Čaká na ďalšie čítanie
 Čtení probíhá	Čítanie prebieha
@@ -35,7 +35,7 @@ API neposkytlo teplotní čidlo typu CPU	API neposkytlo teplotný snímač typu 
 Místní HTTP API kompatibilní s LibreHardwareMonitor; identita poskytovatele neověřena	Miestne HTTP API kompatibilné s LibreHardwareMonitor; identita poskytovateľa neoverená
 Místní server odmítl čtecí API (HTTP)	Miestny server odmietol čítacie API (HTTP)
 Místní čtecí server není dostupný nebo neodpověděl včas	Miestny čítací server nie je dostupný alebo neodpovedal včas
-Neplatné nebo nepodporované senzorové údaje; vyžaduje se číselná teplota a čas vzorku	Neplatné alebo nepodporované údaje snímača; vyžaduje sa číselná teplota a čas vzorky
+Neplatné nebo nepodporované údaje z čidel; vyžaduje se číselná teplota a čas vzorku	Neplatné alebo nepodporované údaje snímača; vyžaduje sa číselná teplota a čas vzorky
 Pracovní vlákno nemohlo dokončit čtení	Pracovné vlákno nemohlo dokončiť čítanie
 Server neposkytuje podporovaný formát /metrics	Server neposkytuje podporovaný formát /metrics
 Teplotní čidla typu CPU; °C, poslední publikovaný vzorek, nikoli ACPI thermal zone	Teplotné snímače typu CPU; °C, posledná publikovaná vzorka, nie ACPI thermal zone

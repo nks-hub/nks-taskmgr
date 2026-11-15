@@ -14,7 +14,7 @@ internal sealed class ElevationBrokerClient : IDisposable
     internal async Task<ProcessActionsBatch> ExecuteAsync(ProcessActionsRequest request, CancellationToken cancellation)
     {
         if (Interlocked.CompareExchange(ref pending, 1, 0) != 0)
-            throw new IOException(Loc.T("Předchozí zvýšený požadavek ještě není uzavřený. Neopakujte jej."));
+            throw new IOException(Loc.T("Předchozí požadavek se zvýšenými právy ještě není dokončený. Neopakujte jej."));
         long started = Stopwatch.GetTimestamp(); bool uncertain = true;
         try {
             var result = await client.ExecuteAsync(request, cancellation).ConfigureAwait(false);

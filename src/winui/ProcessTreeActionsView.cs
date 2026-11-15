@@ -25,7 +25,7 @@ public sealed partial class MainWindow
             return;
         }
         content.Children.Add(ActionText(Loc.T("Výsledky známých cílů. Průchod není atomický a nedokazuje, že nezůstal žádný souběžně vzniklý potomek.")));
-        content.Children.Add(ActionText(Loc.F("Doložených cílů: {0} · průchodů: {1} · možných reziduí v posledním inventáři: {2}", plan.Nodes.Length, plan.Passes, plan.ResidualCount)));
+        content.Children.Add(ActionText(Loc.F("Doložených cílů: {0} · průchodů: {1} · možných zbylých procesů v posledním inventáři: {2}", plan.Nodes.Length, plan.Passes, plan.ResidualCount)));
         var limits = new List<string>();
         if (plan.Flags.HasFlag(ProcessTreeActionsFlags.TargetLimit)) limits.Add(Loc.T("limit 256 cílů"));
         if (plan.Flags.HasFlag(ProcessTreeActionsFlags.TimeLimit)) limits.Add(Loc.T("časový limit"));

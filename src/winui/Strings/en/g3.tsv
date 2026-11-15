@@ -24,7 +24,7 @@ Patice	Sockets
 Rodina / model / revize	Family / model / stepping
 Instrukce CPU (CPUID)	CPU instructions (CPUID)
 Virtualizace	Virtualization
-Základní takt (CPUID)	Base speed (CPUID)
+Základní rychlost (CPUID)	Base speed (CPUID)
 Maximum (CPUID)	Maximum (CPUID)
 Výrobce desky	Board manufacturer
 Model desky	Board model
@@ -34,7 +34,7 @@ Verze BIOS	BIOS version
 Datum BIOS	BIOS date
 Výrobce systému	System manufacturer
 Model systému	System model
-Režim firmware	Firmware mode
+Režim firmwaru	Firmware mode
 Neznámý	Unknown
 Nehlášeno	Not reported
 Nepodporováno	Not supported
@@ -74,11 +74,11 @@ Rozhraní	Interface
 Kapacita disku	Disk capacity
 Bez kritického upozornění	No critical warning
 Chyby média	Media errors
-Chybí oprávnění	Missing permission
+Chybí oprávnění	Access denied
 Disk předpovídá selhání	The disk predicts a failure
 Nepodporováno ovladačem	Not supported by the driver
-Nečistá vypnutí	Unsafe shutdowns
-Obnova SMART / teploty	SMART / temperature refresh
+Nekorektní vypnutí	Unsafe shutdowns
+Aktualizace SMART / teploty	SMART / temperature refresh
 Parametry disku	Disk parameters
 Provozní hodiny	Power-on hours
 Přečteno celkem	Total read
@@ -87,7 +87,7 @@ Sektor logický / fyzický	Sector logical / physical
 Selhání není hlášeno	No failure reported
 Virtuální	Virtual
 Využitá životnost	Percentage used
-Zapnutí	Power cycles
+Počet zapnutí	Power cycles
 Zapsáno celkem	Total written
 Zdroj stavu	Status source
 Přehled	Overview
@@ -100,7 +100,7 @@ Přehled procesu	Process overview
 Pracovní sada	Working set
 Disk	Disk
 Vlákna	Threads
-Handly	Handles
+Popisovače	Handles
 verze {0}	version {0}
 Popis souboru není dostupný.	File description is not available.
 Nedostupné	Unavailable
@@ -128,21 +128,21 @@ Výběr, stav nebo konfigurace služby se před schválením změnily. Vyberte z
 Načítám plán správce služeb Windows…	Loading the Windows Service Control Manager plan…
 Zrušit	Cancel
 Plán už neodpovídá výběru, stavu nebo konfiguraci služby. Po obnovení seznamu jej vytvořte znovu.	The plan no longer matches the service selection, state or configuration. Create it again after the list refreshes.
-Provádím schválený plán. Zrušení čekání nevrátí již přijaté požadavky správce služeb Windows.	Running the approved plan. Cancelling the wait does not undo requests the Windows Service Control Manager has already accepted.
+Provádím schválený plán. Zrušení čekání nevrátí již přijaté požadavky správce služeb Windows.	Running the approved plan. Canceling the wait does not undo requests the Windows Service Control Manager has already accepted.
 Čeká na výsledek…	Waiting for the result…
 Zrušit čekání	Stop waiting
 Výsledek není potvrzený. Správce služeb mohl část požadavků přijmout.	The result is not confirmed. The Service Control Manager may have accepted some of the requests.
 Změna nebyla odeslána.	The change was not sent.
 Zavřít	Close
 Plán zahrnuje {0}. Zkontrolujte všechny položky. Potvrzení má limit 60 sekund.	The plan includes {0}. Check all items. Confirmation is limited to 60 seconds.
-Správce služeb Windows může při spuštění nebo restartu automaticky spustit předpoklady uvedené v konfiguraci služby.	When starting or restarting, the Windows Service Control Manager may automatically start dependencies listed in the service configuration.
+Správce služeb Windows může při spuštění nebo restartu automaticky spustit služby, na kterých tato služba závisí.	When starting or restarting, the Windows Service Control Manager may automatically start dependencies listed in the service configuration.
 Stav: {0} → {1}	State: {0} → {1}
  · zastavení #{0}	 · stop #{0}
  · spuštění #{0}	 · start #{0}
 Účet: {0}	Account: {0}
 neuveden	not specified
 Příkaz: {0}	Command: {0}
-Konfigurované předpoklady: {0}	Configured dependencies: {0}
+Služby potřebné ke spuštění: {0}	Configured dependencies: {0}
 žádné	none
 Současně se zastaví tyto závislé služby: {0}	These dependent services will also stop: {0}
 Souhlasím se zastavením všech těchto závislých služeb	I agree to stop all of these dependent services
@@ -160,7 +160,7 @@ Služba už měla požadovaný stav.	The service was already in the requested st
 Požadovaný stav byl potvrzen.	The requested state was confirmed.
 Konfigurace nebo stav se změnily.	The configuration or state changed.
 Vypršel čas čekání; výsledek není potvrzený.	The wait timed out; the result is not confirmed.
-Operace byla zrušena.	The operation was cancelled.
+Operace byla zrušena.	The operation was canceled.
 Operace skončila chybou.	The operation failed.
 Poslední pozorovaný stav: {0} · checkpoint {1} · doporučené čekání {2} ms.	Last observed state: {0} · checkpoint {1} · suggested wait {2} ms.
 Stav není dostupný.	State is not available.
@@ -195,7 +195,7 @@ Před další operací načtěte aktuální přehled.	Load the current overview 
 Úklid dokončen.	Cleanup finished.
 Úklid skončil s omezením.	Cleanup finished with limitations.
 Odstraněno: {0}	Removed: {0}
-Počet odstraněných souborů a uvolněná velikost nejsou potvrzené.	The number of removed files and the freed size are not confirmed.
+Počet odstraněných souborů a uvolněné místo nejsou potvrzené.	The number of removed files and the freed size are not confirmed.
 Přeskočeno	Skipped
 Chyby	Errors
 Neověřeno	Not verified
@@ -229,10 +229,10 @@ Neznámá data se neodstraňují.	Unknown data is not removed.
 Chybí důkaz pro bezpečné odstranění.	Proof for safe removal is missing.
 Pracovní složka je používaná nebo není prázdná.	The working folder is in use or not empty.
 Položka se od náhledu změnila.	The item changed since the preview.
-Přístup k položce byl odmítnutý.	Access to the item was denied.
+Přístup k položce byl odepřen.	Access to the item was denied.
 Položku nelze zpracovat kvůli chybě souboru.	The item cannot be processed because of a file error.
 Položku potřebuje jiný zachovaný záznam.	Another kept record needs this item.
-Úklid byl zrušený.	Cleanup was cancelled.
+Úklid byl zrušený.	Cleanup was canceled.
 Starší záznam nemá všechny potřebné údaje.	An older record lacks some required data.
 Položka už není přítomná; nepočítá se jako odstraněná tímto úklidem.	The item is no longer present; it does not count as removed by this cleanup.
 Důvod nebyl rozpoznaný; položka se neodstraňuje.	The reason was not recognized; the item is not removed.
@@ -248,7 +248,7 @@ Cesty a ověřený stav vybraného záznamu obnovy	Paths and verified state of t
 Čtu omezený přehled…	Reading the limited overview…
 Žádné nedokončené transakce nejsou zaznamenané.	No unfinished transactions are recorded.
 Vyberte záznam. Neověřitelné soubory zůstanou zachované.	Select a record. Files that cannot be verified are kept.
-Čtení bylo zrušeno.	Reading was cancelled.
+Čtení bylo zrušeno.	Reading was canceled.
 Cílový soubor: {0}	Target file: {0}
 Dočasný soubor: {0}	Temporary file: {0}
 Zahájeno: {0}	Started: {0}
@@ -275,7 +275,7 @@ Pokračovat	Continue
 Ponechat	Keep
 Ověřuji soubor a původní procesy…	Verifying the file and the original processes…
 Přehled se nepodařilo znovu načíst: {0}	The overview could not be reloaded: {0}
-Čekání bylo zrušeno. Výsledek není potvrzený; obnovte přehled.	Waiting was cancelled. The result is not confirmed; refresh the overview.
+Čekání bylo zrušeno. Výsledek není potvrzený; obnovte přehled.	Waiting was canceled. The result is not confirmed; refresh the overview.
 GPU engine {0}	GPU engine {0}
 Engine není dostupný	Engine is not available
 Zastaralé	Stale
@@ -300,7 +300,7 @@ Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další
 Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené.	Values of the process and its verified descendants; missing data is marked.
 Vlastní hodnota procesu bez potomků.	The process's own value without descendants.
 Sdílené stránky RAM se mohou započítat opakovaně.	Shared RAM pages may be counted more than once.
-Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.	Sent and received TCP/UDP bytes, only during the app's own ETW recording in the Process events window, which requires an administrator; otherwise unavailable. The value covers a closed second about 5 s ago; ≥ means some traffic could not be attributed.
+Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje práva správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Sent and received TCP/UDP bytes, only during the app's own ETW capture in the Process events window, which requires an administrator; otherwise unavailable. The value covers a closed second about 5 s ago; ≥ means some traffic could not be attributed.
 Řazeno podle skrytého sloupce {0} sestupně	Sorted by hidden column {0}, descending
 Řazeno podle skrytého sloupce {0} vzestupně	Sorted by hidden column {0}, ascending
  · ukončeno	 · ended
@@ -343,7 +343,7 @@ plán se změnil	plan changed
 vypršel čas	timed out
 neplatný požadavek	invalid request
 překročený limit	limit exceeded
-zrušeno	cancelled
+zrušeno	canceled
 částečný výsledek	partial result
 chyba	error
 Vyberte jednu službu.	Select one service.
@@ -366,7 +366,7 @@ Data za koncem rámce služeb.	Data past the end of the services frame.
 Architektura cíle není pro dump x86/x64 podporovaná.	The target architecture is not supported for an x86/x64 dump.
 Pracovník vrátil data za výsledkem dumpu.	The worker returned data after the dump result.
 Pracovník dumpu skončil bez ověřeného výsledku.	The dump worker exited without a verified result.
-Čekání na dump bylo zrušeno.	Waiting for the dump was cancelled.
+Čekání na dump bylo zrušeno.	Waiting for the dump was canceled.
 Pracovník dumpu skončil před dokončením odpovědi.	The dump worker exited before completing its response.
 Dump nebo bezpečné uložení souboru není dostupné (Windows {0}): {1}	The dump or safe file saving is not available (Windows {0}): {1}
 Identitu vybraného procesu nelze ověřit.	The identity of the selected process cannot be verified.
@@ -408,17 +408,17 @@ Výsledek není známý. Akce se mohla provést.	The result is unknown. The acti
 Pracovník neposlal úplný výsledek.	The worker did not send a complete result.
 Pracovník požadavek nepřijal, zásah nebyl proveden.	The worker did not accept the request; nothing was done.
 Výsledky známých cílů. Průchod není atomický a nedokazuje, že nezůstal žádný souběžně vzniklý potomek.	Results for known targets. The pass is not atomic and does not prove that no concurrently created descendant remains.
-Doložených cílů: {0} · průchodů: {1} · možných reziduí v posledním inventáři: {2}	Confirmed targets: {0} · passes: {1} · possible leftovers in the last inventory: {2}
-limit 256 cílů	256 target limit
+Doložených cílů: {0} · průchodů: {1} · možných zbylých procesů v posledním inventáři: {2}	Confirmed targets: {0} · passes: {1} · possible leftovers in the last inventory: {2}
+limit 256 cílů	256-target limit
 časový limit	time limit
-limit tří průchodů	three pass limit
+limit tří průchodů	three-pass limit
 nedostupný inventář	inventory unavailable
 zaniklá nebo neověřitelná vazba rodiče	parent link gone or unverifiable
 další neověřená pozorování potomků	further unverified descendant observations
 Částečný výsledek: {0}.	Partial result: {0}.
 Pracovník plánu není dostupný.	The plan worker is not available.
 Opakované přijetí akce služeb.	The service action was accepted twice.
-Pracovník nepotvrdil plán před průběhem.	The worker did not confirm the plan before progress.
+Pracovník nepotvrdil plán před průběhem.	The worker did not confirm the plan before reporting progress.
 Neplatné pořadí odpovědí služeb.	Invalid order of services responses.
 Data za koncem akce služeb.	Data past the end of the service action.
 Pracovník nepotvrdil dokončení odpovědi.	The worker did not confirm completing its response.
@@ -436,17 +436,17 @@ Fronta ukládání a obnovy dumpů je obsazená.	The dump save and recovery queu
 Záznam obnovy nelze bezpečně zapsat nebo odstranit. Existující záznam zůstane zachovaný.	The recovery record cannot be safely written or deleted. The existing record is kept.
 Fronta podrobností procesu je obsazená. Zrušte předchozí dotaz nebo chvíli počkejte.	The process details queue is busy. Cancel the previous query or wait a moment.
 Vypršel limit dotazu.	The query timed out.
-Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz lze zopakovat.	The details query exceeded the 5 second limit. The worker is being stopped; the query can be repeated.
+Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz lze zopakovat.	The details query exceeded the 5-second limit. The worker is being stopped; the query can be repeated.
 Pracovník předčasně skončil.	The worker exited early.
 Chyba spojení s pracovníkem.	Connection error with the worker.
 Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek.	Another query or action is still running. Wait for the result.
 Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.	Time limit reached. The result of the ongoing tree termination is unknown.
 Čekání na zvýšení práv nebo výsledek skončilo. Výsledek případné akce není známý.	Waiting for elevation or the result ended. The result of any action is unknown.
 Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.	The worker did not respond within 5 seconds. The result of the ongoing action is unknown.
-Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést.	Waiting was cancelled. Actions on known and newly found targets may have been carried out.
+Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést.	Waiting was canceled. Actions on known and newly found targets may have been carried out.
 Chybí úplný ověřený výsledek stromu. Akce se mohly provést. {0}	A complete verified tree result is missing. Actions may have been carried out. {0}
 Předání aktualizace se nesmí opakovat.	The update handoff must not be repeated.
 Platnost potvrzení aktualizace vypršela.	The update confirmation has expired.
 Předání instalace nebylo potvrzené.	The installation handoff was not confirmed.
-Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte v příštím spuštění.	The worker took over the plan. Installation starts only after this process has actually exited; check completion on the next start.
-Potvrzení pracovníka nedorazilo. Plán mohl být předán; neopakujte požadavek a zkontrolujte deník. {0}	The worker's confirmation did not arrive. The plan may have been handed over; do not repeat the request and check the journal. {0}
+Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte při příštím spuštění.	The worker took over the plan. Installation starts only after this process has actually exited; check completion on the next start.
+Potvrzení pracovníka nedorazilo. Plán mohl být předán; neopakujte požadavek a zkontrolujte deník. {0}	The worker's confirmation did not arrive. The plan may have been handed off; do not repeat the request and check the journal. {0}

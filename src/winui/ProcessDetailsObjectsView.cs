@@ -41,7 +41,7 @@ internal sealed partial class ProcessDetailsView
                 text.Append(Loc.F("Aktuálně zachycený název: {0}", ObjectText(observation.Name, observation.NameState, observation.NameNtStatus, true))).AppendLine();
                 if (observation.Fingerprint.Present) text.Append(Loc.F("Otisk objektu: {0}", observation.Fingerprint.Text)).AppendLine();
                 text.Append(Loc.F("Pozorováno: {0}", observationTime?.LocalDateTime.ToString("g", Czech))).AppendLine();
-            } else text.AppendLine(Loc.T("Typ a název objektu zatím nebyly dotázané."));
+            } else text.AppendLine(Loc.T("Typ a název objektu zatím nebyly zjištěné."));
             text.AppendLine().Append(Loc.T("Dotaz zachytí objekt aktuálně duplikovaný pod touto hodnotou. Po uzavření a opětovném použití handle může jít o jiný objekt než ve snímku."));
         } else text.Append(Loc.T("Vyberte řádek ze seznamu."));
         detail.Text = text.ToString(); return true;
@@ -55,7 +55,7 @@ internal sealed partial class ProcessDetailsView
     {
         string basis = (value & 0xff) switch {
             1 => Loc.T("Bez přístupu"), 2 => Loc.T("Čtení"), 4 => Loc.T("Čtení / zápis"), 8 => Loc.T("Kopie při zápisu"),
-            0x10 => Loc.T("Spuštění"), 0x20 => Loc.T("Spuštění / čtení"), 0x40 => Loc.T("Spuštění / čtení / zápis"), 0x80 => Loc.T("Spuštění / kopie při zápisu"), _ => Loc.T("Neuvedena")
+            0x10 => Loc.T("Pouze spuštění"), 0x20 => Loc.T("Spuštění / čtení"), 0x40 => Loc.T("Spuštění / čtení / zápis"), 0x80 => Loc.T("Spuštění / kopie při zápisu"), _ => Loc.T("Neuvedena")
         };
         if ((value & 0x100) != 0) basis += " · GUARD";
         if ((value & 0x200) != 0) basis += " · NOCACHE";

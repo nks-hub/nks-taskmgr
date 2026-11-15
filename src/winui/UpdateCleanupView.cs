@@ -57,7 +57,7 @@ internal sealed partial class UpdateWindow
             : outcome.Status == UpdateStatus.Ok ? Loc.T("Úklid dokončen.") : Loc.T("Úklid skončil s omezením.");
         var lines = new List<string>();
         if (outcome.Summary.Deleted.CountsKnown) lines.Add(Loc.F("Odstraněno: {0}", CleanupTotalsLabel(outcome.Summary.Deleted)));
-        else lines.Add(Loc.T("Počet odstraněných souborů a uvolněná velikost nejsou potvrzené."));
+        else lines.Add(Loc.T("Počet odstraněných souborů a uvolněné místo nejsou potvrzené."));
         if (outcome.Completed) {
             foreach (var (label, totals) in new[] { (Loc.T("Přeskočeno"), outcome.Summary.Skipped), (Loc.T("Chyby"), outcome.Summary.Failed), (Loc.T("Neověřeno"), outcome.Summary.Unknown) })
                 if (totals.Files != 0 || totals.Directories != 0 || totals.UnknownSizeCount != 0)
@@ -124,7 +124,7 @@ internal sealed partial class UpdateWindow
         UpdateCleanupReason.MissingProof => Loc.T("Chybí důkaz pro bezpečné odstranění."),
         UpdateCleanupReason.StageInUse => Loc.T("Pracovní složka je používaná nebo není prázdná."),
         UpdateCleanupReason.Changed => Loc.T("Položka se od náhledu změnila."),
-        UpdateCleanupReason.Denied => Loc.T("Přístup k položce byl odmítnutý."),
+        UpdateCleanupReason.Denied => Loc.T("Přístup k položce byl odepřen."),
         UpdateCleanupReason.Io => Loc.T("Položku nelze zpracovat kvůli chybě souboru."),
         UpdateCleanupReason.Dependency => Loc.T("Položku potřebuje jiný zachovaný záznam."),
         UpdateCleanupReason.Cancelled => Loc.T("Úklid byl zrušený."),

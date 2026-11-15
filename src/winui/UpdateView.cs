@@ -17,7 +17,7 @@ public sealed partial class MainWindow
         button.HorizontalAlignment = HorizontalAlignment.Stretch;
         button.VerticalAlignment = VerticalAlignment.Bottom;
         button.Margin = new Thickness(8, 0, 8, 52);
-        AutomationProperties.SetName(button, Loc.T("Aktualizace a návrat předchozí verze"));
+        AutomationProperties.SetName(button, Loc.T("Aktualizace a návrat k předchozí verzi"));
         AutomationProperties.SetAutomationId(button, "updates-open");
         ToolTipService.SetToolTip(button, Loc.T("Verze aplikace a možnosti aktualizace"));
         button.Click += async (_, _) => {

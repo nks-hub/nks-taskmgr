@@ -22,7 +22,7 @@ internal static class ReplacementText
         string restore = state.HasBackup
             ? state.BackupRestorable ? Loc.T("Vypnutím se obnoví původní program.")
                 : Loc.T("Původní program chybí nebo ho mohou měnit i běžní uživatelé, proto se nebude obnovovat; vypnutím se registrace jen odstraní.")
-            : Loc.T("Vypnutím se registrace odstraní a Správce úloh Windows se spouští jako dříve.");
+            : Loc.T("Vypnutím se registrace odstraní a Správce úloh Windows se bude spouštět jako dříve.");
         return state.Status switch {
             ReplacementStatus.NotRegistered => Loc.T("Správce úloh Windows se spouští jako dříve."),
             ReplacementStatus.ThisInstall => Loc.F("Příkaz: {0}", command) + "\n" + restore,
@@ -102,7 +102,7 @@ public sealed partial class MainWindow
             if (!installed) content.Children.Add(ActionText(ElevationBrokerClient.Status(0xe04e0004) + " "
                 + Loc.T("Nainstalujte aplikaci pro všechny uživatele; instalátor tuto volbu nabídne hned na začátku."), 0xe9eef0));
             if (canEnable || canDisable)
-                content.Children.Add(ActionText(Loc.T("Změna platí pro celý počítač a vyžaduje správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí zvýšeně.")));
+                content.Children.Add(ActionText(Loc.T("Změna platí pro celý počítač a vyžaduje práva správce: následuje UAC a vlastní potvrzení. Po zapnutí poběží NKS s právy správce, kdykoli se Správce úloh spustí se zvýšenými právy.")));
 
             var dialog = ActionDialog(Loc.T("Nahradit Správce úloh Windows"), content);
             if (canEnable || canDisable) {

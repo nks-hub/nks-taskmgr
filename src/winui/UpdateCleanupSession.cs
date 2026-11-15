@@ -43,7 +43,7 @@ internal sealed class UpdateCleanupSession : IDisposable
 
     internal async Task<UpdateCleanupResult> CommitAsync(CancellationToken cancellation)
     {
-        if (Interlocked.CompareExchange(ref attempt, 1, 0) != 0) throw new IOException(Loc.T("Požadavek úklidu se nesmí opakovat."));
+        if (Interlocked.CompareExchange(ref attempt, 1, 0) != 0) throw new IOException(Loc.T("Požadavek na úklid se nesmí opakovat."));
         Task<UpdateCleanupResult>? operation = null;
         try {
             lock (sync) {

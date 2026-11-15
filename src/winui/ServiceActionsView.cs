@@ -136,7 +136,7 @@ public sealed partial class MainWindow
         body.Children.Clear();
         body.Children.Add(ServiceActionText(Loc.F("Plán zahrnuje {0}. Zkontrolujte všechny položky. Potvrzení má limit 60 sekund.", ServiceText.Count(plan.Nodes.Length))));
         if (plan.Action is ServiceAction.Start or ServiceAction.Restart)
-            body.Children.Add(ServiceActionText(Loc.T("Správce služeb Windows může při spuštění nebo restartu automaticky spustit předpoklady uvedené v konfiguraci služby.")));
+            body.Children.Add(ServiceActionText(Loc.T("Správce služeb Windows může při spuštění nebo restartu automaticky spustit služby, na kterých tato služba závisí.")));
         foreach (var node in plan.Nodes) {
             var details = new StackPanel { Spacing = 4 };
             details.Children.Add(ServiceActionText(ServiceNodeName(node), 0xe9eef0));
@@ -145,7 +145,7 @@ public sealed partial class MainWindow
                 + (node.Flags.HasFlag(ServicePlanFlags.StartRequired) ? Loc.F(" · spuštění #{0}", node.StartOrder + 1) : "")));
             details.Children.Add(ServiceActionText(Loc.F("Účet: {0}", node.Account.Length == 0 ? Loc.T("neuveden") : FlatServiceAction(node.Account))));
             details.Children.Add(ServiceActionText(Loc.F("Příkaz: {0}", node.Command.Length == 0 ? Loc.T("neuveden") : FlatServiceAction(node.Command))));
-            details.Children.Add(ServiceActionText(Loc.F("Konfigurované předpoklady: {0}", node.Dependencies.Length == 0 ? Loc.T("žádné") : string.Join(", ", node.Dependencies.Select(FlatServiceAction)))));
+            details.Children.Add(ServiceActionText(Loc.F("Služby potřebné ke spuštění: {0}", node.Dependencies.Length == 0 ? Loc.T("žádné") : string.Join(", ", node.Dependencies.Select(FlatServiceAction)))));
             body.Children.Add(Card(details, new Thickness(10)));
         }
         var dependents = plan.Nodes.Where(node => node.Id != 0 && node.Flags.HasFlag(ServicePlanFlags.StopRequired)).ToArray();
@@ -201,7 +201,7 @@ public sealed partial class MainWindow
         else text += "\n" + Loc.T("Stav není dostupný.");
         if (item.Flags.HasFlag(ServiceResultFlags.StopConfirmed)) text += "\n" + Loc.T("Zastavení bylo potvrzeno při pozorování.");
         if (item.Flags.HasFlag(ServiceResultFlags.StartConfirmed)) text += "\n" + Loc.T("Spuštění bylo potvrzeno při pozorování.");
-        foreach (var (label, error) in new[] { (Loc.T("Pozorování"), item.ObservationError), (Loc.T("Zastavení"), item.StopError), (Loc.T("Spuštění"), item.StartError), (Loc.T("Ukončení služby"), item.Win32Exit) })
+        foreach (var (label, error) in new[] { (Loc.T("Pozorování"), item.ObservationError), (Loc.T("Zastavení"), item.StopError), (Loc.T("Spuštění služby"), item.StartError), (Loc.T("Ukončení služby"), item.Win32Exit) })
             if (error != 0) text += "\n" + ServiceWindowsError(label, error);
         if (item.ServiceExit != 0) text += "\n" + Loc.F("Vlastní návratový kód služby {0} (0x{1}).", item.ServiceExit, item.ServiceExit.ToString("X8"));
         if (item.Flags.HasFlag(ServiceResultFlags.MayHaveApplied) && item.Outcome is not (ServiceActionOutcome.Confirmed or ServiceActionOutcome.AlreadyDesired or ServiceActionOutcome.Unknown))

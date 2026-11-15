@@ -92,8 +92,8 @@ internal sealed class ProcessHistoryStore
             memory.Sort((a, b) => b.WorkingBytes.CompareTo(a.WorkingBytes));
             io.Sort((a, b) => ProcessHistoryRanking.Score(b, ProcessHistoryMetric.Io).CompareTo(ProcessHistoryRanking.Score(a, ProcessHistoryMetric.Io)));
         }
-        string notice = count == 0 ? point ? Loc.T("U zvoleného času není dostupný uchovaný procesový snímek.") : Loc.T("Ve zvoleném intervalu není uchovaný procesový snímek.")
-            : point ? Loc.T("Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.")
+        string notice = count == 0 ? point ? Loc.T("Pro zvolený čas není uchovaný žádný snímek procesů.") : Loc.T("Ve zvoleném úseku není uchovaný žádný snímek procesů.")
+            : point ? Loc.T("Nejbližší skutečně uchovaný snímek procesů; hodnoty nebyly dopočítané ke kurzoru.")
             : Loc.T("Průměr a maximum počítáme jen z uložených vzorků. Hodnoty mimo ně neznáme.");
         return new(start, end, first, last, firstSelected, lastSelected, firstWall, lastWall, count, original, stored,
             count == 0 ? 0 : minOriginal, maxOriginal, gapCount, missing, unknown, frames.Count, rowCount, bytes + 196608,

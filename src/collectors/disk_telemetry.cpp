@@ -127,8 +127,8 @@ std::vector<HardwareFact> decodeNvmeHealth(std::span<const std::byte> descriptor
         {L"Teplota", temperature(static_cast<unsigned>(log.Temperature[0]) | (static_cast<unsigned>(log.Temperature[1]) << 8))},
         {L"Využitá životnost", std::to_wstring(log.PercentageUsed) + L" %"},
         {L"Provozní hodiny", decimal128(log.PowerOnHours) + L" h"},
-        {L"Zapnutí", decimal128(log.PowerCycle)},
-        {L"Nečistá vypnutí", decimal128(log.UnsafeShutdowns)},
+        {L"Počet zapnutí", decimal128(log.PowerCycle)},
+        {L"Nekorektní vypnutí", decimal128(log.UnsafeShutdowns)},
         {L"Chyby média", decimal128(log.MediaErrors)},
         {L"Přečteno celkem", number(dataUnits(log.DataUnitRead), L" TiB")},
         {L"Zapsáno celkem", number(dataUnits(log.DataUnitWritten), L" TiB")}
@@ -195,7 +195,7 @@ std::vector<HardwareFact> diskHealth(const std::wstring& path)
         } else value = failure(GetLastError());
         facts.push_back({L"Teplota", value});
     }
-    facts.push_back({L"Obnova SMART / teploty", L"30 s"});
+    facts.push_back({L"Aktualizace SMART / teploty", L"30 s"});
     return facts;
 }
 }

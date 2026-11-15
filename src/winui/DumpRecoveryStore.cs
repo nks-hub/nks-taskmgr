@@ -60,7 +60,7 @@ internal static class DumpRecoveryStore
     {
         using var file = ProcessDumpFile.OpenEntry(directory.Parent, name);
         ProcessDumpFile.CheckSingleFile(file);
-        if (ProcessDumpFile.Owner(file) != DumpRecoveryProcesses.UserSid) throw new IOException(Loc.T("Vlastník záznamu obnovy nesouhlasí."));
+        if (ProcessDumpFile.Owner(file) != DumpRecoveryProcesses.UserSid) throw new IOException(Loc.T("Vlastník záznamu obnovy neodpovídá."));
         long length = RandomAccess.GetLength(file);
         if (length is <= 0 or > MaximumDocument) throw new IOException(Loc.T("Záznam obnovy má nepovolenou velikost."));
         if (length > maximumBytes) throw new RecoveryLimitException(Loc.T("Úložiště překročilo limit 1 MiB. Nic se nebude měnit."));

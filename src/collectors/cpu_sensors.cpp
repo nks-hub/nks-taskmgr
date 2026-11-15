@@ -223,7 +223,7 @@ CpuSensors::Reading CpuSensors::read(std::stop_token stop)
     } catch (const SensorFailure& failure) {
         result.state = failure.state; result.detail = std::wstring(failure.detail) + L" (" + std::to_wstring(failure.error) + L")";
     } catch (const std::runtime_error&) {
-        result.state = SampleState::error; result.detail = L"Neplatné nebo nepodporované senzorové údaje; vyžaduje se číselná teplota a čas vzorku";
+        result.state = SampleState::error; result.detail = L"Neplatné nebo nepodporované údaje z čidel; vyžaduje se číselná teplota a čas vzorku";
     } catch (const std::length_error&) {
         result.state = SampleState::error; result.detail = L"Čtecí API překročilo bezpečný limit odpovědi";
     }
@@ -307,8 +307,8 @@ std::vector<HardwareFact> CpuSensors::collect(bool requested)
     }
     const auto state = snapshot ? snapshot->state : failure ? SampleState::error : SampleState::first;
     const auto status = state == SampleState::first ? L"Načítání čidel"
-        : state == SampleState::valid ? (current == snapshot->samples.size() ? L"Publikované CPU vzorky" : L"Zastaralé nebo částečně zastaralé vzorky")
-        : state == SampleState::accessDenied ? L"Přístup zamítnut" : state == SampleState::unsupported ? L"Nepodporováno"
+        : state == SampleState::valid ? (current == snapshot->samples.size() ? L"Publikované vzorky CPU" : L"Zastaralé nebo částečně zastaralé vzorky")
+        : state == SampleState::accessDenied ? L"Přístup odepřen" : state == SampleState::unsupported ? L"Nepodporováno"
         : state == SampleState::error ? L"Chyba čtecího API" : L"Poskytovatel nedostupný";
     facts.insert(facts.begin(), {{L"Stav", status}, {L"Zdroj", L"Místní HTTP API kompatibilní s LibreHardwareMonitor; identita poskytovatele neověřena"},
         {L"Adresa čtení", endpoint}, {L"Poslední čtení API", snapshot ? utc(snapshot->readAtUnixMs) : L"Dosud neproběhlo"},

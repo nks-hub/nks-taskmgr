@@ -6,16 +6,16 @@ Stažený instalátor je větší, než vydání uvádí.	Pobrany instalator jes
 Stažený instalátor není úplný.	Pobrany instalator jest niekompletny.
 Přenosnou kopii aktualizujte ručně z balíčku ZIP.	Kopię przenośną zaktualizuj ręcznie z pakietu ZIP.
 Podepsaný instalátor má verzi {0}, očekávaná je {1}.	Podpisany instalator ma wersję {0}, oczekiwano {1}.
-Hledám novou verzi na GitHubu…	Szukam nowej wersji na GitHubie…
+Hledám novou verzi na GitHubu…	Wyszukiwanie nowej wersji na GitHubie…
 Zkontrolovat znovu	Sprawdź ponownie
 Nová verze na GitHubu	Nowa wersja na GitHubie
 Verzi této aplikace nelze zjistit.	Nie można ustalić wersji tej aplikacji.
 Máte nejnovější vydanou verzi {0}.	Masz najnowszą wydaną wersję {0}.
 K dispozici je verze {0}.	Dostępna jest wersja {0}.
 Přenosnou kopii nahraďte obsahem nového balíčku ZIP.	Zastąp kopię przenośną zawartością nowego pakietu ZIP.
-Toto sestavení nemá ověřitelný podpis vydavatele, nainstalujte ji ručně.	Ta kompilacja nie ma weryfikowalnego podpisu wydawcy; zainstaluj ją ręcznie.
+Toto sestavení nemá ověřitelný podpis vydavatele, novou verzi nainstalujte ručně.	Ta kompilacja nie ma weryfikowalnego podpisu wydawcy; nową wersję zainstaluj ręcznie.
 Otevřít stránku vydání	Otwórz stronę wydania
-K dispozici je verze {0}. Instalátor se stáhne z GitHubu, ověří se jeho podpis NKS a nainstaluje se ve stejném režimu jako tato kopie.	Dostępna jest wersja {0}. Instalator zostanie pobrany z GitHuba, jego podpis NKS zostanie sprawdzony i zainstaluje się w tym samym trybie co ta kopia.
+K dispozici je verze {0}. Instalátor se stáhne z GitHubu, ověří se jeho podpis NKS a nainstaluje se ve stejném režimu jako tato kopie.	Dostępna jest wersja {0}. Instalator zostanie pobrany z GitHuba, jego podpis NKS zostanie sprawdzony, a instalacja przebiegnie w tym samym trybie co ta kopia.
 Stáhnout a nainstalovat {0}	Pobierz i zainstaluj {0}
 Kontrola na GitHubu selhala: {0}	Sprawdzanie na GitHubie nie powiodło się: {0}
 Nainstalovat verzi {0}	Zainstaluj wersję {0}

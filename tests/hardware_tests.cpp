@@ -87,7 +87,7 @@ int main()
         };
         require(has(L"Teplota", L"29,9 °C"), "NVMe Kelvin temperature was not converted to Celsius");
         require(has(L"Chyby média", L"18446744073709551616"), "NVMe lifetime counter overflowed 64 bits");
-        require(has(L"Zapnutí", L"340282366920938463463374607431768211455"), "NVMe 128-bit counter was truncated");
+        require(has(L"Počet zapnutí", L"340282366920938463463374607431768211455"), "NVMe 128-bit counter was truncated");
         require(has(L"Využitá životnost", L"125 %"), "NVMe wear above the rated lifetime was hidden");
         log.CriticalWarning.AsUchar = 4; log.Temperature[0] = log.Temperature[1] = 0; encode();
         require(has(L"SMART", L"Upozornění 0x4") && has(L"Teplota", L"Měření nedostupné"), "NVMe warning or unknown temperature became healthy zero");

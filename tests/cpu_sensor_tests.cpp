@@ -252,7 +252,7 @@ void enabledAndDisabled(Provider& provider)
     provider.reply({200, metric("61.5", published.milliseconds)});
     const auto on = waitForRead([&] { return resources.collect(true).cpuSensorFacts; });
     provider.idle();
-    require(provider.connections() == before + 1 && fact(on, L"Stav") == L"Publikované CPU vzorky",
+    require(provider.connections() == before + 1 && fact(on, L"Stav") == L"Publikované vzorky CPU",
         "Opt-in resource collection did not publish a CPU temperature");
     require(reading(on).starts_with(L"61.5 °C") && reading(on).find(published.utc) != std::wstring::npos,
         "Temperature units or the exact source UTC timestamp changed");
@@ -294,7 +294,7 @@ void cacheAndDisable(Provider& provider)
 void valuesAndFreshness(Provider& provider)
 {
     const auto negative = collect(provider, {200, metric("-10", unixMs())});
-    require(fact(negative, L"Stav") == L"Publikované CPU vzorky" && reading(negative).starts_with(L"-10.0 °C"),
+    require(fact(negative, L"Stav") == L"Publikované vzorky CPU" && reading(negative).starts_with(L"-10.0 °C"),
         "A finite negative Celsius measurement was replaced by zero or discarded");
     const auto stale = collect(provider, {200, metric("47.25", unixMs() - 60000)});
     require(fact(stale, L"Stav").starts_with(L"Zastaralé") && reading(stale).find(L"zastaralé") != std::wstring::npos,
@@ -320,7 +320,7 @@ void invalidInputs(Provider& provider)
     unavailable(provider, {200, missingIdentity}, L"Chyba čtecího API");
     unavailable(provider, {200, metric("50", -1)}, L"Chyba čtecího API");
     unavailable(provider, {200, std::string(512 * 1024 + 1, 'x')}, L"Chyba čtecího API");
-    unavailable(provider, {403, "denied"}, L"Přístup zamítnut");
+    unavailable(provider, {403, "denied"}, L"Přístup odepřen");
     unavailable(provider, {404, "missing"}, L"Nepodporováno");
     std::cout << "PASS non-CPU/ACPI, malformed/missing/negative data, byte cap, HTTP denied/missing\n";
 }

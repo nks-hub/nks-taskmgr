@@ -338,9 +338,9 @@ internal static class UpdateProtocol
     private static string OptionalHash(byte[] bytes, int at) => bytes.AsSpan(at, 32).IndexOfAnyExcept((byte)0) < 0 ? "" : Convert.ToHexString(bytes.AsSpan(at, 32));
     internal static byte[] ParseHash(string hash)
     {
-        if (hash.Length != 64 || !hash.All(Uri.IsHexDigit)) throw new ArgumentException(Loc.T("Neplatný SHA256 balíčku."));
+        if (hash.Length != 64 || !hash.All(Uri.IsHexDigit)) throw new ArgumentException(Loc.T("Neplatný SHA-256 balíčku."));
         var result = Convert.FromHexString(hash);
-        if (result.AsSpan().IndexOfAnyExcept((byte)0) < 0) throw new ArgumentException(Loc.T("SHA256 balíčku nesmí být nulový."));
+        if (result.AsSpan().IndexOfAnyExcept((byte)0) < 0) throw new ArgumentException(Loc.T("SHA-256 balíčku nesmí být nulový."));
         return result;
     }
     internal static void ValidatePath(string path)
@@ -374,6 +374,6 @@ internal static class UpdateProtocol
         UpdateStatus.InvalidRequest => Loc.T("Neplatný požadavek"), UpdateStatus.CacheFull => Loc.T("Úložiště balíčků je plné"), UpdateStatus.Conflict => Loc.T("Souběžná operace nebo změněný plán"),
         UpdateStatus.NotFound => Loc.T("Balíček nebo předchozí ověřená instalace není dostupná"), UpdateStatus.Io => Loc.T("Chyba souboru nebo komunikace"),
         UpdateStatus.GuiAlive => Loc.T("Aplikace stále běží; instalace nebyla zahájena"), UpdateStatus.InstallerFailed => Loc.T("Instalátor ohlásil chybu"),
-        UpdateStatus.VerificationFailed => Loc.T("Ověření instalace selhalo"), UpdateStatus.Busy => Loc.T("Jiná aktualizace probíhá"), _ => Loc.T("Výsledek není známý")
+        UpdateStatus.VerificationFailed => Loc.T("Ověření instalace selhalo"), UpdateStatus.Busy => Loc.T("Probíhá jiná aktualizace"), _ => Loc.T("Výsledek není známý")
     };
 }

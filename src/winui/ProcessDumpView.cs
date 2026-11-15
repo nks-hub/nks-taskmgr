@@ -63,7 +63,7 @@ public sealed partial class MainWindow
             content.Children.Add(DumpText(FlatDumpName(row.Name) + " · PID " + row.Key.Pid, 0xe9eef0));
             content.Children.Add(DumpText(Loc.T("Dump ukládá informace o procesu, vláknech, modulech a části paměti. Může obsahovat hesla, osobní údaje i obsah otevřených dokumentů.")));
             content.Children.Add(full);
-            content.Children.Add(DumpText(Loc.T("Úplný dump obsahuje veškerou dostupnou paměť a může zabrat mnoho GiB. Vytváření může krátce pozastavit odezvu procesu. Limit je 32 GiB a 60 sekund.")));
+            content.Children.Add(DumpText(Loc.T("Úplný dump obsahuje veškerou dostupnou paměť a může zabrat mnoho GiB. Proces při tom může krátce přestat reagovat. Limit je 32 GiB a 60 sekund.")));
             content.Children.Add(DumpText(Loc.T("Ukládejte pouze do místního adresáře, kterému důvěřujete. Existující soubor se nepřepíše; odkazy a přesměrované adresáře se odmítnou.")));
             var confirm = DumpDialog(Loc.T("Vytvořit dump procesu"), content); confirm.PrimaryButtonText = Loc.T("Vybrat soubor…"); confirm.CloseButtonText = Loc.T("Zrušit");
             confirm.PrimaryButtonClick += (_, args) => { if (!DumpSelectionCurrent() || operation.IsCancellationRequested) args.Cancel = true; };
@@ -92,7 +92,7 @@ public sealed partial class MainWindow
     private async Task RunProcessDumpAsync(ProcessDumpTarget target, ProcessDumpMode mode, string path, CancellationTokenSource operation)
     {
         var content = new StackPanel { Spacing = 12 };
-        content.Children.Add(DumpText(mode == ProcessDumpMode.Full ? Loc.T("Vytvářím úplný dump. Soubor se zveřejní až po dokončení a ověření.") : Loc.T("Vytvářím běžný dump. Soubor se zveřejní až po dokončení a ověření.")));
+        content.Children.Add(DumpText(mode == ProcessDumpMode.Full ? Loc.T("Vytvářím úplný dump. Soubor se uloží pod cílovým názvem až po dokončení a ověření.") : Loc.T("Vytvářím běžný dump. Soubor se uloží pod cílovým názvem až po dokončení a ověření.")));
         var resultText = DumpText(Loc.T("Limit 60 sekund · 32 GiB")); content.Children.Add(resultText);
         dumpCleanup = DumpText(""); content.Children.Add(dumpCleanup);
         var dialog = DumpDialog(Loc.F("Dump procesu · PID {0}", target.Key.Pid), content); dialog.CloseButtonText = Loc.T("Zrušit čekání");
@@ -140,6 +140,6 @@ public sealed partial class MainWindow
             ProcessDumpState.LimitExceeded => Loc.T("Dump překročil limit 32 GiB."), ProcessDumpState.Canceled => Loc.T("Vytváření bylo zrušeno nebo překročilo časový limit."),
             ProcessDumpState.InvalidRequest => Loc.T("Pracovník odmítl neplatný požadavek nebo nesouhlasící soubor."), _ => Loc.T("Dump se nepodařilo ověřit.")
         };
-        return message + Loc.T(" Soubor nebyl zveřejněn.") + (result.Error == 0 ? "" : "\nWindows/HRESULT " + result.Error + " (0x" + result.Error.ToString("X8") + ").");
+        return message + Loc.T(" Soubor nebyl uložen.") + (result.Error == 0 ? "" : "\nWindows/HRESULT " + result.Error + " (0x" + result.Error.ToString("X8") + ").");
     }
 }

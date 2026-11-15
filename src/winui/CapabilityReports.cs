@@ -20,7 +20,7 @@ internal static class CapabilityReports
     {
         string status = result.State switch {
             ProcessDetailsState.Ok => result.PartialMetrics ? Loc.T("Část údajů chybí") : Loc.T("Dotaz dokončen"),
-            ProcessDetailsState.AccessDenied => Loc.T("Přístup zamítnut"),
+            ProcessDetailsState.AccessDenied => Loc.T("Přístup odepřen"),
             ProcessDetailsState.Unsupported => Loc.T("Nepodporováno"),
             ProcessDetailsState.TargetChanged => Loc.T("Cíl už neodpovídá původnímu procesu"),
             ProcessDetailsState.LimitExceeded => Loc.T("Dosažen limit čtení"),
@@ -41,7 +41,7 @@ internal static class CapabilityReports
         string status = info.State switch {
             ProcessEventMonitorState.Idle => Loc.T("Zatím nespuštěno"), ProcessEventMonitorState.Starting => Loc.T("Spouští se"),
             ProcessEventMonitorState.Running => Loc.T("Záznam běží"), ProcessEventMonitorState.Stopping => Loc.T("Zastavuje se"),
-            ProcessEventMonitorState.Stopped => Loc.T("Záznam zastavený"), ProcessEventMonitorState.AccessDenied => Loc.T("Přístup zamítnut"),
+            ProcessEventMonitorState.Stopped => Loc.T("Záznam zastavený"), ProcessEventMonitorState.AccessDenied => Loc.T("Přístup odepřen"),
             ProcessEventMonitorState.Unsupported => Loc.T("Nepodporováno"), ProcessEventMonitorState.Busy => Loc.T("Předchozí relace není uklizená"),
             ProcessEventMonitorState.StopTimedOut => Loc.T("Zastavení překročilo limit"), ProcessEventMonitorState.CleanupFailed => Loc.T("Úklid nebyl potvrzený"), _ => Loc.T("Chyba záznamu")
         };

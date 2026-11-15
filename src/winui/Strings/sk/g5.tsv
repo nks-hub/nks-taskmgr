@@ -10,7 +10,7 @@ Aplikace	Aplikácie
 PROCESOR	PROCESOR
 Procesor	Procesor
 Načítám…	Načítavam…
-Auto měřítko	Automatická mierka
+Automatické měřítko	Automatická mierka
 Pokračovat	Pokračovať
 Hledat (Ctrl+F)	Hľadať (Ctrl+F)
 Jednotlivé prostředky systému	Jednotlivé prostriedky systému
@@ -25,7 +25,7 @@ Strom	Strom
 Vlastní hodnoty	Vlastné hodnoty
 Proces s potomky	Proces s potomkami
 Význam hodnot ve stromu procesů	Význam hodnôt v strome procesov
-Vlastní hodnoty patří jednomu PID. Proces s potomky sčítá CPU, paměť a I/O ověřených členů celé větve i při hledání nebo sbalení. Chybějící údaje jsou označené. Součet pracovních sad může sdílené stránky RAM započítat opakovaně.	Vlastné hodnoty patria jednému PID. Proces s potomkami sčíta CPU, pamäť a I/O overených členov celej vetvy aj pri hľadaní alebo zbalení. Chýbajúce údaje sú označené. Súčet pracovných súprav môže zdieľané stránky RAM započítať opakovane.
+Vlastní hodnoty patří jednomu PID. Proces s potomky sčítá CPU, paměť a I/O ověřených členů celé větve i při hledání nebo sbalení. Chybějící údaje jsou označené. Součet pracovních sad může sdílené stránky RAM započítat opakovaně.	Vlastné hodnoty patria jednému PID. Proces s potomkami sčíta CPU, pamäť a I/O overených členov celej vetvy aj pri hľadaní alebo zbalení. Chýbajúce údaje sú označené. Súčet pracovných množín môže zdieľané stránky RAM započítať opakovane.
 Sloupce	Stĺpce
 Zobrazit nebo skrýt sloupce procesů	Zobraziť alebo skryť stĺpce procesov
 Export	Export
@@ -112,14 +112,14 @@ Akce	Akcie
 Akce s vybranými živými procesy	Akcie s vybranými živými procesmi
 Se zvýšenými právy správce	So zvýšenými právami správcu
 {0} jako správce…	{0} ako správca…
-Čekám na ukončení vlastního pracovníka nebo zvýšeného požadavku. Neopakujte akci.	Čakám na ukončenie vlastného pracovníka alebo zvýšenej požiadavky. Neopakujte akciu.
+Čekám na ukončení vlastního pracovníka nebo požadavku se zvýšenými právy. Neopakujte akci.	Čakám na ukončenie vlastného pracovníka alebo zvýšenej požiadavky. Neopakujte akciu.
 Vyberte nejvýše 64 procesů.	Vyberte najviac 64 procesov.
-Zavření oken, ukončení, pozastavení, priorita a afinita živých procesů stejného uživatele a relace	Zatvorenie okien, ukončenie, pozastavenie, priorita a afinita živých procesov rovnakého používateľa a relácie
-Ukončit strom	Ukončiť strom
+Zavření oken, ukončení, pozastavení, priorita a spřažení živých procesů stejného uživatele a relace	Zatvorenie okien, ukončenie, pozastavenie, priorita a afinita živých procesov rovnakého používateľa a relácie
+Ukončit strom procesů	Ukončiť strom
 Vyberte jeden živý kořen. Potomky znovu zjistí a ověří pracovník.	Vyberte jeden živý koreň. Potomkov znova zistí a overí pracovník.
 Vyberte jeden proces. Každý proces má vlastní přiřazení procesorů.	Vyberte jeden proces. Každý proces má vlastné priradenie procesorov.
 Načítám výchozí CPU sets a dostupné logické procesory…	Načítavam predvolené CPU sets a dostupné logické procesory…
-Načítám současnou prioritu a afinitu vybraných procesů…	Načítavam súčasnú prioritu a afinitu vybraných procesov…
+Načítám současnou prioritu a spřažení vybraných procesů…	Načítavam súčasnú prioritu a afinitu vybraných procesov…
 Nastavení procesu není dostupné	Nastavenie procesu nie je dostupné
 Výběr se změnil	Výber sa zmenil
 Akce nebyla odeslána. Vyberte znovu živý proces.	Akcia nebola odoslaná. Vyberte znova živý proces.
@@ -127,15 +127,15 @@ Dotaz na nastavení nebyl dokončen	Dopyt na nastavenie nebol dokončený
 Výběr už není aktuální nebo byl dotaz zrušen. Změna nebyla odeslána.	Výber už nie je aktuálny alebo bol dopyt zrušený. Zmena nebola odoslaná.
 {0} Změna nebyla odeslána.	{0} Zmena nebola odoslaná.
 Nízká	Nízka
-Nižší než normální	Nižšia ako normálna
+Podprůměrná	Nižšia ako normálna
 Normální	Normálna
-Vyšší než normální	Vyššia ako normálna
+Nadprůměrná	Vyššia ako normálna
 Vysoká	Vysoká
 {0}: současná priorita {1}	{0}: súčasná priorita {1}
 nedostupná	nedostupná
 Nová priorita procesu	Nová priorita procesu
 Vysoká priorita může omezit odezvu ostatních aplikací.	Vysoká priorita môže obmedziť odozvu ostatných aplikácií.
-Afinita není dostupná	Afinita nie je dostupná
+Spřažení není dostupné	Afinita nie je dostupná
 Toto nastavení vyžaduje jedinou ověřenou skupinu procesorů a dostupné masky procesu i systému. Výchozí CPU sets napříč skupinami mají samostatnou nabídku.	Toto nastavenie vyžaduje jedinú overenú skupinu procesorov a dostupné masky procesu aj systému. Predvolené CPU sets naprieč skupinami majú samostatnú ponuku.
 Skupina {0} · současná maska 0x{1} · dostupná 0x{2}	Skupina {0} · súčasná maska 0x{1} · dostupná 0x{2}
 Vyberte alespoň jeden procesor. CPU sets se tímto ovládáním nenastavují.	Vyberte aspoň jeden procesor. CPU sets sa týmto ovládaním nenastavujú.
@@ -149,40 +149,40 @@ Výsledek není známý. Akce se mohla provést. {0}	Výsledok nie je známy. Ak
 Zavřít	Zavrieť
 Výsledky procesové akce jsou v dialogu.	Výsledky akcie procesu sú v dialógu.
 nízká	nízka
-nižší než normální	nižšia ako normálna
+podprůměrná	nižšia ako normálna
 normální	normálna
-vyšší než normální	vyššia ako normálna
+nadprůměrná	vyššia ako normálna
 vysoká	vysoká
-reálný čas (nelze nastavit)	reálny čas (nedá sa nastaviť)
+v reálném čase (nelze nastavit)	reálny čas (nedá sa nastaviť)
 Požádat o zavření oken	Požiadať o zatvorenie okien
 Ukončit proces	Ukončiť proces
 Pozastavit proces	Pozastaviť proces
 Obnovit běh procesu	Obnoviť beh procesu
 Změnit prioritu	Zmeniť prioritu
-Afinita procesorů	Afinita procesorov
+Spřažení procesorů	Afinita procesorov
 Výchozí CPU sets	Predvolené CPU sets
-Zavřít handle v procesu	Zavrieť handle v procese
+Zavřít handle v procesu	Zavrieť popisovač v procese
 Správce úloh Windows	Správca úloh Windows
 Nastavení procesu	Nastavenie procesu
-Pošle požadavek zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.	Pošle požiadavku na zatvorenie viditeľným oknám vybraných procesov. Aplikácia môže ponúknuť uloženie; skutočné zatvorenie nie je zaručené.
+Pošle požadavek na zavření viditelným oknům vybraných procesů. Aplikace může nabídnout uložení; skutečné zavření není zaručené.	Pošle požiadavku na zatvorenie viditeľným oknám vybraných procesov. Aplikácia môže ponúknuť uloženie; skutočné zatvorenie nie je zaručené.
 Ukončí vybrané procesy bez nabídky uložení. Neuložená data mohou být ztracena.	Ukončí vybrané procesy bez ponuky uloženia. Neuložené dáta sa môžu stratiť.
 Pracovník znovu zjistí potomky tohoto kořene a ukončí ověřené děti před rodičem. Neuložená data mohou být ztracena. Nejvýše 256 cílů, tři průchody a pět sekund. Průchod není atomický; nově vzniklé nebo neověřitelné potomky nemusí zahrnout. Zrušení čekání provedené zásahy nevrací.	Pracovník znova zistí potomkov tohto koreňa a ukončí overené deti pred rodičom. Neuložené dáta sa môžu stratiť. Najviac 256 cieľov, tri prechody a päť sekúnd. Prechod nie je atomický; novovzniknutých alebo neoveriteľných potomkov nemusí zahrnúť. Zrušenie čakania vykonané zásahy nevracia.
 Požádá systém o pozastavení procesu. Jeho okna přestanou reagovat a prostředky zůstanou obsazené.	Požiada systém o pozastavenie procesu. Jeho okná prestanú reagovať a prostriedky zostanú obsadené.
 Požádá systém o obnovení procesu. Výsledek nezaručuje běh všech vláken pozastavených jinými nástroji.	Požiada systém o obnovenie procesu. Výsledok nezaručuje beh všetkých vlákien pozastavených inými nástrojmi.
-Nastaví prioritu plánování času CPU u vybraných procesů. Priorita reálného času není v nabídce.	Nastaví prioritu plánovania času CPU pri vybraných procesoch. Priorita reálneho času nie je v ponuke.
+Nastaví prioritu plánování času CPU u vybraných procesů. Priorita V reálném čase není v nabídce.	Nastaví prioritu plánovania času CPU pri vybraných procesoch. Priorita reálneho času nie je v ponuke.
 Omezí proces na vybrané logické procesory v jediné skupině.	Obmedzí proces na vybrané logické procesory v jedinej skupine.
-Nastaví výchozí výběr logických procesorů i napříč skupinami. Výslovné volby jednotlivých vláken a pevná afinita mají přednost. Potvrzení nastavení není důkaz, na kterém procesoru se vlákno skutečně spustilo.	Nastaví predvolený výber logických procesorov aj naprieč skupinami. Výslovné voľby jednotlivých vlákien a pevná afinita majú prednosť. Potvrdenie nastavenia nie je dôkaz, na ktorom procesore sa vlákno skutočne spustilo.
+Nastaví výchozí výběr logických procesorů i napříč skupinami. Výslovné volby jednotlivých vláken a pevné spřažení mají přednost. Potvrzení nastavení neříká, na kterém procesoru vlákno skutečně běží.	Nastaví predvolený výber logických procesorov aj naprieč skupinami. Výslovné voľby jednotlivých vlákien a pevná afinita majú prednosť. Potvrdenie nastavenia nie je dôkaz, na ktorom procesore sa vlákno skutočne spustilo.
 Odpověď {0} · {1}	Odpoveď {0} · {1}
 Výsledek není známý. Akce se mohla provést.	Výsledok nie je známy. Akcia sa mohla vykonať.
 Pracovník požadavek nepřijal; akce nebyla provedena.	Pracovník požiadavku neprijal; akcia nebola vykonaná.
 Aktuální stav: {0}	Aktuálny stav: {0}
 Nastavení bylo načteno.	Nastavenie bolo načítané.
 Konec tohoto procesu byl potvrzen.	Koniec tohto procesu bol potvrdený.
-Handle byl zavřen. Název nebo otisk zavřeného objektu odpovídá potvrzenému objektu.	Handle bol zatvorený. Názov alebo odtlačok zatvoreného objektu zodpovedá potvrdenému objektu.
+Handle byl zavřen. Název nebo otisk zavřeného objektu odpovídá potvrzenému objektu.	Popisovač bol zatvorený. Názov alebo odtlačok zatvoreného objektu zodpovedá potvrdenému objektu.
 Zavřen objekt stejného typu a přístupu; totožnost s potvrzeným objektem nelze prokázat.	Zatvorený objekt rovnakého typu a prístupu; totožnosť s potvrdeným objektom nemožno preukázať.
 Změna byla ověřena zpětným čtením.	Zmena bola overená spätným čítaním.
-Požadavek zavření byl odeslán; zavření není potvrzené.	Požiadavka na zatvorenie bola odoslaná; zatvorenie nie je potvrdené.
-Požadavek ukončení byl přijat; konec procesu zatím není potvrzený.	Požiadavka na ukončenie bola prijatá; koniec procesu zatiaľ nie je potvrdený.
+Požadavek na zavření byl odeslán; zavření není potvrzené.	Požiadavka na zatvorenie bola odoslaná; zatvorenie nie je potvrdené.
+Požadavek na ukončení byl přijat; konec procesu zatím není potvrzený.	Požiadavka na ukončenie bola prijatá; koniec procesu zatiaľ nie je potvrdený.
 Systém přijal požadavek. Stav všech vláken není potvrzený.	Systém prijal požiadavku. Stav všetkých vlákien nie je potvrdený.
 Akce byla odmítnuta.	Akcia bola odmietnutá.
 Identita procesu se změnila; výsledek není ověřený.	Identita procesu sa zmenila; výsledok nie je overený.
@@ -196,7 +196,7 @@ Akce se mohla provést.	Akcia sa mohla vykonať.
 Odesláno oknům: {0}, chyby odeslání: {1}.	Odoslané oknám: {0}, chyby odoslania: {1}.
 Neplatný cíl.	Neplatný cieľ.
 Pracovník ani řídicí aplikace nejsou povoleným cílem.	Pracovník ani riadiaca aplikácia nie sú povoleným cieľom.
-Systémový nebo služební proces.	Systémový alebo služobný proces.
+Systémový proces nebo proces služby.	Systémový proces alebo proces služby.
 Kritický proces systému.	Kritický proces systému.
 Chráněný proces.	Chránený proces.
 Cíl patří jinému uživateli nebo relaci.	Cieľ patrí inému používateľovi alebo relácii.
@@ -218,13 +218,13 @@ Vazbu na potvrzený strom nelze ověřit.	Väzbu na potvrdený strom nemožno ov
 Pro tento cíl nezbyl čas v omezeném průchodu.	Pre tento cieľ nezostal čas v obmedzenom prechode.
 Nový inventář stromu není dostupný.	Nový inventár stromu nie je dostupný.
 Zásah nebyl bezpečně ověřitelný.	Zásah nebol bezpečne overiteľný.
-Handle s touto hodnotou už v procesu není.	Handle s touto hodnotou už v procese nie je.
-Pod hodnotou handle je jiný objekt, typ nebo přístup než při potvrzení.	Pod hodnotou handle je iný objekt, typ alebo prístup ako pri potvrdení.
-Objekt handle nelze ověřit.	Objekt handle nemožno overiť.
-Handle je chráněný proti zavření.	Handle je chránený proti zatvoreniu.
+Handle s touto hodnotou už v procesu není.	Popisovač s touto hodnotou už v procese nie je.
+Pod hodnotou handle je jiný objekt, typ nebo přístup než při potvrzení.	Pod hodnotou popisovača je iný objekt, typ alebo prístup ako pri potvrdení.
+Objekt handle nelze ověřit.	Objekt popisovača nemožno overiť.
+Handle je chráněný proti zavření.	Popisovač je chránený proti zatvoreniu.
 Hledat otevřené objekty ve všech dostupných procesech	Hľadať otvorené objekty vo všetkých dostupných procesoch
 Hledat otevřené objekty podle názvu nebo typu	Hľadať otvorené objekty podľa názvu alebo typu
-Část názvu nebo cesty, například C:\\složka\\soubor	Časť názvu alebo cesty, napríklad C:\\priecinok\\subor
+Část názvu nebo cesty, například C:\\složka\\soubor	Časť názvu alebo cesty, napríklad C:\\priečinok\\súbor
 Například File, Event nebo Mutant	Napríklad File, Event alebo Mutant
 Spustit	Spustiť
 Vybrat živý proces →	Vybrať živý proces →
@@ -246,7 +246,7 @@ Ruším hledání…	Ruším hľadanie…
 Historické pozorování: shodný aktuální proces není dostupný. Žádná akce nebyla provedena.	Historické pozorovanie: zhodný aktuálny proces nie je dostupný. Žiadna akcia nebola vykonaná.
 Pole obsahují nový dotaz. Výsledky patří předchozímu hledání; použijte Spustit.	Polia obsahujú nový dopyt. Výsledky patria predchádzajúcemu hľadaniu; použite Spustiť.
 Identitu spuštění Windows zatím nelze ověřit. Počkejte na sběr dat a zkuste to znovu.	Identitu spustenia Windows zatiaľ nemožno overiť. Počkajte na zber dát a skúste to znova.
-{0} výsledků · pouze čtení	{0} výsledkov · iba na čítanie
+{0} výsledků · pouze pro čtení	{0} výsledkov · iba na čítanie
 Načítám vlastníky otevřených objektů…	Načítavam vlastníkov otvorených objektov…
 Limity: 2 minuty, 25 000 dotazů, 4 096 objektů na vlastníka, 5 000 výsledků a 8 MiB textu. Nedostupné položky se přeskočí.	Limity: 2 minúty, 25 000 dopytov, 4 096 objektov na vlastníka, 5 000 výsledkov a 8 MiB textu. Nedostupné položky sa preskočia.
 Hledání bylo zrušené; výsledky jsou neúplná historická pozorování.	Hľadanie bolo zrušené; výsledky sú neúplné historické pozorovania.
@@ -261,21 +261,21 @@ Průchod dokončen. Výsledky jsou pozorování v době dotazu.	Prechod dokonče
 Zopakovat	Zopakovať
 Vybrat shodný aktuální proces v hlavním okně.	Vybrať zhodný aktuálny proces v hlavnom okne.
 Historická nebo neověřitelná identita nemá živou akci.	Historická alebo neoveriteľná identita nemá živú akciu.
-Handle: {0}	Handle: {0}
+Handle: {0}	Popisovač: {0}
 Typ: {0} · {1} · NTSTATUS 0x{2}	Typ: {0} · {1} · NTSTATUS 0x{2}
 Pozorovaný název: {0}	Pozorovaný názov: {0}
 (bez názvu)	(bez názvu)
 Stav názvu: {0} · NTSTATUS 0x{1}	Stav názvu: {0} · NTSTATUS 0x{1}
-DOS/UNC zobrazení: {0}	Zobrazenie DOS/UNC: {0}
+Zobrazení DOS/UNC: {0}	Zobrazenie DOS/UNC: {0}
 Přístup ze seznamu: 0x{0} · atributy 0x{1}	Prístup zo zoznamu: 0x{0} · atribúty 0x{1}
 Přijato: {0}	Prijaté: {0}
 Boot: {0}	Spustenie systému: {0}
 Generace: {0} · {1}	Generácia: {0} · {1}
-Název a typ patří pozorovanému duplikátu. Číselná hodnota handle mohla být od výpisu znovu použita. Objekty nelze zavírat ani měnit.	Názov a typ patria pozorovanému duplikátu. Číselná hodnota handle mohla byť od výpisu znova použitá. Objekty nemožno zatvárať ani meniť.
+Název a typ patří pozorovanému duplikátu. Číselná hodnota handle mohla být od výpisu znovu použita. Objekty nelze zavírat ani měnit.	Názov a typ patria pozorovanému duplikátu. Číselná hodnota popisovača mohla byť od výpisu znova použitá. Objekty nemožno zatvárať ani meniť.
 kontext měření nedostupný	kontext merania nedostupný
 měřicí okno {0}	okno merania {0}
 okamžitý odečet	okamžitá hodnota
-měřicí okno zatím nedostupné	meracie okno zatiaľ nedostupné
+měřicí okno zatím nedostupné	okno merania zatiaľ nedostupné
 měřicí okno zdroj neuvádí	okno merania zdroj neuvádza
 Zastaralá data	Zastarané údaje
 Platný vzorek	Platná vzorka
@@ -294,7 +294,7 @@ Odstup pozorování: {0}	Odstup pozorovaní: {0}
 zatím nedostupný	zatiaľ nedostupný
 Pozorováno před {0}	Pozorované pred {0}
 nativní statistiky procesů	natívne štatistiky procesov
-časové čítače procesorů	časové čítače procesorov
+časové čítače procesorů	časové počítadlá procesorov
 systémové paměťové statistiky	systémové pamäťové štatistiky
 čítač výkonu Windows (PDH)	počítadlo výkonu Windows (PDH)
 čítače síťového adaptéru	počítadlá sieťového adaptéra
@@ -336,7 +336,7 @@ Služby se stejným nenulovým PID hlášeným správcem služeb. Kombinuje se s
 Služba	Služba
 Stav	Stav
 Spouštění	Typ spustenia
-Účet	Účet
+Účet	Konto
 Systémové služby	Systémové služby
 Společný PID ({0})	Spoločný PID ({0})
 Žádná služba neodpovídá filtru.	Žiadna služba nezodpovedá filtru.
@@ -352,8 +352,8 @@ Odpověď aktualizací nepatří požadavku nebo ověřenému klientovi.	Odpove�
 Neúplný rámec aktualizace.	Neúplný rámec aktualizácie.
 Neplatný identifikátor obnovy.	Neplatný identifikátor obnovy.
 Identifikátor obnovy nesmí být nulový.	Identifikátor obnovy nesmie byť nulový.
-Neplatný SHA256 balíčku.	Neplatný SHA256 balíka.
-SHA256 balíčku nesmí být nulový.	SHA256 balíka nesmie byť nulový.
+Neplatný SHA-256 balíčku.	Neplatný SHA256 balíka.
+SHA-256 balíčku nesmí být nulový.	SHA256 balíka nesmie byť nulový.
 Pracovník nevrátil kanonickou místní cestu.	Pracovník nevrátil kanonickú miestnu cestu.
 Neplatný text aktualizace.	Neplatný text aktualizácie.
 Pracovník vrátil neplatná metadata aktualizace.	Pracovník vrátil neplatné metadáta aktualizácie.
@@ -368,18 +368,18 @@ Chyba souboru nebo komunikace	Chyba súboru alebo komunikácie
 Aplikace stále běží; instalace nebyla zahájena	Aplikácia stále beží; inštalácia nebola začatá
 Instalátor ohlásil chybu	Inštalátor ohlásil chybu
 Ověření instalace selhalo	Overenie inštalácie zlyhalo
-Jiná aktualizace probíhá	Prebieha iná aktualizácia
+Probíhá jiná aktualizace	Prebieha iná aktualizácia
 Výsledek není známý	Výsledok nie je známy
 Využití	Využitie
 Odesílání	Odosielanie
-{0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce intervalu. Escape výběr zruší.	{0}. Šípky prechádzajú históriu, Enter pripne čas. Shift a kliknutie alebo Shift a Enter vyberú dva konce intervalu. Escape výber zruší.
+{0}. Šipky procházejí historii, Enter připne čas. Shift a kliknutí nebo Shift a Enter vyberou dva konce úseku. Escape výběr zruší.	{0}. Šípky prechádzajú históriu, Enter pripne čas. Shift a kliknutie alebo Shift a Enter vyberú dva konce intervalu. Escape výber zruší.
 nyní	teraz
 Soukromé úložiště obnovy nemá ověřeného vlastníka nebo ochranu přístupu.	Súkromné úložisko obnovy nemá overeného vlastníka alebo ochranu prístupu.
 Úložiště obnovy má neočekávaná oprávnění. Záznamy zůstávají zachované.	Úložisko obnovy má neočakávané oprávnenia. Záznamy zostávajú zachované.
 Zámek úložiště obnovy není ověřitelný.	Zámok úložiska obnovy nie je overiteľný.
 Neplatný název záznamu obnovy.	Neplatný názov záznamu obnovy.
 Úložiště obnovy překročilo omezený počet souborů. Nic se nebude měnit.	Úložisko obnovy prekročilo obmedzený počet súborov. Nič sa nebude meniť.
-Vlastník záznamu obnovy nesouhlasí.	Vlastník záznamu obnovy nesúhlasí.
+Vlastník záznamu obnovy neodpovídá.	Vlastník záznamu obnovy nesúhlasí.
 Záznam obnovy má nepovolenou velikost.	Záznam obnovy má nepovolenú veľkosť.
 Úložiště překročilo limit 1 MiB. Nic se nebude měnit.	Úložisko prekročilo limit 1 MiB. Nič sa nebude meniť.
 Záznam obnovy je neúplný.	Záznam obnovy je neúplný.
@@ -414,7 +414,7 @@ Podepsaný soubor nemá jednoznačné platné prostředky verze PE.	Podpísaný 
 Předchozí dump nebo jeho úklid ještě probíhá.	Predchádzajúci výpis alebo jeho upratovanie ešte prebieha.
 Dump uložen	Výpis uložený
 Dump neuložen: {0}	Výpis neuložený: {0}
-přístup odmítnut	prístup odmietnutý
+přístup odepřen	prístup odmietnutý
 nepodporováno	nepodporované
 proces skončil nebo se změnil	proces skončil alebo sa zmenil
 cíl nedostupný	cieľ nedostupný
@@ -423,19 +423,19 @@ zrušeno nebo překročen čas	zrušené alebo prekročený čas
 neplatný požadavek	neplatná požiadavka
 výsledek nepotvrzen	výsledok nepotvrdený
 Dump překročil limit 60 sekund. Výsledek není potvrzený; pracovník se ukončuje a vlastní dočasný soubor se uklízí.	Výpis prekročil limit 60 sekúnd. Výsledok nie je potvrdený; pracovník sa ukončuje a vlastný dočasný súbor sa upratuje.
-Rodičovský adresář nelze ověřit. Soubor i záznam zůstanou zachované.	Rodičovský adresár nemožno overiť. Súbor aj záznam zostanú zachované.
-Rodičovský adresář má jinou identitu. Soubor zůstane zachovaný.	Rodičovský adresár má inú identitu. Súbor zostane zachovaný.
+Nadřazený adresář nelze ověřit. Soubor i záznam zůstanou zachované.	Nadradený priečinok nemožno overiť. Súbor aj záznam zostanú zachované.
+Nadřazený adresář má jinou identitu. Soubor zůstane zachovaný.	Nadradený priečinok má inú identitu. Súbor zostane zachovaný.
 Cesta souboru neodpovídá záznamu. Soubor zůstane zachovaný.	Cesta súboru nezodpovedá záznamu. Súbor zostane zachovaný.
-Identita nebo vlastník souboru nesouhlasí. Soubor zůstane zachovaný.	Identita alebo vlastník súboru nesúhlasí. Súbor zostane zachovaný.
+Identita nebo vlastník souboru neodpovídá. Soubor zůstane zachovaný.	Identita alebo vlastník súboru nesúhlasí. Súbor zostane zachovaný.
 Velikost souboru překračuje limit obnovy.	Veľkosť súboru prekračuje limit obnovy.
 Soubor se během ověřování změnil.	Súbor sa počas overovania zmenil.
 Velikost souboru se během ověřování změnila.	Veľkosť súboru sa počas overovania zmenila.
 Přejmenování vyžaduje jeden platný název souboru.	Premenovanie vyžaduje jeden platný názov súboru.
-Soubor neleží v ověřeném rodičovském adresáři.	Súbor neleží v overenom rodičovskom adresári.
+Soubor neleží v ověřeném nadřazeném adresáři.	Súbor neleží v overenom nadradenom priečinku.
 Soubor má nepovolený typ nebo více odkazů. Zůstane zachovaný.	Súbor má nepovolený typ alebo viac odkazov. Zostane zachovaný.
 Prostředky	Prostriedky
 Automaticky podle uložených vzorků. Vypnuto: 0–100 %, kapacita paměti nebo rychlost připojení.	Automaticky podľa uložených vzoriek. Vypnuté: 0–100 %, kapacita pamäte alebo rýchlosť pripojenia.
-Celkem	Celkovo
+Celkem	Spolu
 Logické	Logické
 Překrytí	Prekrytie
 Připojené a zobrazené prostředky s historií využití	Pripojené a zobrazené prostriedky s históriou využitia

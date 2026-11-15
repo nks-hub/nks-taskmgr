@@ -54,7 +54,7 @@ public sealed partial class ProcessEventRow
                 + "\n" + Loc.F("Výpočetní interval: {0} ns · jednotka {1}", item.Measurement.IntervalNs, item.Measurement.Unit)
                 + "\n" + Loc.F("Přijato (monotónní ns): {0}", item.ObservedAtNs)
                 + "\n" + Loc.T("Jde pouze o události zachycené vlastní relací ETW, nikoli o celkový provoz adaptéru ani obecné procesové I/O.")
-                + "\n" + Loc.T("Síťový počet vychází z velikostí událostí TCP/UDP; není zárukou počtu aplikačních bajtů.")
+                + "\n" + Loc.T("Počet síťových bajtů vychází z velikostí událostí TCP/UDP; nemusí odpovídat počtu bajtů aplikace.")
                 + "\n" + Loc.T("Potvrzení nového základního seznamu nezpřesní dřívější nejasné přenosy. Žádné živé akce podle PID.");
         }
     }

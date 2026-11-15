@@ -24,7 +24,7 @@ Patice	Sockel
 Rodina / model / revize	Familie / Modell / Stepping
 Instrukce CPU (CPUID)	CPU-Befehle (CPUID)
 Virtualizace	Virtualisierung
-Základní takt (CPUID)	Basistakt (CPUID)
+Základní rychlost (CPUID)	Basistakt (CPUID)
 Maximum (CPUID)	Maximum (CPUID)
 Výrobce desky	Mainboard-Hersteller
 Model desky	Mainboard-Modell
@@ -34,7 +34,7 @@ Verze BIOS	BIOS-Version
 Datum BIOS	BIOS-Datum
 Výrobce systému	Systemhersteller
 Model systému	Systemmodell
-Režim firmware	Firmwaremodus
+Režim firmwaru	Firmwaremodus
 Neznámý	Unbekannt
 Nehlášeno	Nicht gemeldet
 Nepodporováno	Nicht unterstützt
@@ -77,8 +77,8 @@ Chyby média	Medienfehler
 Chybí oprávnění	Berechtigung fehlt
 Disk předpovídá selhání	Datenträger sagt einen Ausfall voraus
 Nepodporováno ovladačem	Vom Treiber nicht unterstützt
-Nečistá vypnutí	Unsichere Herunterfahrvorgänge
-Obnova SMART / teploty	SMART-/Temperaturaktualisierung
+Nekorektní vypnutí	Unsichere Herunterfahrvorgänge
+Aktualizace SMART / teploty	SMART-/Temperaturaktualisierung
 Parametry disku	Datenträgerparameter
 Provozní hodiny	Betriebsstunden
 Přečteno celkem	Insgesamt gelesen
@@ -87,7 +87,7 @@ Sektor logický / fyzický	Sektor logisch / physisch
 Selhání není hlášeno	Kein Ausfall gemeldet
 Virtuální	Virtuell
 Využitá životnost	Verbrauchte Lebensdauer
-Zapnutí	Einschaltvorgänge
+Počet zapnutí	Einschaltvorgänge
 Zapsáno celkem	Insgesamt geschrieben
 Zdroj stavu	Statusquelle
 Přehled	Übersicht
@@ -100,7 +100,7 @@ Přehled procesu	Prozessübersicht
 Pracovní sada	Arbeitssatz
 Disk	Datenträger
 Vlákna	Threads
-Handly	Handles
+Popisovače	Handles
 verze {0}	Version {0}
 Popis souboru není dostupný.	Dateibeschreibung ist nicht verfügbar.
 Nedostupné	Nicht verfügbar
@@ -135,14 +135,14 @@ Výsledek není potvrzený. Správce služeb mohl část požadavků přijmout.	
 Změna nebyla odeslána.	Die Änderung wurde nicht gesendet.
 Zavřít	Schließen
 Plán zahrnuje {0}. Zkontrolujte všechny položky. Potvrzení má limit 60 sekund.	Der Plan umfasst {0}. Prüfen Sie alle Einträge. Für die Bestätigung gilt ein Limit von 60 Sekunden.
-Správce služeb Windows může při spuštění nebo restartu automaticky spustit předpoklady uvedené v konfiguraci služby.	Beim Starten oder Neustarten kann der Windows-Dienststeuerungs-Manager die in der Dienstkonfiguration angegebenen Abhängigkeiten automatisch starten.
+Správce služeb Windows může při spuštění nebo restartu automaticky spustit služby, na kterých tato služba závisí.	Beim Starten oder Neustarten kann der Windows-Dienststeuerungs-Manager die in der Dienstkonfiguration angegebenen Abhängigkeiten automatisch starten.
 Stav: {0} → {1}	Status: {0} → {1}
  · zastavení #{0}	 · Beenden #{0}
  · spuštění #{0}	 · Start #{0}
 Účet: {0}	Konto: {0}
 neuveden	nicht angegeben
 Příkaz: {0}	Befehl: {0}
-Konfigurované předpoklady: {0}	Konfigurierte Abhängigkeiten: {0}
+Služby potřebné ke spuštění: {0}	Konfigurierte Abhängigkeiten: {0}
 žádné	keine
 Současně se zastaví tyto závislé služby: {0}	Diese abhängigen Dienste werden ebenfalls beendet: {0}
 Souhlasím se zastavením všech těchto závislých služeb	Ich stimme dem Beenden aller dieser abhängigen Dienste zu
@@ -195,7 +195,7 @@ Před další operací načtěte aktuální přehled.	Laden Sie vor dem nächste
 Úklid dokončen.	Bereinigung abgeschlossen.
 Úklid skončil s omezením.	Bereinigung mit Einschränkungen abgeschlossen.
 Odstraněno: {0}	Entfernt: {0}
-Počet odstraněných souborů a uvolněná velikost nejsou potvrzené.	Anzahl der entfernten Dateien und freigegebener Speicher sind nicht bestätigt.
+Počet odstraněných souborů a uvolněné místo nejsou potvrzené.	Anzahl der entfernten Dateien und freigegebener Speicher sind nicht bestätigt.
 Přeskočeno	Übersprungen
 Chyby	Fehler
 Neověřeno	Nicht überprüft
@@ -217,7 +217,7 @@ Chyba	Fehler
 Skutečně odstraněno: {0}	Tatsächlich entfernt: {0}
 Nepotřebná ověřená položka.	Nicht benötigter überprüfter Eintrag.
 Balíček současné verze se zachovává.	Das Paket der aktuellen Version wird beibehalten.
-Balíček předchozí verze se zachovává pro návrat.	Das Paket der vorherigen Version wird für ein Zurücksetzen beibehalten.
+Balíček předchozí verze se zachovává pro návrat.	Das Paket der vorherigen Version wird für die Wiederherstellung beibehalten.
 Aktualizační pomocník ještě běží.	Der Update-Hilfsprozess läuft noch.
 Instalátor ještě běží.	Das Installationsprogramm läuft noch.
 Ukončení původního procesu není ověřené.	Das Beenden des ursprünglichen Prozesses ist nicht überprüft.
@@ -229,7 +229,7 @@ Neznámá data se neodstraňují.	Unbekannte Daten werden nicht entfernt.
 Chybí důkaz pro bezpečné odstranění.	Der Nachweis für sicheres Entfernen fehlt.
 Pracovní složka je používaná nebo není prázdná.	Der Arbeitsordner wird verwendet oder ist nicht leer.
 Položka se od náhledu změnila.	Der Eintrag hat sich seit der Vorschau geändert.
-Přístup k položce byl odmítnutý.	Der Zugriff auf den Eintrag wurde verweigert.
+Přístup k položce byl odepřen.	Der Zugriff auf den Eintrag wurde verweigert.
 Položku nelze zpracovat kvůli chybě souboru.	Der Eintrag kann wegen eines Dateifehlers nicht verarbeitet werden.
 Položku potřebuje jiný zachovaný záznam.	Ein anderer beibehaltener Eintrag benötigt diesen Eintrag.
 Úklid byl zrušený.	Die Bereinigung wurde abgebrochen.
@@ -283,7 +283,7 @@ Engine	Engine
 Využití GPU {0}: {1}	GPU-Auslastung {0}: {1}
 nedostupné	nicht verfügbar
 Vyhrazená paměť GPU	Dedizierter GPU-Speicher
-Sdílená paměť GPU	Gemeinsamer GPU-Speicher
+Sdílená paměť GPU	Gemeinsam genutzter GPU-Speicher
 Šířka sloupce {0}	Spaltenbreite {0}
 Přesunout doleva	Nach links verschieben
 Přesunout doprava	Nach rechts verschieben
@@ -291,23 +291,23 @@ Zúžit o 20 bodů	Um 20 Punkte schmaler
 Rozšířit o 20 bodů	Um 20 Punkte breiter
 Skrýt sloupec	Spalte ausblenden
 Obnovit výchozí sloupce	Standardspalten wiederherstellen
-, proces s potomky	, Prozess mit Nachfolgern
+, proces s potomky	, Prozess mit Nachkommen
 , vlastní hodnoty	, eigene Werte
 , sestupně	, absteigend
 , vzestupně	, aufsteigend
 , seřadit	, sortieren
 Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další volby.	Zum Sortieren klicken, zum Verschieben ziehen. Rechtsklick öffnet weitere Optionen.
-Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené.	Werte des Prozesses und seiner überprüften Nachfolger; fehlende Daten sind markiert.
-Vlastní hodnota procesu bez potomků.	Eigener Wert des Prozesses ohne Nachfolger.
+Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené.	Werte des Prozesses und seiner überprüften Nachkommen; fehlende Daten sind markiert.
+Vlastní hodnota procesu bez potomků.	Eigener Wert des Prozesses ohne Nachkommen.
 Sdílené stránky RAM se mohou započítat opakovaně.	Gemeinsam genutzte RAM-Seiten können mehrfach gezählt werden.
-Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi 5 s zpět; ≥ znamená, že část provozu nešlo přiřadit.	Gesendete und empfangene TCP/UDP-Bytes nur während der eigenen ETW-Aufzeichnung im Fenster Prozessereignisse, die Administratorrechte erfordert; sonst nicht verfügbar. Der Wert gilt für eine abgeschlossene Sekunde etwa 5 s zuvor; ≥ bedeutet, dass ein Teil des Verkehrs nicht zugeordnet werden konnte.
+Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje práva správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Gesendete und empfangene TCP/UDP-Bytes nur während der eigenen ETW-Aufzeichnung im Fenster Prozessereignisse, die Administratorrechte erfordert; sonst nicht verfügbar. Der Wert gilt für eine abgeschlossene Sekunde etwa 5 s zuvor; ≥ bedeutet, dass ein Teil des Verkehrs nicht zugeordnet werden konnte.
 Řazeno podle skrytého sloupce {0} sestupně	Nach ausgeblendeter Spalte {0} absteigend sortiert
 Řazeno podle skrytého sloupce {0} vzestupně	Nach ausgeblendeter Spalte {0} aufsteigend sortiert
  · ukončeno	 · beendet
  · zastaralé	 · veraltet
 Rozbalit {0}	{0} erweitern
 Sbalit {0}	{0} reduzieren
-Auto přenos	Auto Übertragung
+Auto přenos	Auto-Übertragung
 Čtení a zápis	Lesen und Schreiben
 Automatické měřítko podle čtení i zápisu. Vypnutí podrží aktuální rozsah osy.	Automatische Skalierung nach Lese- und Schreibvorgängen. Ausschalten behält den aktuellen Achsenbereich bei.
 Čtení	Lesen
@@ -315,7 +315,7 @@ Zápis	Schreiben
 Další údaje a SMART	Weitere Daten und SMART
 Pracovní sada včetně sdílených stránek	Arbeitssatz einschließlich gemeinsam genutzter Seiten
 Procesy podle CPU	Prozesse nach CPU
-Inventář aplikací není dostupný: {0}	Die App-Inventur ist nicht verfügbar: {0}
+Inventář aplikací není dostupný: {0}	Das App-Inventar ist nicht verfügbar: {0}
 Broker nebyl spuštěn: {0}	Der Broker wurde nicht gestartet: {0}
 Chybí ověřený kořen souboru.	Der überprüfte Dateistamm fehlt.
 Identitu drženého kořenového adresáře nelze ověřit.	Die Identität des gehaltenen Stammordners kann nicht überprüft werden.
@@ -351,8 +351,8 @@ Neplatný název služby.	Ungültiger Dienstname.
 Schválený seznam závislých služeb neodpovídá plánu.	Die bestätigte Liste abhängiger Dienste entspricht nicht dem Plan.
 Pracovník vrátil jiný nebo neplatný požadavek.	Der Hilfsprozess hat eine andere oder ungültige Anforderung zurückgegeben.
 Neplatná délka nebo fáze odpovědi služeb.	Ungültige Länge oder Phase der Dienstantwort.
-Neúplný plán služeb.	Unvollständiger Dienstplan.
-Neplatná položka plánu služeb.	Ungültiger Eintrag im Dienstplan.
+Neúplný plán služeb.	Unvollständiger Plan für Dienste.
+Neplatná položka plánu služeb.	Ungültiger Eintrag im Plan für Dienste.
 Neplatný nebo duplicitní název služby.	Ungültiger oder doppelter Dienstname.
 Prázdná závislost služby.	Leere Dienstabhängigkeit.
 Plán patří jiné službě.	Der Plan gehört zu einem anderen Dienst.
@@ -407,14 +407,14 @@ PID {0} · {1} · generace {2}	PID {0} · {1} · Generation {2}
 Výsledek není známý. Akce se mohla provést.	Das Ergebnis ist unbekannt. Die Aktion wurde möglicherweise ausgeführt.
 Pracovník neposlal úplný výsledek.	Der Hilfsprozess hat kein vollständiges Ergebnis gesendet.
 Pracovník požadavek nepřijal, zásah nebyl proveden.	Der Hilfsprozess hat die Anforderung nicht angenommen; es wurde nichts ausgeführt.
-Výsledky známých cílů. Průchod není atomický a nedokazuje, že nezůstal žádný souběžně vzniklý potomek.	Ergebnisse bekannter Ziele. Der Durchlauf ist nicht atomar und beweist nicht, dass kein gleichzeitig entstandener Nachfolger übrig ist.
-Doložených cílů: {0} · průchodů: {1} · možných reziduí v posledním inventáři: {2}	Belegte Ziele: {0} · Durchläufe: {1} · mögliche Reste in der letzten Inventur: {2}
+Výsledky známých cílů. Průchod není atomický a nedokazuje, že nezůstal žádný souběžně vzniklý potomek.	Ergebnisse bekannter Ziele. Der Durchlauf ist nicht atomar und beweist nicht, dass kein gleichzeitig entstandener Nachkomme übrig ist.
+Doložených cílů: {0} · průchodů: {1} · možných zbylých procesů v posledním inventáři: {2}	Belegte Ziele: {0} · Durchläufe: {1} · mögliche Reste im letzten Inventar: {2}
 limit 256 cílů	Limit von 256 Zielen
 časový limit	Zeitlimit
 limit tří průchodů	Limit von drei Durchläufen
-nedostupný inventář	Inventur nicht verfügbar
+nedostupný inventář	Inventar nicht verfügbar
 zaniklá nebo neověřitelná vazba rodiče	Elternbeziehung entfallen oder nicht überprüfbar
-další neověřená pozorování potomků	weitere nicht überprüfte Beobachtungen von Nachfolgern
+další neověřená pozorování potomků	weitere nicht überprüfte Beobachtungen von Nachkommen
 Částečný výsledek: {0}.	Teilergebnis: {0}.
 Pracovník plánu není dostupný.	Der Plan-Hilfsprozess ist nicht verfügbar.
 Opakované přijetí akce služeb.	Die Dienstaktion wurde mehrfach angenommen.
@@ -440,13 +440,13 @@ Dotaz na podrobnosti překročil limit 5 sekund. Pracovník se ukončuje; dotaz 
 Pracovník předčasně skončil.	Der Hilfsprozess wurde vorzeitig beendet.
 Chyba spojení s pracovníkem.	Verbindungsfehler mit dem Hilfsprozess.
 Jiný dotaz nebo akce ještě probíhá. Počkejte na výsledek.	Eine andere Abfrage oder Aktion läuft noch. Warten Sie auf das Ergebnis.
-Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.	Zeitlimit überschritten. Das Ergebnis des laufenden Beendens der Struktur ist unbekannt.
+Vypršel limit. Výsledek rozpracovaného ukončování stromu není známý.	Zeitlimit überschritten. Das Ergebnis des laufenden Beendens der Prozessstruktur ist unbekannt.
 Čekání na zvýšení práv nebo výsledek skončilo. Výsledek případné akce není známý.	Das Warten auf Rechteerhöhung oder Ergebnis wurde beendet. Das Ergebnis einer eventuellen Aktion ist unbekannt.
 Pracovník neodpověděl do 5 sekund. Výsledek rozpracované akce není známý.	Der Hilfsprozess hat nicht innerhalb von 5 Sekunden geantwortet. Das Ergebnis der laufenden Aktion ist unbekannt.
 Čekání bylo zrušeno. Akce na známých i nově zjištěných cílech se mohly provést.	Das Warten wurde abgebrochen. Aktionen an bekannten und neu gefundenen Zielen wurden möglicherweise ausgeführt.
-Chybí úplný ověřený výsledek stromu. Akce se mohly provést. {0}	Ein vollständiges überprüftes Ergebnis der Struktur fehlt. Aktionen wurden möglicherweise ausgeführt. {0}
+Chybí úplný ověřený výsledek stromu. Akce se mohly provést. {0}	Ein vollständiges überprüftes Ergebnis der Prozessstruktur fehlt. Aktionen wurden möglicherweise ausgeführt. {0}
 Předání aktualizace se nesmí opakovat.	Die Übergabe des Updates darf nicht wiederholt werden.
 Platnost potvrzení aktualizace vypršela.	Die Bestätigung des Updates ist abgelaufen.
 Předání instalace nebylo potvrzené.	Die Übergabe der Installation wurde nicht bestätigt.
-Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte v příštím spuštění.	Der Hilfsprozess hat den Plan übernommen. Die Installation beginnt erst, wenn dieser Prozess tatsächlich beendet ist; prüfen Sie den Abschluss beim nächsten Start.
+Pracovník převzal plán. Instalace začne až po skutečném ukončení tohoto procesu; dokončení ověřte při příštím spuštění.	Der Hilfsprozess hat den Plan übernommen. Die Installation beginnt erst, wenn dieser Prozess tatsächlich beendet ist; prüfen Sie den Abschluss beim nächsten Start.
 Potvrzení pracovníka nedorazilo. Plán mohl být předán; neopakujte požadavek a zkontrolujte deník. {0}	Die Bestätigung des Hilfsprozesses ist nicht eingetroffen. Der Plan wurde möglicherweise übergeben; wiederholen Sie die Anforderung nicht und prüfen Sie das Journal. {0}
