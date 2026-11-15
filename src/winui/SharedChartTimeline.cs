@@ -72,6 +72,11 @@ public sealed class SharedChartTimeline
             Publish(new(timeNs, true, timeNs, null) { SourceOwner = owner });
         else Publish(new(timeNs, true, start, timeNs == start ? null : timeNs) { SourceOwner = owner });
     }
+    internal void Drag(object owner, long startNs, long endNs)
+    {
+        Validate(startNs); Validate(endNs); hoverOwner = null;
+        Publish(new(endNs, true, startNs, endNs == startNs ? null : endNs) { SourceOwner = owner });
+    }
     private void Publish(ChartTimelineState value)
     {
         if (value == State) return;

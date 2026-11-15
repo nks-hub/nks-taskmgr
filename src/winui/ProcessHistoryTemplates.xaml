@@ -6,8 +6,8 @@
   <DataTemplate x:Key="HistoricalProcess" x:DataType="local:ProcessHistoryRow">
     <Grid Padding="10,6" ColumnSpacing="12">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/><ColumnDefinition Width="70"/><ColumnDefinition Width="85"/>
-        <ColumnDefinition Width="110"/><ColumnDefinition Width="120"/><ColumnDefinition Width="135"/>
+        <ColumnDefinition Width="*"/><ColumnDefinition Width="70"/><ColumnDefinition Width="120"/>
+        <ColumnDefinition Width="150"/><ColumnDefinition Width="150"/><ColumnDefinition Width="120"/>
       </Grid.ColumnDefinitions>
       <TextBlock Text="{x:Bind NameText}" FontSize="12" TextTrimming="CharacterEllipsis"/>
       <TextBlock Grid.Column="1" Text="{x:Bind PidText}" FontSize="12" HorizontalAlignment="Right"/>

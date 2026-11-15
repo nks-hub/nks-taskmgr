@@ -59,6 +59,7 @@ internal sealed class ProcessHistoryStore
             foreach (var frame in frames) if (nearest is null || Math.Abs(frame.Time - start) < Math.Abs(nearest.Time - start)) nearest = frame;
         }
         var cpu = new List<ProcessHistorySample>(64); var memory = new List<ProcessHistorySample>(64); var io = new List<ProcessHistorySample>(64);
+        var summaries = new Dictionary<(ProcessKey, ulong, long), ProcessHistorySummary>();
         var gaps = new List<ProcessHistoryGap>(32); int count = 0, gapCount = 0, minOriginal = int.MaxValue, maxOriginal = 0;
         long original = 0, stored = 0, firstSelected = 0, lastSelected = 0, firstWall = 0, lastWall = 0;
         ulong missing = 0; bool unknown = false; Frame? previous = null;
@@ -76,8 +77,12 @@ internal sealed class ProcessHistoryStore
                 unknown |= frame.Revision == 0 || frame.MissingFrames is null;
                 missing += frame.MissingFrames ?? 0;
                 foreach (var row in frame.Rows) {
-                    if (point) { cpu.Add(row); memory.Add(row); io.Add(row); }
-                    else { ProcessHistoryRanking.Keep(cpu, row, ProcessHistoryMetric.Cpu); ProcessHistoryRanking.Keep(memory, row, ProcessHistoryMetric.Memory); ProcessHistoryRanking.Keep(io, row, ProcessHistoryMetric.Io); }
+                    if (point) { cpu.Add(row); memory.Add(row); io.Add(row); continue; }
+                    // Without a verified generation the same PID may be a different lifetime, so such rows are never merged.
+                    bool verified = !row.Key.Boot.IsEmpty && row.Key.Generation != 0 && row.Created100ns != 0 && row.Key.Kind is GenerationKind.CreationTime or GenerationKind.SequenceNumber;
+                    var identity = (row.Key, row.Created100ns, verified ? 0 : row.TimeNs);
+                    if (!summaries.TryGetValue(identity, out var summary)) summaries.Add(identity, summary = new(row));
+                    summary.Add(row);
                 }
             }
             previous = frame;
@@ -89,9 +94,9 @@ internal sealed class ProcessHistoryStore
         }
         string notice = count == 0 ? point ? Loc.T("U zvoleného času není dostupný uchovaný procesový snímek.") : Loc.T("Ve zvoleném intervalu není uchovaný procesový snímek.")
             : point ? Loc.T("Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.")
-            : Loc.T("Maximum každého řádku pochází z jediného skutečně uchovaného vzorku. Přehled obsahuje jen uchovaná pozorování vybraných procesů; nezachycené hodnoty nejsou známé.");
+            : Loc.T("Průměr a maximum každého procesu jsou spočtené jen z jeho uchovaných vzorků. Snímek uchovává top 8 procesů podle CPU, RAM a I/O; nezachycené hodnoty nejsou známé.");
         return new(start, end, first, last, firstSelected, lastSelected, firstWall, lastWall, count, original, stored,
             count == 0 ? 0 : minOriginal, maxOriginal, gapCount, missing, unknown, frames.Count, rowCount, bytes + 196608,
-            evictedFrames, evictedRows, nearest is null ? 0 : nearest.Time - start, gaps.AsReadOnly(), cpu.AsReadOnly(), memory.AsReadOnly(), io.AsReadOnly(), notice);
+            evictedFrames, evictedRows, nearest is null ? 0 : nearest.Time - start, gaps.AsReadOnly(), cpu.AsReadOnly(), memory.AsReadOnly(), io.AsReadOnly(), summaries.Values.ToArray(), notice);
     }
 }

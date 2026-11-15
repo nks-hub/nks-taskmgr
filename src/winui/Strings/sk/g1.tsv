@@ -175,9 +175,8 @@ mezer	medzier
 \nÚplnost číslování předání nelze určit.	\nÚplnosť číslovania odovzdania nemožno určiť.
 \nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit.	\nVšeobecné I/O procesu sa nepriraďuje k disku, sieti ani GPU; úplnosť pôvodného zberu nemožno potvrdiť.
 {0} z {1} procesů	{0} z {1} procesov
-{0} maxim	{0} maxím
 Všechny zachycené řádky nejbližšího snímku.	Všetky zachytené riadky najbližšej snímky.
-Nejvýše 64 pozorovaných maxim zvolené metriky; každý řádek si zachovává skutečný čas a souběžné hodnoty.	Najviac 64 pozorovaných maxím zvolenej metriky; každý riadok si zachováva skutočný čas a súbežné hodnoty.
+Průměr a maximum z uchovaných vzorků každého procesu; řazeno podle součtu zvolené metriky v úseku.	Priemer a maximum z uchovaných vzoriek každého procesu; zoradené podľa súčtu zvolenej metriky v úseku.
   ·  opožděný vzorek	  ·  oneskorená vzorka
 Pro tento výběr nejsou zachycené platné hodnoty zvolené metriky.	Pre tento výber nie sú zachytené platné hodnoty zvolenej metriky.
 Dump	Výpis

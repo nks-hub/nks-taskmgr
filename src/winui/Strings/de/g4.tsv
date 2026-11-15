@@ -398,7 +398,7 @@ Pracovník nepotvrdil úspěšné dokončení odpovědi.	Der Hilfsprozess hat de
 Skutečné ukončení pracovníka aktualizací nelze ověřit.	Das tatsächliche Beenden des Update-Hilfsprozesses kann nicht geprüft werden.
 Procesy v čase…	Prozesse im Zeitverlauf…
 Otevřít historické procesy pro vybraný čas nebo úsek	Historische Prozesse für die ausgewählte Zeit oder den Bereich öffnen
-Kliknutím na graf připněte čas. Shift+kliknutím vyberte dva konce úseku. Historický přehled neprovádí živé akce.	Klicken Sie auf das Diagramm, um eine Zeit anzuheften. Mit Umschalt+Klick wählen Sie beide Enden eines Bereichs. Die historische Übersicht führt keine Live-Aktionen aus.
+Kliknutím na graf připněte čas, tažením nebo Shift+kliknutím vyberte úsek. Historický přehled neprovádí živé akce.	Klicken Sie in die Grafik, um einen Zeitpunkt anzuheften; ziehen oder Umschalt+Klick wählt einen Abschnitt. Die historische Übersicht führt keine Live-Aktionen aus.
 Vybraný úsek {0} · historický pohled	Ausgewählter Bereich {0} · historische Ansicht
 První hranice úseku · Shift+klik nastaví druhou.	Erste Bereichsgrenze · Umschalt+Klick setzt die zweite.
 Připnutý čas · historický pohled	Angeheftete Zeit · historische Ansicht
@@ -437,4 +437,9 @@ Neplatný nebo neověřený výsledek cíle stromu.	Ungültiges oder nicht gepr�
 U zvoleného času není dostupný uchovaný procesový snímek.	Zur ausgewählten Zeit ist keine aufbewahrte Prozess-Momentaufnahme verfügbar.
 Ve zvoleném intervalu není uchovaný procesový snímek.	Im ausgewählten Intervall gibt es keine aufbewahrte Prozess-Momentaufnahme.
 Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	Die nächstgelegene tatsächlich aufbewahrte Prozess-Momentaufnahme; die Werte wurden nicht auf den Cursor hochgerechnet.
-Maximum každého řádku pochází z jediného skutečně uchovaného vzorku. Přehled obsahuje jen uchovaná pozorování vybraných procesů; nezachycené hodnoty nejsou známé.	Das Maximum jeder Zeile stammt aus einer einzigen tatsächlich aufbewahrten Stichprobe. Die Übersicht enthält nur aufbewahrte Beobachtungen ausgewählter Prozesse; nicht erfasste Werte sind unbekannt.
+Průměr a maximum každého procesu jsou spočtené jen z jeho uchovaných vzorků. Snímek uchovává top 8 procesů podle CPU, RAM a I/O; nezachycené hodnoty nejsou známé.	Durchschnitt und Maximum jedes Prozesses werden nur aus seinen gespeicherten Stichproben berechnet. Ein Snapshot speichert die Top 8 Prozesse nach CPU, RAM und E/A; nicht erfasste Werte sind unbekannt.
+CPU Ø / max	CPU Ø / max
+RAM Ø / max	RAM Ø / max
+I/O Ø / max	E/A Ø / max
+Snímky	Snapshots
+Ve kolika snímcích úseku byl proces zachycen	In wie vielen Snapshots des Abschnitts der Prozess erfasst wurde

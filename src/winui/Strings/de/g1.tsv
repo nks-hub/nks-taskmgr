@@ -175,9 +175,8 @@ mezer	Lücken
 \nÚplnost číslování předání nelze určit.	\nDie Vollständigkeit der Übergabenummerierung lässt sich nicht bestimmen.
 \nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit.	\nAllgemeine Prozess-E/A wird weder Datenträger, Netzwerk noch GPU zugeordnet; die Vollständigkeit der ursprünglichen Erfassung lässt sich nicht bestätigen.
 {0} z {1} procesů	{0} von {1} Prozessen
-{0} maxim	{0} Spitzenwerte
 Všechny zachycené řádky nejbližšího snímku.	Alle erfassten Zeilen der nächsten Aufnahme.
-Nejvýše 64 pozorovaných maxim zvolené metriky; každý řádek si zachovává skutečný čas a souběžné hodnoty.	Höchstens 64 beobachtete Spitzenwerte der gewählten Metrik; jede Zeile behält ihre tatsächliche Zeit und die gleichzeitigen Werte.
+Průměr a maximum z uchovaných vzorků každého procesu; řazeno podle součtu zvolené metriky v úseku.	Durchschnitt und Maximum aus den gespeicherten Stichproben jedes Prozesses; sortiert nach der Summe der gewählten Metrik im Abschnitt.
   ·  opožděný vzorek	  ·  verspätete Messung
 Pro tento výběr nejsou zachycené platné hodnoty zvolené metriky.	Für diese Auswahl wurden keine gültigen Werte der gewählten Metrik erfasst.
 Dump	Abbild

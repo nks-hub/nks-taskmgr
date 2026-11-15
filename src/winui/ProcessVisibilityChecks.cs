@@ -103,7 +103,7 @@ public static partial class WinUiChecks
             && cpu.Primary.Value == 13 && cpu.History.Count == 4 && memory.Primary.Value == 4UL * 1073741824 + 3UL * 1048576
             && network.Primary.Value == 4000 && network.Secondary.Value == 8000 && network.History.Count == 4 && network.Upload.Count == 4
             && model.PageFile.Count == 4 && model.PageFile.LastValue.Value == 131UL * 1048576 && history.FrameCount == 4
-            && history.CpuRows.Any(row => row.Key == added.Key && row.Cpu.Value == 22), "Hiding only processes stopped resource metrics, intermediate history or capture of a new lifetime.");
+            && history.Summaries.Any(row => row.Last.Key == added.Key && row.Peak(ProcessHistoryMetric.Cpu) == 22), "Hiding only processes stopped resource metrics, intermediate history or capture of a new lifetime.");
         model.SetQuery("40"); Require(model.VisibleProcesses.Count == 1 && ReferenceEquals(model.VisibleProcesses[0], added), "Hidden explicit search did not resynchronize.");
         model.SetMode(ProcessMode.Active); model.Sort(1); model.Sort(2); model.SetQuery("");
         Require(model.Mode == ProcessMode.Active && model.VisibleProcesses.Count == 4, "Hidden explicit mode/sort did not resynchronize.");

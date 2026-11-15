@@ -14,7 +14,7 @@ public sealed partial class MainWindow
 
     private FrameworkElement BuildPerformanceTimeline()
     {
-        foreach (var plot in new[] { chart, pageFile, coreOverlay, gpuDedicated, gpuShared }) plot.Timeline = performanceTimeline;
+        foreach (var plot in new[] { chart, pageFile, coreOverlay, gpuDedicated, gpuShared }) { plot.Timeline = performanceTimeline; plot.RangeSelected += OpenHistoricalProcesses; }
         var panel = performanceTimelinePanel;
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.ColumnDefinitions.Add(new ColumnDefinition());
@@ -25,7 +25,7 @@ public sealed partial class MainWindow
         historicalProcessesButton.BorderThickness = new Thickness(0); historicalProcessesButton.CornerRadius = new CornerRadius(3);
         AutomationProperties.SetName(historicalProcessesButton, Loc.T("Otevřít historické procesy pro vybraný čas nebo úsek"));
         AutomationProperties.SetAutomationId(historicalProcessesButton, "historical-processes");
-        ToolTipService.SetToolTip(historicalProcessesButton, Loc.T("Kliknutím na graf připněte čas. Shift+kliknutím vyberte dva konce úseku. Historický přehled neprovádí živé akce."));
+        ToolTipService.SetToolTip(historicalProcessesButton, Loc.T("Kliknutím na graf připněte čas, tažením nebo Shift+kliknutím vyberte úsek. Historický přehled neprovádí živé akce."));
         historicalProcessesButton.Click += (_, _) => OpenHistoricalProcesses();
         performanceTimeline.Changed += PerformanceTimelineChanged;
         panel.Children.Add(timelineSelection);

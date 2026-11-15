@@ -21,6 +21,9 @@ public sealed partial class ChartView
     private readonly Border readout = new() { Background = Display.Brush(0x12181c), BorderBrush = Display.Brush(0x52616a), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Padding = new Thickness(8, 5, 8, 5), Visibility = Visibility.Collapsed, IsHitTestVisible = false };
     private long? cursorTime;
     private bool pinned;
+    private (double X, long Time)? dragStart;
+    /// <summary>Raised when a mouse drag finishes with a range selected.</summary>
+    public event Action? RangeSelected;
 
     private void BuildInteraction()
     {
@@ -30,8 +33,12 @@ public sealed partial class ChartView
         canvas.Children.Add(cursor); canvas.Children.Add(readout);
         ProtectedCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Cross);
         PointerMoved += (_, args) => {
-            if (pinned) return;
             var point = args.GetCurrentPoint(canvas).Position;
+            if (dragStart is { } start && Math.Abs(point.X - start.X) >= 4) {
+                EffectiveTimeline.Drag(timelineOwner, start.Time, TimeAt(Math.Clamp(point.X, 0, canvas.ActualWidth)));
+                return;
+            }
+            if (pinned) return;
             if (!InPlot(point)) { EffectiveTimeline.Leave(timelineOwner); return; }
             EffectiveTimeline.Hover(timelineOwner, TimeAt(point.X));
         };
@@ -43,9 +50,15 @@ public sealed partial class ChartView
             Focus(FocusState.Pointer);
             long time = TimeAt(point.X);
             if ((args.KeyModifiers & VirtualKeyModifiers.Shift) != 0) EffectiveTimeline.SelectRangePoint(timelineOwner, time);
-            else EffectiveTimeline.SelectCursor(timelineOwner, time, !pinned);
+            else { EffectiveTimeline.SelectCursor(timelineOwner, time, !pinned); dragStart = (point.X, time); CapturePointer(args.Pointer); }
             args.Handled = true;
         };
+        PointerReleased += (_, args) => {
+            bool dragged = dragStart is not null && EffectiveTimeline.Interval is not null && EffectiveTimeline.IsSource(timelineOwner);
+            dragStart = null; ReleasePointerCapture(args.Pointer);
+            if (dragged) RangeSelected?.Invoke();
+        };
+        PointerCaptureLost += (_, _) => dragStart = null;
         GotFocus += (_, _) => {
             if (FocusState != FocusState.Keyboard) return;
             if (cursorTime is not null) EffectiveTimeline.Focus(timelineOwner);

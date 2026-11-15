@@ -18,6 +18,7 @@ internal sealed class HistoricalProcessesWindow : Window
     private readonly Dictionary<ProcessHistoryMetric, Button> metricButtons = [];
     private ProcessHistorySelection selection;
     private ProcessHistoryMetric metric;
+    private readonly TextBlock[] headingLabels = new TextBlock[6];
 
     internal HistoricalProcessesWindow(ProcessHistorySelection selection)
     {
@@ -44,13 +45,12 @@ internal sealed class HistoricalProcessesWindow : Window
         count.HorizontalAlignment = HorizontalAlignment.Right; count.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(count, 1); bar.Children.Add(count);
         Grid.SetRow(bar, 1); root.Children.Add(bar);
 
-        var table = new Grid { MinWidth = 640 }; table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); table.RowDefinitions.Add(new RowDefinition());
+        var table = new Grid { MinWidth = 760 }; table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); table.RowDefinitions.Add(new RowDefinition());
         var headings = new Grid { Padding = new Thickness(10, 6, 10, 6), ColumnSpacing = 12, Background = Display.Brush(0x1d252a) };
-        foreach (var width in new[] { new GridLength(1, GridUnitType.Star), new GridLength(70), new GridLength(85), new GridLength(110), new GridLength(120), new GridLength(135) }) headings.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
-        var names = new[] { Loc.T("Proces"), "PID", "CPU", "RAM", "I/O", Loc.T("Čas") };
-        var hints = new[] { "", Loc.T("Původní PID"), "", Loc.T("Pracovní sada"), Loc.T("Čtení a zápis procesu, bez rozlišení disku, sítě a GPU"), Loc.T("Skutečný čas vzorku") };
-        for (int i = 0; i < names.Length; ++i) {
-            var label = Text(names[i], 12, 0x95a4ad); if (i > 0) label.HorizontalAlignment = HorizontalAlignment.Right;
+        foreach (var width in new[] { new GridLength(1, GridUnitType.Star), new GridLength(70), new GridLength(120), new GridLength(150), new GridLength(150), new GridLength(120) }) headings.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
+        var hints = new[] { "", Loc.T("Původní PID"), "", Loc.T("Pracovní sada"), Loc.T("Čtení a zápis procesu, bez rozlišení disku, sítě a GPU"), "" };
+        for (int i = 0; i < headingLabels.Length; ++i) {
+            var label = headingLabels[i] = Text("", 12, 0x95a4ad); if (i > 0) label.HorizontalAlignment = HorizontalAlignment.Right;
             if (hints[i].Length > 0) ToolTipService.SetToolTip(label, hints[i]);
             Grid.SetColumn(label, i); headings.Children.Add(label);
         }
@@ -61,7 +61,7 @@ internal sealed class HistoricalProcessesWindow : Window
         Grid.SetRow(list, 1); table.Children.Add(list);
         var scroll = new ScrollViewer { Content = table, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
             HorizontalContentAlignment = HorizontalAlignment.Stretch };
-        scroll.SizeChanged += (_, args) => table.Width = Math.Max(640, args.NewSize.Width);
+        scroll.SizeChanged += (_, args) => table.Width = Math.Max(760, args.NewSize.Width);
         Grid.SetRow(scroll, 2); root.Children.Add(scroll);
         selected.TextTrimming = TextTrimming.CharacterEllipsis; selected.TextWrapping = TextWrapping.NoWrap;
         Grid.SetRow(selected, 3); root.Children.Add(selected);
@@ -94,9 +94,14 @@ internal sealed class HistoricalProcessesWindow : Window
 
     private void ShowRows()
     {
-        rows.Replace(selection.Rows(metric));
-        count.Text = rows.Count == 0 ? "" : selection.Point ? Loc.F("{0} z {1} procesů", rows.Count, selection.MaximumOriginalCount) : Loc.F("{0} maxim", rows.Count);
-        ToolTipService.SetToolTip(list, selection.Point ? Loc.T("Všechny zachycené řádky nejbližšího snímku.") : Loc.T("Nejvýše 64 pozorovaných maxim zvolené metriky; každý řádek si zachovává skutečný čas a souběžné hodnoty."));
+        bool point = selection.Point;
+        string[] names = point ? [Loc.T("Proces"), "PID", "CPU", "RAM", "I/O", Loc.T("Čas")] : [Loc.T("Proces"), "PID", Loc.T("CPU Ø / max"), Loc.T("RAM Ø / max"), Loc.T("I/O Ø / max"), Loc.T("Snímky")];
+        for (int i = 0; i < names.Length; ++i) headingLabels[i].Text = names[i];
+        ToolTipService.SetToolTip(headingLabels[5], point ? Loc.T("Skutečný čas vzorku") : Loc.T("Ve kolika snímcích úseku byl proces zachycen"));
+        if (point) rows.Replace(selection.Rows(metric).Select(sample => new ProcessHistoryRow(sample)));
+        else rows.Replace(selection.Summaries.OrderByDescending(summary => summary.Total(metric)).Select(summary => new ProcessHistoryRow(summary, selection.FrameCount)));
+        count.Text = rows.Count == 0 ? "" : point ? Loc.F("{0} z {1} procesů", rows.Count, selection.MaximumOriginalCount) : Loc.F(MainWindow.PluralForm(rows.Count, "{0} proces", "{0} procesy", "{0} procesů"), rows.Count);
+        ToolTipService.SetToolTip(list, point ? Loc.T("Všechny zachycené řádky nejbližšího snímku.") : Loc.T("Průměr a maximum z uchovaných vzorků každého procesu; řazeno podle součtu zvolené metriky v úseku."));
         foreach (var (kind, button) in metricButtons) button.Background = Display.Brush(kind == metric ? 0x28343bu : 0x1d252au);
         if (rows.Count > 0) list.SelectedIndex = 0; else ShowSelected();
     }
@@ -105,7 +110,10 @@ internal sealed class HistoricalProcessesWindow : Window
     {
         if (list.SelectedItem is ProcessHistoryRow row) {
             var sample = row.Sample;
-            selected.Text = sample.Name + "  ·  PID " + sample.Key.Pid + "  ·  " + ProcessHistoryText.Time(sample.TimeNs, sample.WallTimeUnixNs) + (sample.Late ? Loc.T("  ·  opožděný vzorek") : "");
+            string seen = row.Summary is { } summary && summary.Samples > 1
+                ? ProcessHistoryText.Time(summary.First.TimeNs, summary.First.WallTimeUnixNs) + " – " + ProcessHistoryText.Time(sample.TimeNs, sample.WallTimeUnixNs)
+                : ProcessHistoryText.Time(sample.TimeNs, sample.WallTimeUnixNs);
+            selected.Text = sample.Name + "  ·  PID " + sample.Key.Pid + "  ·  " + seen + (sample.Late ? Loc.T("  ·  opožděný vzorek") : "");
             ToolTipService.SetToolTip(selected, ProcessHistoryText.Detail(sample));
         } else {
             selected.Text = rows.Count == 0 ? Loc.T("Pro tento výběr nejsou zachycené platné hodnoty zvolené metriky.") : "";

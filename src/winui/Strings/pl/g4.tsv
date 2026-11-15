@@ -398,7 +398,7 @@ Pracovník nepotvrdil úspěšné dokončení odpovědi.	Proces pomocniczy nie p
 Skutečné ukončení pracovníka aktualizací nelze ověřit.	Nie można zweryfikować faktycznego zakończenia procesu pomocniczego aktualizacji.
 Procesy v čase…	Procesy w czasie…
 Otevřít historické procesy pro vybraný čas nebo úsek	Otwórz procesy historyczne dla wybranego czasu lub zakresu
-Kliknutím na graf připněte čas. Shift+kliknutím vyberte dva konce úseku. Historický přehled neprovádí živé akce.	Kliknij wykres, aby przypiąć czas. Shift+kliknięcie wybiera oba końce zakresu. Przegląd historyczny nie wykonuje działań na żywo.
+Kliknutím na graf připněte čas, tažením nebo Shift+kliknutím vyberte úsek. Historický přehled neprovádí živé akce.	Kliknij wykres, aby przypiąć czas; przeciągnij lub Shift+kliknij, aby wybrać zakres. Widok historyczny nie wykonuje działań na żywo.
 Vybraný úsek {0} · historický pohled	Wybrany zakres {0} · widok historyczny
 První hranice úseku · Shift+klik nastaví druhou.	Pierwsza granica zakresu · Shift+kliknięcie ustawia drugą.
 Připnutý čas · historický pohled	Przypięty czas · widok historyczny
@@ -437,4 +437,9 @@ Neplatný nebo neověřený výsledek cíle stromu.	Nieprawidłowy lub niezweryf
 U zvoleného času není dostupný uchovaný procesový snímek.	Dla wybranego czasu nie jest dostępna przechowywana migawka procesów.
 Ve zvoleném intervalu není uchovaný procesový snímek.	W wybranym przedziale nie ma przechowywanej migawki procesów.
 Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	Najbliższa faktycznie przechowywana migawka procesów; wartości nie zostały przeliczone do kursora.
-Maximum každého řádku pochází z jediného skutečně uchovaného vzorku. Přehled obsahuje jen uchovaná pozorování vybraných procesů; nezachycené hodnoty nejsou známé.	Maksimum każdego wiersza pochodzi z jednej faktycznie przechowywanej próbki. Przegląd zawiera tylko przechowywane obserwacje wybranych procesów; nieprzechwycone wartości są nieznane.
+Průměr a maximum každého procesu jsou spočtené jen z jeho uchovaných vzorků. Snímek uchovává top 8 procesů podle CPU, RAM a I/O; nezachycené hodnoty nejsou známé.	Średnia i maksimum każdego procesu są liczone tylko z jego zachowanych próbek. Migawka przechowuje 8 procesów o największym CPU, RAM i I/O; nieprzechwycone wartości są nieznane.
+CPU Ø / max	CPU śr. / maks.
+RAM Ø / max	RAM śr. / maks.
+I/O Ø / max	I/O śr. / maks.
+Snímky	Migawki
+Ve kolika snímcích úseku byl proces zachycen	W ilu migawkach zakresu proces został przechwycony

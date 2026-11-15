@@ -47,6 +47,19 @@ public static partial class WinUiChecks
             WorkingSetBytes = 1, ReadIoBytesPerSecond = new Metric { Value = 1000, State = SampleState.Unavailable },
             WriteIoBytesPerSecond = new Metric { Value = 1000, State = SampleState.Valid } }, false);
         Check(edges.Concat(ties).ToArray()); Check(ties.Concat(edges).ToArray());
+        var store = new ProcessHistoryStore(); var steady = Row(10, 0, 0, 0, 0); var other = Row(11, 5, 50, 0, 0);
+        steady.SetCreatedTime(1000); other.SetCreatedTime(1100);
+        for (int i = 1; i <= 3; ++i) {
+            steady.Update(new ProcessInfo { CpuPercent = new Metric { Value = i * 10, State = SampleState.Valid }, WorkingSetBytes = (ulong)i * 100,
+                ReadIoBytesPerSecond = new Metric { State = SampleState.Unavailable }, WriteIoBytesPerSecond = new Metric { State = SampleState.Unavailable } }, false);
+            store.Capture(i * 1_000_000_000L, 0, (ulong)i, i == 2 ? [steady, other] : [steady], null, null);
+        }
+        var range = store.Select(1_000_000_000L, 3_000_000_000L);
+        var summary = range.Summaries.Single(row => row.Last.Key == steady.Key);
+        Require(range.FrameCount == 3 && range.Summaries.Count == 2 && range.CpuRows.Count == 0 && summary.Samples == 3
+            && summary.Average(ProcessHistoryMetric.Cpu) == 20 && summary.Peak(ProcessHistoryMetric.Cpu) == 30 && summary.Total(ProcessHistoryMetric.Cpu) == 60
+            && summary.Peak(ProcessHistoryMetric.Memory) == 300 && double.IsNaN(summary.Average(ProcessHistoryMetric.Io))
+            && range.Summaries.Single(row => row.Last.Key == other.Key).Samples == 1, "Interval process summary miscounted samples, average, peak or invalid I/O.");
         App.Trace("History ranking passed: small snapshots, stable ties, input order, idle PID, stale rows, invalid metrics, large memory and duplicate keys");
     }
 }

@@ -398,7 +398,7 @@ Pracovník nepotvrdil úspěšné dokončení odpovědi.	Pracovník nepotvrdil �
 Skutečné ukončení pracovníka aktualizací nelze ověřit.	Skutočné ukončenie pracovníka aktualizácií nemožno overiť.
 Procesy v čase…	Procesy v čase…
 Otevřít historické procesy pro vybraný čas nebo úsek	Otvoriť historické procesy pre vybraný čas alebo úsek
-Kliknutím na graf připněte čas. Shift+kliknutím vyberte dva konce úseku. Historický přehled neprovádí živé akce.	Kliknutím na graf pripnite čas. Shift+kliknutím vyberte dva konce úseku. Historický prehľad nevykonáva živé akcie.
+Kliknutím na graf připněte čas, tažením nebo Shift+kliknutím vyberte úsek. Historický přehled neprovádí živé akce.	Kliknutím na graf pripnete čas, ťahaním alebo Shift+kliknutím vyberiete úsek. Historický prehľad nevykonáva živé akcie.
 Vybraný úsek {0} · historický pohled	Vybraný úsek {0} · historický pohľad
 První hranice úseku · Shift+klik nastaví druhou.	Prvá hranica úseku · Shift+klik nastaví druhú.
 Připnutý čas · historický pohled	Pripnutý čas · historický pohľad
@@ -437,4 +437,9 @@ Neplatný nebo neověřený výsledek cíle stromu.	Neplatný alebo neoverený v
 U zvoleného času není dostupný uchovaný procesový snímek.	Pre zvolený čas nie je dostupná uchovaná procesová snímka.
 Ve zvoleném intervalu není uchovaný procesový snímek.	Vo zvolenom intervale nie je uchovaná procesová snímka.
 Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	Najbližšia skutočne uchovaná procesová snímka; hodnoty neboli dopočítané ku kurzoru.
-Maximum každého řádku pochází z jediného skutečně uchovaného vzorku. Přehled obsahuje jen uchovaná pozorování vybraných procesů; nezachycené hodnoty nejsou známé.	Maximum každého riadku pochádza z jedinej skutočne uchovanej vzorky. Prehľad obsahuje iba uchované pozorovania vybraných procesov; nezachytené hodnoty nie sú známe.
+Průměr a maximum každého procesu jsou spočtené jen z jeho uchovaných vzorků. Snímek uchovává top 8 procesů podle CPU, RAM a I/O; nezachycené hodnoty nejsou známé.	Priemer a maximum každého procesu sú vypočítané len z jeho uchovaných vzoriek. Snímka uchováva top 8 procesov podľa CPU, RAM a I/O; nezachytené hodnoty nie sú známe.
+CPU Ø / max	CPU Ø / max
+RAM Ø / max	RAM Ø / max
+I/O Ø / max	I/O Ø / max
+Snímky	Snímky
+Ve kolika snímcích úseku byl proces zachycen	V koľkých snímkach úseku bol proces zachytený
