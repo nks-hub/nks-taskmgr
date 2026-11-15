@@ -94,7 +94,7 @@ internal sealed class ProcessHistoryStore
         }
         string notice = count == 0 ? point ? Loc.T("U zvoleného času není dostupný uchovaný procesový snímek.") : Loc.T("Ve zvoleném intervalu není uchovaný procesový snímek.")
             : point ? Loc.T("Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.")
-            : Loc.T("Průměr a maximum každého procesu jsou spočtené jen z jeho uchovaných vzorků. Snímek uchovává top 8 procesů podle CPU, RAM a I/O; nezachycené hodnoty nejsou známé.");
+            : Loc.T("Průměr a maximum počítáme jen z uložených vzorků. Hodnoty mimo ně neznáme.");
         return new(start, end, first, last, firstSelected, lastSelected, firstWall, lastWall, count, original, stored,
             count == 0 ? 0 : minOriginal, maxOriginal, gapCount, missing, unknown, frames.Count, rowCount, bytes + 196608,
             evictedFrames, evictedRows, nearest is null ? 0 : nearest.Time - start, gaps.AsReadOnly(), cpu.AsReadOnly(), memory.AsReadOnly(), io.AsReadOnly(), summaries.Values.ToArray(), notice);

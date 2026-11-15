@@ -22,8 +22,6 @@ public sealed partial class ChartView
     private long? cursorTime;
     private bool pinned;
     private (double X, long Time)? dragStart;
-    /// <summary>Raised when a mouse drag finishes with a range selected.</summary>
-    public event Action? RangeSelected;
 
     private void BuildInteraction()
     {
@@ -54,9 +52,9 @@ public sealed partial class ChartView
             args.Handled = true;
         };
         PointerReleased += (_, args) => {
-            bool dragged = dragStart is not null && EffectiveTimeline.Interval is not null && EffectiveTimeline.IsSource(timelineOwner);
+            bool dragged = dragStart is not null && EffectiveTimeline.IsSource(timelineOwner);
             dragStart = null; ReleasePointerCapture(args.Pointer);
-            if (dragged) RangeSelected?.Invoke();
+            if (dragged) EffectiveTimeline.FinishDrag();
         };
         PointerCaptureLost += (_, _) => dragStart = null;
         GotFocus += (_, _) => {
@@ -133,7 +131,7 @@ public sealed partial class ChartView
             text = string.Join("\n", readings.Select(item => item.Item1 + ": " + Value(item.Item2)));
             if (overlays.Count >= 5) text += "\n" + Loc.F("5 nejvytíženějších z {0}", overlays.Count + 1);
         }
-        text += "\n" + Loc.F("{0} s zpět", Display.Number(Math.Max(0, (now - (sample?.Time ?? time)) / 1_000_000_000d), "")) + " · " + (pinned ? Loc.T("připnuto") : Loc.T("kliknutím připnout"));
+        text += "\n" + Loc.F("před {0} s", Display.Number(Math.Max(0, (now - (sample?.Time ?? time)) / 1_000_000_000d), "")) + " · " + (pinned ? Loc.T("připnuto") : Loc.T("kliknutím připnout"));
         if (sample is { } observed) text += "\n" + Loc.F("Zdroj primárního vzorku: {0}", MeasurementText.Source(observed.Value.Source));
         text += "\n" + Loc.F("Čas: {0}", Clock(sample?.Time ?? time));
         if (EffectiveTimeline.Interval is { } range)

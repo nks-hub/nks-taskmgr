@@ -168,7 +168,7 @@ mezera	Lücke
 mezery	Lücken
 mezer	Lücken
 \nZnámé vynechané revize předání: {0}	\nBekannte ausgelassene Übergaberevisionen: {0}
-\nUloženo {0} z {1} řádků; každý snímek uchovává sjednocení top 8 podle CPU, RAM a I/O.	\n{0} von {1} Zeilen gespeichert; jede Aufnahme behält die Vereinigung der Top 8 nach CPU, RAM und E/A.
+\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM a 8 s nejvyšším I/O.	\n{0} von {1} Zeilen gespeichert. Jede Aufnahme speichert nur die 8 Prozesse mit der höchsten CPU-Last, die 8 mit dem meisten RAM und die 8 mit der meisten E/A.
 \nVe snímku bylo původně {0}–{1} procesů.	\nDie Aufnahme enthielt ursprünglich {0}–{1} Prozesse.
 \nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} z 4 MiB.	\nGespeicherter Bereich {0} – {1}: {2} Aufnahmen, {3} Zeilen, {4} von 4 MiB.
 \nVytěsněno {0} snímků ({1} řádků).	\n{0} Aufnahmen verdrängt ({1} Zeilen).
@@ -176,7 +176,7 @@ mezer	Lücken
 \nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit.	\nAllgemeine Prozess-E/A wird weder Datenträger, Netzwerk noch GPU zugeordnet; die Vollständigkeit der ursprünglichen Erfassung lässt sich nicht bestätigen.
 {0} z {1} procesů	{0} von {1} Prozessen
 Všechny zachycené řádky nejbližšího snímku.	Alle erfassten Zeilen der nächsten Aufnahme.
-Průměr a maximum z uchovaných vzorků každého procesu; řazeno podle součtu zvolené metriky v úseku.	Durchschnitt und Maximum aus den gespeicherten Stichproben jedes Prozesses; sortiert nach der Summe der gewählten Metrik im Abschnitt.
+Průměr a maximum z uložených vzorků. Nahoře je proces, který v úseku spotřeboval nejvíc.	Durchschnitt und Maximum aus gespeicherten Messwerten. Oben steht der Prozess, der im Bereich am meisten verbraucht hat.
   ·  opožděný vzorek	  ·  verspätete Messung
 Pro tento výběr nejsou zachycené platné hodnoty zvolené metriky.	Für diese Auswahl wurden keine gültigen Werte der gewählten Metrik erfasst.
 Dump	Abbild

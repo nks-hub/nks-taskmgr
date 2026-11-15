@@ -60,6 +60,10 @@ public static partial class WinUiChecks
             && summary.Average(ProcessHistoryMetric.Cpu) == 20 && summary.Peak(ProcessHistoryMetric.Cpu) == 30 && summary.Total(ProcessHistoryMetric.Cpu) == 60
             && summary.Peak(ProcessHistoryMetric.Memory) == 300 && double.IsNaN(summary.Average(ProcessHistoryMetric.Io))
             && range.Summaries.Single(row => row.Last.Key == other.Key).Samples == 1, "Interval process summary miscounted samples, average, peak or invalid I/O.");
+        var system = new HistorySeries();
+        system.Append(1, new Metric { Value = 10, State = SampleState.Valid }); system.Append(2, new Metric { Value = 90, State = SampleState.Unavailable });
+        system.Append(3, new Metric { Value = 30, State = SampleState.Valid }); system.Append(4, new Metric { Value = 50, State = SampleState.Valid });
+        Require(system.Summary(1, 3) == (20, 30) && system.Summary(5, 9) is null, "System range summary used an invalid or out-of-range sample.");
         App.Trace("History ranking passed: small snapshots, stable ties, input order, idle PID, stale rows, invalid metrics, large memory and duplicate keys");
     }
 }

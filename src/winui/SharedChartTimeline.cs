@@ -25,6 +25,9 @@ public sealed class SharedChartTimeline
     public ChartTimelineRange? Interval => State.Interval;
     public event EventHandler<ChartTimelineChangedEventArgs>? Changed;
     public event EventHandler<ChartTimelineChangedEventArgs>? RangeChanged;
+    /// <summary>Raised when a mouse drag on any attached chart finishes with a range selected.</summary>
+    public event EventHandler? RangeDragged;
+    internal void FinishDrag() { if (Interval is not null) RangeDragged?.Invoke(this, EventArgs.Empty); }
 
     public void SetCursor(long? timeNs, bool pinned = false)
     {

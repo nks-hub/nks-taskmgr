@@ -40,6 +40,18 @@ public sealed class HistorySeries
         return maximum;
     }
 
+    /// <summary>Average and peak of valid samples within [start, end]; null when none is valid.</summary>
+    public (double Average, double Peak)? Summary(long start, long end)
+    {
+        double sum = 0, peak = double.NegativeInfinity; int valid = 0;
+        for (int i = 0; i < count; ++i) {
+            int slot = (first + i) % Capacity;
+            if (times[slot] < start || times[slot] > end || values[slot].State != SampleState.Valid || !double.IsFinite(values[slot].Value)) continue;
+            sum += values[slot].Value; peak = Math.Max(peak, values[slot].Value); ++valid;
+        }
+        return valid == 0 ? null : (sum / valid, peak);
+    }
+
     public (long Time, Metric Value)? At(long time)
     {
         if (count == 0 || time < FirstTime || time > LastTime + 1_250_000_000) return null;

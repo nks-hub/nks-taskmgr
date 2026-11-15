@@ -168,7 +168,7 @@ mezera	przerwa
 mezery	przerwy
 mezer	przerw
 \nZnámé vynechané revize předání: {0}	\nZnane pominięte rewizje przekazania: {0}
-\nUloženo {0} z {1} řádků; každý snímek uchovává sjednocení top 8 podle CPU, RAM a I/O.	\nZapisano {0} z {1} wierszy; każda klatka zachowuje sumę top 8 według CPU, RAM i we/wy.
+\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM a 8 s nejvyšším I/O.	\nZapisano {0} z {1} wierszy. Każda klatka zapisuje tylko 8 procesów z najwyższym CPU, 8 z największą RAM i 8 z największym we/wy.
 \nVe snímku bylo původně {0}–{1} procesů.	\nKlatka pierwotnie zawierała {0}–{1} procesów.
 \nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} z 4 MiB.	\nZachowany zakres {0} – {1}: {2} klatek, {3} wierszy, {4} z 4 MiB.
 \nVytěsněno {0} snímků ({1} řádků).	\nUsunięto {0} klatek ({1} wierszy).
@@ -176,7 +176,7 @@ mezer	przerw
 \nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit.	\nOgólne we/wy procesu nie jest przypisywane do dysku, sieci ani GPU; nie można potwierdzić kompletności pierwotnego zbierania.
 {0} z {1} procesů	{0} z {1} procesów
 Všechny zachycené řádky nejbližšího snímku.	Wszystkie przechwycone wiersze najbliższej klatki.
-Průměr a maximum z uchovaných vzorků každého procesu; řazeno podle součtu zvolené metriky v úseku.	Średnia i maksimum z zachowanych próbek każdego procesu; sortowane według sumy wybranej metryki w zakresie.
+Průměr a maximum z uložených vzorků. Nahoře je proces, který v úseku spotřeboval nejvíc.	Średnia i maksimum z zapisanych próbek. Na górze jest proces, który w zakresie zużył najwięcej.
   ·  opožděný vzorek	  ·  opóźniona próbka
 Pro tento výběr nejsou zachycené platné hodnoty zvolené metriky.	Dla tego zaznaczenia nie przechwycono prawidłowych wartości wybranej metryki.
 Dump	Zrzut

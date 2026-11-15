@@ -318,7 +318,7 @@ měřicí okno tohoto vzorku je nedostupné	Messfenster dieses Messwerts nicht v
 měřicí okno zdroj neuvádí	die Quelle gibt kein Messfenster an
 uložený název je zkrácený ze {0} znaků	gespeicherter Name ist von {0} Zeichen gekürzt
 Původní PID: {0}	Ursprüngliche PID: {0}
-Druh generace: {0} · hodnota {1}	Generierungsart: {0} · Wert {1}
+Druh generace: {0} · hodnota {1}	Generationsart: {0} · Wert {1}
 Původní Created100ns: {0}	Ursprüngliche Created100ns: {0}
 Čas pozorování: {0} · monotónní {1} ns	Beobachtet: {0} · monoton {1} ns
 Pracovní sada: {0} B · {1}	Arbeitssatz: {0} B · {1}
@@ -402,12 +402,12 @@ Síť od začátku záznamu ETW:	Netzwerk seit Beginn der ETW-Aufzeichnung:
 Vybraný čas {0} je mimo zobrazenou historii tohoto grafu.	Die ausgewählte Zeit {0} liegt außerhalb des in diesem Diagramm angezeigten Verlaufs.
 Bez vzorku	Kein Messwert
 5 nejvytíženějších z {0}	Top 5 von {0}
-{0} s zpět	vor {0} s
+před {0} s	vor {0} s
 připnuto	angeheftet
 kliknutím připnout	zum Anheften klicken
 Zdroj primárního vzorku: {0}	Quelle des primären Messwerts: {0}
 Čas: {0}	Zeit: {0}
-Úsek: {0} – {1} · {2}	Abschnitt: {0} – {1} · {2}
+Úsek: {0} – {1} · {2}	Bereich: {0} – {1} · {2}
 První konec: {0} · Shift+klik nebo Shift+Enter vybere druhý.	Erstes Ende: {0} · Umschalt+Klick oder Umschalt+Eingabe wählt das zweite.
 Cílový soubor už existuje. Vyberte nový název; dump se nikdy nepřepisuje.	Die Zieldatei existiert bereits. Wählen Sie einen neuen Namen; ein Abbild wird nie überschrieben.
 Dump ukládejte na místní disk s písmenem jednotky.	Speichern Sie das Abbild auf einem lokalen Datenträger mit Laufwerksbuchstaben.

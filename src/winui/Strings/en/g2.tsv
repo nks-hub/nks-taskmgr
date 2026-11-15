@@ -402,12 +402,12 @@ Síť od začátku záznamu ETW:	Network since the ETW recording started:
 Vybraný čas {0} je mimo zobrazenou historii tohoto grafu.	The selected time {0} is outside the history shown in this graph.
 Bez vzorku	No sample
 5 nejvytíženějších z {0}	Top 5 of {0}
-{0} s zpět	{0} s ago
+před {0} s	{0} s ago
 připnuto	pinned
 kliknutím připnout	click to pin
 Zdroj primárního vzorku: {0}	Primary sample source: {0}
 Čas: {0}	Time: {0}
-Úsek: {0} – {1} · {2}	Interval: {0} – {1} · {2}
+Úsek: {0} – {1} · {2}	Range: {0} – {1} · {2}
 První konec: {0} · Shift+klik nebo Shift+Enter vybere druhý.	First end: {0} · Shift+click or Shift+Enter selects the second.
 Cílový soubor už existuje. Vyberte nový název; dump se nikdy nepřepisuje.	The target file already exists. Choose a new name; a dump is never overwritten.
 Dump ukládejte na místní disk s písmenem jednotky.	Save the dump to a local disk with a drive letter.

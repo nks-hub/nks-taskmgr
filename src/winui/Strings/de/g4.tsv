@@ -398,7 +398,7 @@ Pracovník nepotvrdil úspěšné dokončení odpovědi.	Der Hilfsprozess hat de
 Skutečné ukončení pracovníka aktualizací nelze ověřit.	Das tatsächliche Beenden des Update-Hilfsprozesses kann nicht geprüft werden.
 Procesy v čase…	Prozesse im Zeitverlauf…
 Otevřít historické procesy pro vybraný čas nebo úsek	Historische Prozesse für die ausgewählte Zeit oder den Bereich öffnen
-Kliknutím na graf připněte čas, tažením nebo Shift+kliknutím vyberte úsek. Historický přehled neprovádí živé akce.	Klicken Sie in die Grafik, um einen Zeitpunkt anzuheften; ziehen oder Umschalt+Klick wählt einen Abschnitt. Die historische Übersicht führt keine Live-Aktionen aus.
+Kliknutím do grafu připnete čas. Tažením nebo Shift+kliknutím vyberete úsek. Historický přehled je jen ke čtení.	Ein Klick ins Diagramm heftet einen Zeitpunkt an. Ziehen oder Umschalt+Klick wählt einen Bereich aus. Die historische Ansicht dient nur zur Anzeige.
 Vybraný úsek {0} · historický pohled	Ausgewählter Bereich {0} · historische Ansicht
 První hranice úseku · Shift+klik nastaví druhou.	Erste Bereichsgrenze · Umschalt+Klick setzt die zweite.
 Připnutý čas · historický pohled	Angeheftete Zeit · historische Ansicht
@@ -434,12 +434,15 @@ Pracovník zaměnil již doložený cíl plánu.	Der Hilfsprozess hat ein bereit
 Výsledek přidal cíl mimo poslední potvrzený plán.	Das Ergebnis hat ein Ziel außerhalb des letzten bestätigten Plans hinzugefügt.
 Výsledek neodpovídá pořadí děti před rodiči.	Das Ergebnis entspricht nicht der Reihenfolge Kinder vor Eltern.
 Neplatný nebo neověřený výsledek cíle stromu.	Ungültiges oder nicht geprüftes Ergebnis eines Strukturziels.
-U zvoleného času není dostupný uchovaný procesový snímek.	Zur ausgewählten Zeit ist keine aufbewahrte Prozess-Momentaufnahme verfügbar.
-Ve zvoleném intervalu není uchovaný procesový snímek.	Im ausgewählten Intervall gibt es keine aufbewahrte Prozess-Momentaufnahme.
-Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	Die nächstgelegene tatsächlich aufbewahrte Prozess-Momentaufnahme; die Werte wurden nicht auf den Cursor hochgerechnet.
-Průměr a maximum každého procesu jsou spočtené jen z jeho uchovaných vzorků. Snímek uchovává top 8 procesů podle CPU, RAM a I/O; nezachycené hodnoty nejsou známé.	Durchschnitt und Maximum jedes Prozesses werden nur aus seinen gespeicherten Stichproben berechnet. Ein Snapshot speichert die Top 8 Prozesse nach CPU, RAM und E/A; nicht erfasste Werte sind unbekannt.
-CPU Ø / max	CPU Ø / max
-RAM Ø / max	RAM Ø / max
-I/O Ø / max	E/A Ø / max
-Snímky	Snapshots
-Ve kolika snímcích úseku byl proces zachycen	In wie vielen Snapshots des Abschnitts der Prozess erfasst wurde
+U zvoleného času není dostupný uchovaný procesový snímek.	Zur ausgewählten Zeit ist keine gespeicherte Prozessaufnahme verfügbar.
+Ve zvoleném intervalu není uchovaný procesový snímek.	Im ausgewählten Intervall gibt es keine gespeicherte Prozessaufnahme.
+Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	Die nächstgelegene tatsächlich gespeicherte Prozessaufnahme; die Werte wurden nicht auf den Cursor interpoliert.
+Průměr a maximum počítáme jen z uložených vzorků. Hodnoty mimo ně neznáme.	Durchschnitt und Maximum werden nur aus gespeicherten Messwerten berechnet. Werte außerhalb davon sind unbekannt.
+CPU Ø / max	CPU Ø / Max.
+RAM Ø / max	RAM Ø / Max.
+I/O Ø / max	E/A Ø / Max.
+Snímky	Aufnahmen
+V kolika snímcích úseku se proces objevil	Anzahl der Aufnahmen im Bereich, in denen der Prozess vorkommt
+Systém Ø / max: {0}	System Ø / Max.: {0}
+{0} snímek	{0} Aufnahme
+{0} snímky	{0} Aufnahmen

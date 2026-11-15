@@ -168,7 +168,7 @@ mezera	gap
 mezery	gaps
 mezer	gaps
 \nZnámé vynechané revize předání: {0}	\nKnown skipped delivery revisions: {0}
-\nUloženo {0} z {1} řádků; každý snímek uchovává sjednocení top 8 podle CPU, RAM a I/O.	\nStored {0} of {1} rows; each frame keeps the union of the top 8 by CPU, RAM and I/O.
+\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM a 8 s nejvyšším I/O.	\nStored {0} of {1} rows. Each frame stores only the 8 processes with the highest CPU, the 8 with the most RAM and the 8 with the most I/O.
 \nVe snímku bylo původně {0}–{1} procesů.	\nThe frame originally had {0}–{1} processes.
 \nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} z 4 MiB.	\nRetained range {0} – {1}: {2} frames, {3} rows, {4} of 4 MiB.
 \nVytěsněno {0} snímků ({1} řádků).	\nEvicted {0} frames ({1} rows).
@@ -176,7 +176,7 @@ mezer	gaps
 \nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit.	\nGeneral process I/O is not attributed to disk, network or GPU; the completeness of the original collection cannot be confirmed.
 {0} z {1} procesů	{0} of {1} processes
 Všechny zachycené řádky nejbližšího snímku.	All captured rows of the nearest frame.
-Průměr a maximum z uchovaných vzorků každého procesu; řazeno podle součtu zvolené metriky v úseku.	Average and peak from each process's retained samples; sorted by the chosen metric's total over the range.
+Průměr a maximum z uložených vzorků. Nahoře je proces, který v úseku spotřeboval nejvíc.	Average and peak from stored samples. The process that used the most in the range is at the top.
   ·  opožděný vzorek	  ·  late sample
 Pro tento výběr nejsou zachycené platné hodnoty zvolené metriky.	No valid values of the chosen metric were captured for this selection.
 Dump	Dump

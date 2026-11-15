@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
@@ -14,7 +15,8 @@ public sealed partial class MainWindow
 
     private FrameworkElement BuildPerformanceTimeline()
     {
-        foreach (var plot in new[] { chart, pageFile, coreOverlay, gpuDedicated, gpuShared }) { plot.Timeline = performanceTimeline; plot.RangeSelected += OpenHistoricalProcesses; }
+        foreach (var plot in new[] { chart, pageFile, coreOverlay, gpuDedicated, gpuShared }) plot.Timeline = performanceTimeline;
+        performanceTimeline.RangeDragged += (_, _) => OpenHistoricalProcesses();
         var panel = performanceTimelinePanel;
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.ColumnDefinitions.Add(new ColumnDefinition());
@@ -25,7 +27,7 @@ public sealed partial class MainWindow
         historicalProcessesButton.BorderThickness = new Thickness(0); historicalProcessesButton.CornerRadius = new CornerRadius(3);
         AutomationProperties.SetName(historicalProcessesButton, Loc.T("Otevřít historické procesy pro vybraný čas nebo úsek"));
         AutomationProperties.SetAutomationId(historicalProcessesButton, "historical-processes");
-        ToolTipService.SetToolTip(historicalProcessesButton, Loc.T("Kliknutím na graf připněte čas, tažením nebo Shift+kliknutím vyberte úsek. Historický přehled neprovádí živé akce."));
+        ToolTipService.SetToolTip(historicalProcessesButton, Loc.T("Kliknutím do grafu připnete čas. Tažením nebo Shift+kliknutím vyberete úsek. Historický přehled je jen ke čtení."));
         historicalProcessesButton.Click += (_, _) => OpenHistoricalProcesses();
         performanceTimeline.Changed += PerformanceTimelineChanged;
         panel.Children.Add(timelineSelection);
@@ -53,6 +55,18 @@ public sealed partial class MainWindow
         if (performanceTimelinePanel.Visibility != visibility) performanceTimelinePanel.Visibility = visibility;
     }
 
+    /// <summary>Whole-system CPU and RAM over the range, from the same resource history the charts draw.</summary>
+    private string SystemSummary(long start, long end)
+    {
+        var parts = new List<string>(2);
+        foreach (var row in model.Resources) {
+            if (row.Kind is not (ResourceKind.Cpu or ResourceKind.Memory) || row.History.Summary(start, end) is not { } value) continue;
+            bool memory = row.Kind == ResourceKind.Memory; double scale = memory ? 1073741824 : 1;
+            parts.Add((memory ? "RAM " : "CPU ") + Display.Number(value.Average / scale, "", 1) + " / " + Display.Number(value.Peak / scale, memory ? " GiB" : " %", 1));
+        }
+        return parts.Count == 0 ? "" : Loc.F("Systém Ø / max: {0}", string.Join("  ·  ", parts));
+    }
+
     private void OpenHistoricalProcesses()
     {
         long start, end;
@@ -60,10 +74,11 @@ public sealed partial class MainWindow
         else if (performanceTimeline.State is { IsPinned: true, CursorTimeNs: { } time }) start = end = time;
         else return;
         var selection = model.SelectProcessHistory(start, end);
+        string system = start == end ? "" : SystemSummary(start, end);
         if (historicalProcessesWindow is null) {
-            var window = new HistoricalProcessesWindow(selection); historicalProcessesWindow = window;
+            var window = new HistoricalProcessesWindow(selection, system); historicalProcessesWindow = window;
             window.Closed += (_, _) => { if (ReferenceEquals(historicalProcessesWindow, window)) historicalProcessesWindow = null; };
-        } else historicalProcessesWindow.ShowSelection(selection);
+        } else historicalProcessesWindow.ShowSelection(selection, system);
         historicalProcessesWindow.Activate();
     }
 }

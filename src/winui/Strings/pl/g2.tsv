@@ -323,8 +323,8 @@ Původní Created100ns: {0}	Pierwotne Created100ns: {0}
 Čas pozorování: {0} · monotónní {1} ns	Czas obserwacji: {0} · monotoniczny {1} ns
 Pracovní sada: {0} B · {1}	Zestaw roboczy: {0} B · {1}
 Soukromé bajty: {0} B · {1}	Bajty prywatne: {0} B · {1}
-Procesové I/O čtení: {0} · {1}	Odczyt We/Wy procesu: {0} · {1}
-Procesové I/O zápis: {0} · {1} · {2}	Zapis We/Wy procesu: {0} · {1} · {2}
+Procesové I/O čtení: {0} · {1}	Odczyt we/wy procesu: {0} · {1}
+Procesové I/O zápis: {0} · {1} · {2}	Zapis we/wy procesu: {0} · {1} · {2}
 Vzorek byl při přijetí opožděný nebo označený jako zastaralý.	Próbka dotarła z opóźnieniem lub została oznaczona jako nieaktualna.
 Uložená normalizace CPU: {0} · dělitel {1}	Zapisana normalizacja CPU: {0} · dzielnik {1}
 Tato knihovna čtení CPU čidel nepodporuje	Ta biblioteka nie obsługuje odczytu czujników CPU
@@ -398,17 +398,17 @@ Procesový inventář je zastaralý.	Spis procesów jest nieaktualny.
 Vlastní hodnoty PID {0}, bez potomků.	Własne wartości PID {0}, bez potomków.
 Ukončeno	Zakończono
 Síť od začátku záznamu ETW:	Sieć od początku rejestrowania ETW:
-Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu.	Nie wybrano czasu. Shift+klik lub Shift+Enter wybiera dwa końce przedziału.
+Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu.	Nie wybrano czasu. Shift+kliknięcie lub Shift+Enter wybiera dwa końce przedziału.
 Vybraný čas {0} je mimo zobrazenou historii tohoto grafu.	Wybrany czas {0} jest poza historią widoczną na tym wykresie.
 Bez vzorku	Brak próbki
 5 nejvytíženějších z {0}	5 najbardziej obciążonych z {0}
-{0} s zpět	{0} s temu
+před {0} s	{0} s temu
 připnuto	przypięto
 kliknutím připnout	kliknij, aby przypiąć
 Zdroj primárního vzorku: {0}	Źródło próbki głównej: {0}
 Čas: {0}	Czas: {0}
-Úsek: {0} – {1} · {2}	Przedział: {0} – {1} · {2}
-První konec: {0} · Shift+klik nebo Shift+Enter vybere druhý.	Pierwszy koniec: {0} · Shift+klik lub Shift+Enter wybiera drugi.
+Úsek: {0} – {1} · {2}	Zakres: {0} – {1} · {2}
+První konec: {0} · Shift+klik nebo Shift+Enter vybere druhý.	Pierwszy koniec: {0} · Shift+kliknięcie lub Shift+Enter wybiera drugi.
 Cílový soubor už existuje. Vyberte nový název; dump se nikdy nepřepisuje.	Plik docelowy już istnieje. Wybierz nową nazwę; zrzut nigdy nie jest nadpisywany.
 Dump ukládejte na místní disk s písmenem jednotky.	Zapisz zrzut na dysku lokalnym z literą dysku.
 Cesta dumpu obsahuje nepovolený název.	Ścieżka zrzutu zawiera niedozwoloną nazwę.

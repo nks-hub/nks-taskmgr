@@ -155,7 +155,7 @@ Podrobnosti o uchovaných datech	Podrobnosti o uchovaných údajoch
 Řadit podle procesového I/O	Zoradiť podľa I/O procesu
 Proces	Proces
 Čas	Čas
-Původní PID	Pôvodné PID
+Původní PID	Pôvodný PID
 Čtení a zápis procesu, bez rozlišení disku, sítě a GPU	Čítanie a zápis procesu, bez rozlíšenia disku, siete a GPU
 Skutečný čas vzorku	Skutočný čas vzorky
 Neměnné historické procesové vzorky	Nemenné historické vzorky procesov
@@ -168,15 +168,15 @@ mezera	medzera
 mezery	medzery
 mezer	medzier
 \nZnámé vynechané revize předání: {0}	\nZnáme vynechané revízie odovzdania: {0}
-\nUloženo {0} z {1} řádků; každý snímek uchovává sjednocení top 8 podle CPU, RAM a I/O.	\nUložených {0} z {1} riadkov; každá snímka uchováva zjednotenie top 8 podľa CPU, RAM a I/O.
+\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM a 8 s nejvyšším I/O.	\nUložených {0} z {1} riadkov. Každá snímka ukladá len 8 procesov s najvyšším CPU, 8 s najvyššou RAM a 8 s najvyšším I/O.
 \nVe snímku bylo původně {0}–{1} procesů.	\nV snímke bolo pôvodne {0}–{1} procesov.
 \nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} z 4 MiB.	\nUchovaný rozsah {0} – {1}: {2} snímok, {3} riadkov, {4} z 4 MiB.
-\nVytěsněno {0} snímků ({1} řádků).	\nVytlačených {0} snímok ({1} riadkov).
+\nVytěsněno {0} snímků ({1} řádků).	\nVytesnených {0} snímok ({1} riadkov).
 \nÚplnost číslování předání nelze určit.	\nÚplnosť číslovania odovzdania nemožno určiť.
 \nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit.	\nVšeobecné I/O procesu sa nepriraďuje k disku, sieti ani GPU; úplnosť pôvodného zberu nemožno potvrdiť.
 {0} z {1} procesů	{0} z {1} procesov
 Všechny zachycené řádky nejbližšího snímku.	Všetky zachytené riadky najbližšej snímky.
-Průměr a maximum z uchovaných vzorků každého procesu; řazeno podle součtu zvolené metriky v úseku.	Priemer a maximum z uchovaných vzoriek každého procesu; zoradené podľa súčtu zvolenej metriky v úseku.
+Průměr a maximum z uložených vzorků. Nahoře je proces, který v úseku spotřeboval nejvíc.	Priemer a maximum z uložených vzoriek. Hore je proces, ktorý v úseku spotreboval najviac.
   ·  opožděný vzorek	  ·  oneskorená vzorka
 Pro tento výběr nejsou zachycené platné hodnoty zvolené metriky.	Pre tento výber nie sú zachytené platné hodnoty zvolenej metriky.
 Dump	Výpis

@@ -313,7 +313,7 @@ přístup odmítnut	prístup odmietnutý
 nepodporované	nepodporované
 měřicí okno není uložené	okno merania nie je uložené
 měřicí okno {0}	okno merania {0}
-okamžitý odečet	okamžitý odpočet
+okamžitý odečet	okamžitá hodnota
 měřicí okno tohoto vzorku je nedostupné	okno merania tejto vzorky je nedostupné
 měřicí okno zdroj neuvádí	okno merania zdroj neuvádza
 uložený název je zkrácený ze {0} znaků	uložený názov je skrátený z {0} znakov
@@ -398,17 +398,17 @@ Procesový inventář je zastaralý.	Procesový inventár je zastaraný.
 Vlastní hodnoty PID {0}, bez potomků.	Vlastné hodnoty PID {0}, bez potomkov.
 Ukončeno	Ukončené
 Síť od začátku záznamu ETW:	Sieť od začiatku záznamu ETW:
-Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu.	Čas nie je vybraný. Shift+kliknutie alebo Shift+Enter vyberie dva konce intervalu.
+Čas není vybraný. Shift+klik nebo Shift+Enter vybere dva konce intervalu.	Čas nie je vybraný. Shift+klik alebo Shift+Enter vyberie dva konce intervalu.
 Vybraný čas {0} je mimo zobrazenou historii tohoto grafu.	Vybraný čas {0} je mimo zobrazenej histórie tohto grafu.
 Bez vzorku	Bez vzorky
 5 nejvytíženějších z {0}	5 najvyťaženejších z {0}
-{0} s zpět	pred {0} s
+před {0} s	pred {0} s
 připnuto	pripnuté
 kliknutím připnout	kliknutím pripnúť
 Zdroj primárního vzorku: {0}	Zdroj primárnej vzorky: {0}
 Čas: {0}	Čas: {0}
 Úsek: {0} – {1} · {2}	Úsek: {0} – {1} · {2}
-První konec: {0} · Shift+klik nebo Shift+Enter vybere druhý.	Prvý koniec: {0} · Shift+kliknutie alebo Shift+Enter vyberie druhý.
+První konec: {0} · Shift+klik nebo Shift+Enter vybere druhý.	Prvý koniec: {0} · Shift+klik alebo Shift+Enter vyberie druhý.
 Cílový soubor už existuje. Vyberte nový název; dump se nikdy nepřepisuje.	Cieľový súbor už existuje. Vyberte nový názov; výpis sa nikdy neprepisuje.
 Dump ukládejte na místní disk s písmenem jednotky.	Výpis ukladajte na miestny disk s písmenom jednotky.
 Cesta dumpu obsahuje nepovolený název.	Cesta výpisu obsahuje nepovolený názov.

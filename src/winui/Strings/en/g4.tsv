@@ -398,7 +398,7 @@ Pracovník nepotvrdil úspěšné dokončení odpovědi.	The worker did not conf
 Skutečné ukončení pracovníka aktualizací nelze ověřit.	The actual exit of the update worker cannot be verified.
 Procesy v čase…	Processes over time…
 Otevřít historické procesy pro vybraný čas nebo úsek	Open historical processes for the selected time or range
-Kliknutím na graf připněte čas, tažením nebo Shift+kliknutím vyberte úsek. Historický přehled neprovádí živé akce.	Click the graph to pin a time; drag or Shift+click to select a range. The historical overview performs no live actions.
+Kliknutím do grafu připnete čas. Tažením nebo Shift+kliknutím vyberete úsek. Historický přehled je jen ke čtení.	Click the graph to pin a time. Drag or Shift+click to select a range. The historical view is read-only.
 Vybraný úsek {0} · historický pohled	Selected range {0} · historical view
 První hranice úseku · Shift+klik nastaví druhou.	First range boundary · Shift+click sets the second.
 Připnutý čas · historický pohled	Pinned time · historical view
@@ -434,12 +434,15 @@ Pracovník zaměnil již doložený cíl plánu.	The worker swapped an already c
 Výsledek přidal cíl mimo poslední potvrzený plán.	The result added a target outside the last confirmed plan.
 Výsledek neodpovídá pořadí děti před rodiči.	The result does not follow the children-before-parents order.
 Neplatný nebo neověřený výsledek cíle stromu.	Invalid or unverified result of a tree target.
-U zvoleného času není dostupný uchovaný procesový snímek.	No retained process snapshot is available at the selected time.
-Ve zvoleném intervalu není uchovaný procesový snímek.	There is no retained process snapshot in the selected interval.
-Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	The nearest actually retained process snapshot; values were not interpolated to the cursor.
-Průměr a maximum každého procesu jsou spočtené jen z jeho uchovaných vzorků. Snímek uchovává top 8 procesů podle CPU, RAM a I/O; nezachycené hodnoty nejsou známé.	Each process's average and peak are computed only from its retained samples. A snapshot keeps the top 8 processes by CPU, RAM and I/O; uncaptured values are unknown.
+U zvoleného času není dostupný uchovaný procesový snímek.	No retained process frame is available at the selected time.
+Ve zvoleném intervalu není uchovaný procesový snímek.	There is no retained process frame in the selected interval.
+Nejbližší skutečně uchovaný procesový snímek; hodnoty nebyly dopočítané ke kurzoru.	The nearest actually retained process frame; values were not interpolated to the cursor.
+Průměr a maximum počítáme jen z uložených vzorků. Hodnoty mimo ně neznáme.	Average and peak are computed only from stored samples. Values outside them are unknown.
 CPU Ø / max	CPU avg / peak
 RAM Ø / max	RAM avg / peak
 I/O Ø / max	I/O avg / peak
-Snímky	Snapshots
-Ve kolika snímcích úseku byl proces zachycen	In how many snapshots of the range the process was captured
+Snímky	Frames
+V kolika snímcích úseku se proces objevil	Number of frames in the range that include the process
+Systém Ø / max: {0}	System avg / peak: {0}
+{0} snímek	{0} frame
+{0} snímky	{0} frames
