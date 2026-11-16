@@ -131,9 +131,9 @@ public static partial class WinUiChecks
         HistoryRankingSelection();
         ProcessBranchValues();
         OnlineUpdateRelease();
-        ProcessLifetimes();
+        ProcessTimelineLifetimes();
         ProcessTrafficAttributionLabels();
-        ProcessEventCloseOwnership();
+        ProcessEventsWindowAndCapture();
         PublisherTrustChecks.Run();
         ReplacementTextChecks.Run();
         UserSessionText.Check();

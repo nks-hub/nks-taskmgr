@@ -211,6 +211,16 @@ internal static partial class ProcessFacts
         return new Facts(path, description, company, version, commandLine, user);
     }
 
+    /// <summary>Command line of the exact process generation; empty when the process is gone, was reused or cannot be opened.</summary>
+    internal static string ReadCommandLine(ProcessKey key)
+    {
+        using var process = OpenProcess(0x1000, false, key.Pid);
+        try {
+            return !process.IsInvalid && NativeMonitor.QueryProcessIdentity(process, key.Kind) is { State: SampleState.Valid } identity
+                && identity.Generation == key.Generation && identity.Boot == key.Boot ? CommandLine(process) : "";
+        } catch (NativeMonitorException) { return ""; }
+    }
+
     /// <summary>Win32 image path from SystemProcessIdInformation (88), which needs no process handle.</summary>
     private static unsafe string? ImageNameById(uint pid)
     {

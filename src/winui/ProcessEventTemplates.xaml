@@ -4,27 +4,20 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:NksTaskMgr.WinUI">
   <DataTemplate x:Key="ProcessEvent" x:DataType="local:ProcessEventRow">
-    <Grid Padding="8,5" ColumnSpacing="12" RowSpacing="3">
-      <Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="80"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-      <Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
-      <TextBlock Text="{x:Bind TimeText}" FontSize="12"/>
-      <TextBlock Grid.Column="1" Text="{x:Bind KindText}" FontSize="12"/>
-      <TextBlock Grid.Column="2" Text="{x:Bind NameText}" FontSize="13" TextTrimming="CharacterEllipsis"/>
-      <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{x:Bind TargetText}" FontSize="11" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis"/>
-      <TextBlock Grid.Row="1" Grid.Column="2" Text="{x:Bind IdentityText}" FontSize="11" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis"/>
-    </Grid>
-  </DataTemplate>
-  <DataTemplate x:Key="ProcessLifetime" x:DataType="local:ProcessEventRow">
-    <Grid Padding="8,6" ColumnSpacing="12" RowSpacing="4">
-      <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="150"/><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-      <Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
-      <TextBlock Text="{x:Bind StartedText}" FontSize="12" TextTrimming="CharacterEllipsis"/>
-      <TextBlock Grid.Column="1" Text="{x:Bind EndedText}" FontSize="12" TextTrimming="CharacterEllipsis"/>
-      <TextBlock Grid.Column="2" Text="{x:Bind DurationText}" FontSize="12"/>
-      <TextBlock Grid.Column="3" Text="{x:Bind NameText}" FontSize="13" TextTrimming="CharacterEllipsis"/>
-      <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{x:Bind TargetText}" FontSize="11" Foreground="{ThemeResource NksSecondaryTextBrush}"/>
-      <TextBlock Grid.Row="1" Grid.Column="3" Text="{x:Bind KindText}" FontSize="11" TextTrimming="CharacterEllipsis"/>
-      <TextBlock Grid.Row="2" Grid.ColumnSpan="4" Text="{x:Bind IdentityText}" FontSize="11" Foreground="{ThemeResource NksSecondaryTextBrush}" TextTrimming="CharacterEllipsis"/>
+    <Grid Padding="10,0" ColumnSpacing="12" MinHeight="30" ToolTipService.ToolTip="{x:Bind Tooltip}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="62"/><ColumnDefinition Width="72"/><ColumnDefinition Width="170"/><ColumnDefinition Width="56"/>
+        <ColumnDefinition Width="190"/><ColumnDefinition Width="*"/><ColumnDefinition Width="86"/><ColumnDefinition Width="100"/><ColumnDefinition Width="80"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock Text="{x:Bind TimeText}" FontSize="12" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="1" Text="{x:Bind EventText}" FontSize="12" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="2" Text="{x:Bind NameText}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="3" Text="{x:Bind PidText}" FontSize="12" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="4" Text="{x:Bind ParentText}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="5" Text="{x:Bind CommandText}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Foreground="{ThemeResource NksSecondaryTextBrush}"/>
+      <TextBlock Grid.Column="6" Text="{x:Bind DurationText}" FontSize="12" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="7" Text="{x:Bind ExitText}" FontSize="12" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="8" Text="{x:Bind RepeatText}" FontSize="12" VerticalAlignment="Center"/>
     </Grid>
   </DataTemplate>
 </ResourceDictionary>

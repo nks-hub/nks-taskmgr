@@ -19,13 +19,16 @@ internal sealed class HistoricalProcessesWindow : Window
     private ProcessHistorySelection selection;
     private ProcessHistoryMetric metric;
     private readonly TextBlock[] headingLabels = new TextBlock[6];
+    private readonly ProcessTimeline? timeline;
+    private readonly Expander lifecycle = new() { HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch, Visibility = Visibility.Collapsed };
+    private readonly ListView lifecycleList = new() { SelectionMode = ListViewSelectionMode.None, MaxHeight = 150 };
 
-    internal HistoricalProcessesWindow(ProcessHistorySelection selection, string systemSummary)
+    internal HistoricalProcessesWindow(ProcessHistorySelection selection, string systemSummary, ProcessTimeline? timeline = null)
     {
-        this.selection = selection;
+        this.selection = selection; this.timeline = timeline;
         Title = Loc.T("Historické procesy · NKS Task Manager"); AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.ResizeDip(900, 640);
         Appearance.Attach(this, root);
-        foreach (var height in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
+        foreach (var height in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto })
             root.RowDefinitions.Add(new RowDefinition { Height = height });
 
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
@@ -68,6 +71,8 @@ internal sealed class HistoricalProcessesWindow : Window
         AutomationProperties.SetName(list, Loc.T("Neměnné historické procesové vzorky")); AutomationProperties.SetAutomationId(list, "historical-processes-list");
         AutomationProperties.SetName(selected, Loc.T("Původní identita a čas vybraného historického procesu"));
         list.SelectionChanged += (_, _) => ShowSelected();
+        lifecycle.Content = lifecycleList; Grid.SetRow(lifecycle, 4); root.Children.Add(lifecycle);
+        AutomationProperties.SetAutomationId(lifecycleList, "historical-lifecycle-list");
         Content = root; ShowSelection(selection, systemSummary);
     }
 
@@ -89,7 +94,22 @@ internal sealed class HistoricalProcessesWindow : Window
             + Loc.F("\nVytěsněno {0} snímků ({1} řádků).", value.EvictedFrames, value.EvictedRows)
             + (value.DeliverySequenceUnknown ? Loc.T("\nÚplnost číslování předání nelze určit.") : "")
             + Loc.T("\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit."));
-        ShowRows();
+        ShowRows(); ShowLifecycle();
+    }
+
+    /// <summary>Starts and ends of processes inside the selected range, from the application's process timeline; the range edges are wall-clock times of the first and last selected snapshot.</summary>
+    private void ShowLifecycle()
+    {
+        var value = selection;
+        if (timeline is null || value.Point || value.FrameCount == 0 || value.FirstWallTimeUnixNs <= 0 || value.LastWallTimeUnixNs <= 0) { lifecycle.Visibility = Visibility.Collapsed; return; }
+        var from = DateTimeOffset.FromUnixTimeMilliseconds(value.FirstWallTimeUnixNs / 1_000_000).LocalDateTime;
+        var to = DateTimeOffset.FromUnixTimeMilliseconds(value.LastWallTimeUnixNs / 1_000_000).LocalDateTime;
+        var events = ProcessEventRow.Build(timeline.Entries, ProcessEventFilter.All, "", new()).Where(row => row.When >= from && row.When <= to).ToArray();
+        lifecycle.Header = Text(Loc.F("Spuštěné a ukončené v úseku: {0}", events.Length), 12, 0xe9eef0);
+        lifecycleList.ItemsSource = events.Length == 0 ? [Loc.T("V úseku se nespustil ani neukončil žádný proces.")]
+            : events.Select(row => row.TimeText + "  " + row.EventText + "  " + row.NameText + " (PID " + row.PidText + ")  ·  "
+                + (row.Started ? Loc.T("rodič") + " " + row.ParentText : row.DurationText + (row.ExitText == "—" ? "" : "  ·  " + Loc.T("kód") + " " + row.ExitText))).ToArray();
+        lifecycle.Visibility = Visibility.Visible;
     }
 
     private void ShowRows()

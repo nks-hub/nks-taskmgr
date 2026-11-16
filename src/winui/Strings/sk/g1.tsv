@@ -241,8 +241,6 @@ proces se změnil nebo skončil	proces sa zmenil alebo skončil
 překročen limit	prekročený limit
 nedostupné ({0})	nedostupné ({0})
 Události procesů ETW	Udalosti procesov ETW
-Události vzniku a ukončení procesů	Udalosti vzniku a ukončenia procesov
-Záznam událostí a síťového provozu (ETW) vyžaduje práva správce.	Záznam udalostí a sieťovej prevádzky (ETW) vyžaduje práva správcu.
 Zastavení a dočtení záznamu nebylo potvrzené	Zastavenie a dočítanie záznamu nebolo potvrdené
 Zavřít i tak	Zavrieť aj tak
 Ponechat aplikaci otevřenou	Ponechať aplikáciu otvorenú
@@ -368,17 +366,6 @@ služby	služby
 služeb	služieb
 PID není hlášen.	PID nie je hlásený.
 Hlášený PID {0} · {1}	Hlásený PID {0} · {1}
-Vznik	Vznik
-Ukončení	Ukončenie
-Čas ETW nedostupný	Čas ETW nedostupný
-Název není dostupný	Názov nie je dostupný
-PID {0} · rodič {1}	PID {0} · rodič {1}
-CreateTime přímo ze zdroje · ověřená historická životnost	CreateTime priamo zo zdroja · overená historická životnosť
-Historický záznam · životnost není ověřená	Historický záznam · životnosť nie je overená
-Pořadí ve zdroji: {0}\nČas ETW (QPC): {1}\nFrekvence QPC: {2}\nPřijato (monotónní ns): {3}\nStav identity: {4}\nDruh generace: {5} · generace {6}\nPříznaky události: {7}	Poradie v zdroji: {0}\nČas ETW (QPC): {1}\nFrekvencia QPC: {2}\nPrijaté (monotónne ns): {3}\nStav identity: {4}\nDruh generácie: {5} · generácia {6}\nPríznaky udalosti: {7}
-\nNávratový kód: 0x{0}	\nNávratový kód: 0x{0}
-\nNávratový kód není dostupný.	\nNávratový kód nie je dostupný.
-\nTento záznam neopravňuje k živé akci nad současným vlastníkem stejného PID.	\nTento záznam neoprávňuje na živú akciu nad súčasným vlastníkom rovnakého PID.
 Podrobnosti procesu…	Podrobnosti procesu…
 Závislosti služby	Závislosti služby
 Otevřít hostitelský proces	Otvoriť hostiteľský proces

@@ -431,13 +431,6 @@ Soukromá paměť	Privater Speicher
 Čtení I/O	E/A-Lesen
 Zápis I/O	E/A-Schreiben
 Síť	Netzwerk
-Vznik: {0}	Gestartet: {0}
-Konec: {0}	Beendet: {0}
-Délka neurčena	Dauer unbestimmt
-Název není dostupný	Name nicht verfügbar
-PID nelze určit	PID nicht bestimmbar
-Boot + PID + CreateTime ze zdroje	Boot + PID + CreateTime aus der Quelle
-Neověřený samostatný záznam	Ungeprüfter einzelner Eintrag
 Procesor	Prozessor
 Paměť	Arbeitsspeicher
 Disk	Datenträger

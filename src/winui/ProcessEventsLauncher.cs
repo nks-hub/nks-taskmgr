@@ -8,33 +8,42 @@ namespace NksTaskMgr.WinUI;
 public sealed partial class MainWindow
 {
     private readonly Button processEventsButton = Button("");
+    private readonly ProcessTimeline processTimeline = new();
+    private ProcessCapture? processCapture;
     private ProcessEventsWindow? processEventsWindow;
     private bool waitingForEventsStop, allowMainEventsClose;
 
     private void ConfigureProcessEvents()
     {
+        processCapture = new ProcessCapture(DispatcherQueue, processTimeline, () => (model.ProcessTime, model.BootIdentity.Identifier, model.BootIdentity.State));
+        if (RunningElevated) processCapture.Start();
         processEventsButton.Width = 35; processEventsButton.Padding = new Thickness(0);
         processEventsButton.Content = UiIcon.Create("events", 0x95a4ad, 19);
-        AutomationProperties.SetName(processEventsButton, Loc.T("Události procesů ETW"));
+        AutomationProperties.SetName(processEventsButton, Loc.T("Spuštěné a ukončené procesy"));
         AutomationProperties.SetAutomationId(processEventsButton, "process-events");
-        ToolTipService.SetToolTip(processEventsButton, Loc.T("Události vzniku a ukončení procesů"));
+        ToolTipService.SetToolTip(processEventsButton, Loc.T("Spuštěné a ukončené procesy"));
         processEventsButton.Click += (_, _) => {
             if (waitingForEventsStop || allowMainEventsClose) return;
             if (processEventsWindow is null) {
-                var window = new ProcessEventsWindow(() => (model.ProcessTime, model.BootIdentity.Identifier, model.BootIdentity.State));
+                var window = new ProcessEventsWindow(processTimeline, processCapture) {
+                    RequestElevation = () => _ = OfferRestartElevatedAsync(Loc.T("Návratové kódy a velmi krátké procesy zachytí jen sledování ETW, které vyžaduje práva správce.")),
+                    RevealProcess = key => {
+                        if (model.Processes.FirstOrDefault(row => row.Key == key) is not { } row) return false;
+                        RevealProcess(row); Activate(); return true;
+                    }
+                };
                 processEventsWindow = window;
-                window.RequestElevation = () => _ = OfferRestartElevatedAsync(Loc.T("Záznam událostí a síťového provozu (ETW) vyžaduje práva správce."));
                 window.Closed += (_, _) => { if (ReferenceEquals(processEventsWindow, window)) processEventsWindow = null; };
             }
             processEventsWindow.Activate();
         };
         AppWindow.Closing += OnMainEventsClosing;
-        Closed += (_, _) => { allowMainEventsClose = true; processEventsWindow?.CloseAfterStop(); };
+        Closed += (_, _) => { allowMainEventsClose = true; processEventsWindow?.Close(); processCapture?.Dispose(); };
     }
 
     private void OnMainEventsClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (allowMainEventsClose || processEventsWindow is null && liveCpuProfile is null) return;
+        if (allowMainEventsClose || processCapture is not { Active: true } && liveCpuProfile is null) return;
         args.Cancel = true;
         RequestMainClose();
     }
@@ -44,10 +53,10 @@ public sealed partial class MainWindow
     private async Task CloseMainAsync()
     {
         if (waitingForEventsStop) return;
-        var window = processEventsWindow;
-        if (window is null && liveCpuProfile is null) { Close(); return; }
+        var capture = processCapture;
+        if (capture is not { Active: true } && liveCpuProfile is null) { Close(); return; }
         waitingForEventsStop = true; processEventsButton.IsEnabled = false;
-        bool clean = window is null || await window.StopForCloseAsync(fromMainWindow: true);
+        bool clean = capture is null || await capture.StopForCloseAsync();
         if (allowMainEventsClose) return;
         if (!clean) {
             var dialog = new ContentDialog { XamlRoot = root.XamlRoot, Title = Loc.T("Zastavení a dočtení záznamu nebylo potvrzené"),
@@ -62,7 +71,7 @@ public sealed partial class MainWindow
                 if (Environment.ExitCode == 0) Environment.ExitCode = 2;
                 System.Diagnostics.Debug.WriteLine("Tick CPU profile incomplete; persistence HRESULT=" + liveCpuProfile?.PersistenceError);
             }
-            allowMainEventsClose = true; DispatcherQueue.TryEnqueue(() => { window?.CloseAfterStop(); Close(); });
-        } else { waitingForEventsStop = false; window!.CancelClose(fromMainWindow: true); processEventsButton.IsEnabled = true; }
+            allowMainEventsClose = true; DispatcherQueue.TryEnqueue(() => { processEventsWindow?.Close(); Close(); });
+        } else { waitingForEventsStop = false; capture?.Resume(); processEventsButton.IsEnabled = true; }
     }
 }
