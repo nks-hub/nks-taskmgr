@@ -57,7 +57,8 @@ public sealed partial class MainWindow
             ResourceKind.Gpu => Loc.T("Využití"), _ => Loc.T("Příjem")
         };
         resourceEyebrow.Text = resource.Kind == ResourceKind.Memory ? reading : "";
-        if (ToolTipService.GetToolTip(performanceReading) as string != reading) ToolTipService.SetToolTip(performanceReading, reading);
+        string readingTip = resource.Kind == ResourceKind.Disk ? reading + "\n" + Loc.T("Podíl času, kdy měl disk rozpracovaný aspoň jeden požadavek; stejně ho počítá Správce úloh Windows. Jediný dlouho nevyřízený požadavek drží 100 % i bez přenosu dat (fronta požadavků pak ukazuje 1). Průměrná odezva ho započítá až po dokončení.") : reading;
+        if (ToolTipService.GetToolTip(performanceReading) as string != readingTip) ToolTipService.SetToolTip(performanceReading, readingTip);
         bool cpu = resource.Kind == ResourceKind.Cpu, memory = resource.Kind == ResourceKind.Memory, gpu = resource.Kind == ResourceKind.Gpu;
         cpuModes.Visibility = cpu ? Visibility.Visible : Visibility.Collapsed;
         PlaceChartControls(cpu);

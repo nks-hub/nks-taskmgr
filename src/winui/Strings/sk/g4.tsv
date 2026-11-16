@@ -306,3 +306,4 @@ Systém Ø / max: {0}	Systém Ø / max: {0}
 {0} snímky	{0} snímky
 Pouze spuštění	Iba spustenie
 Spuštění služby	Spustenie
+Podíl času, kdy měl disk rozpracovaný aspoň jeden požadavek; stejně ho počítá Správce úloh Windows. Jediný dlouho nevyřízený požadavek drží 100 % i bez přenosu dat (fronta požadavků pak ukazuje 1). Průměrná odezva ho započítá až po dokončení.	Podiel času, keď mal disk rozpracovanú aspoň jednu požiadavku; rovnako ho počíta Správca úloh Windows. Jediná dlho nevybavená požiadavka drží 100 % aj bez prenosu dát (front požiadaviek potom ukazuje 1). Priemerná odozva ju započíta až po dokončení.

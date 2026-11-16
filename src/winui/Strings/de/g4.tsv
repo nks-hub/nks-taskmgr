@@ -306,3 +306,4 @@ Systém Ø / max: {0}	System Ø / Max.: {0}
 {0} snímky	{0} Aufnahmen
 Pouze spuštění	Nur Ausführen
 Spuštění služby	Start
+Podíl času, kdy měl disk rozpracovaný aspoň jeden požadavek; stejně ho počítá Správce úloh Windows. Jediný dlouho nevyřízený požadavek drží 100 % i bez přenosu dat (fronta požadavků pak ukazuje 1). Průměrná odezva ho započítá až po dokončení.	Anteil der Zeit, in der der Datenträger mindestens eine Anforderung in Bearbeitung hatte; der Windows Task-Manager berechnet ihn genauso. Eine einzige lange offene Anforderung hält 100 % auch ohne Datenübertragung (die Anforderungswarteschlange zeigt dann 1). Die durchschnittliche Antwortzeit zählt sie erst nach Abschluss.

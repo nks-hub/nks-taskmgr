@@ -8,7 +8,8 @@ public enum ChartUnit { Percent, Bytes, BitsPerSecond, BytesPerSecond }
 
 public sealed partial class ChartView
 {
-    private readonly Grid scale = new() { Width = 50, Margin = new Thickness(0, 0, 6, 0) };
+    // Wide enough for "1 023,9 Mbit/s"; larger text scaling still widens the auto-sized column instead of clipping the label.
+    private readonly Grid scale = new() { MinWidth = 72, Margin = new Thickness(0, 0, 6, 0) };
     private readonly Grid timeline = new() { Height = 18, Margin = new Thickness(0, 2, 0, 0) };
     private readonly TextBlock upper = Caption(), middle = Caption(), lower = Caption();
     private readonly TextBlock startTime = Caption(), endTime = Caption();

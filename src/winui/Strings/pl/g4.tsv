@@ -306,3 +306,4 @@ Systém Ø / max: {0}	System śr. / maks.: {0}
 {0} snímky	{0} klatki
 Pouze spuštění	Tylko wykonanie
 Spuštění služby	Uruchomienie
+Podíl času, kdy měl disk rozpracovaný aspoň jeden požadavek; stejně ho počítá Správce úloh Windows. Jediný dlouho nevyřízený požadavek drží 100 % i bez přenosu dat (fronta požadavků pak ukazuje 1). Průměrná odezva ho započítá až po dokončení.	Udział czasu, w którym dysk miał w toku co najmniej jedno żądanie; Menedżer zadań Windows liczy go tak samo. Jedno długo niezałatwione żądanie utrzymuje 100 % nawet bez przesyłu danych (kolejka żądań pokazuje wtedy 1). Średni czas odpowiedzi uwzględnia je dopiero po zakończeniu.

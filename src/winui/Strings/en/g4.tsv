@@ -306,3 +306,4 @@ Systém Ø / max: {0}	System avg / peak: {0}
 {0} snímky	{0} frames
 Pouze spuštění	Execute only
 Spuštění služby	Start
+Podíl času, kdy měl disk rozpracovaný aspoň jeden požadavek; stejně ho počítá Správce úloh Windows. Jediný dlouho nevyřízený požadavek drží 100 % i bez přenosu dat (fronta požadavků pak ukazuje 1). Průměrná odezva ho započítá až po dokončení.	Share of time the disk had at least one request in progress; Windows Task Manager calculates it the same way. A single request that stays pending keeps it at 100 % even with no data moving (the request queue then shows 1). Average response time counts that request only once it finishes.
