@@ -176,17 +176,17 @@ public sealed partial class MainWindow : Window
         // it moves to the active view without the rectangle, which returns with the first Tab.
         RoutedEventHandler? initialFocus = null;
         initialFocus = (_, _) => {
-            processesNav.GotFocus -= initialFocus;
+            applicationNav.GotFocus -= initialFocus;
             var current = view switch {
                 DesktopView.Performance => performanceNav, DesktopView.Applications => applicationNav, DesktopView.Services => servicesNav,
                 DesktopView.Users => usersNav, DesktopView.Hardware => hardwareNav, DesktopView.Startup => startupNav, _ => processesNav
             };
             DispatcherQueue.TryEnqueue(() => current.Focus(FocusState.Pointer));
         };
-        processesNav.GotFocus += initialFocus;
-        // Only the startup focus is redirected; a later Tab or click onto Procesy must keep its focus.
+        applicationNav.GotFocus += initialFocus;
+        // Only the startup focus is redirected; a later Tab or click onto Aplikace must keep its focus.
         var focusWindow = DispatcherQueue.CreateTimer(); focusWindow.Interval = TimeSpan.FromSeconds(3); focusWindow.IsRepeating = false;
-        focusWindow.Tick += (_, _) => processesNav.GotFocus -= initialFocus; focusWindow.Start();
+        focusWindow.Tick += (_, _) => applicationNav.GotFocus -= initialFocus; focusWindow.Start();
         App.Trace("Window initialized");
     }
 
@@ -264,7 +264,7 @@ public sealed partial class MainWindow : Window
         titleText.Margin = new Thickness(42, 0, 0, 0); title.Children.Add(titleText);
         Grid.SetColumnSpan(title, 2); root.Children.Add(title); SetTitleBar(title);
         var nav = new StackPanel { Spacing = 4, Margin = new Thickness(6, 8, 6, 0) };
-        foreach (var button in new[] { processesNav, applicationNav, performanceNav, servicesNav, usersNav, hardwareNav, startupNav }) {
+        foreach (var button in new[] { applicationNav, processesNav, performanceNav, servicesNav, usersNav, hardwareNav, startupNav }) {
             button.Height = 44; button.HorizontalAlignment = HorizontalAlignment.Stretch; button.FontSize = 11; button.BorderThickness = new Thickness(0);
             button.Padding = new Thickness(4, 0, 4, 0);
             var content = new StackPanel { Spacing = 4, HorizontalAlignment = HorizontalAlignment.Center };
