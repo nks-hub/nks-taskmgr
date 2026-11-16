@@ -13,3 +13,4 @@ Síť: neměřeno	Network: not measured
 Přijaté a odeslané bajty TCP/UDP podle procesu. Windows je zpřístupní jen aplikaci spuštěné jako správce, jinak se ukazuje „—“. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Received and sent TCP/UDP bytes per process. Windows provides them only to an app running as administrator; otherwise “—” is shown. The value covers the completed second about 5 s ago; ≥ means part of the traffic could not be attributed.
 Čtení a zápis souborů, rour a zařízení dohromady, včetně souborů z mezipaměti; není to jen disk. Síť ukazuje zvlášť sloupec Síť.	Reads and writes of files, pipes and devices combined, including files served from cache; this is not disk activity alone. Network is shown separately in the Network column.
 Součet čtení a zápisu procesů.	Total reads and writes of the processes.
+I/O	I/O

@@ -12,7 +12,7 @@ public sealed partial class MainWindow
 {
     // Name, Stav, CPU, Paměť, I/O, Síť — shared by Users and Applications so both tables line up the same way.
     internal static readonly double[] GroupColumns = [0, 96, 64, 96, 88, 88];
-    private static readonly string[] GroupColumnNames = ["", Loc.T("Stav"), "CPU", Loc.T("Paměť"), "I/O", Loc.T("Síť")];
+    private static readonly string[] GroupColumnNames = ["", Loc.T("Stav"), "CPU", Loc.T("Paměť"), Loc.T("I/O"), Loc.T("Síť")];
 
     /// <summary>Builds the clickable column header of a grouped table; a click sorts by that column, numbers largest first.</summary>
     private static Grid GroupHeader(string firstName, string[] tips, List<(Button Button, TextBlock Text)> headers, Action<int> sort)

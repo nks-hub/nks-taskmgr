@@ -63,7 +63,7 @@ internal sealed partial class ProcessDetailsView
         overview.RowDefinitions.Add(new RowDefinition());
         overviewDescription.TextWrapping = TextWrapping.Wrap; overviewDescription.IsTextSelectionEnabled = true;
         overview.Children.Add(overviewDescription);
-        string[] tiles = ["CPU", "Paměť", "Disk", "Vlákna", "Popisovače"];
+        string[] tiles = ["CPU", "Paměť", "I/O", "Síť", "Vlákna", "Popisovače"];
         for (int i = 0; i < tiles.Length; ++i) {
             overviewTiles.ColumnDefinitions.Add(new ColumnDefinition());
             var panel = new StackPanel { Spacing = 4, Padding = new Thickness(12, 10, 12, 10) };
@@ -127,7 +127,11 @@ internal sealed partial class ProcessDetailsView
         tileValues["CPU"].Text = row.CpuText;
         tileValues["Paměť"].Text = Display.Bytes(row.WorkingBytes);
         ToolTipService.SetToolTip(tileValues["Paměť"], MainWindow.MemoryTip(Loc.T("Pracovní sada"), row.WorkingBytes, row.PrivateBytes));
-        tileValues["Disk"].Text = MainWindow.DiskText(row, out _);
+        tileValues["I/O"].Text = MainWindow.DiskText(row, out _);
+        ToolTipService.SetToolTip(tileValues["I/O"], ProcessNetwork.IoHelp);
+        tileValues["Síť"].Text = row.NetworkText;
+        string networkTip = MainWindow.NetworkTip([row]);
+        ToolTipService.SetToolTip(tileValues["Síť"], (networkTip.Length > 0 ? networkTip.TrimStart('\n') + "\n" : "") + ProcessNetwork.Help);
         tileValues["Vlákna"].Text = row.Threads.ToString("N0", Loc.Culture);
         tileValues["Popisovače"].Text = row.Handles.ToString("N0", Loc.Culture);
     }

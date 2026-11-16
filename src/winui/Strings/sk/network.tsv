@@ -13,3 +13,4 @@ Síť: neměřeno	Sieť: nemerané
 Přijaté a odeslané bajty TCP/UDP podle procesu. Windows je zpřístupní jen aplikaci spuštěné jako správce, jinak se ukazuje „—“. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Prijaté a odoslané bajty TCP/UDP podľa procesu. Windows ich sprístupní len aplikácii spustenej ako správca, inak sa zobrazuje „—“. Hodnota platí za uzavretú sekundu asi pred 5 s; ≥ znamená, že časť prevádzky sa nepodarilo priradiť.
 Čtení a zápis souborů, rour a zařízení dohromady, včetně souborů z mezipaměti; není to jen disk. Síť ukazuje zvlášť sloupec Síť.	Čítanie a zápis súborov, rúr a zariadení spolu, vrátane súborov z vyrovnávacej pamäte; nie je to len disk. Sieť zobrazuje zvlášť stĺpec Sieť.
 Součet čtení a zápisu procesů.	Súčet čítania a zápisu procesov.
+I/O	I/O
