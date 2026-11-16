@@ -9,7 +9,7 @@ Procesy podle I/O (čtení a zápis)	Procesy podľa I/O (čítanie a zápis)
 Síť od spuštění záznamu:	Sieť od spustenia záznamu:
 zpožděno asi o 5 s	oneskorené asi o 5 s
 Síť: neměřeno	Sieť: nemerané
-Síťový provoz podle procesu. Bez práv správce ukazuje příjem a odeslání dohromady, stejně jako Správce úloh Windows. Se správcem měří zvlášť příjem a odeslání TCP/UDP, hodnota je pak za uzavřenou sekundu asi před 5 s a ≥ znamená, že část provozu nešlo přiřadit.	Sieťová prevádzka podľa procesu. Bez práv správcu ukazuje príjem a odoslanie spolu, rovnako ako Správca úloh Windows. So správcom meria príjem a odoslanie TCP/UDP zvlášť, hodnota potom platí za uzavretú sekundu asi pred 5 s a ≥ znamená, že časť prevádzky nebolo možné priradiť.
+Síťový provoz podle procesu. Bez práv správce ukazuje příjem a odeslání dohromady, stejně jako Správce úloh Windows; u systémových procesů, které Windows běžnému uživateli neotevře, je „—“. Se správcem měří zvlášť příjem a odeslání TCP/UDP, hodnota je pak za uzavřenou sekundu asi před 5 s a ≥ znamená, že část provozu nešlo přiřadit.	Sieťová prevádzka podľa procesu. Bez práv správcu ukazuje príjem a odoslanie spolu, rovnako ako Správca úloh Windows; pri systémových procesoch, ktoré Windows bežnému používateľovi neotvorí, je „—“. So správcom meria príjem a odoslanie TCP/UDP zvlášť, hodnota potom platí za uzavretú sekundu asi pred 5 s a ≥ znamená, že časť prevádzky nebolo možné priradiť.
 Čtení a zápis souborů, rour a zařízení dohromady, včetně souborů z mezipaměti; není to jen disk. Síť ukazuje zvlášť sloupec Síť.	Čítanie a zápis súborov, rúr a zariadení spolu, vrátane súborov z vyrovnávacej pamäte; nie je to len disk. Sieť zobrazuje zvlášť stĺpec Sieť.
 Součet čtení a zápisu procesů.	Súčet čítania a zápisu procesov.
 I/O	I/O

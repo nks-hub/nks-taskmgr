@@ -41,9 +41,12 @@ public sealed partial class MonitorModel
         NetworkAvailable = true;
         bool changed = false;
         foreach (var row in processes.Values) {
+            // ETW samples carry the creation time even where rows are keyed by sequence number.
+            var key = !energy && row.Key.Kind == GenerationKind.SequenceNumber && row.Created100ns != 0
+                ? row.Key with { Kind = GenerationKind.CreationTime, Generation = row.Created100ns } : row.Key;
             // ETW lists only processes with traffic; an energy counter that could not be read stays unknown.
-            ProcessNetworkRate? rate = row.Key.Kind != GenerationKind.CreationTime ? null
-                : rates!.TryGetValue(row.Key, out var known) ? known : energy ? null : default(ProcessNetworkRate);
+            ProcessNetworkRate? rate = key.Kind != GenerationKind.CreationTime && (!energy || key.Kind != GenerationKind.SequenceNumber) ? null
+                : rates!.TryGetValue(key, out var known) ? known : energy ? null : default(ProcessNetworkRate);
             changed |= row.SetNetwork(rate, partial, totalPartial, ProcessVisualUpdates);
         }
         return changed && sortColumn == 7;

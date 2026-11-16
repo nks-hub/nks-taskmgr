@@ -28,7 +28,7 @@ internal readonly record struct ProcessNetworkRate(double SentPerSecond, double 
 /// </summary>
 internal static partial class ProcessEnergyNetwork
 {
-    private const int ProcessEnergyValues = 76, NetworkTxRxBytes = 88;
+    private const int ProcessEnergyValues = 76, NetworkTxRxBytes = 88, ProcessSequenceNumber = 92;
     private static readonly Dictionary<ProcessKey, Counter> counters = [];
     private static readonly byte[] buffer = new byte[512];
 
@@ -40,7 +40,7 @@ internal static partial class ProcessEnergyNetwork
         var rates = new Dictionary<ProcessKey, ProcessNetworkRate>();
         var seen = new HashSet<ProcessKey>();
         foreach (var key in keys) {
-            if (key.Kind != GenerationKind.CreationTime || key.Pid == 0 || !seen.Add(key)) continue;
+            if (key.Kind is not (GenerationKind.CreationTime or GenerationKind.SequenceNumber) || key.Pid == 0 || !seen.Add(key)) continue;
             bool known = counters.TryGetValue(key, out var counter);
             if (!known && (counter = Open(key)) is null) continue;
             long now = Stopwatch.GetTimestamp();
@@ -67,9 +67,17 @@ internal static partial class ProcessEnergyNetwork
         nint process = OpenProcess(0x1000, false, key.Pid);
         if (process == 0) return null;
         // A reused PID must not inherit the counter of an earlier process.
-        if (GetProcessTimes(process, out long created, out _, out _, out _) && (ulong)created == key.Generation) return new Counter(process);
+        if ((key.Kind == GenerationKind.SequenceNumber ? SequenceNumber(process) : GetProcessTimes(process, out long created, out _, out _, out _) ? (ulong)created : 0) == key.Generation)
+            return new Counter(process);
         CloseHandle(process);
         return null;
+    }
+
+    /// <summary>The process sequence number that newer Windows builds use as the process generation; 0 when unavailable.</summary>
+    internal static ulong SequenceNumber(nint process)
+    {
+        var value = new byte[8];
+        return NtQueryInformationProcess(process, ProcessSequenceNumber, value, value.Length, out int returned) >= 0 && returned == 8 ? BinaryPrimitives.ReadUInt64LittleEndian(value) : 0;
     }
 
     [LibraryImport("kernel32.dll")] private static partial nint OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint processId);
@@ -85,7 +93,7 @@ internal static partial class ProcessEnergyNetwork
 internal static class ProcessNetwork
 {
     /// <summary>Column and caption help shared by every place that shows per-process network traffic.</summary>
-    internal static string Help => Loc.T("Síťový provoz podle procesu. Bez práv správce ukazuje příjem a odeslání dohromady, stejně jako Správce úloh Windows. Se správcem měří zvlášť příjem a odeslání TCP/UDP, hodnota je pak za uzavřenou sekundu asi před 5 s a ≥ znamená, že část provozu nešlo přiřadit.");
+    internal static string Help => Loc.T("Síťový provoz podle procesu. Bez práv správce ukazuje příjem a odeslání dohromady, stejně jako Správce úloh Windows; u systémových procesů, které Windows běžnému uživateli neotevře, je „—“. Se správcem měří zvlášť příjem a odeslání TCP/UDP, hodnota je pak za uzavřenou sekundu asi před 5 s a ≥ znamená, že část provozu nešlo přiřadit.");
     /// <summary>What the process I/O counters mean, so they are not read as disk activity.</summary>
     internal static string IoHelp => Loc.T("Čtení a zápis souborů, rour a zařízení dohromady, včetně souborů z mezipaměti; není to jen disk. Síť ukazuje zvlášť sloupec Síť.");
     internal const int MaximumSamples = 8192;

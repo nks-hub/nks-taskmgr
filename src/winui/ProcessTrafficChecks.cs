@@ -57,11 +57,18 @@ public static partial class WinUiChecks
         using var self = System.Diagnostics.Process.GetCurrentProcess();
         var own = new ProcessKey(new(1, 2), (uint)self.Id, GenerationKind.CreationTime, (ulong)self.StartTime.ToFileTimeUtc());
         var reused = own with { Generation = own.Generation - 1 };
+        // Newer Windows builds key processes by sequence number instead of creation time.
+        ulong sequence = ProcessEnergyNetwork.SequenceNumber(-1);
+        var bySequence = own with { Kind = GenerationKind.SequenceNumber, Generation = sequence };
+        var reusedSequence = bySequence with { Generation = sequence + 1 };
+        ProcessKey[] keys = [own, reused, bySequence, reusedSequence];
         ProcessEnergyNetwork.Clear();
-        Require(ProcessEnergyNetwork.Rates([own, reused]).Count == 0, "An energy counter produced a rate from a single reading.");
-        var rates = ProcessEnergyNetwork.Rates([own, reused]);
+        Require(ProcessEnergyNetwork.Rates(keys).Count == 0, "An energy counter produced a rate from a single reading.");
+        var rates = ProcessEnergyNetwork.Rates(keys);
         Require(rates.TryGetValue(own, out var rate) && !rate.Split && rate.PerSecond >= 0 && rate.ReceivedPerSecond == 0 && !rates.ContainsKey(reused),
             "The energy counter of this process was not read, or a reused PID took over its counter.");
+        Require((sequence == 0 || rates.ContainsKey(bySequence)) && !rates.ContainsKey(reusedSequence),
+            "A process keyed by sequence number got no energy rate, or a different sequence number took over its counter.");
         var row = new ProcessRow(own);
         row.SetNetwork(rate, false, false, false);
         string combined = Loc.F("Síť: {0} (příjem a odeslání dohromady)", ProcessNetworkRate.Text(rate.PerSecond));
