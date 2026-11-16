@@ -1,5 +1,6 @@
 #include <phnt_windows.h>
 #include <phnt.h>
+#include "collectors/etw_collector.hpp"
 #include "collectors/process_parser.hpp"
 #include "collectors/process_query.h"
 #include "collectors/processor_query.hpp"
@@ -96,6 +97,16 @@ LONG NTAPI fakeGroup(USHORT group, void* output, ULONG capacity, ULONG* used) {
 
 int main() {
     const std::pair<const char*, std::function<void()>> cases[] = {
+        {"ETW session name carries its owner and rejects other names", [] {
+            const auto name = nks::etwSessionName(4294967295u, 0x01dc1234abcd5678ull, L"0a1b2c3d-0000-0000-0000-000000000000");
+            std::uint32_t pid{}; std::uint64_t created{};
+            require(nks::etwSessionOwner(name, pid, created) && pid == 4294967295u && created == 0x01dc1234abcd5678ull, "Session owner did not round-trip");
+            require(!nks::etwSessionOwner(L"NksTaskMgr-Processes-0a1b2c3d-0000-0000-0000-000000000000", pid, created), "Older name without an owner was accepted");
+            require(!nks::etwSessionOwner(L"NksTaskMgr-Processes-p4294967296-01dc1234abcd5678-x", pid, created), "PID overflow was accepted");
+            require(!nks::etwSessionOwner(L"NksTaskMgr-Processes-p12-01dc1234abcd567-x", pid, created), "Short creation time was accepted");
+            require(!nks::etwSessionOwner(L"NksTaskMgr-Processes-p12-01dc1234abcd5678", pid, created), "Name without its unique part was accepted");
+            require(!nks::etwSessionOwner(L"Other-Processes-p12-01dc1234abcd5678-x", pid, created), "A foreign session was accepted");
+        }},
         {"valid process name, creation time and independent memory fields", [] {
             NativeEntry entry;
             entry.named(L"example.exe");

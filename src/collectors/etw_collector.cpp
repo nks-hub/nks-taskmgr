@@ -14,9 +14,13 @@
 #include <condition_variable>
 #include <cstring>
 #include <cwchar>
+#include <cwctype>
 #include <limits>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <thread>
+#include <vector>
 
 namespace nks {
 namespace {
@@ -43,6 +47,53 @@ ProcessEventMonitorState errorState(ULONG error) {
     if (error == ERROR_ACCESS_DENIED || error == ERROR_PRIVILEGE_NOT_HELD) return ProcessEventMonitorState::accessDenied;
     if (error == ERROR_NOT_SUPPORTED || error == ERROR_CALL_NOT_IMPLEMENTED) return ProcessEventMonitorState::unsupported;
     return ProcessEventMonitorState::error;
+}
+
+constexpr std::wstring_view sessionPrefix = L"NksTaskMgr-Processes-p";
+
+std::uint64_t fileTime(const FILETIME& value) { return (static_cast<std::uint64_t>(value.dwHighDateTime) << 32) | value.dwLowDateTime; }
+
+std::uint64_t ownCreationTime() {
+    FILETIME created{}, exited{}, kernel{}, user{};
+    return GetProcessTimes(GetCurrentProcess(), &created, &exited, &kernel, &user) ? fileTime(created) : 0;
+}
+
+// Anything short of a confirmed exit or a different process under the PID counts as alive, so a live session is never stopped.
+bool sessionOwnerAlive(std::uint32_t pid, std::uint64_t created) {
+    const HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    if (!process) return GetLastError() != ERROR_INVALID_PARAMETER;
+    FILETIME start{}, exited{}, kernel{}, user{};
+    DWORD code = STILL_ACTIVE;
+    const bool times = GetProcessTimes(process, &start, &exited, &kernel, &user) != FALSE;
+    const bool status = GetExitCodeProcess(process, &code) != FALSE;
+    CloseHandle(process);
+    if (times && fileTime(start) != created) return false;
+    return !status || code == STILL_ACTIVE;
+}
+
+// A crashed run leaves its real-time session behind and Windows allows only a few system loggers, so they are stopped before a new start.
+void stopOrphanedSessions() noexcept {
+    try {
+        struct Slot { EVENT_TRACE_PROPERTIES value; wchar_t logger[1024]; wchar_t file[1024]; };
+        constexpr ULONG capacity = 64;
+        auto prepare = [](Slot& slot) {
+            slot.value.Wnode.BufferSize = sizeof(Slot);
+            slot.value.LoggerNameOffset = offsetof(Slot, logger); slot.value.LogFileNameOffset = offsetof(Slot, file);
+        };
+        std::vector<Slot> slots(capacity);
+        std::array<PEVENT_TRACE_PROPERTIES, capacity> pointers{};
+        for (ULONG i = 0; i < capacity; ++i) { prepare(slots[i]); pointers[i] = &slots[i].value; }
+        ULONG found = 0;
+        const auto status = QueryAllTracesW(pointers.data(), capacity, &found);
+        if (status != ERROR_SUCCESS && status != ERROR_MORE_DATA) return;
+        for (ULONG i = 0; i < found && i < capacity; ++i) {
+            auto& slot = slots[i]; slot.logger[std::size(slot.logger) - 1] = 0;
+            std::uint32_t pid{}; std::uint64_t created{};
+            if (!etwSessionOwner(slot.logger, pid, created) || sessionOwnerAlive(pid, created)) continue;
+            Slot stop{}; prepare(stop);
+            ControlTraceW(0, slot.logger, &stop.value, EVENT_TRACE_CONTROL_STOP);
+        }
+    } catch (...) { }
 }
 
 bool validText(const std::wstring& value) {
@@ -370,8 +421,12 @@ void EtwCollector::Run::control() noexcept
         const auto created = CoCreateGuid(&guid);
         if (FAILED(created)) { failure = created == E_OUTOFMEMORY ? ERROR_NOT_ENOUGH_MEMORY : ERROR_GEN_FAILURE; }
         if (!failure) {
-            swprintf_s(name.data(), name.size(), L"NksTaskMgr-Processes-%08lx-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+            std::array<wchar_t, 40> unique{};
+            swprintf_s(unique.data(), unique.size(), L"%08lx-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
                 guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+            const auto text = etwSessionName(GetCurrentProcessId(), ownCreationTime(), unique.data());
+            wcsncpy_s(name.data(), name.size(), text.c_str(), _TRUNCATE);
+            stopOrphanedSessions();
             if (!stopRequested) {
                 auto data = properties(); data.value.Wnode.ClientContext = 1;
                 data.value.BufferSize = 64; data.value.MinimumBuffers = 2; data.value.MaximumBuffers = 16;
@@ -459,6 +514,32 @@ void EtwCollector::stop() noexcept
 {
     std::lock_guard lock(mutex);
     if (run && !run->complete) run->stop();
+}
+
+std::wstring etwSessionName(std::uint32_t pid, std::uint64_t created, std::wstring_view unique)
+{
+    std::array<wchar_t, 64> head{};
+    swprintf_s(head.data(), head.size(), L"%.*s%lu-%016llx-", static_cast<int>(sessionPrefix.size()), sessionPrefix.data(),
+        static_cast<unsigned long>(pid), static_cast<unsigned long long>(created));
+    return std::wstring(head.data()) + std::wstring(unique);
+}
+
+bool etwSessionOwner(std::wstring_view name, std::uint32_t& pid, std::uint64_t& created) noexcept
+{
+    if (name.substr(0, sessionPrefix.size()) != sessionPrefix) return false;
+    name.remove_prefix(sessionPrefix.size());
+    std::size_t at = 0; std::uint64_t number = 0;
+    for (; at < name.size() && name[at] >= L'0' && name[at] <= L'9'; ++at) {
+        number = number * 10 + static_cast<std::uint64_t>(name[at] - L'0');
+        if (number > std::numeric_limits<std::uint32_t>::max()) return false;
+    }
+    if (at == 0 || at >= name.size() || name[at] != L'-') return false;
+    const auto digits = ++at; std::uint64_t stamp = 0;
+    for (; at < name.size() && at - digits < 16 && std::iswxdigit(name[at]); ++at)
+        stamp = stamp * 16 + static_cast<std::uint64_t>(name[at] <= L'9' ? name[at] - L'0' : (name[at] | 0x20) - L'a' + 10);
+    if (at - digits != 16 || at >= name.size() || name[at] != L'-') return false;
+    pid = static_cast<std::uint32_t>(number); created = stamp;
+    return true;
 }
 
 }
