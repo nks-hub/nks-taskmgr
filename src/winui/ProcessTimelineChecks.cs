@@ -63,6 +63,12 @@ public static partial class WinUiChecks
         Require(starts[4].Respawn == 4 && starts[0].Respawn == 4 && starts[2].Respawn == 4, "A fourth start within the window did not raise the whole group.");
         Spawn(306, 300, 200);
         Require(starts[5].Respawn == 0, "A start long after the others was marked as repeated.");
+        // One snapshot can list simultaneous starts in any order; the latest start first must not hide the group.
+        now = now.AddSeconds(200);
+        var burst = new[] { TimelineSeen(353, 350, "tool.exe", now.AddMilliseconds(40)), TimelineSeen(351, 350, "tool.exe", now), TimelineSeen(352, 350, "tool.exe", now.AddMilliseconds(20)) };
+        timeline.Observe(burst);
+        Require(burst.All(item => timeline.Entries.Single(entry => entry.Pid == item.Key.Pid).Respawn == 3), "Simultaneous starts listed out of order were not marked as repeated.");
+        timeline.Observe([]);
 
         // ETW adds the exit code to a process the snapshots saw, and short processes the snapshots missed.
         now = now.AddSeconds(10);

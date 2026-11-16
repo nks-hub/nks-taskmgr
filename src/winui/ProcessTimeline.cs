@@ -163,7 +163,8 @@ internal sealed class ProcessTimeline
     {
         entry.Listed = true; entries.Add(entry);
         if (entry.Name.Length > 0 && entry.ParentPid != 0) {
-            bool Together(ProcessTimelineEntry other) { var age = entry.Started - other.Started; return age >= TimeSpan.Zero && age <= RespawnWindow; }
+            // Snapshots list simultaneous starts in any order, so the distance counts both ways.
+            bool Together(ProcessTimelineEntry other) => (entry.Started - other.Started).Duration() <= RespawnWindow;
             var group = entries.Where(other => other.ParentPid == entry.ParentPid && string.Equals(other.Name, entry.Name, StringComparison.OrdinalIgnoreCase) && Together(other)).ToList();
             if (group.Count >= RespawnThreshold) foreach (var other in group) { other.Respawn = Math.Max(other.Respawn, group.Count); ++other.Revision; }
         }
