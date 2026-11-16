@@ -77,6 +77,7 @@ public partial class App : Application
     private void LaunchApplication()
     {
         bool shared = !LaunchArguments.Parse(LaunchArguments.Current).Independent;
+        if (shared && ElevationPreference.TryRelaunch()) Environment.Exit(0);
         if (shared && !SingleInstance.TryBecomePrimary()) Environment.Exit(0);
         if (EventsCheckPath is { } path) {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);

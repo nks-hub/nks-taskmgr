@@ -94,7 +94,7 @@ internal sealed class HistoricalProcessesWindow : Window
                 value.RetainedFrames, value.RetainedRows, Display.Number(value.AccountedBytes / 1048576d, "", 2))
             + Loc.F("\nVytěsněno {0} snímků ({1} řádků).", value.EvictedFrames, value.EvictedRows)
             + (value.DeliverySequenceUnknown ? Loc.T("\nÚplnost číslování předání nelze určit.") : "")
-            + Loc.T("\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU. Síť je zvlášť, měří se jen při spuštění jako správce a je zpožděná asi o 5 s. Úplnost původního sběru nelze potvrdit."));
+            + Loc.T("\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU. Síť je zvlášť: bez práv správce příjem a odeslání dohromady, se správcem zvlášť a zpožděná asi o 5 s. Úplnost původního sběru nelze potvrdit."));
         ShowRows(); ShowLifecycle();
     }
 

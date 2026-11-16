@@ -60,13 +60,12 @@ public sealed partial class MainWindow
     /// <summary>Received and sent totals of the measured rows as a tooltip line; empty when no row has a network measurement.</summary>
     internal static string NetworkTip(IEnumerable<ProcessRow> rows)
     {
-        double received = 0, sent = 0; bool known = false, partial = false;
+        double received = 0, sent = 0; bool known = false, partial = false, split = true;
         foreach (var row in rows) {
             if (row.Ended || row.Stale || row.NetworkRate is not { } rate) continue;
-            received += rate.ReceivedPerSecond; sent += rate.SentPerSecond; known = true; partial |= row.Network.Partial;
+            received += rate.ReceivedPerSecond; sent += rate.SentPerSecond; known = true; partial |= row.Network.Partial; split &= rate.Split;
         }
-        string bound = partial ? "≥ " : "";
-        return known ? "\n" + Loc.F("Síť: příjem {0} · odeslání {1}", bound + ProcessNetworkRate.Text(received), bound + ProcessNetworkRate.Text(sent)) : "";
+        return known ? "\n" + new ProcessNetworkRate(sent, received, 0, split).Detail(partial ? "≥ " : "") : "";
     }
 
     internal static string DiskText(ProcessRow row, out double value)

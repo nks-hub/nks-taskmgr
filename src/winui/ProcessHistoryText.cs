@@ -26,8 +26,7 @@ internal static class ProcessHistoryText
             + "\n" + Loc.F("Pracovní sada: {0} B · {1}", row.WorkingBytes, State(row.MemoryState)) + "\n" + Loc.F("Soukromé bajty: {0} B · {1}", row.PrivateBytes, State(row.MemoryState))
             + "\n" + Loc.F("Čtení I/O procesu: {0} · {1}", Display.Metric(row.ReadIo, " B/s"), State(row.ReadIo.State))
             + "\n" + Loc.F("Zápis I/O procesu: {0} · {1} · {2}", Display.Metric(row.WriteIo, " B/s"), State(row.WriteIo.State), Interval(row.IoContext))
-            + "\n" + (row.Network is { } network ? Loc.F("Síť: příjem {0} · odeslání {1}", (row.NetworkPartial ? "≥ " : "") + ProcessNetworkRate.Text(network.ReceivedPerSecond),
-                (row.NetworkPartial ? "≥ " : "") + ProcessNetworkRate.Text(network.SentPerSecond)) + " · " + Loc.T("zpožděno asi o 5 s") : Loc.T("Síť: neměřeno"))
+            + "\n" + (row.Network is { } network ? network.Detail(row.NetworkPartial ? "≥ " : "") + (network.Split ? " · " + Loc.T("zpožděno asi o 5 s") : "") : Loc.T("Síť: neměřeno"))
             + (row.Late ? "\n" + Loc.T("Vzorek byl při přijetí opožděný nebo označený jako zastaralý.") : "");
         if (row.CpuContext is { } cpu) text += "\n" + Loc.F("Uložená normalizace CPU: {0} · dělitel {1}", cpu.Normalization, cpu.NormalizationDivisor);
         return text;

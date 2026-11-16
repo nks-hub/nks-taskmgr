@@ -48,6 +48,25 @@ public static partial class WinUiChecks
         row.SetNetwork(null, false, false, false);
         Require(ProcessNetwork.Rates(out _, out _, later) is null && row.NetworkText == "—" && row.NetworkRate is null && MainWindow.NetworkTip([row]).Length == 0,
             "Network rates survived the end of the ETW capture.");
-        App.Trace("Process network rates passed: per-generation window, revocation, partial window, received/sent split and capture end");
+        ProcessEnergyNetworkRates();
+        App.Trace("Process network rates passed: per-generation window, revocation, partial window, received/sent split, capture end and energy counters without elevation");
+    }
+
+    private static void ProcessEnergyNetworkRates()
+    {
+        using var self = System.Diagnostics.Process.GetCurrentProcess();
+        var own = new ProcessKey(new(1, 2), (uint)self.Id, GenerationKind.CreationTime, (ulong)self.StartTime.ToFileTimeUtc());
+        var reused = own with { Generation = own.Generation - 1 };
+        ProcessEnergyNetwork.Clear();
+        Require(ProcessEnergyNetwork.Rates([own, reused]).Count == 0, "An energy counter produced a rate from a single reading.");
+        var rates = ProcessEnergyNetwork.Rates([own, reused]);
+        Require(rates.TryGetValue(own, out var rate) && !rate.Split && rate.PerSecond >= 0 && rate.ReceivedPerSecond == 0 && !rates.ContainsKey(reused),
+            "The energy counter of this process was not read, or a reused PID took over its counter.");
+        var row = new ProcessRow(own);
+        row.SetNetwork(rate, false, false, false);
+        string combined = Loc.F("Síť: {0} (příjem a odeslání dohromady)", ProcessNetworkRate.Text(rate.PerSecond));
+        Require(rate.Detail("") == combined && row.TableMetricsDescription.Contains(combined, StringComparison.Ordinal) && MainWindow.NetworkTip([row]) == "\n" + combined,
+            "A combined energy rate was shown as received and sent.");
+        ProcessEnergyNetwork.Clear();
     }
 }

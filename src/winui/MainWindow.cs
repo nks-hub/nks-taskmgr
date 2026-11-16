@@ -582,7 +582,7 @@ public sealed partial class MainWindow : Window
             smokeBranchValues.GetAwaiter().GetResult();
             CheckHeldProcessRefresh();
             CheckHardwareRefresh();
-            WinUiChecks.ContextMenus(); LaunchArguments.Check();
+            WinUiChecks.ContextMenus(); LaunchArguments.Check(); ElevationPreference.Check();
             WinUiChecks.ModelInvariants(model); WinUiChecks.ProcessNotifications(); WinUiChecks.LocalizationChecks(); smokeSnapshotExport = WinUiChecks.SnapshotExportChecks(SnapshotDocument.Capture(model)); smokeModelsChecked = true;
             smokeReadyAt = ticks;
             ShowView(false); var own = model.Processes.First(row => row.Key.Pid == Environment.ProcessId); SelectProcess(own, false);

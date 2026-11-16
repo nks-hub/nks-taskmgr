@@ -9,3 +9,7 @@ Vzhled je změněný, ale volbu se nepodařilo uložit pro příští spuštěn�
 Jazyk	Język
 Jazyk se změní po restartu aplikace.	Język zmieni się po ponownym uruchomieniu aplikacji.
 Jazyk se nepodařilo uložit.	Nie udało się zapisać języka.
+Spouštět vždy jako správce	Zawsze uruchamiaj jako administrator
+Při každém spuštění, i přes Ctrl+Shift+Esc, se Windows zeptá na práva správce (výzva UAC). Bez nich chybí návratové kódy a velmi krátké procesy, síť není rozdělená na příjem a odeslání a podrobnosti cizích procesů nejsou dostupné.	Przy każdym uruchomieniu, także przez Ctrl+Shift+Esc, Windows zapyta o uprawnienia administratora (monit UAC). Bez nich brakuje kodów wyjścia i bardzo krótkich procesów, ruch sieciowy nie jest rozdzielony na odebrane i wysłane, a szczegóły cudzych procesów są niedostępne.
+Volbu se nepodařilo uložit.	Nie udało się zapisać wyboru.
+Od příštího spuštění poběží NKS jako správce.	Od następnego uruchomienia NKS będzie działać jako administrator.

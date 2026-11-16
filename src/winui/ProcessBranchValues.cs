@@ -79,8 +79,7 @@ public sealed partial class ProcessRow
     {
         var value = rate is { } current ? new ProcessBranchMetric(current.PerSecond, 1, false, partial) : default;
         string bound = partial ? "≥ " : "";
-        string total = rate is { } known ? "\n" + Loc.F("Síť: příjem {0} · odeslání {1}", bound + ProcessNetworkRate.Text(known.ReceivedPerSecond), bound + ProcessNetworkRate.Text(known.SentPerSecond))
-            + "\n" + Loc.T("Síť od spuštění záznamu:") + " " + (totalPartial ? "≥ " : "") + Display.Bytes(known.TotalBytes) : "";
+        string total = rate is { } known ? "\n" + known.Detail(bound) + "\n" + known.TotalText + (totalPartial ? "≥ " : "") + Display.Bytes(known.TotalBytes) : "";
         if (value == Network && total == networkTotal) return false;
         string text = NetworkText, description = TableMetricsDescription;
         Network = value; NetworkRate = rate; networkTotal = total;

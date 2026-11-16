@@ -22,8 +22,8 @@ A Windows process and system monitor with a C#/WinUI 3 Native AOT interface and 
 - 🧰 **Process actions** - Close, end, end tree, suspend, resume, priority, affinity, CPU Sets and dumps (x64 and WOW64), each checked against the process lifetime before acting.
 - ⏱️ **History** - Shared graph cursor, time ranges and the processes recorded at a chosen moment.
 - 📄 **Snapshots** - JSON export without names by default, and comparison of two snapshots.
-- 🕒 **Process starts and ends** - Timeline with parent, command line, run time and repeated starts; exit codes, very short processes and disk/network attribution when run as administrator.
-- 🔁 **Task Manager replacement** - Optional IFEO registration for a machine-wide install, with restore of the previous value.
+- 🕒 **Process starts and ends** - Timeline with parent, command line, run time and repeated starts; exit codes, very short processes and disk attribution when run as administrator.
+- 🔁 **Task Manager replacement** - Optional IFEO registration for a machine-wide install, with restore of the previous value; an opt-in setting starts every launch elevated through UAC.
 - 🌐 **Languages** - Czech, English, German, Slovak and Polish, chosen from the Windows display language or set manually.
 - 📦 **Updates** - Checks GitHub Releases, downloads the signed setup and installs it in the same mode, including Program Files installs through UAC.
 

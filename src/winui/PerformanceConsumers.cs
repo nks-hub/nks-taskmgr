@@ -67,13 +67,13 @@ public sealed partial class MainWindow
         if (consumers.Children.Count == 0) {
             consumers.Children.Add(consumerCaption); consumers.Children.Add(consumerCards);
         }
-        SetConsumerText(consumerCaption, network ? Loc.T("Procesy podle sítě") + (model.NetworkAvailable ? "" : " · " + (MainWindow.RunningElevated
-                ? Loc.T("čekám na první data") : Loc.T("vyžaduje spuštění jako správce")))
+        SetConsumerText(consumerCaption, network ? Loc.T("Procesy podle sítě") + (model.NetworkAvailable ? "" : " · " + Loc.T("čekám na první data"))
             : disk ? Loc.T("Procesy podle I/O (čtení a zápis)") : memory ? Loc.T("Procesy podle paměti") : Loc.T("Procesy podle CPU"));
         string captionHelp = network ? ProcessNetwork.Help : disk ? ProcessNetwork.IoHelp : memory ? Loc.T("Pracovní sada včetně sdílených stránek") : "";
         if (ToolTipService.GetToolTip(consumerCaption) as string != captionHelp) ToolTipService.SetToolTip(consumerCaption, captionHelp.Length == 0 ? null : captionHelp);
         var rows = (network ? model.TopNetworkConsumers() : disk ? model.TopDiskConsumers() : model.TopConsumers(memory)).ToArray();
-        Func<ProcessRow, string> value = network ? row => "↓ " + ProcessNetworkRate.Text(row.NetworkRate!.Value.ReceivedPerSecond) + "  ↑ " + ProcessNetworkRate.Text(row.NetworkRate!.Value.SentPerSecond)
+        Func<ProcessRow, string> value = network ? row => row.NetworkRate!.Value is { Split: true } rate
+                ? "↓ " + ProcessNetworkRate.Text(rate.ReceivedPerSecond) + "  ↑ " + ProcessNetworkRate.Text(rate.SentPerSecond) : "↕ " + ProcessNetworkRate.Text(row.NetworkRate.Value.PerSecond)
             : disk ? row => Display.Number((row.ReadIo.Value + row.WriteIo.Value) / 1048576, " MiB/s")
             : memory ? row => row.WorkingText : row => row.CpuText;
         bool stacked = performanceDetailWidth < 720;

@@ -9,3 +9,7 @@ Vzhled je změněný, ale volbu se nepodařilo uložit pro příští spuštěn�
 Jazyk	Jazyk
 Jazyk se změní po restartu aplikace.	Jazyk sa zmení po reštarte aplikácie.
 Jazyk se nepodařilo uložit.	Jazyk sa nepodarilo uložiť.
+Spouštět vždy jako správce	Spúšťať vždy ako správca
+Při každém spuštění, i přes Ctrl+Shift+Esc, se Windows zeptá na práva správce (výzva UAC). Bez nich chybí návratové kódy a velmi krátké procesy, síť není rozdělená na příjem a odeslání a podrobnosti cizích procesů nejsou dostupné.	Pri každom spustení, aj cez Ctrl+Shift+Esc, sa Windows opýta na práva správcu (výzva UAC). Bez nich chýbajú návratové kódy a veľmi krátke procesy, sieť nie je rozdelená na príjem a odoslanie a podrobnosti cudzích procesov nie sú dostupné.
+Volbu se nepodařilo uložit.	Voľbu sa nepodarilo uložiť.
+Od příštího spuštění poběží NKS jako správce.	Od ďalšieho spustenia pobeží NKS ako správca.

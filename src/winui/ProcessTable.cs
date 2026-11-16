@@ -181,8 +181,9 @@ public sealed partial class ProcessRowGrid : Grid
     private void BindNetwork()
     {
         // The template binds the slot to the name cell with x:Bind; DataContext is not guaranteed to carry it.
+        // A recycled container can keep an earlier slot as DataContext, so the name cell decides.
         var nextSlot = IsLoaded && network is not null
-            ? DataContext as ProcessSlot ?? (Children.Count > 0 ? (Children[0] as ProcessNameCell)?.Slot : null) : null;
+            ? (Children.Count > 0 ? (Children[0] as ProcessNameCell)?.Slot : null) ?? DataContext as ProcessSlot : null;
         if (!ReferenceEquals(slot, nextSlot)) {
             if (slot is not null) slot.PropertyChanged -= SlotChanged;
             slot = nextSlot;

@@ -1,16 +1,17 @@
 Síť: příjem {0} · odeslání {1}	Netzwerk: empfangen {0} · gesendet {1}
 Řadit podle síťového provozu	Nach Netzwerkverkehr sortieren
 \nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM, 8 s nejvyšším I/O a 8 s největším síťovým provozem.	\n{0} von {1} Zeilen gespeichert. Jede Aufnahme behält nur die 8 Prozesse mit der höchsten CPU-Last, 8 mit dem meisten RAM, 8 mit der meisten E/A und 8 mit dem meisten Netzwerkverkehr.
-\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU. Síť je zvlášť, měří se jen při spuštění jako správce a je zpožděná asi o 5 s. Úplnost původního sběru nelze potvrdit.	\nAllgemeine Prozess-E/A wird nicht nach Datenträger, Netzwerk oder GPU aufgeteilt. Das Netzwerk wird separat angezeigt, nur bei Ausführung als Administrator gemessen und ist etwa 5 s verzögert. Die Vollständigkeit der ursprünglichen Erfassung lässt sich nicht bestätigen.
+\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU. Síť je zvlášť: bez práv správce příjem a odeslání dohromady, se správcem zvlášť a zpožděná asi o 5 s. Úplnost původního sběru nelze potvrdit.	\nAllgemeine Prozess-E/A wird nicht nach Datenträger, Netzwerk oder GPU aufgeteilt. Netzwerk ist getrennt: ohne Administratorrechte Empfang und Senden zusammen, als Administrator getrennt und um etwa 5 s verzögert. Die Vollständigkeit der ursprünglichen Erfassung lässt sich nicht bestätigen.
 Síť Ø / max	Netzwerk Ø / Max.
 Procesy podle sítě	Prozesse nach Netzwerk
 čekám na první data	warte auf die ersten Daten
-vyžaduje spuštění jako správce	erfordert Ausführung als Administrator
 Procesy podle I/O (čtení a zápis)	Prozesse nach E/A (Lesen und Schreiben)
 Síť od spuštění záznamu:	Netzwerk seit Beginn der Aufzeichnung:
 zpožděno asi o 5 s	etwa 5 s verzögert
 Síť: neměřeno	Netzwerk: nicht gemessen
-Přijaté a odeslané bajty TCP/UDP podle procesu. Windows je zpřístupní jen aplikaci spuštěné jako správce, jinak se ukazuje „—“. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Empfangene und gesendete TCP/UDP-Bytes pro Prozess. Windows stellt sie nur einer App bereit, die als Administrator ausgeführt wird; sonst wird „—“ angezeigt. Der Wert gilt für die abgeschlossene Sekunde vor etwa 5 s; ≥ bedeutet, dass ein Teil des Verkehrs nicht zugeordnet werden konnte.
+Síťový provoz podle procesu. Bez práv správce ukazuje příjem a odeslání dohromady, stejně jako Správce úloh Windows. Se správcem měří zvlášť příjem a odeslání TCP/UDP, hodnota je pak za uzavřenou sekundu asi před 5 s a ≥ znamená, že část provozu nešlo přiřadit.	Netzwerkverkehr pro Prozess. Ohne Administratorrechte werden Empfang und Senden zusammen angezeigt, wie im Windows Task-Manager. Als Administrator werden empfangene und gesendete TCP/UDP-Bytes getrennt gemessen; der Wert gilt dann für die abgeschlossene Sekunde vor etwa 5 s, und ≥ bedeutet, dass ein Teil des Verkehrs nicht zugeordnet werden konnte.
 Čtení a zápis souborů, rour a zařízení dohromady, včetně souborů z mezipaměti; není to jen disk. Síť ukazuje zvlášť sloupec Síť.	Lese- und Schreibvorgänge für Dateien, Pipes und Geräte zusammen, einschließlich Dateien aus dem Cache; das ist nicht nur Datenträgeraktivität. Das Netzwerk zeigt die Spalte Netzwerk separat.
 Součet čtení a zápisu procesů.	Summe der Lese- und Schreibvorgänge der Prozesse.
 I/O	E/A
+Síť: {0} (příjem a odeslání dohromady)	Netzwerk: {0} (empfangen und gesendet zusammen)
+Síť od spuštění procesu:	Netzwerk seit Prozessstart:

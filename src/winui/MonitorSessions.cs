@@ -28,17 +28,22 @@ public sealed partial class MonitorModel
         sessionViewVisible = value;
     }
 
-    /// <summary>True while the application's ETW capture (ProcessCapture) provides per-process network rates.</summary>
+    /// <summary>True while per-process network rates exist, from the ETW capture or else from the energy counters.</summary>
     internal bool NetworkAvailable { get; private set; }
 
     /// <summary>Copies per-generation network rates to the rows; true when the network sort order may have changed.</summary>
     private bool ApplyProcessNetwork()
     {
         var rates = ProcessNetwork.Rates(out bool partial, out bool totalPartial);
-        NetworkAvailable = rates is not null;
+        bool energy = rates is null;
+        if (energy) rates = ProcessEnergyNetwork.Rates(processes.Values.Where(row => !row.Ended && !row.Stale).Select(row => row.Key));
+        else ProcessEnergyNetwork.Clear();
+        NetworkAvailable = true;
         bool changed = false;
         foreach (var row in processes.Values) {
-            ProcessNetworkRate? rate = rates is null || row.Key.Kind != GenerationKind.CreationTime ? null : rates.GetValueOrDefault(row.Key);
+            // ETW lists only processes with traffic; an energy counter that could not be read stays unknown.
+            ProcessNetworkRate? rate = row.Key.Kind != GenerationKind.CreationTime ? null
+                : rates!.TryGetValue(row.Key, out var known) ? known : energy ? null : default(ProcessNetworkRate);
             changed |= row.SetNetwork(rate, partial, totalPartial, ProcessVisualUpdates);
         }
         return changed && sortColumn == 7;
