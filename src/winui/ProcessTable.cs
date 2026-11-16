@@ -118,7 +118,8 @@ public sealed partial class ProcessTable : Grid
             string help = Loc.T("Kliknutím seřadit, přetažením přesunout. Pravé tlačítko otevře další volby.");
             if (metric) help += " " + (branchValues ? Loc.T("Hodnoty procesu a ověřených potomků; chybějící údaje jsou označené.") : Loc.T("Vlastní hodnota procesu bez potomků."));
             if (branchValues && column.Id == 3) help += " " + Loc.T("Sdílené stránky RAM se mohou započítat opakovaně.");
-            if (column.Id == 7) help += " " + Loc.T("Odeslané a přijaté bajty TCP/UDP jen během vlastního záznamu ETW v okně Události procesů, který vyžaduje práva správce; jinak nedostupné. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.");
+            if (column.Id is 5 or 6) help += " " + ProcessNetwork.IoHelp;
+            if (column.Id == 7) help += " " + ProcessNetwork.Help;
             ToolTipService.SetToolTip(button, help);
         }
     }

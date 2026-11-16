@@ -7,6 +7,8 @@ namespace NksTaskMgr.WinUI;
 internal readonly record struct ProcessNetworkRate(double SentPerSecond, double ReceivedPerSecond, ulong TotalBytes)
 {
     internal double PerSecond => SentPerSecond + ReceivedPerSecond;
+    /// <summary>Bytes per second in megabits like the native Task Manager.</summary>
+    internal static string Text(double bytesPerSecond) => Display.Number(bytesPerSecond / 125000, " Mb/s");
 }
 
 /// <summary>Network rates per process generation from the event window's own ETW capture (needs an elevated token).</summary>
@@ -14,6 +16,10 @@ internal readonly record struct ProcessNetworkRate(double SentPerSecond, double 
 /// Samples upsert by epoch and sample id, so a revoked sample leaves the sums.</remarks>
 internal static class ProcessNetwork
 {
+    /// <summary>Column and caption help shared by every place that shows per-process network traffic.</summary>
+    internal static string Help => Loc.T("Přijaté a odeslané bajty TCP/UDP podle procesu. Windows je zpřístupní jen aplikaci spuštěné jako správce, jinak se ukazuje „—“. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.");
+    /// <summary>What the process I/O counters mean, so they are not read as disk activity.</summary>
+    internal static string IoHelp => Loc.T("Čtení a zápis souborů, rour a zařízení dohromady, včetně souborů z mezipaměti; není to jen disk. Síť ukazuje zvlášť sloupec Síť.");
     internal const int MaximumSamples = 8192;
     // Native drains 2 s after delivery and ETW flushes every 1 s; older windows no longer receive bytes.
     private const long CompleteAfterWindows = 5;

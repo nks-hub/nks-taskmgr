@@ -53,11 +53,11 @@ public sealed partial class MainWindow
         internal ProcessRow? Current(MonitorModel source) => boundRow is { } row && Key == row.Key && source.IsCurrent(row) ? row : null;
     }
 
-    private void RefreshConsumers(bool cpu, bool memory, uint color, bool disk = false)
+    private void RefreshConsumers(bool cpu, bool memory, uint color, bool disk = false, bool network = false)
     {
-        var visibility = cpu || memory || disk ? Visibility.Visible : Visibility.Collapsed;
+        var visibility = cpu || memory || disk || network ? Visibility.Visible : Visibility.Collapsed;
         if (consumers.Visibility != visibility) consumers.Visibility = visibility;
-        if (!cpu && !memory && !disk) { if (consumers.Children.Count != 0) consumers.Children.Clear(); return; }
+        if (!cpu && !memory && !disk && !network) { if (consumers.Children.Count != 0) consumers.Children.Clear(); return; }
         if (consumerItems.Count == 0) {
             for (int i = 0; i < 3; ++i) {
                 var card = new PerformanceConsumerCard(i, OpenPerformanceConsumer);
@@ -67,11 +67,14 @@ public sealed partial class MainWindow
         if (consumers.Children.Count == 0) {
             consumers.Children.Add(consumerCaption); consumers.Children.Add(consumerCards);
         }
-        SetConsumerText(consumerCaption, disk ? Loc.T("Procesy podle čtení a zápisu") : memory ? Loc.T("Procesy podle paměti") : Loc.T("Procesy podle CPU"));
-        string captionHelp = disk ? Loc.T("Čtení a zápis procesu na všech discích dohromady") : memory ? Loc.T("Pracovní sada včetně sdílených stránek") : "";
+        SetConsumerText(consumerCaption, network ? Loc.T("Procesy podle sítě") + (model.NetworkAvailable ? "" : " · " + (MainWindow.RunningElevated
+                ? Loc.T("čekám na první data") : Loc.T("vyžaduje spuštění jako správce")))
+            : disk ? Loc.T("Procesy podle I/O (čtení a zápis)") : memory ? Loc.T("Procesy podle paměti") : Loc.T("Procesy podle CPU"));
+        string captionHelp = network ? ProcessNetwork.Help : disk ? ProcessNetwork.IoHelp : memory ? Loc.T("Pracovní sada včetně sdílených stránek") : "";
         if (ToolTipService.GetToolTip(consumerCaption) as string != captionHelp) ToolTipService.SetToolTip(consumerCaption, captionHelp.Length == 0 ? null : captionHelp);
-        var rows = (disk ? model.TopDiskConsumers() : model.TopConsumers(memory)).ToArray();
-        Func<ProcessRow, string> value = disk ? row => Display.Number((row.ReadIo.Value + row.WriteIo.Value) / 1048576, " MiB/s")
+        var rows = (network ? model.TopNetworkConsumers() : disk ? model.TopDiskConsumers() : model.TopConsumers(memory)).ToArray();
+        Func<ProcessRow, string> value = network ? row => "↓ " + ProcessNetworkRate.Text(row.NetworkRate!.Value.ReceivedPerSecond) + "  ↑ " + ProcessNetworkRate.Text(row.NetworkRate!.Value.SentPerSecond)
+            : disk ? row => Display.Number((row.ReadIo.Value + row.WriteIo.Value) / 1048576, " MiB/s")
             : memory ? row => row.WorkingText : row => row.CpuText;
         bool stacked = performanceDetailWidth < 720;
         if (consumerLayout != (stacked, rows.Length)) {

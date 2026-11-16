@@ -21,7 +21,7 @@ public sealed partial class MainWindow
     private readonly Dictionary<ProcessKey, GroupLine> appProcessItems = [];
     private Grid appsHeader = new();
     private int appSortColumn;
-    private bool appSortDescending, updatingAppSelection, appNetworkShown = true;
+    private bool appSortDescending, updatingAppSelection;
 
     private void BuildApplicationTable()
     {
@@ -30,13 +30,13 @@ public sealed partial class MainWindow
             Loc.T("Aplikace podle ověřených oken a počet jejích procesů. Šipka nebo dvojklik rozbalí procesy."), "",
             Loc.T("Součet CPU všech procesů aplikace. ≥ označuje známou část, když některý proces nemá aktuální vzorek."),
             Loc.T("Součet pracovních sad všech procesů aplikace. Přesné hodnoty v MB jsou v popisku buňky."),
-            Loc.T("Součet čtení a zápisu všech procesů aplikace."), Loc.T("Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW s právy správce.")];
+            Loc.T("Součet čtení a zápisu všech procesů aplikace.") + " " + ProcessNetwork.IoHelp, ProcessNetwork.Help];
         appsHeader = GroupHeader(Loc.T("Aplikace"), tips, appHeaders, column => {
             appSortDescending = appSortColumn == column ? !appSortDescending : column >= 2; appSortColumn = column; RefreshAppTable();
         });
         appsHeader.ColumnDefinitions[1].Width = new GridLength(0);
         appsPane.Children.Add(appsHeader);
-        ConfigureGroupList(appsList, appItems, () => appNetworkShown);
+        ConfigureGroupList(appsList, appItems);
         appsList.ContainerContentChanging += (_, args) => {
             if (!args.InRecycleQueue && args.ItemContainer.ContentTemplateRoot is Grid grid && grid.ColumnDefinitions.Count == GroupColumns.Length)
                 grid.ColumnDefinitions[1].Width = new GridLength(0);
@@ -74,12 +74,6 @@ public sealed partial class MainWindow
     private void RefreshAppTable()
     {
         if (model.Mode != ProcessMode.Applications) return;
-        bool network = model.NetworkAvailable;
-        if (network != appNetworkShown) {
-            appNetworkShown = network;
-            appsHeader.ColumnDefinitions[^1].Width = new GridLength(network ? GroupColumns[^1] : 0);
-            appItems.Sync([]);
-        }
         UpdateGroupHeader(appHeaders, Loc.T("Aplikace"), appSortColumn, appSortDescending);
         var groups = model.Applications.Visible.ToList();
         var lines = groups.Select(AppGroupLine).ToList();
@@ -133,7 +127,7 @@ public sealed partial class MainWindow
             live.Length == 0 ? "—" : partial(live.Length) + Display.Bytes(working), MemoryTip(Loc.T("Pracovní sada všech procesů"), working, privateBytes),
             diskKnown == 0 ? "—" : partial(diskKnown) + Display.Number(disk / 1048576, " MiB/s"),
             traffic.NetworkText(live.Length, live.Length != group.Members.Length),
-            name + " · " + group.Summary + (windows.Length > 0 ? "\n" + Loc.T("Okna:") + "\n" + windows : ""),
+            name + " · " + group.Summary + NetworkTip(live) + (windows.Length > 0 ? "\n" + Loc.T("Okna:") + "\n" + windows : ""),
             $"{name}, {Plural(group.Members.Length, Loc.T("proces"), Loc.T("procesy"), Loc.T("procesů"))}, {(expanded ? Loc.T("rozbaleno") : Loc.T("sbaleno"))}");
         line.SetSort(name, cpu.Length == 0 ? -1 : cpuValue, working, diskKnown == 0 ? -1 : disk, traffic.SortValue);
         return line;
@@ -146,7 +140,7 @@ public sealed partial class MainWindow
         }
         string disk = DiskText(row, out double diskValue);
         line.Set("", row.Name, "", row.CpuText, Display.Bytes(row.WorkingBytes), MemoryTip(Loc.T("Pracovní sada"), row.WorkingBytes, row.PrivateBytes),
-            disk, row.NetworkText, $"{row.Name} · PID {row.PidText}", $"{row.Name}, PID {row.PidText}");
+            disk, row.NetworkText, $"{row.Name} · PID {row.PidText}" + NetworkTip([row]), $"{row.Name}, PID {row.PidText}");
         line.SetSort(row.Name, row.Cpu.State == SampleState.Valid ? row.Cpu.Value : -1, row.WorkingBytes, diskValue, row.Network.SortValue);
         return line;
     }

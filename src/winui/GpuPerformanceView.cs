@@ -98,9 +98,12 @@ public sealed partial class MainWindow
         var previous = resourceList.SelectedItem;
         foreach (var resource in model.Resources) {
             resourceList.SelectedItem = resource; RefreshPerformance(); root.UpdateLayout(); CheckPerformanceViewport();
-            bool expected = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory or ResourceKind.Disk;
+            bool expected = resource.Kind is ResourceKind.Cpu or ResourceKind.Memory or ResourceKind.Disk or ResourceKind.Network;
             if ((consumers.Visibility == Visibility.Visible) != expected || (!expected && consumers.Children.Count != 0))
                 throw new InvalidOperationException("CPU process cards were shown for an unrelated resource.");
+            if (resource.Kind == ResourceKind.Network && (!consumerCaption.Text.StartsWith(Loc.T("Procesy podle sítě"), StringComparison.Ordinal)
+                || !model.NetworkAvailable && consumerItems.Any(card => card.Button.Visibility == Visibility.Visible)))
+                throw new InvalidOperationException("The network panel did not show processes by network or showed cards without a network measurement.");
             if (resource.Kind == ResourceKind.Disk) {
                 if (diskTransferPanel.Visibility != Visibility.Visible || diskTransfers.ActualWidth <= 0)
                     throw new InvalidOperationException("Disk transfer graph did not lay out below disk activity.");

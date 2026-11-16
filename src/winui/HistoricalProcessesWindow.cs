@@ -18,12 +18,12 @@ internal sealed class HistoricalProcessesWindow : Window
     private readonly Dictionary<ProcessHistoryMetric, Button> metricButtons = [];
     private ProcessHistorySelection selection;
     private ProcessHistoryMetric metric;
-    private readonly TextBlock[] headingLabels = new TextBlock[6];
+    private readonly TextBlock[] headingLabels = new TextBlock[7];
 
     internal HistoricalProcessesWindow(ProcessHistorySelection selection, string systemSummary)
     {
         this.selection = selection;
-        Title = Loc.T("Historické procesy · NKS Task Manager"); AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.ResizeDip(900, 640);
+        Title = Loc.T("Historické procesy · NKS Task Manager"); AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "app.ico")); AppWindow.ResizeDip(1000, 640);
         Appearance.Attach(this, root);
         foreach (var height in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto })
             root.RowDefinitions.Add(new RowDefinition { Height = height });
@@ -36,19 +36,20 @@ internal sealed class HistoricalProcessesWindow : Window
         var bar = new Grid { ColumnSpacing = 12 };
         bar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); bar.ColumnDefinitions.Add(new ColumnDefinition());
         var modes = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        foreach (var value in new[] { ProcessHistoryMetric.Cpu, ProcessHistoryMetric.Memory, ProcessHistoryMetric.Io }) {
-            var button = Command(value == ProcessHistoryMetric.Cpu ? "CPU" : value == ProcessHistoryMetric.Memory ? "RAM" : "I/O");
-            ToolTipService.SetToolTip(button, value == ProcessHistoryMetric.Cpu ? Loc.T("Řadit podle CPU") : value == ProcessHistoryMetric.Memory ? Loc.T("Řadit podle pracovní sady") : Loc.T("Řadit podle procesového I/O"));
+        foreach (var value in new[] { ProcessHistoryMetric.Cpu, ProcessHistoryMetric.Memory, ProcessHistoryMetric.Io, ProcessHistoryMetric.Network }) {
+            var button = Command(value switch { ProcessHistoryMetric.Cpu => "CPU", ProcessHistoryMetric.Memory => "RAM", ProcessHistoryMetric.Io => "I/O", _ => Loc.T("Síť") });
+            ToolTipService.SetToolTip(button, value switch { ProcessHistoryMetric.Cpu => Loc.T("Řadit podle CPU"), ProcessHistoryMetric.Memory => Loc.T("Řadit podle pracovní sady"),
+                ProcessHistoryMetric.Io => Loc.T("Řadit podle procesového I/O"), _ => Loc.T("Řadit podle síťového provozu") });
             button.Click += (_, _) => { metric = value; ShowRows(); }; metricButtons.Add(value, button); modes.Children.Add(button);
         }
         bar.Children.Add(modes);
         count.HorizontalAlignment = HorizontalAlignment.Right; count.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(count, 1); bar.Children.Add(count);
         Grid.SetRow(bar, 1); root.Children.Add(bar);
 
-        var table = new Grid { MinWidth = 760 }; table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); table.RowDefinitions.Add(new RowDefinition());
+        var table = new Grid { MinWidth = 880 }; table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); table.RowDefinitions.Add(new RowDefinition());
         var headings = new Grid { Padding = new Thickness(10, 6, 10, 6), ColumnSpacing = 12, Background = Display.Brush(0x1d252a) };
-        foreach (var width in new[] { new GridLength(1, GridUnitType.Star), new GridLength(70), new GridLength(120), new GridLength(150), new GridLength(150), new GridLength(120) }) headings.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
-        var hints = new[] { "", Loc.T("Původní PID"), "", Loc.T("Pracovní sada"), Loc.T("Čtení a zápis procesu, bez rozlišení disku, sítě a GPU"), "" };
+        foreach (var width in new[] { new GridLength(1, GridUnitType.Star), new GridLength(70), new GridLength(120), new GridLength(150), new GridLength(150), new GridLength(120), new GridLength(120) }) headings.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
+        var hints = new[] { "", Loc.T("Původní PID"), "", Loc.T("Pracovní sada"), ProcessNetwork.IoHelp, ProcessNetwork.Help, "" };
         for (int i = 0; i < headingLabels.Length; ++i) {
             var label = headingLabels[i] = Text("", 12, 0x95a4ad); if (i > 0) label.HorizontalAlignment = HorizontalAlignment.Right;
             if (hints[i].Length > 0) ToolTipService.SetToolTip(label, hints[i]);
@@ -61,7 +62,7 @@ internal sealed class HistoricalProcessesWindow : Window
         Grid.SetRow(list, 1); table.Children.Add(list);
         var scroll = new ScrollViewer { Content = table, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
             HorizontalContentAlignment = HorizontalAlignment.Stretch };
-        scroll.SizeChanged += (_, args) => table.Width = Math.Max(760, args.NewSize.Width);
+        scroll.SizeChanged += (_, args) => table.Width = Math.Max(880, args.NewSize.Width);
         Grid.SetRow(scroll, 2); root.Children.Add(scroll);
         selected.TextTrimming = TextTrimming.CharacterEllipsis; selected.TextWrapping = TextWrapping.NoWrap;
         Grid.SetRow(selected, 3); root.Children.Add(selected);
@@ -82,22 +83,23 @@ internal sealed class HistoricalProcessesWindow : Window
         ToolTipService.SetToolTip(gaps, value.Gaps.Count == 0 ? null : string.Join("\n", value.Gaps.Take(8).Select(gap => ProcessHistoryText.Mono(gap.BeforeNs) + " → " + ProcessHistoryText.Mono(gap.AfterNs)))
             + Loc.F("\nZnámé vynechané revize předání: {0}", value.KnownMissingRevisions));
         ToolTipService.SetToolTip(info, value.Notice
-            + Loc.F("\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM a 8 s nejvyšším I/O.", value.StoredRows, value.OriginalRows)
+            + Loc.F("\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM, 8 s nejvyšším I/O a 8 s největším síťovým provozem.", value.StoredRows, value.OriginalRows)
             + (value.FrameCount == 0 ? "" : Loc.F("\nVe snímku bylo původně {0}–{1} procesů.", value.MinimumOriginalCount, value.MaximumOriginalCount))
             + Loc.F("\nUchovaný rozsah {0} – {1}: {2} snímků, {3} řádků, {4} ze 4 MiB.", ProcessHistoryText.Mono(value.FirstRetainedNs), ProcessHistoryText.Mono(value.LastRetainedNs),
                 value.RetainedFrames, value.RetainedRows, Display.Number(value.AccountedBytes / 1048576d, "", 2))
             + Loc.F("\nVytěsněno {0} snímků ({1} řádků).", value.EvictedFrames, value.EvictedRows)
             + (value.DeliverySequenceUnknown ? Loc.T("\nÚplnost číslování předání nelze určit.") : "")
-            + Loc.T("\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU; úplnost původního sběru nelze potvrdit."));
+            + Loc.T("\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU. Síť je zvlášť, měří se jen při spuštění jako správce a je zpožděná asi o 5 s. Úplnost původního sběru nelze potvrdit."));
         ShowRows();
     }
 
     private void ShowRows()
     {
         bool point = selection.Point;
-        string[] names = point ? [Loc.T("Proces"), "PID", "CPU", "RAM", "I/O", Loc.T("Čas")] : [Loc.T("Proces"), "PID", Loc.T("CPU Ø / max"), Loc.T("RAM Ø / max"), Loc.T("I/O Ø / max"), Loc.T("Snímky")];
+        string[] names = point ? [Loc.T("Proces"), "PID", "CPU", "RAM", "I/O", Loc.T("Síť"), Loc.T("Čas")]
+            : [Loc.T("Proces"), "PID", Loc.T("CPU Ø / max"), Loc.T("RAM Ø / max"), Loc.T("I/O Ø / max"), Loc.T("Síť Ø / max"), Loc.T("Snímky")];
         for (int i = 0; i < names.Length; ++i) headingLabels[i].Text = names[i];
-        ToolTipService.SetToolTip(headingLabels[5], point ? Loc.T("Skutečný čas vzorku") : Loc.T("V kolika snímcích úseku se proces objevil"));
+        ToolTipService.SetToolTip(headingLabels[6], point ? Loc.T("Skutečný čas vzorku") : Loc.T("V kolika snímcích úseku se proces objevil"));
         if (point) rows.Replace(selection.Rows(metric).Select(sample => new ProcessHistoryRow(sample)));
         else rows.Replace(selection.Summaries.OrderByDescending(summary => summary.Total(metric)).Select(summary => new ProcessHistoryRow(summary, selection.FrameCount)));
         count.Text = rows.Count == 0 ? "" : point ? Loc.F("{0} z {1} procesů", rows.Count, selection.MaximumOriginalCount) : string.Format(Loc.Culture, MainWindow.PluralForm(rows.Count, Loc.T("{0} proces"), Loc.T("{0} procesy"), Loc.T("{0} procesů")), rows.Count);

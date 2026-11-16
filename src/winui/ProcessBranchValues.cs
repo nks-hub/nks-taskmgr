@@ -69,6 +69,8 @@ public sealed partial class ProcessRow
         ? (Stale ? Loc.T("Procesový inventář je zastaralý.") + "\n" : "") + BranchTotal.Description : Loc.F("Vlastní hodnoty PID {0}, bez potomků.", PidText) + networkTotal;
 
     internal ProcessBranchMetric Network { get; private set; }
+    /// <summary>Received and sent rates of the newest complete ETW window; null when not measured.</summary>
+    internal ProcessNetworkRate? NetworkRate { get; private set; }
     public string NetworkText => Ended ? Loc.T("Ukončeno") : Stale ? Loc.T("Zastaralé") : Network.NetworkText(1, false);
     private string networkTotal = "";
 
@@ -76,10 +78,12 @@ public sealed partial class ProcessRow
     internal bool SetNetwork(ProcessNetworkRate? rate, bool partial, bool totalPartial, bool notify)
     {
         var value = rate is { } current ? new ProcessBranchMetric(current.PerSecond, 1, false, partial) : default;
-        string total = rate is { } known ? "\n" + Loc.T("Síť od začátku záznamu ETW:") + " " + (totalPartial ? "≥ " : "") + Display.Bytes(known.TotalBytes) : "";
+        string bound = partial ? "≥ " : "";
+        string total = rate is { } known ? "\n" + Loc.F("Síť: příjem {0} · odeslání {1}", bound + ProcessNetworkRate.Text(known.ReceivedPerSecond), bound + ProcessNetworkRate.Text(known.SentPerSecond))
+            + "\n" + Loc.T("Síť od spuštění záznamu:") + " " + (totalPartial ? "≥ " : "") + Display.Bytes(known.TotalBytes) : "";
         if (value == Network && total == networkTotal) return false;
         string text = NetworkText, description = TableMetricsDescription;
-        Network = value; networkTotal = total;
+        Network = value; NetworkRate = rate; networkTotal = total;
         if (notify && text != NetworkText) Notify(nameof(NetworkText));
         if (notify && description != TableMetricsDescription) Notify(nameof(TableMetricsDescription));
         return true;

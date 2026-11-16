@@ -30,7 +30,7 @@ public sealed partial class MainWindow
     private readonly Dictionary<string, string> fullNames = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> fullNamesPending = new(StringComparer.OrdinalIgnoreCase);
     private uint? selectedSession;
-    private bool userActionBusy, updatingUserSelection, userNetworkShown = true;
+    private bool userActionBusy, updatingUserSelection;
     private int userSortColumn;
     private bool userSortDescending;
 
@@ -67,14 +67,13 @@ public sealed partial class MainWindow
             Loc.T("Přihlášený uživatel a počet jeho procesů. Šipka nebo dvojklik rozbalí procesy."), Loc.T("Stav relace Windows."),
             Loc.T("Součet CPU procesů. ≥ označuje známou část, když některý proces nemá aktuální vzorek."),
             Loc.T("Součet pracovních sad procesů. Přesné hodnoty v MB jsou v popisku buňky."),
-            Loc.T("Součet čtení a zápisu veškerého I/O procesů (soubory, zařízení, síťové soubory)."),
-            Loc.T("Odeslané a přijaté bajty TCP/UDP. Měří se jen během vlastního záznamu ETW s právy správce.")];
+            Loc.T("Součet čtení a zápisu procesů.") + " " + ProcessNetwork.IoHelp, ProcessNetwork.Help];
         usersHeader = GroupHeader(Loc.T("Uživatel"), tips, userHeaders, column => {
             userSortDescending = userSortColumn == column ? !userSortDescending : column >= 2; userSortColumn = column; RefreshUsers();
         });
         Grid.SetRow(usersHeader, 1); usersPage.Children.Add(usersHeader);
 
-        ConfigureGroupList(usersList, userItems, () => userNetworkShown);
+        ConfigureGroupList(usersList, userItems);
         usersList.SelectionChanged += (_, _) => {
             if (updatingUserSelection || usersList.SelectedItem is not GroupLine line) return;
             selectedSession = line.Group is uint id ? id : null; RefreshUserActions();
@@ -153,13 +152,6 @@ public sealed partial class MainWindow
             SampleState.AccessDenied => Loc.T("Seznam relací Windows vyžaduje oprávnění; relace jsou odvozené jen z procesů."),
             _ => Loc.T("Seznam relací Windows je nedostupný; relace jsou odvozené jen z procesů.")
         } + (model.Stale ? Loc.T(" · údaje jsou zastaralé") : "");
-        // Without a running ETW capture there is no per-process network figure, so the column is hidden instead of showing dashes.
-        bool network = model.NetworkAvailable;
-        if (network != userNetworkShown) {
-            userNetworkShown = network;
-            usersHeader.ColumnDefinitions[^1].Width = new GridLength(network ? GroupColumns[^1] : 0);
-            userItems.Sync([]);
-        }
         UpdateGroupHeader(userHeaders, Loc.T("Uživatel"), userSortColumn, userSortDescending);
         var members = new Dictionary<uint, List<ProcessRow>>();
         var sessionNetwork = new Dictionary<uint, (ProcessBranchMetric Sum, int Count)>();
@@ -249,7 +241,7 @@ public sealed partial class MainWindow
         }
         string disk = DiskText(row, out double diskValue);
         line.Set("", row.Name, "", row.CpuText, Display.Bytes(row.WorkingBytes), MemoryTip(Loc.T("Pracovní sada"), row.WorkingBytes, row.PrivateBytes),
-            disk, row.NetworkText, $"{row.Name} · PID {row.PidText}", $"{row.Name}, PID {row.PidText}");
+            disk, row.NetworkText, $"{row.Name} · PID {row.PidText}" + NetworkTip([row]), $"{row.Name}, PID {row.PidText}");
         line.SetSort(row.Name, row.Cpu.State == SampleState.Valid ? row.Cpu.Value : -1, row.WorkingBytes,
             diskValue, row.Network.SortValue);
         return line;

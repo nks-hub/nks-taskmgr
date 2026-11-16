@@ -1,0 +1,15 @@
+Síť: příjem {0} · odeslání {1}	Network: received {0} · sent {1}
+Řadit podle síťového provozu	Sort by network traffic
+\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM, 8 s nejvyšším I/O a 8 s největším síťovým provozem.	\nStored {0} of {1} rows. Each frame keeps only the 8 processes with the highest CPU, 8 with the most RAM, 8 with the most I/O and 8 with the most network traffic.
+\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU. Síť je zvlášť, měří se jen při spuštění jako správce a je zpožděná asi o 5 s. Úplnost původního sběru nelze potvrdit.	\nGeneral process I/O is not split into disk, network or GPU. Network is shown separately, is measured only when running as administrator and lags by about 5 s. The completeness of the original collection cannot be confirmed.
+Síť Ø / max	Network avg / peak
+Procesy podle sítě	Processes by network
+čekám na první data	waiting for the first data
+vyžaduje spuštění jako správce	requires running as administrator
+Procesy podle I/O (čtení a zápis)	Processes by I/O (read and write)
+Síť od spuštění záznamu:	Network since the capture started:
+zpožděno asi o 5 s	delayed by about 5 s
+Síť: neměřeno	Network: not measured
+Přijaté a odeslané bajty TCP/UDP podle procesu. Windows je zpřístupní jen aplikaci spuštěné jako správce, jinak se ukazuje „—“. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Received and sent TCP/UDP bytes per process. Windows provides them only to an app running as administrator; otherwise “—” is shown. The value covers the completed second about 5 s ago; ≥ means part of the traffic could not be attributed.
+Čtení a zápis souborů, rour a zařízení dohromady, včetně souborů z mezipaměti; není to jen disk. Síť ukazuje zvlášť sloupec Síť.	Reads and writes of files, pipes and devices combined, including files served from cache; this is not disk activity alone. Network is shown separately in the Network column.
+Součet čtení a zápisu procesů.	Total reads and writes of the processes.

@@ -7,7 +7,8 @@ internal static class ProcessHistoryRanking
     internal const int PerMetric = 8;
     internal static double Score(ProcessHistorySample sample, ProcessHistoryMetric metric) => metric switch {
         ProcessHistoryMetric.Memory => sample.MemoryState == SampleState.Valid ? sample.WorkingBytes : double.NegativeInfinity,
-        ProcessHistoryMetric.Io => Io(sample.ReadIo, sample.WriteIo), _ => Valid(sample.Cpu)
+        ProcessHistoryMetric.Io => Io(sample.ReadIo, sample.WriteIo),
+        ProcessHistoryMetric.Network => sample.Network is { } network ? network.PerSecond : double.NegativeInfinity, _ => Valid(sample.Cpu)
     };
     private static double Valid(Metric metric) => metric.State == SampleState.Valid && double.IsFinite(metric.Value) && metric.Value >= 0 ? metric.Value : double.NegativeInfinity;
     private static double Io(Metric read, Metric write)
@@ -18,12 +19,13 @@ internal static class ProcessHistoryRanking
     private static double Score(ProcessRow row, ProcessHistoryMetric metric) => metric switch {
         ProcessHistoryMetric.Memory => row.Stale ? double.NegativeInfinity : row.WorkingBytes,
         ProcessHistoryMetric.Io => row.Key.Pid == 0 ? double.NegativeInfinity : Io(row.ReadIo, row.WriteIo),
+        ProcessHistoryMetric.Network => row.Stale || row.NetworkRate is not { } network ? double.NegativeInfinity : network.PerSecond,
         _ => row.Key.Pid == 0 ? double.NegativeInfinity : Valid(row.Cpu)
     };
     internal static ProcessRow[] Pick(IReadOnlyCollection<ProcessRow> source)
     {
-        if (source.Count <= PerMetric * 3) return source.ToArray();
-        var lists = new[] { new List<ProcessRow>(PerMetric), new List<ProcessRow>(PerMetric), new List<ProcessRow>(PerMetric) };
+        if (source.Count <= PerMetric * 4) return source.ToArray();
+        var lists = new[] { new List<ProcessRow>(PerMetric), new List<ProcessRow>(PerMetric), new List<ProcessRow>(PerMetric), new List<ProcessRow>(PerMetric) };
         foreach (var row in source) for (int i = 0; i < lists.Length; ++i) {
             var metric = (ProcessHistoryMetric)i; double value = Score(row, metric);
             if (!double.IsFinite(value)) continue;

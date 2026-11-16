@@ -1,0 +1,15 @@
+Síť: příjem {0} · odeslání {1}	Sieć: odebrane {0} · wysłane {1}
+Řadit podle síťového provozu	Sortuj według ruchu sieciowego
+\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM, 8 s nejvyšším I/O a 8 s největším síťovým provozem.	\nZapisano {0} z {1} wierszy. Każda klatka zachowuje tylko 8 procesów o najwyższym użyciu CPU, 8 o największej pamięci RAM, 8 o największym we/wy i 8 o największym ruchu sieciowym.
+\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU. Síť je zvlášť, měří se jen při spuštění jako správce a je zpožděná asi o 5 s. Úplnost původního sběru nelze potvrdit.	\nOgólne we/wy procesu nie jest przypisywane do dysku, sieci ani GPU. Sieć jest pokazywana osobno, mierzona tylko po uruchomieniu jako administrator i opóźniona o około 5 s. Nie można potwierdzić kompletności pierwotnego zbierania.
+Síť Ø / max	Sieć śr. / maks.
+Procesy podle sítě	Procesy według sieci
+čekám na první data	czekam na pierwsze dane
+vyžaduje spuštění jako správce	wymaga uruchomienia jako administrator
+Procesy podle I/O (čtení a zápis)	Procesy według we/wy (odczyt i zapis)
+Síť od spuštění záznamu:	Sieć od rozpoczęcia rejestrowania:
+zpožděno asi o 5 s	opóźnione o około 5 s
+Síť: neměřeno	Sieć: niezmierzona
+Přijaté a odeslané bajty TCP/UDP podle procesu. Windows je zpřístupní jen aplikaci spuštěné jako správce, jinak se ukazuje „—“. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Odebrane i wysłane bajty TCP/UDP według procesu. Windows udostępnia je tylko aplikacji uruchomionej jako administrator; w przeciwnym razie wyświetlane jest „—”. Wartość dotyczy zakończonej sekundy sprzed około 5 s; ≥ oznacza, że części ruchu nie udało się przypisać.
+Čtení a zápis souborů, rour a zařízení dohromady, včetně souborů z mezipaměti; není to jen disk. Síť ukazuje zvlášť sloupec Síť.	Odczyt i zapis plików, potoków i urządzeń łącznie, w tym plików z pamięci podręcznej; to nie tylko dysk. Sieć pokazuje osobno kolumna Sieć.
+Součet čtení a zápisu procesů.	Suma odczytów i zapisów procesów.

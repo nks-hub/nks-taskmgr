@@ -35,7 +35,8 @@ internal sealed class ProcessHistoryStore
             if (length > 0 && length < row.Name.Length && char.IsHighSurrogate(row.Name[length - 1])) --length;
             string name = row.Name[..length].Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ');
             rows[i] = new(row.Key, row.Created100ns, time, wallTime, name, row.Name.Length, row.Cpu, row.WorkingBytes, row.PrivateBytes,
-                row.Stale ? SampleState.Stale : SampleState.Valid, row.ReadIo, row.WriteIo, late || row.Stale, cpu, io);
+                row.Stale ? SampleState.Stale : SampleState.Valid, row.ReadIo, row.WriteIo, late || row.Stale, cpu, io,
+                row.Stale ? null : row.NetworkRate, row.Network.Partial);
         }
         frames.AddLast(new Frame(time, wallTime, revision, source.Count, rows, gap, missing));
         bytes += FrameBytes + RowBytes * rows.Length; rowCount += rows.Length; lastTime = time; lastRevision = revision; pendingDropped = 0;
@@ -59,6 +60,7 @@ internal sealed class ProcessHistoryStore
             foreach (var frame in frames) if (nearest is null || Math.Abs(frame.Time - start) < Math.Abs(nearest.Time - start)) nearest = frame;
         }
         var cpu = new List<ProcessHistorySample>(64); var memory = new List<ProcessHistorySample>(64); var io = new List<ProcessHistorySample>(64);
+        var network = new List<ProcessHistorySample>(64);
         var summaries = new Dictionary<(ProcessKey, ulong, long), ProcessHistorySummary>();
         var gaps = new List<ProcessHistoryGap>(32); int count = 0, gapCount = 0, minOriginal = int.MaxValue, maxOriginal = 0;
         long original = 0, stored = 0, firstSelected = 0, lastSelected = 0, firstWall = 0, lastWall = 0;
@@ -77,7 +79,7 @@ internal sealed class ProcessHistoryStore
                 unknown |= frame.Revision == 0 || frame.MissingFrames is null;
                 missing += frame.MissingFrames ?? 0;
                 foreach (var row in frame.Rows) {
-                    if (point) { cpu.Add(row); memory.Add(row); io.Add(row); continue; }
+                    if (point) { cpu.Add(row); memory.Add(row); io.Add(row); if (row.Network is not null) network.Add(row); continue; }
                     // Without a verified generation the same PID may be a different lifetime, so such rows are never merged.
                     bool verified = !row.Key.Boot.IsEmpty && row.Key.Generation != 0 && row.Created100ns != 0 && row.Key.Kind is GenerationKind.CreationTime or GenerationKind.SequenceNumber;
                     var identity = (row.Key, row.Created100ns, verified ? 0 : row.TimeNs);
@@ -91,12 +93,13 @@ internal sealed class ProcessHistoryStore
             cpu.Sort((a, b) => ProcessHistoryRanking.Score(b, ProcessHistoryMetric.Cpu).CompareTo(ProcessHistoryRanking.Score(a, ProcessHistoryMetric.Cpu)));
             memory.Sort((a, b) => b.WorkingBytes.CompareTo(a.WorkingBytes));
             io.Sort((a, b) => ProcessHistoryRanking.Score(b, ProcessHistoryMetric.Io).CompareTo(ProcessHistoryRanking.Score(a, ProcessHistoryMetric.Io)));
+            network.Sort((a, b) => ProcessHistoryRanking.Score(b, ProcessHistoryMetric.Network).CompareTo(ProcessHistoryRanking.Score(a, ProcessHistoryMetric.Network)));
         }
         string notice = count == 0 ? point ? Loc.T("Pro zvolený čas není uchovaný žádný snímek procesů.") : Loc.T("Ve zvoleném úseku není uchovaný žádný snímek procesů.")
             : point ? Loc.T("Nejbližší skutečně uchovaný snímek procesů; hodnoty nebyly dopočítané ke kurzoru.")
             : Loc.T("Průměr a maximum počítáme jen z uložených vzorků. Hodnoty mimo ně neznáme.");
         return new(start, end, first, last, firstSelected, lastSelected, firstWall, lastWall, count, original, stored,
             count == 0 ? 0 : minOriginal, maxOriginal, gapCount, missing, unknown, frames.Count, rowCount, bytes + 196608,
-            evictedFrames, evictedRows, nearest is null ? 0 : nearest.Time - start, gaps.AsReadOnly(), cpu.AsReadOnly(), memory.AsReadOnly(), io.AsReadOnly(), summaries.Values.ToArray(), notice);
+            evictedFrames, evictedRows, nearest is null ? 0 : nearest.Time - start, gaps.AsReadOnly(), cpu.AsReadOnly(), memory.AsReadOnly(), io.AsReadOnly(), network.AsReadOnly(), summaries.Values.ToArray(), notice);
     }
 }

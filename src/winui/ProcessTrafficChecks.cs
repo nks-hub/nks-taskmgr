@@ -69,9 +69,13 @@ public static partial class WinUiChecks
         row.SetNetwork(rates![key], partial, totalPartial, false);
         Require(rates[key] == new ProcessNetworkRate(0, 500, 2500) && partial && totalPartial && row.NetworkText.StartsWith("≥ ", StringComparison.Ordinal)
             && row.TableMetricsDescription.Contains("≥ " + (2500 / 1024d).ToString("N1", Loc.Culture) + " KiB", StringComparison.Ordinal), "A revoked network sample stayed in the sum or the partial window was not marked.");
+        string split = Loc.F("Síť: příjem {0} · odeslání {1}", "≥ " + ProcessNetworkRate.Text(500), "≥ " + ProcessNetworkRate.Text(0));
+        Require(row.NetworkRate == rates[key] && row.TableMetricsDescription.Contains(split, StringComparison.Ordinal)
+            && MainWindow.NetworkTip([row]).Contains(split, StringComparison.Ordinal), "Received and sent traffic was not kept apart in the row or its tooltips.");
         ProcessNetwork.Observe(running with { State = ProcessEventMonitorState.Stopped }, null);
         row.SetNetwork(null, false, false, false);
-        Require(ProcessNetwork.Rates(out _, out _, later) is null && row.NetworkText == "—", "Network rates survived the end of the ETW capture.");
-        App.Trace("Process network rates passed: per-generation window, revocation, partial window and capture end");
+        Require(ProcessNetwork.Rates(out _, out _, later) is null && row.NetworkText == "—" && row.NetworkRate is null && MainWindow.NetworkTip([row]).Length == 0,
+            "Network rates survived the end of the ETW capture.");
+        App.Trace("Process network rates passed: per-generation window, revocation, partial window, received/sent split and capture end");
     }
 }

@@ -10,9 +10,9 @@ namespace NksTaskMgr.WinUI;
 
 public sealed partial class MainWindow
 {
-    // Name, Stav, CPU, Paměť, Disk, Síť — shared by Users and Applications so both tables line up the same way.
+    // Name, Stav, CPU, Paměť, I/O, Síť — shared by Users and Applications so both tables line up the same way.
     internal static readonly double[] GroupColumns = [0, 96, 64, 96, 88, 88];
-    private static readonly string[] GroupColumnNames = ["", Loc.T("Stav"), "CPU", Loc.T("Paměť"), Loc.T("Disk"), Loc.T("Síť")];
+    private static readonly string[] GroupColumnNames = ["", Loc.T("Stav"), "CPU", Loc.T("Paměť"), "I/O", Loc.T("Síť")];
 
     /// <summary>Builds the clickable column header of a grouped table; a click sorts by that column, numbers largest first.</summary>
     private static Grid GroupHeader(string firstName, string[] tips, List<(Button Button, TextBlock Text)> headers, Action<int> sort)
@@ -41,8 +41,8 @@ public sealed partial class MainWindow
         }
     }
 
-    /// <summary>Applies the shared row template; the network column collapses while no ETW capture measures it.</summary>
-    private void ConfigureGroupList(ListView list, GroupLines items, Func<bool> networkShown)
+    /// <summary>Applies the shared row template; the network column stays visible and shows "—" while nothing measures it.</summary>
+    private void ConfigureGroupList(ListView list, GroupLines items)
     {
         list.ItemTemplate = (DataTemplate)groupTemplates["GroupLine"]; list.ItemsSource = items;
         // Live inserts and removals would otherwise slide every row below them each refresh.
@@ -54,9 +54,19 @@ public sealed partial class MainWindow
         list.ContainerContentChanging += (_, args) => {
             if (args.InRecycleQueue || args.Item is not GroupLine line) return;
             AutomationProperties.SetName(args.ItemContainer, line.Accessible); line.Container = args.ItemContainer as ListViewItem;
-            if (args.ItemContainer.ContentTemplateRoot is Grid grid && grid.ColumnDefinitions.Count == GroupColumns.Length)
-                grid.ColumnDefinitions[^1].Width = new GridLength(networkShown() ? GroupColumns[^1] : 0);
         };
+    }
+
+    /// <summary>Received and sent totals of the measured rows as a tooltip line; empty when no row has a network measurement.</summary>
+    internal static string NetworkTip(IEnumerable<ProcessRow> rows)
+    {
+        double received = 0, sent = 0; bool known = false, partial = false;
+        foreach (var row in rows) {
+            if (row.Ended || row.Stale || row.NetworkRate is not { } rate) continue;
+            received += rate.ReceivedPerSecond; sent += rate.SentPerSecond; known = true; partial |= row.Network.Partial;
+        }
+        string bound = partial ? "≥ " : "";
+        return known ? "\n" + Loc.F("Síť: příjem {0} · odeslání {1}", bound + ProcessNetworkRate.Text(received), bound + ProcessNetworkRate.Text(sent)) : "";
     }
 
     internal static string DiskText(ProcessRow row, out double value)

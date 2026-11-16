@@ -1,0 +1,15 @@
+Síť: příjem {0} · odeslání {1}	Sieť: príjem {0} · odoslanie {1}
+Řadit podle síťového provozu	Zoradiť podľa sieťovej prevádzky
+\nUloženo {0} z {1} řádků. Každý snímek ukládá jen 8 procesů s nejvyšším CPU, 8 s nejvyšší RAM, 8 s nejvyšším I/O a 8 s největším síťovým provozem.	\nUložených {0} z {1} riadkov. Každá snímka ukladá len 8 procesov s najvyšším CPU, 8 s najvyššou RAM, 8 s najvyšším I/O a 8 s najväčšou sieťovou prevádzkou.
+\nObecné I/O procesu se nepřiřazuje k disku, síti ani GPU. Síť je zvlášť, měří se jen při spuštění jako správce a je zpožděná asi o 5 s. Úplnost původního sběru nelze potvrdit.	\nVšeobecné I/O procesu sa nepriraďuje k disku, sieti ani GPU. Sieť je zvlášť, meria sa len pri spustení ako správca a je oneskorená asi o 5 s. Úplnosť pôvodného zberu nemožno potvrdiť.
+Síť Ø / max	Sieť Ø / max
+Procesy podle sítě	Procesy podľa siete
+čekám na první data	čakám na prvé údaje
+vyžaduje spuštění jako správce	vyžaduje spustenie ako správca
+Procesy podle I/O (čtení a zápis)	Procesy podľa I/O (čítanie a zápis)
+Síť od spuštění záznamu:	Sieť od spustenia záznamu:
+zpožděno asi o 5 s	oneskorené asi o 5 s
+Síť: neměřeno	Sieť: nemerané
+Přijaté a odeslané bajty TCP/UDP podle procesu. Windows je zpřístupní jen aplikaci spuštěné jako správce, jinak se ukazuje „—“. Hodnota je za uzavřenou sekundu asi před 5 s; ≥ znamená, že část provozu nešlo přiřadit.	Prijaté a odoslané bajty TCP/UDP podľa procesu. Windows ich sprístupní len aplikácii spustenej ako správca, inak sa zobrazuje „—“. Hodnota platí za uzavretú sekundu asi pred 5 s; ≥ znamená, že časť prevádzky sa nepodarilo priradiť.
+Čtení a zápis souborů, rour a zařízení dohromady, včetně souborů z mezipaměti; není to jen disk. Síť ukazuje zvlášť sloupec Síť.	Čítanie a zápis súborov, rúr a zariadení spolu, vrátane súborov z vyrovnávacej pamäte; nie je to len disk. Sieť zobrazuje zvlášť stĺpec Sieť.
+Součet čtení a zápisu procesů.	Súčet čítania a zápisu procesov.

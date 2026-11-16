@@ -7,14 +7,15 @@
     <Grid Padding="10,6" ColumnSpacing="12">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*"/><ColumnDefinition Width="70"/><ColumnDefinition Width="120"/>
-        <ColumnDefinition Width="150"/><ColumnDefinition Width="150"/><ColumnDefinition Width="120"/>
+        <ColumnDefinition Width="150"/><ColumnDefinition Width="150"/><ColumnDefinition Width="120"/><ColumnDefinition Width="120"/>
       </Grid.ColumnDefinitions>
       <TextBlock Text="{x:Bind NameText}" FontSize="12" TextTrimming="CharacterEllipsis"/>
       <TextBlock Grid.Column="1" Text="{x:Bind PidText}" FontSize="12" HorizontalAlignment="Right"/>
       <TextBlock Grid.Column="2" Text="{x:Bind CpuText}" FontSize="12" HorizontalAlignment="Right"/>
       <TextBlock Grid.Column="3" Text="{x:Bind MemoryText}" FontSize="12" HorizontalAlignment="Right"/>
       <TextBlock Grid.Column="4" Text="{x:Bind IoText}" FontSize="12" HorizontalAlignment="Right"/>
-      <TextBlock Grid.Column="5" Text="{x:Bind TimeText}" FontSize="12" HorizontalAlignment="Right" Foreground="{ThemeResource NksSecondaryTextBrush}"/>
+      <TextBlock Grid.Column="5" Text="{x:Bind NetworkText}" FontSize="12" HorizontalAlignment="Right"/>
+      <TextBlock Grid.Column="6" Text="{x:Bind TimeText}" FontSize="12" HorizontalAlignment="Right" Foreground="{ThemeResource NksSecondaryTextBrush}"/>
     </Grid>
   </DataTemplate>
 </ResourceDictionary>
