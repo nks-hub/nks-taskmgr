@@ -74,7 +74,7 @@ public sealed partial class ProcessRow
     public string NetworkText => Ended ? Loc.T("Ukončeno") : Stale ? Loc.T("Zastaralé") : Network.NetworkText(1, false);
     private string networkTotal = "";
 
-    /// <summary>Sets this generation's TCP/UDP rate from the event window's capture; null when it is not measured.</summary>
+    /// <summary>Sets this generation's TCP/UDP rate from the application's ETW capture; null when it is not measured.</summary>
     internal bool SetNetwork(ProcessNetworkRate? rate, bool partial, bool totalPartial, bool notify)
     {
         var value = rate is { } current ? new ProcessBranchMetric(current.PerSecond, 1, false, partial) : default;

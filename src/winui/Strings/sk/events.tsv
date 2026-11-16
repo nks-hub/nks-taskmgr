@@ -1,0 +1,48 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Spuštěné a ukončené v úseku: {0}	Spustené a ukončené v úseku: {0}
+V úseku se nespustil ani neukončil žádný proces.	V úseku sa nespustil ani neukončil žiadny proces.
+rodič	rodič
+kód	kód
+Ukončen	Ukončený
+Spuštěn	Spustený
+Bez práv správce nejsou vidět návratové kódy	Bez práv správcu nie sú vidieť návratové kódy
+Zobrazit v Procesech	Zobraziť v Procesoch
+neznámý proces	neznámy proces
+krátký proces	krátky proces
+Spuštěn {0}	Spustený {0}
+Ukončen {0}	Ukončený {0}
+Běžel už před spuštěním aplikace.	Bežal už pred spustením aplikácie.
+Skončil dřív, než ho stihl zachytit seznam procesů. Známe jen údaje ze sledování ETW, bez příkazového řádku.	Skončil skôr, ako ho stihol zachytiť zoznam procesov. Poznáme len údaje zo sledovania ETW, bez príkazového riadka.
+{0} s	{0} s
+{0} min {1} s	{0} min {1} s
+{0} h {1} min	{0} h {1} min
+Spuštěné a ukončené procesy	Spustené a ukončené procesy
+Návratové kódy a velmi krátké procesy zachytí jen sledování ETW, které vyžaduje práva správce.	Návratové kódy a veľmi krátke procesy zachytí len sledovanie ETW, ktoré vyžaduje práva správcu.
+Hledat název, PID nebo příkazový řádek	Hľadať názov, PID alebo príkazový riadok
+Aplikace se spustí znovu jako správce po potvrzení výzvy UAC.	Aplikácia sa spustí znova ako správca po potvrdení výzvy UAC.
+Spuštěné	Spustené
+Opakovaně spouštěné	Opakovane spúšťané
+Událost	Udalosť
+Rodič	Rodič
+Doba běhu	Doba behu
+Návratový kód	Návratový kód
+Opakování	Opakovanie
+Kód, kterým proces skončil. Zná ho jen sledování ETW, které vyžaduje správce.	Kód, ktorým proces skončil. Pozná ho len sledovanie ETW, ktoré vyžaduje správcu.
+Kolikrát se stejný proces se stejným rodičem spustil během 60 sekund, od třetího spuštění.	Koľkokrát sa rovnaký proces s rovnakým rodičom spustil počas 60 sekúnd, od tretieho spustenia.
+Stav sledování procesů	Stav sledovania procesov
+Hledat v událostech procesů	Hľadať v udalostiach procesov
+Sleduji od {0}.	Sledujem od {0}.
+Běží i sledování ETW, takže znám návratové kódy a zachytím i velmi krátké procesy.	Beží aj sledovanie ETW, takže poznám návratové kódy a zachytím aj veľmi krátke procesy.
+Sledování ETW neběží ({0}), proto chybí návratové kódy a velmi krátké procesy.	Sledovanie ETW nebeží ({0}), preto chýbajú návratové kódy a veľmi krátke procesy.
+Bez práv správce nejsou vidět návratové kódy a procesy, které skončily do asi jedné sekundy po spuštění.	Bez práv správcu nie sú vidieť návratové kódy a procesy, ktoré skončili do približne jednej sekundy po spustení.
+Ztracené události ETW: {0} · ztracené buffery: {1} · přeplněná fronta: {2} · chyby dekódování: {3}. Při ztrátě mohou v seznamu chybět procesy.	Stratené udalosti ETW: {0} · stratené buffery: {1} · preplnenia frontu: {2} · chyby dekódovania: {3}. Pri strate môžu v zozname chýbať procesy.
+Kopírovat řádek	Kopírovať riadok
+nespuštěno	nespustené
+spouští se	spúšťa sa
+běží	beží
+zastavuje se	zastavuje sa
+zastaveno	zastavené
+na tomto systému nepodporováno	na tomto systéme nie je podporované
+předchozí relace se ještě uklízí	predchádzajúca relácia sa ešte upratuje
+zastavení trvalo příliš dlouho	zastavenie trvalo príliš dlho
+Windows nepotvrdil úklid	Windows nepotvrdil upratanie

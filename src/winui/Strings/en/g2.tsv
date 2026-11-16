@@ -431,13 +431,6 @@ Soukromá paměť	Private memory
 Čtení I/O	I/O read
 Zápis I/O	I/O write
 Síť	Network
-Vznik: {0}	Started: {0}
-Konec: {0}	Ended: {0}
-Délka neurčena	Duration unknown
-Název není dostupný	Name not available
-PID nelze určit	PID cannot be determined
-Boot + PID + CreateTime ze zdroje	Boot + PID + CreateTime from the source
-Neověřený samostatný záznam	Unverified standalone record
 Procesor	Processor
 Paměť	Memory
 Disk	Disk

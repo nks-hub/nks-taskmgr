@@ -1,0 +1,48 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Spuštěné a ukončené v úseku: {0}	Started and ended in the range: {0}
+V úseku se nespustil ani neukončil žádný proces.	No process started or ended in the range.
+rodič	parent
+kód	code
+Ukončen	Ended
+Spuštěn	Started
+Bez práv správce nejsou vidět návratové kódy	Without administrator rights exit codes are not visible
+Zobrazit v Procesech	Show in Processes
+neznámý proces	unknown process
+krátký proces	short process
+Spuštěn {0}	Started {0}
+Ukončen {0}	Ended {0}
+Běžel už před spuštěním aplikace.	It was already running before the application started.
+Skončil dřív, než ho stihl zachytit seznam procesů. Známe jen údaje ze sledování ETW, bez příkazového řádku.	It ended before the process list could capture it. Only the data from ETW tracking is known, without a command line.
+{0} s	{0} s
+{0} min {1} s	{0} min {1} s
+{0} h {1} min	{0} h {1} min
+Spuštěné a ukončené procesy	Started and ended processes
+Návratové kódy a velmi krátké procesy zachytí jen sledování ETW, které vyžaduje práva správce.	Only ETW tracking, which needs administrator rights, captures exit codes and very short processes.
+Hledat název, PID nebo příkazový řádek	Search name, PID or command line
+Aplikace se spustí znovu jako správce po potvrzení výzvy UAC.	The application restarts as administrator after you confirm the UAC prompt.
+Spuštěné	Started
+Opakovaně spouštěné	Started repeatedly
+Událost	Event
+Rodič	Parent
+Doba běhu	Run time
+Návratový kód	Exit code
+Opakování	Repeats
+Kód, kterým proces skončil. Zná ho jen sledování ETW, které vyžaduje správce.	The code the process ended with. Only ETW tracking, which needs an administrator, knows it.
+Kolikrát se stejný proces se stejným rodičem spustil během 60 sekund, od třetího spuštění.	How many times the same process started with the same parent within 60 seconds, from the third start on.
+Stav sledování procesů	Process tracking status
+Hledat v událostech procesů	Search process events
+Sleduji od {0}.	Tracking since {0}.
+Běží i sledování ETW, takže znám návratové kódy a zachytím i velmi krátké procesy.	ETW tracking is running as well, so exit codes are known and even very short processes are captured.
+Sledování ETW neběží ({0}), proto chybí návratové kódy a velmi krátké procesy.	ETW tracking is not running ({0}), so exit codes and very short processes are missing.
+Bez práv správce nejsou vidět návratové kódy a procesy, které skončily do asi jedné sekundy po spuštění.	Without administrator rights, exit codes and processes that ended within about one second of starting are not visible.
+Ztracené události ETW: {0} · ztracené buffery: {1} · přeplněná fronta: {2} · chyby dekódování: {3}. Při ztrátě mohou v seznamu chybět procesy.	Lost ETW events: {0} · lost buffers: {1} · queue overflows: {2} · decoding errors: {3}. After a loss, processes may be missing from the list.
+Kopírovat řádek	Copy row
+nespuštěno	not started
+spouští se	starting
+běží	running
+zastavuje se	stopping
+zastaveno	stopped
+na tomto systému nepodporováno	not supported on this system
+předchozí relace se ještě uklízí	the previous session is still being cleaned up
+zastavení trvalo příliš dlouho	stopping took too long
+Windows nepotvrdil úklid	Windows did not confirm the cleanup

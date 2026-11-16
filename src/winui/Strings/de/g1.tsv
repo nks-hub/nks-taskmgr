@@ -241,8 +241,6 @@ proces se změnil nebo skončil	der Prozess hat sich geändert oder wurde beende
 překročen limit	Limit überschritten
 nedostupné ({0})	nicht verfügbar ({0})
 Události procesů ETW	ETW-Prozessereignisse
-Události vzniku a ukončení procesů	Ereignisse zu Prozessstart und -ende
-Záznam událostí a síťového provozu (ETW) vyžaduje práva správce.	Das Aufzeichnen von Ereignissen und Netzwerkverkehr (ETW) erfordert Administratorrechte.
 Zastavení a dočtení záznamu nebylo potvrzené	Das Beenden und vollständige Auslesen der Aufzeichnung wurde nicht bestätigt
 Zavřít i tak	Trotzdem schließen
 Ponechat aplikaci otevřenou	App geöffnet lassen
@@ -368,17 +366,6 @@ služby	Dienste
 služeb	Dienste
 PID není hlášen.	Keine PID gemeldet.
 Hlášený PID {0} · {1}	Gemeldete PID {0} · {1}
-Vznik	Start
-Ukončení	Ende
-Čas ETW nedostupný	ETW-Zeit nicht verfügbar
-Název není dostupný	Name nicht verfügbar
-PID {0} · rodič {1}	PID {0} · übergeordnet {1}
-CreateTime přímo ze zdroje · ověřená historická životnost	CreateTime direkt aus der Quelle · überprüfte historische Lebensdauer
-Historický záznam · životnost není ověřená	Historischer Eintrag · Lebensdauer nicht überprüft
-Pořadí ve zdroji: {0}\nČas ETW (QPC): {1}\nFrekvence QPC: {2}\nPřijato (monotónní ns): {3}\nStav identity: {4}\nDruh generace: {5} · generace {6}\nPříznaky události: {7}	Reihenfolge in der Quelle: {0}\nETW-Zeit (QPC): {1}\nQPC-Frequenz: {2}\nEmpfangen (monotone ns): {3}\nIdentitätsstatus: {4}\nGenerationsart: {5} · Generation {6}\nEreignisflags: {7}
-\nNávratový kód: 0x{0}	\nExitcode: 0x{0}
-\nNávratový kód není dostupný.	\nExitcode nicht verfügbar.
-\nTento záznam neopravňuje k živé akci nad současným vlastníkem stejného PID.	\nDieser Eintrag berechtigt nicht zu einer Live-Aktion am aktuellen Besitzer derselben PID.
 Podrobnosti procesu…	Prozessdetails…
 Závislosti služby	Dienstabhängigkeiten
 Otevřít hostitelský proces	Hostprozess öffnen

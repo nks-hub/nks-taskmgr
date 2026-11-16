@@ -11,7 +11,7 @@ internal readonly record struct ProcessNetworkRate(double SentPerSecond, double 
     internal static string Text(double bytesPerSecond) => Display.Number(bytesPerSecond / 125000, " Mb/s");
 }
 
-/// <summary>Network rates per process generation from the event window's own ETW capture (needs an elevated token).</summary>
+/// <summary>Network rates per process generation from the application-wide ETW capture in ProcessCapture (needs an elevated token).</summary>
 /// <remarks>Only Direct samples count. Unknown bytes in the shown window make every value a lower bound.
 /// Samples upsert by epoch and sample id, so a revoked sample leaves the sums.</remarks>
 internal static class ProcessNetwork

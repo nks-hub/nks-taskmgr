@@ -1,90 +1,16 @@
 # Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
-Spustit nový záznam	Start new capture
-Zastavit	Stop
-Vymazat seznam	Clear list
 Spustit jako správce	Run as administrator
-Záznam není spuštěný.	Capture is not running.
-ETW sleduje vznik a ukončení procesů až od spuštění záznamu. Historické řádky jsou pouze pro čtení.	ETW tracks process starts and exits only from the moment capture starts. Historical rows are read-only.
-Filtrovat název nebo PID	Filter by name or PID
-Podržet seznam	Hold list
-Sledovat konec	Follow latest
-Vyberte událost.	Select an event.
-Události procesů	Process events
-Čítače a vysvětlení záznamu	Capture counters and explanation
-Čítače záznamu, vytěsnění, limit paměti a vysvětlení.	Capture counters, evictions, memory budget and explanation.
-Záznam ETW vyžaduje správce. NKS se spustí znovu jako správce po potvrzení výzvy UAC.	ETW capture requires an administrator. NKS restarts as administrator after you confirm the UAC prompt.
-Vznik a ukončení	Starts and exits
-Diskové a síťové přenosy	Disk and network transfers
-Životnosti procesů	Process lifetimes
-Všechny události	All events
-Vznik procesů	Process starts
-Ukončení procesů	Process exits
-Spustit vlastní záznam ETW	Start own ETW capture
-Zastavit vlastní záznam ETW	Stop own ETW capture
-Vymazat zobrazené události	Clear shown events
-Filtrovat zaznamenané události	Filter captured events
 Druh události	Event type
-Historické události, pouze pro čtení	Historical events, read-only
-Životnosti procesů nebo pozorované přenosy ETW	Process lifetimes or observed ETW transfers
-Podrobnosti historické události	Historical event details
 Záznam nelze spustit: {0}	Capture cannot start: {0}
-Zastavení nebylo potvrzené: {0}	Stop was not confirmed: {0}
-chyba Windows {0}	Windows error {0}
-Události {0}/{1} · vytěsněno v okně {2} · ztracené události ETW {3} · ztracené buffery {4} · přeplnění fronty {5} · chyby dekódování {6} · nejasné záznamy {7}	Events {0}/{1} · evicted in window {2} · lost ETW events {3} · lost buffers {4} · queue overflows {5} · decoding errors {6} · ambiguous records {7}
-Životnosti {0}/{1} · vytěsněno {2} · neověřené události {3} · konflikty {4} · opožděné pořadí {5} · vynechané pořadí zdroje {6} · označení nejistoty {7}	Lifetimes {0}/{1} · evicted {2} · unverified events {3} · conflicts {4} · late order {5} · skipped source sequence {6} · uncertainty marks {7}
-Zobrazení je podržené; vytěsněno z podrženého seznamu {0}.	The view is on hold; evicted from the held list: {0}.
-Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používá i sloupec Síť v Procesech a Uživatelích.	Only the observed partial bytes of the app's own ETW session, not total adapter traffic or general process I/O. TCP/UDP is assigned to a generation only with uninterrupted lifetime tracking; during capture the Network column in Processes and Users uses it too.
-Vznik a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří.	Start and end are paired only via verified Boot + PID + CreateTime within the same capture and source segment. A missing end does not mean the process is still running. CPU and RAM are not measured here.
-CreateTime přímo z události s ověřeným bootem určuje historickou životnost. Ostatní řádky zůstávají neověřené.	CreateTime taken directly from an event with a verified boot determines the historical lifetime. Other rows remain unverified.
-Žádné živé akce podle PID. Čas je relativní QPC; nové spuštění nahradí seznam. Nový základní seznam nezpřesní dřívější nejasné přenosy.	No live actions by PID. Time is relative QPC; a new capture replaces the list. A new baseline list does not refine earlier ambiguous transfers.
-Přenosy tato verze nativní DLL neposkytuje; záznam vzniku a ukončení pokračuje.	This version of the native DLL does not provide transfers; start and exit capture continues.
-Základní seznam čeká na nové ověření po změně nebo ztrátě zdroje.	The baseline list is waiting for new verification after a source change or loss.
-Relace ještě není uklizená.	The session has not been cleaned up yet.
 Čtení událostí selhalo: {0}	Reading events failed: {0}
-Vyberte událost, životnost nebo pozorovaný přenos.	Select an event, lifetime or observed transfer.
-Vybraný záznam už není v aktuálním seznamu nebo filtru.	The selected record is no longer in the current list or filter.
-Všechny životnosti	All lifetimes
-Vznik i konec	Start and end
-Bez konce	No end
-Bez vzniku	No start
-Neověřené	Unverified
-Konfliktní	Conflicting
-Opožděné	Late
-S mezerou	With gap
-Všechny přenosy	All transfers
-Fyzický disk	Physical disk
-Filtrovat PID, disk, TCP, UDP nebo nejistotu	Filter by PID, disk, TCP, UDP or uncertainty
-Filtrovat název, PID nebo stav	Filter by name, PID or status
-Vybraný podržený záznam byl vytěsněn kvůli limitu uchování.	The selected held record was evicted by the retention budget.
-Přenosy {0}/{1} · vytěsněno v okně {2}	Transfers {0}/{1} · evicted in window {2}
-Odhad uchovaných dat: jednotlivé události do 3 MiB, přenosy do 3 MiB, životnosti do 2 MiB; podržený seznam do 3 MiB navíc.	Estimated retained data: individual events up to 3 MiB, transfers up to 3 MiB, lifetimes up to 2 MiB; the held list up to 3 MiB extra.
-Souhrn životností a jeho počty jsou od posledního vymazání; nejde o úplnou historii systému.	The lifetime summary and its counts are since the last clear; this is not a complete system history.
-Fyzický disk: {0} · síť: {1} · zdroj životností: {2} · epocha {3} · nepřiřazené události {4} / {5} B · zahozené čekající {6} · vytěsněné vzorky {7} · pozdní události {8} · zneplatnění přiřazení {9}	Physical disk: {0} · network: {1} · lifetime source: {2} · epoch {3} · unassigned events {4} / {5} B · dropped pending {6} · evicted samples {7} · late events {8} · invalidated assignments {9}
-Nativní sdílený rozpočet kontejnerů a rámců {0}/{1} B; paměť Windows ETW je zvlášť.	Native shared container and frame budget {0}/{1} B; Windows ETW memory is separate.
-dostupný	available
-čeká na data	waiting for data
-částečný proud	partial stream
 přístup odepřen	access denied
-nepodporovaný	unsupported
-zastaralý	stale
 chyba	error
 nedostupný	unavailable
 Úklid záznamu nebyl potvrzený: {0}	Capture cleanup was not confirmed: {0}
 Zastavení a dočtení záznamu nebylo potvrzené	Stopping and reading the rest of the capture was not confirmed
-Ponechat otevřené	Keep open
 Zavřít i tak	Close anyway
-Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu.	Cleanup of the app's own ETW session or reading its remaining events could not be confirmed. The session may keep recording, and unread events may be lost on close. You can keep the window open and try stopping again.
-Záznam není spuštěný	Capture is not running
-Spouštím vlastní relaci	Starting own session
 Záznam běží	Capture running
-Zastavuji vlastní relaci	Stopping own session
 Záznam zastavený	Capture stopped
-Přístup k ETW byl odepřen; aplikace pokračuje bez něj	Access to ETW was denied; the app continues without it
-Zdroj ETW není na tomto systému podporovaný	The ETW source is not supported on this system
-Předchozí relace se ještě uklízí	The previous session is still being cleaned up
-Zastavení překročilo časový limit	Stopping timed out
-Windows nepotvrdil úklid relace	Windows did not confirm the session cleanup
-Záznam skončil chybou	Capture ended with an error
 Podrobnosti vybraného procesu	Details of the selected process
 Vlákna, moduly, paměť a popisovače procesu	Process threads, modules, memory and handles
 Podrobnosti procesů jiných uživatelů a systému vyžadují práva správce.	Details of processes of other users and the system require administrator rights.
@@ -247,75 +173,7 @@ Navazující služby	Dependent services
 Žádné	None
 Skupina: {0}	Group: {0}
 Závislost {0}	Dependency {0}
-čt.	read
-záp.	write
-Čas ETW nedostupný	ETW time unavailable
-{0} B pozorováno · {1} událostí · {2} B/s v okně 1 s	{0} B observed · {1} events · {2} B/s in a 1 s window
-PID nelze určit	PID cannot be determined
-fyzické I/O	physical I/O
-Částečné · korelace PID/času · životnost nepotvrzená	Partial · PID/time correlation · lifetime unconfirmed
-Pozorovaná podmnožina · PID z události, generace z nepřerušené evidence	Observed subset · PID from the event, generation from uninterrupted tracking
-Pozorovaná podmnožina · vlastník vydávajícího vlákna při zahájení	Observed subset · owner of the issuing thread at start
-Částečné · nelze přiřadit historické životnosti	Partial · cannot be assigned to a historical lifetime
-dřívější přiřazení odvoláno	earlier assignment revoked
-čítač přetekl	counter overflowed
-okno není uzavřené	window not closed
-Kandidát podle historického PID a času; není důkaz stejné životnosti.	Candidate by historical PID and time; not proof of the same lifetime.
-PID pochází z události TCP/UDP; generaci určila evidence vzniku a ukončení bez ztráty od výchozího seznamu procesů nebo od vzniku procesu. Zachycený provoz přesto nemusí být úplný.	The PID comes from the TCP/UDP event; the generation was determined by start and exit tracking without loss since the baseline process list or since the process started. The captured traffic may still be incomplete.
-INIT a dokončení téhož I/O doložily životnost vlastníka vydávajícího vlákna při zahájení. Nejde o důkaz obecného žadatele I/O; vlákno může být připojené k jinému procesu.	INIT and completion of the same I/O confirmed the lifetime of the issuing thread's owner at start. This is not proof of the general I/O requester; the thread may be attached to another process.
-Životnost se nepodařilo určit; tento přenos není přiřazen současnému procesu.	The lifetime could not be determined; this transfer is not assigned to a current process.
-Vzorek {0} · epocha přiřazení {1}	Sample {0} · assignment epoch {1}
-Pozorované bajty (přesný čítač): {0}	Observed bytes (exact counter): {0}
-Počet pozorovaných událostí: {0}	Observed events: {0}
-Stav měření: {0} · stav identity: {1}	Measurement state: {0} · identity state: {1}
-Příznaky: {0}	Flags: {0}
-Životnost vlastníka vlákna: {0} · {1}	Thread owner lifetime: {0} · {1}
 Generace: {0} · {1}	Generation: {0} · {1}
-Kandidát generace: {0} · {1}	Generation candidate: {0} · {1}
-Agregační okno QPC: [{0}, {1}) · frekvence {2}	QPC aggregation window: [{0}, {1}) · frequency {2}
-Výpočetní interval: {0} ns · jednotka {1}	Calculation interval: {0} ns · unit {1}
-Přijato (monotónní ns): {0}	Received (monotonic ns): {0}
-Jde pouze o události zachycené vlastní relací ETW, nikoli o celkový provoz adaptéru ani obecné procesové I/O.	These are only events captured by the app's own ETW session, not total adapter traffic or general process I/O.
-Počet síťových bajtů vychází z velikostí událostí TCP/UDP; nemusí odpovídat počtu bajtů aplikace.	The network count is based on TCP/UDP event sizes; it does not guarantee the number of application bytes.
-Potvrzení nového základního seznamu nezpřesní dřívější nejasné přenosy. Žádné živé akce podle PID.	Confirming a new baseline list does not refine earlier ambiguous transfers. No live actions by PID.
-nezachyceno	not captured
-čas nedostupný	time unavailable
-Konfliktní záznam	Conflicting record
-Neověřené ukončení	Unverified exit
-Neověřený vznik	Unverified start
-Čas nelze porovnat	Time cannot be compared
-Vznik i konec zachyceny	Start and end captured
-Vznik nezachycen	Start not captured
-Bez konce při zastavení	No end at stop
-Oddělená část · bez konce	Separate segment · no end
-Konec zatím nezachycen	End not captured yet
-proud s mezerou	stream with gap
-opožděné pořadí	late order
-rozporné události	conflicting events
-opakováno {0}	repeated {0}
-oddělená část zdroje	separate source segment
-částečná událost	partial event
-starší údaje vytěsněny	older data evicted
-Identita není ověřená. Událost se nepáruje podle PID, názvu ani blízkého času.	Identity is not verified. The event is not paired by PID, name or nearby time.
-{0} s mezi skutečnými událostmi QPC.	{0} s between actual QPC events.
-Délka není dostupná: chybí jednoznačný pár, společná platná frekvence QPC nebo správné časové pořadí.	Duration unavailable: there is no unambiguous pair, common valid QPC frequency or correct time order.
-Záznam {0} · oddělená část {1}	Capture {0} · segment {1}
-Vznik	Start
-Konec	End
-Délka: {0}	Duration: {0}
-Stav zachytávání při sestavení řádku: {0}	Capture state when the row was built: {0}
-Hranice propojení: změnila se frekvence QPC.	Link boundary: the QPC frequency changed.
-Hranice propojení: změnil se identifikátor bootu.	Link boundary: the boot identifier changed.
-Hranice propojení: pořadí zdroje se opakovalo nebo vrátilo zpět.	Link boundary: the source sequence repeated or went back.
-Hranice propojení: čítače zdroje se vrátily zpět.	Link boundary: the source counters went back.
-Nezachycený konec neznamená, že proces právě běží. Osamocený konec neurčuje čas vzniku.	A missing end does not mean the process is running now. A lone end does not determine the start time.
-Ztráty nelze přesně umístit do intervalu. Vytěsněné řádky už nelze propojit; dřívější konflikt nelze vyloučit.	Losses cannot be placed exactly in the interval. Evicted rows are no longer available for linking; an earlier conflict cannot be ruled out.
-CPU a RAM se zde neměří. Žádné živé akce ani vyhledání současného vlastníka stejného PID.	CPU and RAM are not measured here. No live actions and no lookup of the current owner of the same PID.
-{0}: událost nezachycena.	{0}: event not captured.
-{0}: {1} · QPC {2} · frekvence {3}	{0}: {1} · QPC {2} · frequency {3}
-Pořadí zdroje {0} · přijato monotónně {1} ns · příznaky {2}	Source sequence {0} · received monotonic {1} ns · flags {2}
-Návratový kód: 0x{0}	Exit code: 0x{0}
-Návratový kód není dostupný.	Exit code is not available.
 Potvrzená	Committed
 Rezervovaná	Reserved
 Volná	Free

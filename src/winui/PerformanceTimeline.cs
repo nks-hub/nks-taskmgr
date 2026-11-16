@@ -76,7 +76,7 @@ public sealed partial class MainWindow
         var selection = model.SelectProcessHistory(start, end);
         string system = start == end ? "" : SystemSummary(start, end);
         if (historicalProcessesWindow is null) {
-            var window = new HistoricalProcessesWindow(selection, system); historicalProcessesWindow = window;
+            var window = new HistoricalProcessesWindow(selection, system, processTimeline); historicalProcessesWindow = window;
             window.Closed += (_, _) => { if (ReferenceEquals(historicalProcessesWindow, window)) historicalProcessesWindow = null; };
         } else historicalProcessesWindow.ShowSelection(selection, system);
         historicalProcessesWindow.Activate();

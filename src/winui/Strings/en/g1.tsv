@@ -241,8 +241,6 @@ proces se změnil nebo skončil	the process changed or ended
 překročen limit	limit exceeded
 nedostupné ({0})	unavailable ({0})
 Události procesů ETW	ETW process events
-Události vzniku a ukončení procesů	Process start and exit events
-Záznam událostí a síťového provozu (ETW) vyžaduje práva správce.	Capturing events and network traffic (ETW) requires administrator rights.
 Zastavení a dočtení záznamu nebylo potvrzené	Stopping and reading the rest of the capture was not confirmed
 Zavřít i tak	Close anyway
 Ponechat aplikaci otevřenou	Keep the app open
@@ -368,17 +366,6 @@ služby	services
 služeb	services
 PID není hlášen.	No PID reported.
 Hlášený PID {0} · {1}	Reported PID {0} · {1}
-Vznik	Start
-Ukončení	Exit
-Čas ETW nedostupný	ETW time unavailable
-Název není dostupný	Name not available
-PID {0} · rodič {1}	PID {0} · parent {1}
-CreateTime přímo ze zdroje · ověřená historická životnost	CreateTime directly from the source · verified historical lifetime
-Historický záznam · životnost není ověřená	Historical record · lifetime not verified
-Pořadí ve zdroji: {0}\nČas ETW (QPC): {1}\nFrekvence QPC: {2}\nPřijato (monotónní ns): {3}\nStav identity: {4}\nDruh generace: {5} · generace {6}\nPříznaky události: {7}	Source sequence: {0}\nETW time (QPC): {1}\nQPC frequency: {2}\nReceived (monotonic ns): {3}\nIdentity state: {4}\nGeneration kind: {5} · generation {6}\nEvent flags: {7}
-\nNávratový kód: 0x{0}	\nExit code: 0x{0}
-\nNávratový kód není dostupný.	\nExit code not available.
-\nTento záznam neopravňuje k živé akci nad současným vlastníkem stejného PID.	\nThis record does not authorize a live action on the current owner of the same PID.
 Podrobnosti procesu…	Process details…
 Závislosti služby	Service dependencies
 Otevřít hostitelský proces	Open host process

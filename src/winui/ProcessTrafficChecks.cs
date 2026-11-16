@@ -15,34 +15,6 @@ public static partial class WinUiChecks
             GenerationKind.CreationTime, 500, SampleState.Valid, ProcessTrafficAttribution.IssuingThreadOwner,
             ProcessTrafficSource.PhysicalDisk, ProcessTrafficDirection.Read, 4096, 1, 4096,
             SampleState.Gap, ProcessTrafficFlags.Partial, 1, metadata);
-        var rows = new ProcessTrafficRows();
-        rows.Upsert(owner, 1000, 0, new(1, 2));
-        var retained = rows.Values.Single();
-        string ownerText = Loc.T("Pozorovaná podmnožina · vlastník vydávajícího vlákna při zahájení");
-        Require(retained.IdentityText.Contains(ownerText, StringComparison.Ordinal)
-            && retained.Detail.Contains(Loc.T("INIT a dokončení téhož I/O doložily životnost vlastníka vydávajícího vlákna při zahájení. Nejde o důkaz obecného žadatele I/O; vlákno může být připojené k jinému procesu."), StringComparison.Ordinal)
-            && !retained.IdentityText.Contains(Loc.T("Pozorovaná podmnožina · PID z události, generace z nepřerušené evidence"), StringComparison.Ordinal),
-            "The issuing thread owner was presented as the I/O requestor or a direct event identity.");
-
-        var revoked = owner with { Attribution = ProcessTrafficAttribution.Unknown,
-            IdentityKind = GenerationKind.Missing, Generation = 0, IdentityState = SampleState.Unavailable,
-            Flags = ProcessTrafficFlags.Partial | ProcessTrafficFlags.IdentityConflict };
-        rows.Upsert(revoked, 1000, 0, new(1, 2));
-        var current = rows.Values.Single();
-        Require(rows.Count == 1 && current.SelectionIdentity == retained.SelectionIdentity
-            && current.Traffic == revoked && retained.Traffic == owner
-            && current.IdentityText.Contains(Loc.T("dřívější přiřazení odvoláno"), StringComparison.Ordinal)
-            && !current.IdentityText.Contains(ownerText, StringComparison.Ordinal),
-            "Revoking a disk owner retained its identity, added a duplicate row or changed a held historical row.");
-
-        var network = owner with { SampleId = 2, Source = ProcessTrafficSource.Tcp,
-            Direction = ProcessTrafficDirection.Sent, Attribution = ProcessTrafficAttribution.Correlated,
-            IdentityState = SampleState.Unavailable };
-        rows.Upsert(network, 1000, 0, new(1, 2));
-        Require(rows.Values.Last().IdentityText.Contains(Loc.T("Částečné · korelace PID/času · životnost nepotvrzená"), StringComparison.Ordinal)
-            && rows.Values.Last().Detail.Contains(Loc.T("Kandidát podle historického PID a času; není důkaz stejné životnosti."), StringComparison.Ordinal),
-            "Disk owner evidence incorrectly confirmed a network process lifetime.");
-        App.Trace("Process traffic labels passed: issuing owner, requestor distinction, revocation upsert and unverified network identity");
         ProcessNetworkRates(owner);
     }
 

@@ -464,6 +464,7 @@ public sealed partial class MainWindow : Window
             MarkLiveCpuModel(cpuTick, true);
             bool changed = model.Tick(!minimized && view != DesktopView.Services);
             MarkLiveCpuModel(cpuTick, false);
+            processTimeline.Observe(model);
             if (!minimized) {
                 bool canExport = !exporting && model.ProcessTime > 0;
                 if (exportSnapshot.IsEnabled != canExport) exportSnapshot.IsEnabled = canExport;

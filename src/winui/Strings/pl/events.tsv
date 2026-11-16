@@ -1,0 +1,48 @@
+# Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
+Spuštěné a ukončené v úseku: {0}	Uruchomione i zakończone w zakresie: {0}
+V úseku se nespustil ani neukončil žádný proces.	W zakresie nie uruchomiono ani nie zakończono żadnego procesu.
+rodič	proces nadrzędny
+kód	kod
+Ukončen	Zakończony
+Spuštěn	Uruchomiony
+Bez práv správce nejsou vidět návratové kódy	Bez uprawnień administratora kody zakończenia nie są widoczne
+Zobrazit v Procesech	Pokaż w Procesach
+neznámý proces	nieznany proces
+krátký proces	krótki proces
+Spuštěn {0}	Uruchomiono {0}
+Ukončen {0}	Zakończono {0}
+Běžel už před spuštěním aplikace.	Działał już przed uruchomieniem aplikacji.
+Skončil dřív, než ho stihl zachytit seznam procesů. Známe jen údaje ze sledování ETW, bez příkazového řádku.	Zakończył się, zanim zdążyła go uchwycić lista procesów. Znamy tylko dane ze śledzenia ETW, bez wiersza poleceń.
+{0} s	{0} s
+{0} min {1} s	{0} min {1} s
+{0} h {1} min	{0} h {1} min
+Spuštěné a ukončené procesy	Uruchomione i zakończone procesy
+Návratové kódy a velmi krátké procesy zachytí jen sledování ETW, které vyžaduje práva správce.	Kody zakończenia i bardzo krótkie procesy uchwyci tylko śledzenie ETW, które wymaga uprawnień administratora.
+Hledat název, PID nebo příkazový řádek	Szukaj nazwy, PID lub wiersza poleceń
+Aplikace se spustí znovu jako správce po potvrzení výzvy UAC.	Aplikacja uruchomi się ponownie jako administrator po potwierdzeniu monitu UAC.
+Spuštěné	Uruchomione
+Opakovaně spouštěné	Uruchamiane wielokrotnie
+Událost	Zdarzenie
+Rodič	Proces nadrzędny
+Doba běhu	Czas działania
+Návratový kód	Kod zakończenia
+Opakování	Powtórzenia
+Kód, kterým proces skončil. Zná ho jen sledování ETW, které vyžaduje správce.	Kod, z którym proces się zakończył. Zna go tylko śledzenie ETW, które wymaga administratora.
+Kolikrát se stejný proces se stejným rodičem spustil během 60 sekund, od třetího spuštění.	Ile razy ten sam proces z tym samym procesem nadrzędnym uruchomił się w ciągu 60 sekund, od trzeciego uruchomienia.
+Stav sledování procesů	Stan śledzenia procesów
+Hledat v událostech procesů	Szukaj w zdarzeniach procesów
+Sleduji od {0}.	Śledzenie od {0}.
+Běží i sledování ETW, takže znám návratové kódy a zachytím i velmi krátké procesy.	Działa też śledzenie ETW, więc znane są kody zakończenia i uchwycone zostaną nawet bardzo krótkie procesy.
+Sledování ETW neběží ({0}), proto chybí návratové kódy a velmi krátké procesy.	Śledzenie ETW nie działa ({0}), dlatego brakuje kodów zakończenia i bardzo krótkich procesów.
+Bez práv správce nejsou vidět návratové kódy a procesy, které skončily do asi jedné sekundy po spuštění.	Bez uprawnień administratora nie widać kodów zakończenia ani procesów, które zakończyły się w ciągu około sekundy od uruchomienia.
+Ztracené události ETW: {0} · ztracené buffery: {1} · přeplněná fronta: {2} · chyby dekódování: {3}. Při ztrátě mohou v seznamu chybět procesy.	Utracone zdarzenia ETW: {0} · utracone bufory: {1} · przepełnienia kolejki: {2} · błędy dekodowania: {3}. Po utracie na liście mogą brakować procesów.
+Kopírovat řádek	Kopiuj wiersz
+nespuštěno	nie uruchomiono
+spouští se	uruchamia się
+běží	działa
+zastavuje se	zatrzymuje się
+zastaveno	zatrzymano
+na tomto systému nepodporováno	nieobsługiwane w tym systemie
+předchozí relace se ještě uklízí	poprzednia sesja jest jeszcze sprzątana
+zastavení trvalo příliš dlouho	zatrzymanie trwało zbyt długo
+Windows nepotvrdil úklid	System Windows nie potwierdził sprzątania

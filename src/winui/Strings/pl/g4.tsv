@@ -1,90 +1,16 @@
 # Czech source text, tab, translation. Escapes in both columns: backslash t, n, r, backslash.
-Spustit nový záznam	Rozpocznij nowe przechwytywanie
-Zastavit	Zatrzymaj
-Vymazat seznam	Wyczyść listę
 Spustit jako správce	Uruchom jako administrator
-Záznam není spuštěný.	Przechwytywanie nie jest uruchomione.
-ETW sleduje vznik a ukončení procesů až od spuštění záznamu. Historické řádky jsou pouze pro čtení.	ETW śledzi uruchamianie i kończenie procesów dopiero od rozpoczęcia przechwytywania. Wiersze historyczne są tylko do odczytu.
-Filtrovat název nebo PID	Filtruj według nazwy lub PID
-Podržet seznam	Wstrzymaj listę
-Sledovat konec	Śledź najnowsze
-Vyberte událost.	Wybierz zdarzenie.
-Události procesů	Zdarzenia procesów
-Čítače a vysvětlení záznamu	Liczniki i objaśnienie przechwytywania
-Čítače záznamu, vytěsnění, limit paměti a vysvětlení.	Liczniki przechwytywania, usunięcia, budżet pamięci i objaśnienie.
-Záznam ETW vyžaduje správce. NKS se spustí znovu jako správce po potvrzení výzvy UAC.	Przechwytywanie ETW wymaga administratora. NKS uruchomi się ponownie jako administrator po potwierdzeniu monitu UAC.
-Vznik a ukončení	Uruchomienia i zakończenia
-Diskové a síťové přenosy	Transfery dyskowe i sieciowe
-Životnosti procesů	Czasy życia procesów
-Všechny události	Wszystkie zdarzenia
-Vznik procesů	Uruchomienia procesów
-Ukončení procesů	Zakończenia procesów
-Spustit vlastní záznam ETW	Rozpocznij własne przechwytywanie ETW
-Zastavit vlastní záznam ETW	Zatrzymaj własne przechwytywanie ETW
-Vymazat zobrazené události	Wyczyść wyświetlane zdarzenia
-Filtrovat zaznamenané události	Filtruj przechwycone zdarzenia
 Druh události	Typ zdarzenia
-Historické události, pouze pro čtení	Zdarzenia historyczne, tylko do odczytu
-Životnosti procesů nebo pozorované přenosy ETW	Czasy życia procesów lub zaobserwowane transfery ETW
-Podrobnosti historické události	Szczegóły zdarzenia historycznego
 Záznam nelze spustit: {0}	Nie można rozpocząć przechwytywania: {0}
-Zastavení nebylo potvrzené: {0}	Zatrzymanie nie zostało potwierdzone: {0}
-chyba Windows {0}	błąd Windows {0}
-Události {0}/{1} · vytěsněno v okně {2} · ztracené události ETW {3} · ztracené buffery {4} · přeplnění fronty {5} · chyby dekódování {6} · nejasné záznamy {7}	Zdarzenia {0}/{1} · usunięte w oknie {2} · utracone zdarzenia ETW {3} · utracone bufory {4} · przepełnienia kolejki {5} · błędy dekodowania {6} · niejednoznaczne rekordy {7}
-Životnosti {0}/{1} · vytěsněno {2} · neověřené události {3} · konflikty {4} · opožděné pořadí {5} · vynechané pořadí zdroje {6} · označení nejistoty {7}	Czasy życia {0}/{1} · usunięte {2} · niezweryfikowane zdarzenia {3} · konflikty {4} · opóźniona kolejność {5} · pominięta sekwencja źródła {6} · oznaczenia niepewności {7}
-Zobrazení je podržené; vytěsněno z podrženého seznamu {0}.	Widok jest wstrzymany; usunięte z wstrzymanej listy: {0}.
-Pouze pozorované částečné bajty vlastní relace ETW, nikoli celkový provoz adaptéru ani obecné procesové I/O. TCP/UDP se přiřadí generaci jen při nepřerušené evidenci životností; během záznamu je používá i sloupec Síť v Procesech a Uživatelích.	Tylko zaobserwowane częściowe bajty własnej sesji ETW, a nie cały ruch karty sieciowej ani ogólne we/wy procesów. TCP/UDP jest przypisywane do generacji tylko przy nieprzerwanym śledzeniu czasów życia; podczas przechwytywania korzysta z nich też kolumna Sieć w Procesach i Użytkownikach.
-Vznik a konec se párují jen přes ověřený Boot + PID + CreateTime v témže záznamu a části zdroje. Nezachycený konec neznamená, že proces stále běží. CPU a RAM se zde neměří.	Początek i koniec są parowane tylko przez zweryfikowane Boot + PID + CreateTime w tym samym przechwytywaniu i segmencie źródła. Brak przechwyconego końca nie oznacza, że proces nadal działa. CPU i RAM nie są tu mierzone.
-CreateTime přímo z události s ověřeným bootem určuje historickou životnost. Ostatní řádky zůstávají neověřené.	CreateTime pobrany bezpośrednio ze zdarzenia ze zweryfikowanym rozruchem określa historyczny czas życia. Pozostałe wiersze pozostają niezweryfikowane.
-Žádné živé akce podle PID. Čas je relativní QPC; nové spuštění nahradí seznam. Nový základní seznam nezpřesní dřívější nejasné přenosy.	Brak działań na żywo według PID. Czas to względny QPC; nowe przechwytywanie zastępuje listę. Nowa lista bazowa nie doprecyzuje wcześniejszych niejednoznacznych transferów.
-Přenosy tato verze nativní DLL neposkytuje; záznam vzniku a ukončení pokračuje.	Ta wersja natywnej biblioteki DLL nie udostępnia transferów; przechwytywanie uruchomień i zakończeń trwa dalej.
-Základní seznam čeká na nové ověření po změně nebo ztrátě zdroje.	Lista bazowa czeka na ponowną weryfikację po zmianie lub utracie źródła.
-Relace ještě není uklizená.	Sesja nie została jeszcze uprzątnięta.
 Čtení událostí selhalo: {0}	Odczyt zdarzeń nie powiódł się: {0}
-Vyberte událost, životnost nebo pozorovaný přenos.	Wybierz zdarzenie, czas życia lub zaobserwowany transfer.
-Vybraný záznam už není v aktuálním seznamu nebo filtru.	Wybrany rekord nie znajduje się już na bieżącej liście lub w filtrze.
-Všechny životnosti	Wszystkie czasy życia
-Vznik i konec	Początek i koniec
-Bez konce	Bez końca
-Bez vzniku	Bez początku
-Neověřené	Niezweryfikowane
-Konfliktní	Sprzeczne
-Opožděné	Opóźnione
-S mezerou	Z przerwą
-Všechny přenosy	Wszystkie transfery
-Fyzický disk	Dysk fizyczny
-Filtrovat PID, disk, TCP, UDP nebo nejistotu	Filtruj według PID, dysku, TCP, UDP lub niepewności
-Filtrovat název, PID nebo stav	Filtruj według nazwy, PID lub stanu
-Vybraný podržený záznam byl vytěsněn kvůli limitu uchování.	Wybrany wstrzymany rekord został usunięty przez budżet przechowywania.
-Přenosy {0}/{1} · vytěsněno v okně {2}	Transfery {0}/{1} · usunięte w oknie {2}
-Odhad uchovaných dat: jednotlivé události do 3 MiB, přenosy do 3 MiB, životnosti do 2 MiB; podržený seznam do 3 MiB navíc.	Szacunek przechowywanych danych: pojedyncze zdarzenia do 3 MiB, transfery do 3 MiB, czasy życia do 2 MiB; wstrzymana lista dodatkowo do 3 MiB.
-Souhrn životností a jeho počty jsou od posledního vymazání; nejde o úplnou historii systému.	Podsumowanie czasów życia i jego liczniki obejmują okres od ostatniego wyczyszczenia; to nie jest pełna historia systemu.
-Fyzický disk: {0} · síť: {1} · zdroj životností: {2} · epocha {3} · nepřiřazené události {4} / {5} B · zahozené čekající {6} · vytěsněné vzorky {7} · pozdní události {8} · zneplatnění přiřazení {9}	Dysk fizyczny: {0} · sieć: {1} · źródło czasów życia: {2} · epoka {3} · nieprzypisane zdarzenia {4} / {5} B · odrzucone oczekujące {6} · usunięte próbki {7} · spóźnione zdarzenia {8} · unieważnione przypisania {9}
-Nativní sdílený rozpočet kontejnerů a rámců {0}/{1} B; paměť Windows ETW je zvlášť.	Natywny wspólny budżet kontenerów i ramek {0}/{1} B; pamięć Windows ETW jest liczona osobno.
-dostupný	dostępny
-čeká na data	czeka na dane
-částečný proud	strumień częściowy
 přístup odepřen	odmowa dostępu
-nepodporovaný	nieobsługiwany
-zastaralý	nieaktualny
 chyba	błąd
 nedostupný	niedostępny
 Úklid záznamu nebyl potvrzený: {0}	Uprzątnięcie przechwytywania nie zostało potwierdzone: {0}
 Zastavení a dočtení záznamu nebylo potvrzené	Nie potwierdzono zatrzymania i doczytania przechwytywania
-Ponechat otevřené	Pozostaw otwarte
 Zavřít i tak	Zamknij mimo to
-Nepodařilo se potvrdit úklid vlastní relace ETW nebo dočíst její události. Relace může dál zaznamenávat a při zavření se mohou ztratit dosud nepřečtené události. Okno můžete ponechat otevřené a zkusit zastavení znovu.	Nie udało się potwierdzić uprzątnięcia własnej sesji ETW ani doczytania jej zdarzeń. Sesja może nadal rejestrować, a przy zamknięciu mogą zostać utracone jeszcze nieodczytane zdarzenia. Możesz pozostawić okno otwarte i spróbować zatrzymać ponownie.
-Záznam není spuštěný	Przechwytywanie nie jest uruchomione
-Spouštím vlastní relaci	Uruchamianie własnej sesji
 Záznam běží	Przechwytywanie trwa
-Zastavuji vlastní relaci	Zatrzymywanie własnej sesji
 Záznam zastavený	Przechwytywanie zatrzymane
-Přístup k ETW byl odepřen; aplikace pokračuje bez něj	Odmówiono dostępu do ETW; aplikacja działa dalej bez niego
-Zdroj ETW není na tomto systému podporovaný	Źródło ETW nie jest obsługiwane w tym systemie
-Předchozí relace se ještě uklízí	Poprzednia sesja jest jeszcze sprzątana
-Zastavení překročilo časový limit	Przekroczono limit czasu zatrzymania
-Windows nepotvrdil úklid relace	System Windows nie potwierdził uprzątnięcia sesji
-Záznam skončil chybou	Przechwytywanie zakończyło się błędem
 Podrobnosti vybraného procesu	Szczegóły wybranego procesu
 Vlákna, moduly, paměť a popisovače procesu	Wątki, moduły, pamięć i dojścia procesu
 Podrobnosti procesů jiných uživatelů a systému vyžadují práva správce.	Szczegóły procesów innych użytkowników i systemu wymagają uprawnień administratora.
@@ -247,75 +173,7 @@ Navazující služby	Usługi zależne
 Žádné	Brak
 Skupina: {0}	Grupa: {0}
 Závislost {0}	Zależność {0}
-čt.	odcz.
-záp.	zap.
-Čas ETW nedostupný	Czas ETW niedostępny
-{0} B pozorováno · {1} událostí · {2} B/s v okně 1 s	{0} B zaobserwowano · zdarzenia: {1} · {2} B/s w oknie 1 s
-PID nelze určit	Nie można ustalić PID
-fyzické I/O	fizyczne we/wy
-Částečné · korelace PID/času · životnost nepotvrzená	Częściowe · korelacja PID/czasu · czas życia niepotwierdzony
-Pozorovaná podmnožina · PID z události, generace z nepřerušené evidence	Zaobserwowany podzbiór · PID ze zdarzenia, generacja z nieprzerwanego śledzenia
-Pozorovaná podmnožina · vlastník vydávajícího vlákna při zahájení	Zaobserwowany podzbiór · właściciel wątku zlecającego w chwili rozpoczęcia
-Částečné · nelze přiřadit historické životnosti	Częściowe · nie można przypisać do historycznego czasu życia
-dřívější přiřazení odvoláno	wcześniejsze przypisanie odwołane
-čítač přetekl	licznik przepełniony
-okno není uzavřené	okno nie jest zamknięte
-Kandidát podle historického PID a času; není důkaz stejné životnosti.	Kandydat według historycznego PID i czasu; nie jest to dowód tego samego czasu życia.
-PID pochází z události TCP/UDP; generaci určila evidence vzniku a ukončení bez ztráty od výchozího seznamu procesů nebo od vzniku procesu. Zachycený provoz přesto nemusí být úplný.	PID pochodzi ze zdarzenia TCP/UDP; generację ustalono na podstawie śledzenia uruchomień i zakończeń bez strat od bazowej listy procesów lub od uruchomienia procesu. Przechwycony ruch może mimo to być niepełny.
-INIT a dokončení téhož I/O doložily životnost vlastníka vydávajícího vlákna při zahájení. Nejde o důkaz obecného žadatele I/O; vlákno může být připojené k jinému procesu.	INIT i zakończenie tej samej operacji we/wy potwierdziły czas życia właściciela wątku zlecającego w chwili rozpoczęcia. Nie jest to dowód ogólnego zleceniodawcy we/wy; wątek może być dołączony do innego procesu.
-Životnost se nepodařilo určit; tento přenos není přiřazen současnému procesu.	Nie udało się ustalić czasu życia; ten transfer nie jest przypisany do bieżącego procesu.
-Vzorek {0} · epocha přiřazení {1}	Próbka {0} · epoka przypisania {1}
-Pozorované bajty (přesný čítač): {0}	Zaobserwowane bajty (dokładny licznik): {0}
-Počet pozorovaných událostí: {0}	Liczba zaobserwowanych zdarzeń: {0}
-Stav měření: {0} · stav identity: {1}	Stan pomiaru: {0} · stan tożsamości: {1}
-Příznaky: {0}	Flagi: {0}
-Životnost vlastníka vlákna: {0} · {1}	Czas życia właściciela wątku: {0} · {1}
 Generace: {0} · {1}	Generacja: {0} · {1}
-Kandidát generace: {0} · {1}	Kandydat generacji: {0} · {1}
-Agregační okno QPC: [{0}, {1}) · frekvence {2}	Okno agregacji QPC: [{0}, {1}) · częstotliwość {2}
-Výpočetní interval: {0} ns · jednotka {1}	Przedział obliczeń: {0} ns · jednostka {1}
-Přijato (monotónní ns): {0}	Odebrano (monotoniczne ns): {0}
-Jde pouze o události zachycené vlastní relací ETW, nikoli o celkový provoz adaptéru ani obecné procesové I/O.	Są to tylko zdarzenia przechwycone przez własną sesję ETW, a nie cały ruch karty sieciowej ani ogólne we/wy procesów.
-Počet síťových bajtů vychází z velikostí událostí TCP/UDP; nemusí odpovídat počtu bajtů aplikace.	Liczba sieciowa opiera się na rozmiarach zdarzeń TCP/UDP; nie gwarantuje liczby bajtów aplikacji.
-Potvrzení nového základního seznamu nezpřesní dřívější nejasné přenosy. Žádné živé akce podle PID.	Potwierdzenie nowej listy bazowej nie doprecyzuje wcześniejszych niejednoznacznych transferów. Brak działań na żywo według PID.
-nezachyceno	nie przechwycono
-čas nedostupný	czas niedostępny
-Konfliktní záznam	Sprzeczny rekord
-Neověřené ukončení	Niezweryfikowane zakończenie
-Neověřený vznik	Niezweryfikowane uruchomienie
-Čas nelze porovnat	Nie można porównać czasu
-Vznik i konec zachyceny	Przechwycono początek i koniec
-Vznik nezachycen	Nie przechwycono początku
-Bez konce při zastavení	Bez końca przy zatrzymaniu
-Oddělená část · bez konce	Oddzielny segment · bez końca
-Konec zatím nezachycen	Koniec jeszcze nie przechwycony
-proud s mezerou	strumień z przerwą
-opožděné pořadí	opóźniona kolejność
-rozporné události	sprzeczne zdarzenia
-opakováno {0}	powtórzono {0}
-oddělená část zdroje	oddzielny segment źródła
-částečná událost	zdarzenie częściowe
-starší údaje vytěsněny	starsze dane usunięte
-Identita není ověřená. Událost se nepáruje podle PID, názvu ani blízkého času.	Tożsamość nie jest zweryfikowana. Zdarzenie nie jest parowane według PID, nazwy ani zbliżonego czasu.
-{0} s mezi skutečnými událostmi QPC.	{0} s między rzeczywistymi zdarzeniami QPC.
-Délka není dostupná: chybí jednoznačný pár, společná platná frekvence QPC nebo správné časové pořadí.	Czas trwania niedostępny: brak jednoznacznej pary, wspólnej prawidłowej częstotliwości QPC lub poprawnej kolejności czasowej.
-Záznam {0} · oddělená část {1}	Przechwytywanie {0} · segment {1}
-Vznik	Uruchomienie
-Konec	Koniec
-Délka: {0}	Czas trwania: {0}
-Stav zachytávání při sestavení řádku: {0}	Stan przechwytywania podczas tworzenia wiersza: {0}
-Hranice propojení: změnila se frekvence QPC.	Granica powiązania: zmieniła się częstotliwość QPC.
-Hranice propojení: změnil se identifikátor bootu.	Granica powiązania: zmienił się identyfikator rozruchu.
-Hranice propojení: pořadí zdroje se opakovalo nebo vrátilo zpět.	Granica powiązania: sekwencja źródła powtórzyła się lub cofnęła.
-Hranice propojení: čítače zdroje se vrátily zpět.	Granica powiązania: liczniki źródła cofnęły się.
-Nezachycený konec neznamená, že proces právě běží. Osamocený konec neurčuje čas vzniku.	Brak przechwyconego końca nie oznacza, że proces właśnie działa. Samotny koniec nie określa czasu uruchomienia.
-Ztráty nelze přesně umístit do intervalu. Vytěsněné řádky už nelze propojit; dřívější konflikt nelze vyloučit.	Strat nie można dokładnie umiejscowić w przedziale. Usunięte wiersze nie są już dostępne do powiązania; nie można wykluczyć wcześniejszego konfliktu.
-CPU a RAM se zde neměří. Žádné živé akce ani vyhledání současného vlastníka stejného PID.	CPU i RAM nie są tu mierzone. Brak działań na żywo i wyszukiwania bieżącego właściciela tego samego PID.
-{0}: událost nezachycena.	{0}: nie przechwycono zdarzenia.
-{0}: {1} · QPC {2} · frekvence {3}	{0}: {1} · QPC {2} · częstotliwość {3}
-Pořadí zdroje {0} · přijato monotónně {1} ns · příznaky {2}	Sekwencja źródła {0} · odebrano monotonicznie {1} ns · flagi {2}
-Návratový kód: 0x{0}	Kod zakończenia: 0x{0}
-Návratový kód není dostupný.	Kod zakończenia jest niedostępny.
 Potvrzená	Zatwierdzona
 Rezervovaná	Zarezerwowana
 Volná	Wolna

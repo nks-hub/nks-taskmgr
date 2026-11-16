@@ -2,56 +2,105 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Globalization;
-using NksTaskMgr.Native;
 
 namespace NksTaskMgr.WinUI;
 
-public sealed partial class ProcessEventRow
+/// <summary>Which rows of the timeline the window shows.</summary>
+internal enum ProcessEventFilter { All, Started, Ended, Repeated }
+
+/// <summary>One start or end of a process as a table row.</summary>
+public sealed class ProcessEventRow
 {
-    private readonly long frequency;
-    private readonly BootIdentifier boot;
-    internal ProcessEventRow(ProcessEventInfo item, long frequency, long origin, BootIdentifier boot, SampleState bootState)
+    internal ProcessEventRow(ProcessTimelineEntry entry, bool started)
     {
-        Source = item; this.frequency = frequency; this.boot = boot;
-        KindText = item.Kind == ProcessEventKind.Started ? Loc.T("Vznik") : Loc.T("Ukončení");
-        double elapsed = frequency > 0 ? (item.TimestampQpc - origin) / (double)frequency : 0;
-        TimeText = frequency > 0 ? (elapsed >= 0 ? "+" : "") + elapsed.ToString("N3", Loc.Culture) + " s" : Loc.T("Čas ETW nedostupný");
-        NameText = string.IsNullOrEmpty(item.ImageName) ? Loc.T("Název není dostupný") : GlobalObjectSearchText.Flat(item.ImageName, 1024);
-        TargetText = Loc.F("PID {0} · rodič {1}", item.Pid, ((uint)item.Flags & 8) != 0 ? item.ParentPid.ToString(CultureInfo.InvariantCulture) : "?");
-        bool verified = bootState == SampleState.Valid && !boot.IsEmpty && item.Pid != 0
-            && item.IdentityState == SampleState.Valid && item.IdentityKind == GenerationKind.CreationTime && item.Generation != 0;
-        IdentityText = verified ? Loc.T("CreateTime přímo ze zdroje · ověřená historická životnost") : Loc.T("Historický záznam · životnost není ověřená");
-        EstimatedBytes = 512 + 2 * (item.ImageName.Length + NameText.Length + TargetText.Length + TimeText.Length + KindText.Length + IdentityText.Length);
+        Entry = entry; Started = started; Revision = entry.Revision;
+        When = started ? entry.Started : entry.Ended ?? entry.Started;
+        TimeText = When.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+        EventText = started ? Loc.T("Spuštěn") : Loc.T("Ukončen");
+        string name = entry.Name.Length == 0 ? Loc.T("neznámý proces") : entry.Name;
+        NameText = entry.SnapshotsMissed && entry.Ended is not null ? name + " · " + Loc.T("krátký proces") : name;
+        PidText = entry.Pid.ToString(CultureInfo.InvariantCulture);
+        ParentText = entry.ParentPid == 0 ? "—" : entry.ParentName.Length > 0 ? entry.ParentName + " (" + entry.ParentPid.ToString(CultureInfo.InvariantCulture) + ")" : entry.ParentPid.ToString(CultureInfo.InvariantCulture);
+        CommandText = entry.CommandLine.Length == 0 ? "—" : GlobalObjectSearchText.Flat(entry.CommandLine, 2048);
+        DurationText = !started && entry.Duration is { } duration ? Duration(duration) : "";
+        ExitText = started ? "" : entry.ExitCode is { } code ? ExitCode(code) : "—";
+        RepeatText = entry.Respawn >= ProcessTimeline.RespawnThreshold ? "×" + entry.Respawn.ToString(CultureInfo.InvariantCulture) : "";
+        Tooltip = Loc.F("Spuštěn {0}", entry.Started.ToString("G", Loc.Culture))
+            + (entry.Ended is { } ended ? "\n" + Loc.F("Ukončen {0}", ended.ToString("G", Loc.Culture)) : "")
+            + (entry.Preexisting ? "\n" + Loc.T("Běžel už před spuštěním aplikace.") : "")
+            + (entry.SnapshotsMissed && entry.Ended is not null ? "\n" + Loc.T("Skončil dřív, než ho stihl zachytit seznam procesů. Známe jen údaje ze sledování ETW, bez příkazového řádku.") : "");
     }
-    internal ProcessEventInfo Source { get; }
-    internal int EstimatedBytes { get; }
-    internal bool Matches(string query) => NameText.Contains(query, StringComparison.OrdinalIgnoreCase)
-        || TargetText.Contains(query, StringComparison.OrdinalIgnoreCase) || KindText.Contains(query, StringComparison.OrdinalIgnoreCase)
-        || IdentityText.Contains(query, StringComparison.OrdinalIgnoreCase);
-    internal string Detail => Lifetime is { } lifetime ? ProcessLifetimeText.Detail(lifetime) : Traffic is not null ? TrafficDetail : KindText + " · " + NameText + "\n" + TargetText + "\n" + IdentityText + "\n"
-        + Loc.F("Pořadí ve zdroji: {0}\nČas ETW (QPC): {1}\nFrekvence QPC: {2}\nPřijato (monotónní ns): {3}\nStav identity: {4}\nDruh generace: {5} · generace {6}\nPříznaky události: {7}",
-            Source.Sequence, Source.TimestampQpc, frequency, Source.ObservedAtNs, Source.IdentityState, Source.IdentityKind, Source.Generation, Source.Flags)
-        + "\nBoot: " + boot.High.ToString("X16", CultureInfo.InvariantCulture) + boot.Low.ToString("X16", CultureInfo.InvariantCulture)
-        + (((uint)Source.Flags & 1) != 0 ? Loc.F("\nNávratový kód: 0x{0}", unchecked((uint)Source.ExitStatus).ToString("X8", CultureInfo.InvariantCulture)) : Loc.T("\nNávratový kód není dostupný."))
-        + Loc.T("\nTento záznam neopravňuje k živé akci nad současným vlastníkem stejného PID.");
+
+    internal ProcessTimelineEntry Entry { get; }
+    internal bool Started { get; }
+    internal int Revision { get; }
+    internal DateTime When { get; }
     public string TimeText { get; }
-    public string KindText { get; }
+    public string EventText { get; }
     public string NameText { get; }
-    public string TargetText { get; }
-    public string IdentityText { get; }
-    public override string ToString() => KindText + ", " + NameText + ", " + TargetText + ", " + TimeText;
+    public string PidText { get; }
+    public string ParentText { get; }
+    public string CommandText { get; }
+    public string DurationText { get; }
+    public string ExitText { get; }
+    public string RepeatText { get; }
+    public string Tooltip { get; }
+
+    internal bool Matches(string query) => NameText.Contains(query, StringComparison.OrdinalIgnoreCase) || PidText.Contains(query, StringComparison.Ordinal)
+        || Entry.CommandLine.Contains(query, StringComparison.OrdinalIgnoreCase);
+
+    public override string ToString() => string.Join(", ", TimeText, EventText, NameText, "PID " + PidText, Loc.T("rodič") + " " + ParentText, CommandText, DurationText, ExitText, RepeatText);
+
+    internal string Line => string.Join('\t', TimeText, EventText, Entry.Name, PidText, ParentText, Entry.CommandLine, DurationText, ExitText, RepeatText);
+
+    internal static string Duration(TimeSpan value) => value.TotalSeconds < 60 ? Loc.F("{0} s", value.TotalSeconds.ToString(value.TotalSeconds < 10 ? "0.0" : "0", Loc.Culture))
+        : value.TotalHours < 1 ? Loc.F("{0} min {1} s", (int)value.TotalMinutes, value.Seconds)
+        : Loc.F("{0} h {1} min", (int)value.TotalHours, value.Minutes);
+
+    /// <summary>Small codes in decimal; Windows status codes such as 0xC0000005 in hex.</summary>
+    internal static string ExitCode(int code) => code is >= 0 and < 100_000 ? code.ToString(CultureInfo.InvariantCulture) : "0x" + unchecked((uint)code).ToString("X8", CultureInfo.InvariantCulture);
+
+    private static readonly bool[] StartOnly = [true], EndOnly = [false], Both = [true, false];
+
+    /// <summary>Starts and ends of the timeline matching the filter and query, newest first. Rows of unchanged entries are reused from <paramref name="cache"/>.</summary>
+    internal static List<ProcessEventRow> Build(IEnumerable<ProcessTimelineEntry> entries, ProcessEventFilter filter, string query, Dictionary<(ProcessTimelineEntry, bool), ProcessEventRow> cache)
+    {
+        var rows = new List<ProcessEventRow>();
+        foreach (var entry in entries) {
+            if (filter == ProcessEventFilter.Repeated && entry.Respawn < ProcessTimeline.RespawnThreshold) continue;
+            foreach (bool started in entry.Ended is null ? StartOnly : entry.Preexisting ? EndOnly : Both) {
+                if (filter == ProcessEventFilter.Started && !started || filter == ProcessEventFilter.Ended && started) continue;
+                if (!cache.TryGetValue((entry, started), out var row) || row.Revision != entry.Revision) cache[(entry, started)] = row = new ProcessEventRow(entry, started);
+                if (query.Length == 0 || row.Matches(query)) rows.Add(row);
+            }
+        }
+        // Equal times: the end sorts above its own start.
+        rows.Sort((left, right) => right.When != left.When ? right.When.CompareTo(left.When) : left.Started.CompareTo(right.Started));
+        return rows;
+    }
 }
 
 [WinRT.GeneratedWinRTExposedType]
 public sealed partial class ProcessEventRows : ObservableCollection<ProcessEventRow>
 {
+    /// <summary>Replaces the contents; small differences keep the unchanged head and tail so the list does not jump.</summary>
     internal void Apply(IReadOnlyList<ProcessEventRow> values)
     {
-        if (Count == values.Count && this.SequenceEqual(values)) return;
-        Items.Clear();
-        foreach (var value in values) Items.Add(value);
-        OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
-        OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        int head = 0;
+        while (head < Count && head < values.Count && ReferenceEquals(this[head], values[head])) ++head;
+        if (head == Count && head == values.Count) return;
+        int tail = 0;
+        while (tail < Count - head && tail < values.Count - head && ReferenceEquals(this[Count - 1 - tail], values[values.Count - 1 - tail])) ++tail;
+        int remove = Count - head - tail, insert = values.Count - head - tail;
+        if (remove + insert > 64) {
+            Items.Clear();
+            foreach (var value in values) Items.Add(value);
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+            OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            return;
+        }
+        for (int i = 0; i < remove; ++i) RemoveAt(head);
+        for (int i = 0; i < insert; ++i) Insert(head + i, values[head + i]);
     }
 }

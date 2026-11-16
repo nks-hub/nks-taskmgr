@@ -80,8 +80,7 @@ public partial class App : Application
         if (shared && !SingleInstance.TryBecomePrimary()) Environment.Exit(0);
         if (EventsCheckPath is { } path) {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-            var events = new ProcessEventsWindow(() => (0L, default(NksTaskMgr.Native.BootIdentifier), NksTaskMgr.Native.SampleState.Unavailable));
-            window = events; events.BeginUiChecks(path); events.Activate(); return;
+            window = ProcessEventsWindow.BeginUiChecks(path); window.Activate(); return;
         }
         if (ActionsCheckPath is { } actionsPath) {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(actionsPath))!);

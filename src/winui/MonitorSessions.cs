@@ -28,7 +28,7 @@ public sealed partial class MonitorModel
         sessionViewVisible = value;
     }
 
-    /// <summary>True while the event window's ETW capture provides per-process network rates.</summary>
+    /// <summary>True while the application's ETW capture (ProcessCapture) provides per-process network rates.</summary>
     internal bool NetworkAvailable { get; private set; }
 
     /// <summary>Copies per-generation network rates to the rows; true when the network sort order may have changed.</summary>
