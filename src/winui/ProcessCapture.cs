@@ -16,7 +16,7 @@ internal sealed class ProcessCapture : IDisposable
     private NativeEventMonitor? monitor;
     private ulong resyncVersion;
     private long resyncAfter;
-    private bool trafficSupported = true, disposed;
+    private bool trafficSupported = true, disposed, failed;
     private Task<bool>? closeStop;
 
     internal ProcessCapture(DispatcherQueue queue, ProcessTimeline timeline, Func<(long Time, BootIdentifier Boot, SampleState State)> currentProcesses)
@@ -29,7 +29,8 @@ internal sealed class ProcessCapture : IDisposable
     internal ProcessEventBatchInfo? Info { get; private set; }
     /// <summary>Why the capture could not start or read; empty while it works.</summary>
     internal string Error { get; private set; } = "";
-    internal bool Active => monitor is not null && !disposed;
+    /// <summary>A session was started and has not failed; only then does closing need to stop and drain it.</summary>
+    internal bool Active => monitor is not null && !disposed && !failed;
     internal ProcessEventMonitorState State => Info?.State ?? ProcessEventMonitorState.Idle;
     internal bool NeedsCleanup => monitor is not null && (Info is { } info && (info.Flags & ProcessEventFrameFlags.CleanupOutstanding) != 0
         || State is ProcessEventMonitorState.Starting or ProcessEventMonitorState.Running or ProcessEventMonitorState.Stopping);
@@ -40,9 +41,9 @@ internal sealed class ProcessCapture : IDisposable
         if (disposed) return false;
         try {
             monitor ??= NativeEventMonitor.Open();
-            resyncVersion = 0; resyncAfter = 0;
-            monitor.Start(); timer.Start(); Read();
-            return true;
+            resyncVersion = 0; resyncAfter = 0; failed = false;
+            monitor.Start(); timer.Start();
+            return Read() >= 0;
         } catch (Exception error) when (InteropError(error)) {
             Error = Loc.F("Záznam nelze spustit: {0}", error.Message); return false;
         }
@@ -58,8 +59,9 @@ internal sealed class ProcessCapture : IDisposable
             Info = info; Error = "";
             CapabilityReports.ObserveEvents(info);
             var events = frame.CopyEvents();
-            timeline.EtwActive = info.State == ProcessEventMonitorState.Running;
-            if (events.Length > 0) timeline.ObserveEvents(events, NativeMonitor.MonotonicNowNs);
+            // Event times are QPC ticks; they convert to wall-clock time only on the same clock as Stopwatch.
+            bool sameClock = info.QpcFrequency == Stopwatch.Frequency;
+            if (events.Length > 0) timeline.ObserveEvents(events, NativeMonitor.MonotonicNowNs, sameClock ? Stopwatch.GetTimestamp() : 0, sameClock ? info.QpcFrequency : 0);
             int traffic = ReadTraffic(frame, info);
             if ((info.Flags & ProcessEventFrameFlags.ResyncRequired) != 0) {
                 if (resyncVersion != info.ResyncVersion) { resyncVersion = info.ResyncVersion; resyncAfter = NativeMonitor.MonotonicNowNs; }
@@ -69,7 +71,9 @@ internal sealed class ProcessCapture : IDisposable
             }
             return events.Length + traffic;
         } catch (Exception error) when (InteropError(error)) {
-            timer.Stop(); ProcessNetwork.Clear(); timeline.EtwActive = false;
+            timer.Stop(); ProcessNetwork.Clear(); failed = true;
+            // A broken reader cannot drain at close; stopping here lets the next start clean a session Windows still holds.
+            try { monitor.Stop(); } catch (Exception stop) when (InteropError(stop)) { }
             Error = Loc.F("Čtení událostí selhalo: {0}", error.Message); return -1;
         }
     }
@@ -101,7 +105,7 @@ internal sealed class ProcessCapture : IDisposable
                 int count = Read();
                 if (count < 0) return false;
                 // Stopped confirms session cleanup, not an empty lifecycle queue.
-                if (!NeedsCleanup && count == 0) { ProcessNetwork.Clear(); timeline.EtwActive = false; return true; }
+                if (!NeedsCleanup && count == 0) { ProcessNetwork.Clear(); return true; }
                 if (NeedsCleanup) await Task.Delay(50);
                 else await Task.Yield();
             } while (Stopwatch.GetElapsedTime(began) < TimeSpan.FromSeconds(5));
@@ -114,7 +118,7 @@ internal sealed class ProcessCapture : IDisposable
     public void Dispose()
     {
         disposed = true; timer.Stop(); monitor?.Dispose(); monitor = null;
-        ProcessNetwork.Clear(); timeline.EtwActive = false;
+        ProcessNetwork.Clear();
     }
 
     private static bool InteropError(Exception error) => error is IOException or InvalidDataException or NativeMonitorException or EntryPointNotFoundException or DllNotFoundException

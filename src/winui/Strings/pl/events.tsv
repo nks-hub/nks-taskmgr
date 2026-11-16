@@ -46,3 +46,4 @@ na tomto systému nepodporováno	nieobsługiwane w tym systemie
 předchozí relace se ještě uklízí	poprzednia sesja jest jeszcze sprzątana
 zastavení trvalo příliš dlouho	zatrzymanie trwało zbyt długo
 Windows nepotvrdil úklid	System Windows nie potwierdził sprzątania
+Ukončen mezi {0} a {1}; seznam procesů se mezitím neobnovoval (pozastavení nebo zpoždění).	Zakończony między {0} a {1}; lista procesów nie była w tym czasie odświeżana (wstrzymanie lub opóźnienie).

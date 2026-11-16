@@ -54,7 +54,23 @@ public static partial class WinUiChecks
             new Microsoft.UI.Xaml.Automation.Peers.MenuFlyoutItemAutomationPeer((MenuFlyoutItem)liveMenu.Items[1]).Invoke();
             Require(revealed.Count == 1 && revealed[0] == liveRow.Entry.Key, "Show in Procesy did not pass the identity of the live process.");
         } finally { window.Close(); }
-        App.Trace("Process events window checks passed: rows, filters, search, status line, menu and capture without ETW");
+
+        // The historical window lists only the starts and ends between its first and last snapshot.
+        long Wall(DateTime value) => new DateTimeOffset(value).ToUnixTimeMilliseconds() * 1_000_000;
+        var store = new ProcessHistoryStore();
+        var origin = new DateTime(2026, 3, 1, 9, 30, 0, DateTimeKind.Local);
+        store.Capture(1_000_000_000, Wall(origin.AddMilliseconds(500)), 1, [], null, null);
+        store.Capture(2_000_000_000, Wall(origin.AddMilliseconds(1500)), 2, [], null, null);
+        var history = new HistoricalProcessesWindow(store.Select(1_000_000_000, 2_000_000_000), "", timeline);
+        try {
+            var expander = EventsWindowElement<Expander>(history.Content, "historical-lifecycle");
+            var lifecycle = EventsWindowElement<ListView>(history.Content, "historical-lifecycle-list");
+            Require(expander.Visibility == Visibility.Visible && ReferenceEquals(expander.Content, lifecycle), "The historical window hid the starts and ends of the selected range.");
+            string listed = lifecycle.ItemsSource is IEnumerable<string> values ? string.Join(" / ", values) : "";
+            Require(lifecycle.ItemsSource is string[] { Length: 1 } items && items[0].Contains("tool.exe", StringComparison.Ordinal) && items[0].Contains(Loc.T("Spuštěn"), StringComparison.Ordinal),
+                "The historical window did not list exactly the start inside the selected range: " + listed);
+        } finally { history.Close(); }
+        App.Trace("Process events window checks passed: rows, filters, search, status line, menu, capture without ETW and starts and ends in a history range");
     }
 
     private static T EventsWindowElement<T>(DependencyObject root, string automationId) where T : FrameworkElement

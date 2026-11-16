@@ -9,18 +9,18 @@ namespace NksTaskMgr.WinUI;
 /// <summary>`--check-events=&lt;log&gt;`: the production events window over a live model, with real child processes.</summary>
 internal sealed partial class ProcessEventsWindow
 {
+    /// <summary>The --check-events run. An elevated process drops QA switches (see LaunchArguments.Filter), so this always runs without ETW;
+    /// the elevated capture is checked by the native live test and by UI automation of a normal elevated start.</summary>
     internal static ProcessEventsWindow BeginUiChecks(string path)
     {
         var model = new MonitorModel(); model.SetInterval(250);
         var timeline = new ProcessTimeline();
-        var capture = MainWindow.RunningElevated ? new ProcessCapture(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread(), timeline,
-            () => (model.ProcessTime, model.BootIdentity.Identifier, model.BootIdentity.State)) : null;
-        var window = new ProcessEventsWindow(timeline, capture);
+        var window = new ProcessEventsWindow(timeline, null);
         var tick = window.DispatcherQueue.CreateTimer(); tick.Interval = TimeSpan.FromMilliseconds(100);
         tick.Tick += (_, _) => { model.Tick(false); timeline.Observe(model); };
         tick.Start();
-        window.Closed += (_, _) => { tick.Stop(); capture?.Dispose(); model.Dispose(); };
-        async void Loaded(object sender, RoutedEventArgs args) { window.layout.Loaded -= Loaded; await window.CheckEventsUiAsync(path, model, timeline, capture); }
+        window.Closed += (_, _) => { tick.Stop(); model.Dispose(); };
+        async void Loaded(object sender, RoutedEventArgs args) { window.layout.Loaded -= Loaded; await window.CheckEventsUiAsync(path, model, timeline); }
         window.layout.Loaded += Loaded;
         return window;
     }
@@ -39,14 +39,13 @@ internal sealed partial class ProcessEventsWindow
         }
     }
 
-    private async Task CheckEventsUiAsync(string path, MonitorModel model, ProcessTimeline timeline, ProcessCapture? capture)
+    private async Task CheckEventsUiAsync(string path, MonitorModel model, ProcessTimeline timeline)
     {
         void Log(string text) => File.AppendAllText(path, text + Environment.NewLine);
         var children = new List<Process>();
-        bool passed = false, cleaned = true;
+        bool passed = false;
         try {
-            bool elevated = MainWindow.RunningElevated;
-            Log($"events-ui begin;elevated={elevated};aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported}");
+            Log($"events-ui begin;aot={!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported}");
             await WaitEventUiAsync(() => model.Processes.Count > 0, TimeSpan.FromSeconds(10), "The process model did not deliver a first snapshot.");
             await Task.Delay(1500);
             Refresh(true);
@@ -56,12 +55,8 @@ internal sealed partial class ProcessEventsWindow
             for (int i = 0; i < 3; ++i)
                 children.Add(Process.Start(new ProcessStartInfo(cmd) { Arguments = "/d /c ping -n 4 127.0.0.1 >nul", UseShellExecute = false, CreateNoWindow = true })
                     ?? throw new InvalidOperationException("Own cmd child did not start."));
-            if (elevated) {
-                await WaitEventUiAsync(() => capture!.State == ProcessEventMonitorState.Running, TimeSpan.FromSeconds(8), "The ETW capture did not reach the running state.");
-                children.Add(Process.Start(new ProcessStartInfo(cmd) { Arguments = "/d /c exit 42", UseShellExecute = false, CreateNoWindow = true })!);
-            }
             var pids = children.Select(child => (uint)child.Id).ToHashSet();
-            await WaitEventUiAsync(() => timeline.Entries.Count(entry => pids.Contains(entry.Pid) && entry.Ended is not null) >= (elevated ? 4 : 3),
+            await WaitEventUiAsync(() => timeline.Entries.Count(entry => pids.Contains(entry.Pid) && entry.Ended is not null) >= 3,
                 TimeSpan.FromSeconds(15), "Own children did not appear as started and ended in the timeline.");
             Refresh(true);
             var own = timeline.Entries.Where(entry => pids.Contains(entry.Pid)).ToArray();
@@ -87,23 +82,14 @@ internal sealed partial class ProcessEventsWindow
             EventCheck(texts.Contains(selected.TimeText) && texts.Contains(selected.ParentText) && texts.Contains(selected.CommandText) && texts.Contains(selected.DurationText),
                 "The row template did not bind its clock time, parent, command line and duration.");
             Log("row texts " + string.Join(" | ", texts));
-            if (elevated) {
-                var exit = own.Single(entry => entry.ExitCode == 42);
-                EventCheck(!exit.Alive, "The ETW exit code arrived without an end time.");
-                Log($"etw exit=42;snapshotsMissed={exit.SnapshotsMissed};loss={capture!.Info?.ProviderEventsLost}");
-                EventCheck(own.Where(entry => entry.CommandLine.Contains("ping", StringComparison.Ordinal)).All(entry => entry.ExitCode == 0), "ETW did not report the exit code of the ping children.");
-                cleaned = false; cleaned = await capture.StopForCloseAsync();
-                EventCheck(cleaned, "The ETW capture cleanup was not confirmed.");
-            } else
-                EventCheck(own.All(entry => entry.ExitCode is null), "Without ETW an exit code appeared.");
+            EventCheck(own.All(entry => entry.ExitCode is null), "Without ETW an exit code appeared.");
             passed = true;
         } catch (Exception error) {
             Log("FAIL events-ui " + error);
         } finally {
             foreach (var child in children) { try { if (!child.HasExited) child.Kill(); } catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception) { } child.Dispose(); }
-            bool success = passed && cleaned;
-            Environment.ExitCode = success ? 0 : 1;
-            Log($"{(success ? "PASS" : "FAIL")} events-ui finished;passed={passed};cleanup={cleaned}");
+            Environment.ExitCode = passed ? 0 : 1;
+            Log($"{(passed ? "PASS" : "FAIL")} events-ui finished;passed={passed}");
             Close();
         }
     }

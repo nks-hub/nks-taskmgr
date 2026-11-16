@@ -73,7 +73,7 @@ internal sealed class HistoricalProcessesWindow : Window
         AutomationProperties.SetName(selected, Loc.T("Původní identita a čas vybraného historického procesu"));
         list.SelectionChanged += (_, _) => ShowSelected();
         lifecycle.Content = lifecycleList; Grid.SetRow(lifecycle, 4); root.Children.Add(lifecycle);
-        AutomationProperties.SetAutomationId(lifecycleList, "historical-lifecycle-list");
+        AutomationProperties.SetAutomationId(lifecycleList, "historical-lifecycle-list"); AutomationProperties.SetAutomationId(lifecycle, "historical-lifecycle");
         Content = root; ShowSelection(selection, systemSummary);
     }
 

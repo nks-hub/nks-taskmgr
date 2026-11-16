@@ -7,6 +7,7 @@
 #include <evntrace.h>
 #include <evntcons.h>
 #include <tdh.h>
+#include <tlhelp32.h>
 #include <objbase.h>
 #include <algorithm>
 #include <array>
@@ -71,6 +72,19 @@ bool sessionOwnerAlive(std::uint32_t pid, std::uint64_t created) {
     return !status || code == STILL_ACTIVE;
 }
 
+// Sessions in the older name format carry no owner, so they are orphans only when no other instance of the application runs.
+bool otherInstanceRunning() {
+    const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) return true;
+    PROCESSENTRY32W entry{}; entry.dwSize = sizeof(entry);
+    bool found = false;
+    for (BOOL more = Process32FirstW(snapshot, &entry); more && !found; more = Process32NextW(snapshot, &entry))
+        found = entry.th32ProcessID != GetCurrentProcessId()
+            && (_wcsicmp(entry.szExeFile, L"NksTaskMgr.WinUI.exe") == 0 || _wcsicmp(entry.szExeFile, L"nks-taskmgr.exe") == 0);
+    CloseHandle(snapshot);
+    return found;
+}
+
 // A crashed run leaves its real-time session behind and Windows allows only a few system loggers, so they are stopped before a new start.
 void stopOrphanedSessions() noexcept {
     try {
@@ -86,10 +100,20 @@ void stopOrphanedSessions() noexcept {
         ULONG found = 0;
         const auto status = QueryAllTracesW(pointers.data(), capacity, &found);
         if (status != ERROR_SUCCESS && status != ERROR_MORE_DATA) return;
+        constexpr std::wstring_view anyPrefix = L"NksTaskMgr-Processes-";
+        int legacyOrphans = -1;
         for (ULONG i = 0; i < found && i < capacity; ++i) {
             auto& slot = slots[i]; slot.logger[std::size(slot.logger) - 1] = 0;
+            const std::wstring_view logger = slot.logger;
             std::uint32_t pid{}; std::uint64_t created{};
-            if (!etwSessionOwner(slot.logger, pid, created) || sessionOwnerAlive(pid, created)) continue;
+            if (etwSessionOwner(logger, pid, created)) {
+                // An unknown creation time cannot prove the owner is gone.
+                if (created == 0 || sessionOwnerAlive(pid, created)) continue;
+            } else {
+                if (logger.substr(0, anyPrefix.size()) != anyPrefix) continue;
+                if (legacyOrphans < 0) legacyOrphans = otherInstanceRunning() ? 0 : 1;
+                if (legacyOrphans == 0) continue;
+            }
             Slot stop{}; prepare(stop);
             ControlTraceW(0, slot.logger, &stop.value, EVENT_TRACE_CONTROL_STOP);
         }

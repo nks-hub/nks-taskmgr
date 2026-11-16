@@ -115,7 +115,8 @@ internal sealed partial class ProcessEventsWindow : Window
         bool etw = capture is { State: ProcessEventMonitorState.Running };
         string tracking = Loc.F("Sleduji od {0}.", timeline.ObservingSince.ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)) + " ";
         status.Text = tracking + (etw ? Loc.T("Běží i sledování ETW, takže znám návratové kódy a zachytím i velmi krátké procesy.")
-            : capture is { Active: true } ? Loc.F("Sledování ETW neběží ({0}), proto chybí návratové kódy a velmi krátké procesy.", capture.Error.Length > 0 ? capture.Error : StateText(capture.State))
+            : MainWindow.RunningElevated || capture is { Active: true } ? Loc.F("Sledování ETW neběží ({0}), proto chybí návratové kódy a velmi krátké procesy.",
+                capture is { Error.Length: > 0 } ? capture.Error : StateText(capture?.State ?? ProcessEventMonitorState.Idle))
             : Loc.T("Bez práv správce nejsou vidět návratové kódy a procesy, které skončily do asi jedné sekundy po spuštění."));
         var visibility = !MainWindow.RunningElevated && RequestElevation is not null ? Visibility.Visible : Visibility.Collapsed;
         if (elevate.Visibility != visibility) elevate.Visibility = visibility;

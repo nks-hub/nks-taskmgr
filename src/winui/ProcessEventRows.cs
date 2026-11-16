@@ -22,11 +22,13 @@ public sealed class ProcessEventRow
         PidText = entry.Pid.ToString(CultureInfo.InvariantCulture);
         ParentText = entry.ParentPid == 0 ? "—" : entry.ParentName.Length > 0 ? entry.ParentName + " (" + entry.ParentPid.ToString(CultureInfo.InvariantCulture) + ")" : entry.ParentPid.ToString(CultureInfo.InvariantCulture);
         CommandText = entry.CommandLine.Length == 0 ? "—" : GlobalObjectSearchText.Flat(entry.CommandLine, 2048);
-        DurationText = !started && entry.Duration is { } duration ? Duration(duration) : "";
+        DurationText = !started && entry.Duration is { } duration ? (entry.EndedAfter is null ? "" : "≤ ") + Duration(duration) : "";
         ExitText = started ? "" : entry.ExitCode is { } code ? ExitCode(code) : "—";
         RepeatText = entry.Respawn >= ProcessTimeline.RespawnThreshold ? "×" + entry.Respawn.ToString(CultureInfo.InvariantCulture) : "";
         Tooltip = Loc.F("Spuštěn {0}", entry.Started.ToString("G", Loc.Culture))
-            + (entry.Ended is { } ended ? "\n" + Loc.F("Ukončen {0}", ended.ToString("G", Loc.Culture)) : "")
+            + (entry.Ended is { } ended ? "\n" + (entry.EndedAfter is { } after
+                ? Loc.F("Ukončen mezi {0} a {1}; seznam procesů se mezitím neobnovoval (pozastavení nebo zpoždění).", after.ToString("G", Loc.Culture), ended.ToString("G", Loc.Culture))
+                : Loc.F("Ukončen {0}", ended.ToString("G", Loc.Culture))) : "")
             + (entry.Preexisting ? "\n" + Loc.T("Běžel už před spuštěním aplikace.") : "")
             + (entry.SnapshotsMissed && entry.Ended is not null ? "\n" + Loc.T("Skončil dřív, než ho stihl zachytit seznam procesů. Známe jen údaje ze sledování ETW, bez příkazového řádku.") : "");
     }

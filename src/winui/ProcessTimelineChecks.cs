@@ -69,6 +69,26 @@ public static partial class WinUiChecks
         timeline.Observe(burst);
         Require(burst.All(item => timeline.Entries.Single(entry => entry.Pid == item.Key.Pid).Respawn == 3), "Simultaneous starts listed out of order were not marked as repeated.");
         timeline.Observe([]);
+        // Processes running before the application started are not repeated launches, however close their start times are.
+        var boot = new ProcessTimeline(_ => "", () => now);
+        boot.Observe(Enumerable.Range(0, 3).Select(i => TimelineSeen((uint)(380 + i), 370, "svchost.exe", now.AddHours(-5).AddSeconds(i))).ToArray());
+        boot.Observe([]);
+        Require(boot.Entries.Count == 3 && boot.Entries.All(item => item.Preexisting && item.Respawn == 0), "Processes running before the application started were marked as repeated launches.");
+        // Three starts spread over 100 s never fit one 60 s window.
+        var spread = new ProcessTimeline(_ => "", () => now);
+        spread.Observe([]);
+        foreach (var (pid, offset) in new[] { (391u, 0), (392u, 50), (393u, 100) }) { var at = now.AddSeconds(offset); spread.Observe([TimelineSeen(pid, 390, "tick.exe", at)], at); }
+        Require(spread.Entries.All(item => item.Respawn == 0), "Three starts spread over 100 s were marked as repeated within 60 s.");
+        // An end noticed only after a pause lies between the last two snapshots.
+        var paused = new ProcessTimeline(_ => "", () => now);
+        var idle = TimelineSeen(1, 0, "System", now.AddDays(-1));
+        paused.Observe([idle], now);
+        paused.Observe([idle, TimelineSeen(2, 1, "w.exe", now.AddSeconds(1))], now.AddSeconds(1));
+        paused.Observe([idle], now.AddMinutes(10));
+        var waited = paused.Entries.Single(item => item.Pid == 2);
+        Require(waited.Ended == now.AddMinutes(10) && waited.EndedAfter == now.AddSeconds(1)
+            && ProcessEventRow.Build(paused.Entries, ProcessEventFilter.Ended, "", new()).Single().DurationText.StartsWith("≤ ", StringComparison.Ordinal),
+            "An end noticed after a pause was not marked as uncertain.");
 
         // ETW adds the exit code to a process the snapshots saw, and short processes the snapshots missed.
         now = now.AddSeconds(10);
@@ -78,6 +98,12 @@ public static partial class WinUiChecks
         timeline.ObserveEvents([TimelineEvent(ProcessEventKind.Stopped, 400, 100, created400, 1000, 42)], TimelineMonotonicNs);
         Require(known.ExitCode == 42 && known.Ended == now.AddSeconds(-1) && !known.SnapshotsMissed && timeline.Entries.Count(item => item.Pid == 400) == 1,
             "An ETW stop did not add its exit code to the matching process.");
+        // The event's own QPC time places the end, not the moment the batch arrived.
+        var created410 = now.AddSeconds(-4);
+        timeline.Observe([TimelineSeen(410, 100, "ping.exe", created410)]);
+        var timed = timeline.Entries.Single(item => item.Pid == 410);
+        timeline.ObserveEvents([TimelineEvent(ProcessEventKind.Stopped, 410, 100, created410, 3000) with { TimestampQpc = 9_000_000 }], TimelineMonotonicNs, 10_000_000, 1_000_000);
+        Require(timed.Ended == now.AddSeconds(-1), "An ETW stop used its delivery time instead of the event's own time.");
 
         var shortLived = now.AddSeconds(-1);
         timeline.ObserveEvents([TimelineEvent(ProcessEventKind.Started, 500, 100, shortLived, 300), TimelineEvent(ProcessEventKind.Stopped, 500, 100, shortLived, 100, 3)], TimelineMonotonicNs);
@@ -87,6 +113,14 @@ public static partial class WinUiChecks
         var rows = ProcessEventRow.Build(timeline.Entries, ProcessEventFilter.Ended, "", new());
         Require(rows.Single(row => row.Entry == missed).NameText.Contains(Loc.T("krátký proces"), StringComparison.Ordinal)
             && rows.Single(row => row.Entry == missed).ExitText == "3", "A process missed by the snapshots was not marked as such.");
+
+        // ETW names the image by its device path and may deliver a child whose parent no snapshot has seen yet.
+        var burstStart = now.AddMilliseconds(-800);
+        timeline.ObserveEvents([TimelineEvent(ProcessEventKind.Started, 800, 100, burstStart, 300, 0, @"\Device\HarddiskVolume3\Windows\System32\cmd.exe"),
+            TimelineEvent(ProcessEventKind.Started, 801, 800, burstStart.AddMilliseconds(5), 300, 0, @"\Device\HarddiskVolume3\Windows\System32\conhost.exe")], TimelineMonotonicNs);
+        var etwParent = timeline.Entries.Single(item => item.Pid == 800); var etwChild = timeline.Entries.Single(item => item.Pid == 801);
+        Require(etwParent.Name == "cmd.exe" && etwChild.Name == "conhost.exe" && etwChild.ParentName == "cmd.exe",
+            "An ETW-only process kept its device path or its child lost the parent name.");
 
         var late = now.AddSeconds(-1);
         timeline.ObserveEvents([TimelineEvent(ProcessEventKind.Started, 600, 100, late, 200)], TimelineMonotonicNs);
@@ -139,5 +173,21 @@ public static partial class WinUiChecks
         }
         Require(capped.Entries.Count == ProcessTimeline.MaximumEntries && capped.Entries[0].Pid == 101 && capped.Entries[^1].Pid == ProcessTimeline.MaximumEntries + 100,
             "The timeline did not drop its oldest entries at the size limit.");
+
+        // A process still running when its start is trimmed keeps its identity: its end is listed again with the exit code, not as a short process.
+        var kept = new ProcessTimeline(_ => "", () => now);
+        kept.Observe([]);
+        now = now.AddMilliseconds(10);
+        var keeperCreated = now; var keeper = TimelineSeen(5000, 0, "long.exe", keeperCreated);
+        kept.Observe([keeper]);
+        for (uint i = 1; i <= ProcessTimeline.MaximumEntries + 5; ++i) {
+            now = now.AddMilliseconds(10);
+            kept.Observe([keeper, TimelineSeen(10000 + i, 0, "s" + i, now)]); kept.Observe([keeper]);
+        }
+        Require(kept.Entries.All(item => item.Pid != 5000), "The running process was not trimmed as the oldest entry.");
+        kept.ObserveEvents([TimelineEvent(ProcessEventKind.Stopped, 5000, 0, keeperCreated, 0, 7)], TimelineMonotonicNs);
+        var relisted = kept.Entries.Where(item => item.Pid == 5000).ToArray();
+        Require(relisted.Length == 1 && !relisted[0].SnapshotsMissed && relisted[0].ExitCode == 7 && relisted[0].Name == "long.exe" && relisted[0].Started == keeperCreated,
+            "A trimmed running process came back as a separate short process or lost its start.");
     }
 }

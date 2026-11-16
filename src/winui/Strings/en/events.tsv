@@ -46,3 +46,4 @@ na tomto systému nepodporováno	not supported on this system
 předchozí relace se ještě uklízí	the previous session is still being cleaned up
 zastavení trvalo příliš dlouho	stopping took too long
 Windows nepotvrdil úklid	Windows did not confirm the cleanup
+Ukončen mezi {0} a {1}; seznam procesů se mezitím neobnovoval (pozastavení nebo zpoždění).	Ended between {0} and {1}; the process list was not refreshed in between (paused or delayed).
