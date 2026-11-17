@@ -65,6 +65,8 @@ typedef struct NksProcessTrafficSample {
     uint64_t observed_bytes, operations;
     double observed_bytes_per_second;
     uint32_t state, flags;
+    // Physical disk number for disk samples, 0 for network samples.
+    uint32_t device, reserved;
     uint64_t attribution_epoch;
     NksMeasurementMetadata measurement;
 } NksProcessTrafficSample;

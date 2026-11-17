@@ -90,6 +90,9 @@ void ProcessEventStore::thread(std::uint32_t pid, std::uint32_t tid, std::int64_
     const auto evictions = identities.evictions, conflicts = identities.conflicts;
     identities.thread(pid, tid, qpc, start); identityChanges(evictions, conflicts);
 }
+bool ProcessEventStore::threadTracked(std::uint32_t tid, std::int64_t qpc) {
+    std::lock_guard lock(mutex); return identities.threadTracked(tid, qpc);
+}
 void ProcessEventStore::traffic(ProcessTrafficObservation observation) {
     std::lock_guard lock(mutex);
     const auto epoch = transfers.info.attributionEpoch, dropped = transfers.info.pendingDropped, evicted = transfers.info.evictedSamples;

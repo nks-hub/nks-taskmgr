@@ -41,15 +41,30 @@ public sealed partial class MonitorModel
         NetworkAvailable = true;
         bool changed = false;
         foreach (var row in processes.Values) {
-            // ETW samples carry the creation time even where rows are keyed by sequence number.
-            var key = !energy && row.Key.Kind == GenerationKind.SequenceNumber && row.Created100ns != 0
-                ? row.Key with { Kind = GenerationKind.CreationTime, Generation = row.Created100ns } : row.Key;
+            var key = energy ? row.Key : CaptureKey(row);
             // ETW lists only processes with traffic; an energy counter that could not be read stays unknown.
             ProcessNetworkRate? rate = key.Kind != GenerationKind.CreationTime && (!energy || key.Kind != GenerationKind.SequenceNumber) ? null
                 : rates!.TryGetValue(key, out var known) ? known : energy ? null : default(ProcessNetworkRate);
             changed |= row.SetNetwork(rate, partial, totalPartial, ProcessVisualUpdates);
         }
         return changed && sortColumn == 7;
+    }
+
+    /// <summary>ETW samples carry the creation time even where rows are keyed by sequence number.</summary>
+    private static ProcessKey CaptureKey(ProcessRow row) => row.Key.Kind == GenerationKind.SequenceNumber && row.Created100ns != 0
+        ? row.Key with { Kind = GenerationKind.CreationTime, Generation = row.Created100ns } : row.Key;
+
+    /// <summary>Top processes by bytes read and written on one physical disk, from the ETW capture; null when it has no complete window.</summary>
+    public List<(ProcessRow Row, double BytesPerSecond)>? TopDiskConsumers(uint disk)
+    {
+        if (ProcessNetwork.DiskRates(disk) is not { } rates) return null;
+        var result = new List<(ProcessRow Row, double BytesPerSecond)>();
+        foreach (var row in processes.Values)
+            if (row.Key.Pid != 0 && !row.Ended && !row.Stale && rates.TryGetValue(CaptureKey(row), out var rate) && rate.Read + rate.Write > 0)
+                result.Add((row, rate.Read + rate.Write));
+        result.Sort((a, b) => b.BytesPerSecond.CompareTo(a.BytesPerSecond));
+        if (result.Count > 3) result.RemoveRange(3, result.Count - 3);
+        return result;
     }
 
     private void ReadSessions(NativeFrame frame, FrameView view)

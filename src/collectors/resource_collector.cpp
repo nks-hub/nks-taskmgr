@@ -342,6 +342,7 @@ ResourceSnapshot ResourceCollector::collect(bool cpuSensors)
         const auto& healthFacts = diskHealthFacts.at(item.id);
         item.facts.insert(item.facts.end(), healthFacts.begin(), healthFacts.end());
         const auto prefix = std::to_wstring(number->second);
+        item.facts.push_back({L"Číslo disku", prefix});
         std::wstring instance;
         const std::array<const std::vector<NamedCounter>*, 4> instances{&idle, &reads, &writes, &diskDetails[3]};
         for (const auto* values : instances) {

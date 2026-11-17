@@ -44,12 +44,20 @@ public static partial class WinUiChecks
         string split = Loc.F("Síť: příjem {0} · odeslání {1}", "≥ " + ProcessNetworkRate.Text(500), "≥ " + ProcessNetworkRate.Text(0));
         Require(row.NetworkRate == rates[key] && row.TableMetricsDescription.Contains(split, StringComparison.Ordinal)
             && MainWindow.NetworkTip([row]).Contains(split, StringComparison.Ordinal), "Received and sent traffic was not kept apart in the row or its tooltips.");
+        // One process on two disks keeps a separate rate per disk.
+        var firstDisk = template with { SampleId = 20, StartQpc = window, EndQpc = window + frequency, ObservedBytes = 4096, Device = 1 };
+        var secondDisk = firstDisk with { SampleId = 21, Direction = ProcessTrafficDirection.Write, ObservedBytes = 1000, Device = 2 };
+        var unowned = firstDisk with { SampleId = 22, Attribution = ProcessTrafficAttribution.Correlated, IdentityState = SampleState.Unavailable };
+        ProcessNetwork.Observe(running, new(info, [firstDisk, secondDisk, unowned, firstDisk with { SampleId = 23, StartQpc = window - frequency, EndQpc = window }]));
+        Require(ProcessNetwork.DiskRates(1, later) is { Count: 1 } one && one[key] == (4096d, 0d) && ProcessNetwork.DiskRates(2, later) is { Count: 1 } two && two[key] == (0d, 1000d)
+            && ProcessNetwork.DiskRates(3, later) is { Count: 0 } && ProcessNetwork.DiskRates(1) is null, "Disk traffic was not kept per disk, window and proven owner.");
         ProcessNetwork.Observe(running with { State = ProcessEventMonitorState.Stopped }, null);
+        Require(ProcessNetwork.DiskRates(1, later) is null, "Disk rates survived the end of the ETW capture.");
         row.SetNetwork(null, false, false, false);
         Require(ProcessNetwork.Rates(out _, out _, later) is null && row.NetworkText == "—" && row.NetworkRate is null && MainWindow.NetworkTip([row]).Length == 0,
             "Network rates survived the end of the ETW capture.");
         ProcessEnergyNetworkRates();
-        App.Trace("Process network rates passed: per-generation window, revocation, partial window, received/sent split, capture end and energy counters without elevation");
+        App.Trace("Process network rates passed: per-generation window, revocation, partial window, received/sent split, capture end, per-disk rates and energy counters without elevation");
     }
 
     private static void ProcessEnergyNetworkRates()

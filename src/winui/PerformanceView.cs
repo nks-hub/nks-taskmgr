@@ -146,7 +146,7 @@ public sealed partial class MainWindow
         if (memory && model.Memory.State == SampleState.Valid && model.Memory.InstalledBytes >= model.Memory.PhysicalBytes)
             Fact(Loc.T("Rezervováno hardwarem"), Display.Number((model.Memory.InstalledBytes - model.Memory.PhysicalBytes) / 1048576d, " MiB"));
         ArrangePerformanceFacts();
-        RefreshConsumers(cpu, memory, color, resource.Kind == ResourceKind.Disk, resource.Kind == ResourceKind.Network);
+        RefreshConsumers(cpu, memory, color, resource.Kind == ResourceKind.Disk, resource.Kind == ResourceKind.Network, resource);
     }
 
     // Raw Windows codes stay in the model for filtering; the two link directions become one fact.

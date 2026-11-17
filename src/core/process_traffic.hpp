@@ -28,6 +28,8 @@ struct ProcessTrafficSample {
     double observedBytesPerSecond{};
     SampleState state{SampleState::gap};
     std::uint32_t flags{trafficPartial};
+    /// Physical disk number for disk samples; 0 for network samples.
+    std::uint32_t device{};
     std::uint64_t attributionEpoch{};
     MeasurementMetadata measurement;
 };
@@ -49,6 +51,8 @@ struct ProcessTrafficObservation {
     // A pending network entry can hold several consecutive sends of one PID within one window: firstQpc..qpc.
     std::int64_t firstQpc{-1};
     std::uint32_t operations{1};
+    /// Physical disk number of a disk completion.
+    std::uint32_t device{};
 };
 struct ProcessDiskInitiation {
     std::int64_t qpc{}, observedAtNs{};
@@ -74,7 +78,7 @@ public:
     ProcessTrafficBatch read(std::int64_t nowNs, const EventIdentityIndex& identities);
     ProcessTrafficBatchInfo info;
 private:
-    using Key = std::tuple<std::uint64_t, std::int64_t, std::uint32_t, std::uint64_t, ProcessTrafficSource, ProcessTrafficDirection, bool, ProcessTrafficAttribution, std::uint64_t>;
+    using Key = std::tuple<std::uint64_t, std::int64_t, std::uint32_t, std::uint64_t, ProcessTrafficSource, ProcessTrafficDirection, bool, ProcessTrafficAttribution, std::uint64_t, std::uint32_t>;
     struct Stored { ProcessTrafficSample sample; bool dirty{true}, publishedOpen{}, published{}, revocationPending{}; };
     using DiskKey = std::pair<std::uint64_t, std::int64_t>;
     bool diskCompletion(const ProcessTrafficObservation& observation);

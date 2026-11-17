@@ -101,6 +101,9 @@ internal static class ProcessNetwork
     private const long CompleteAfterWindows = 5;
     private static readonly Dictionary<(ulong Epoch, ulong Id), ProcessTrafficSample> samples = [];
     private static readonly Queue<(ulong Epoch, ulong Id)> order = new();
+    // Disk samples of the same capture, kept apart so a busy disk never evicts network samples.
+    private static readonly Dictionary<(ulong Epoch, ulong Id), ProcessTrafficSample> diskSamples = [];
+    private static readonly Queue<(ulong Epoch, ulong Id)> diskOrder = new();
     private static BootIdentifier boot;
     private static long frequency, coveredFrom;
     private static bool running, trimmed;
@@ -115,15 +118,37 @@ internal static class ProcessNetwork
             coveredFrom = Stopwatch.GetTimestamp() + frequency;
         }
         foreach (var sample in batch.Samples) {
-            if (sample.Source == ProcessTrafficSource.PhysicalDisk) continue;
+            bool disk = sample.Source == ProcessTrafficSource.PhysicalDisk;
             var key = (sample.AttributionEpoch, sample.SampleId);
-            if (!samples.ContainsKey(key)) order.Enqueue(key);
-            samples[key] = sample;
+            var store = disk ? diskSamples : samples;
+            if (!store.ContainsKey(key)) (disk ? diskOrder : order).Enqueue(key);
+            store[key] = sample;
         }
         while (samples.Count > MaximumSamples) { samples.Remove(order.Dequeue()); trimmed = true; }
+        while (diskSamples.Count > MaximumSamples) diskSamples.Remove(diskOrder.Dequeue());
     }
 
-    internal static void Clear() { samples.Clear(); order.Clear(); running = trimmed = false; }
+    internal static void Clear() { samples.Clear(); order.Clear(); diskSamples.Clear(); diskOrder.Clear(); running = trimmed = false; }
+
+    /// <summary>
+    /// Bytes each process generation read and wrote on one physical disk in the newest complete window; null while the
+    /// capture has no complete window. Only completions whose issuing thread names the process count.
+    /// </summary>
+    internal static Dictionary<ProcessKey, (double Read, double Write)>? DiskRates(uint disk, long? nowQpc = null)
+    {
+        if (!running) return null;
+        long window = ((nowQpc ?? Stopwatch.GetTimestamp()) / frequency - CompleteAfterWindows) * frequency;
+        if (window < coveredFrom) return null;
+        var rates = new Dictionary<ProcessKey, (double Read, double Write)>();
+        foreach (var sample in diskSamples.Values) {
+            if (sample.Device != disk || sample.StartQpc != window || sample.Attribution != ProcessTrafficAttribution.IssuingThreadOwner
+                || sample.IdentityKind != GenerationKind.CreationTime) continue;
+            var key = new ProcessKey(boot, sample.Pid, GenerationKind.CreationTime, sample.Generation);
+            rates.TryGetValue(key, out var rate);
+            rates[key] = sample.Direction == ProcessTrafficDirection.Read ? (rate.Read + sample.ObservedBytes, rate.Write) : (rate.Read, rate.Write + sample.ObservedBytes);
+        }
+        return rates;
+    }
 
     /// <summary>Rates of the newest complete window; null while there is no complete window of a running capture.</summary>
     internal static Dictionary<ProcessKey, ProcessNetworkRate>? Rates(out bool partial, out bool totalPartial, long? nowQpc = null)

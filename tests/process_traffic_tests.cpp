@@ -499,6 +499,39 @@ void staleInitiationExpiry()
         "Disk traffic after INIT expiry is missing");
     issuing(*fresh); require(stale->attribution == ProcessTrafficAttribution::unknown, "A completion of an expired INIT gained an owner");
 }
+void separateDisks()
+{
+    Fixture f;
+    f.traffic.diskInitiated(init(1000, 10), f.identities); f.traffic.diskInitiated(init(1001, 11), f.identities);
+    f.traffic.diskInitiated(init(1002, 12), f.identities);
+    auto first = completion(1000, 30, 128); first.device = 1; f.traffic.observe(first, f.identities);
+    auto second = completion(1001, 31, 64); second.device = 2; f.traffic.observe(second, f.identities);
+    auto again = completion(1002, 32, 16); again.device = 1; f.traffic.observe(again, f.identities);
+    const auto batch = f.traffic.read(arrival + delay + 1000, f.identities);
+    require(batch.samples.size() == 2, "One process on two disks did not produce one sample per disk");
+    for (const auto& row : batch.samples) {
+        issuing(row);
+        require(row.device == 1 ? row.observedBytes == 144 && row.operations == 2 : row.device == 2 && row.observedBytes == 64,
+            "Disk traffic was summed across disks or lost its disk number");
+    }
+}
+void adoptedThread()
+{
+    // A thread older than the session has no Start; the collector records it just before its first disk INIT.
+    Fixture f; f.identities.baseline(30, 30000, 5);
+    require(!f.identities.threadTracked(300, 20), "An unseen thread was reported as tracked");
+    f.traffic.diskInitiated(init(1000, 20, 300), f.identities); f.traffic.observe(completion(1000, 30), f.identities);
+    require(single(f.traffic.read(arrival + delay + 1000, f.identities)).attribution == ProcessTrafficAttribution::unknown,
+        "Disk I/O of an unknown thread gained an owner");
+    Fixture g; g.identities.baseline(30, 30000, 5);
+    require(g.identities.thread(30, 300, 19, true) && g.identities.threadTracked(300, 20) && !g.identities.threadTracked(300, 19),
+        "An adopted thread is not tracked from its adoption point");
+    g.traffic.diskInitiated(init(1000, 20, 300), g.identities); g.traffic.observe(completion(1000, 30), g.identities);
+    const auto row = single(g.traffic.read(arrival + delay + 1000, g.identities));
+    require(row.attribution == ProcessTrafficAttribution::issuingThreadOwner && row.pid == 30 && row.generation == 30000
+        && row.identityState == SampleState::valid, "Disk I/O of an adopted thread did not reach its baseline process");
+    require(g.identities.thread(30, 300, 50, false) && !g.identities.threadTracked(300, 60), "An ended adopted thread stayed tracked");
+}
 void run(const char* name, void (*check)()) { currentCase = name; check(); ++cases; }
 }
 
@@ -523,6 +556,7 @@ int main(int argc, char** argv)
         run("network loss gap", networkLossGap); run("network out-of-order", networkOutOfOrder);
         run("network settled eviction", networkSettledEviction); run("identity churn", identityChurn);
         run("exited lifetime cleanup", exitedLifetimeCleanup); run("stale INIT expiry", staleInitiationExpiry);
+        run("separate disks", separateDisks); run("adopted thread", adoptedThread);
         require(eventBudgetUsed.load() == 0, "Traffic tests retained shared-budget allocations");
         std::cout << cases << " process traffic checks passed\n"; return 0;
     } catch (const std::exception& error) { std::cerr << "FAIL " << (currentCase ? currentCase : "startup") << ": " << error.what() << '\n'; return 1; }

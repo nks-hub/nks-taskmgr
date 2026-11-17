@@ -5,7 +5,6 @@ Síť: příjem {0} · odeslání {1}	Network: received {0} · sent {1}
 Síť Ø / max	Network avg / peak
 Procesy podle sítě	Processes by network
 čekám na první data	waiting for the first data
-Procesy podle I/O (čtení a zápis)	Processes by I/O (read and write)
 Síť od spuštění záznamu:	Network since the capture started:
 zpožděno asi o 5 s	delayed by about 5 s
 Síť: neměřeno	Network: not measured
@@ -15,3 +14,9 @@ Součet čtení a zápisu procesů.	Total reads and writes of the processes.
 I/O	I/O
 Síť: {0} (příjem a odeslání dohromady)	Network: {0} (received and sent together)
 Síť od spuštění procesu:	Network since the process started:
+Procesy podle sítě na tomto rozhraní	Processes by network on this interface
+K rozhraní patří proces, který má spojení TCP nebo UDP z jeho adresy. Proces, který má jen sokety na všech adresách, se řadí k rozhraní s výchozí trasou. Rychlost je za celý proces; ≤ znamená, že proces má spojení i přes jiné rozhraní.	A process belongs to the interface when it has a TCP or UDP connection from its address. A process that only has sockets on all addresses is listed under the interface with the default route. The rate covers the whole process; ≤ means the process also has connections through another interface.
+Procesy podle I/O · všechny disky dohromady	Processes by I/O · all disks together
+Procesy podle čtení a zápisu na tomto disku	Processes by read and write on this disk
+Rozdělení po discích měří Windows jen pro aplikaci spuštěnou jako správce.	Windows measures the split by disk only for an app running as administrator.
+Bajty, které proces četl a zapisoval na tento fyzický disk, za uzavřenou sekundu asi před 5 s. Zápisy z mezipaměti provádí Windows později a často pod procesem System.	Bytes the process read and wrote on this physical disk in the closed second about 5 s ago. Windows performs cached writes later, often under the System process.

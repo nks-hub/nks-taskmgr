@@ -53,8 +53,13 @@ public sealed partial class MainWindow
         internal ProcessRow? Current(MonitorModel source) => boundRow is { } row && Key == row.Key && source.IsCurrent(row) ? row : null;
     }
 
-    private void RefreshConsumers(bool cpu, bool memory, uint color, bool disk = false, bool network = false)
+    private void RefreshConsumers(bool cpu, bool memory, uint color, bool disk = false, bool network = false, ResourceRow? resource = null)
     {
+        // Sockets name the interface a process talks through; without them the list covers every interface.
+        // Per-disk attribution exists only in the ETW capture; without it the list covers every disk.
+        var perDisk = disk && resource is not null && resource.HardwareFacts.TryGetValue("Číslo disku", out string? diskNumber) && uint.TryParse(diskNumber, out uint number)
+            ? model.TopDiskConsumers(number) : null;
+        var owners = network && resource is not null && ulong.TryParse(resource.Id.AsSpan(resource.Id.IndexOf(':') + 1), out ulong luid) ? ProcessSockets.Owners(luid) : null;
         var visibility = cpu || memory || disk || network ? Visibility.Visible : Visibility.Collapsed;
         if (consumers.Visibility != visibility) consumers.Visibility = visibility;
         if (!cpu && !memory && !disk && !network) { if (consumers.Children.Count != 0) consumers.Children.Clear(); return; }
@@ -67,13 +72,16 @@ public sealed partial class MainWindow
         if (consumers.Children.Count == 0) {
             consumers.Children.Add(consumerCaption); consumers.Children.Add(consumerCards);
         }
-        SetConsumerText(consumerCaption, network ? Loc.T("Procesy podle sítě") + (model.NetworkAvailable ? "" : " · " + Loc.T("čekám na první data"))
-            : disk ? Loc.T("Procesy podle I/O (čtení a zápis)") : memory ? Loc.T("Procesy podle paměti") : Loc.T("Procesy podle CPU"));
-        string captionHelp = network ? ProcessNetwork.Help : disk ? ProcessNetwork.IoHelp : memory ? Loc.T("Pracovní sada včetně sdílených stránek") : "";
+        SetConsumerText(consumerCaption, network ? (owners is null ? Loc.T("Procesy podle sítě") : Loc.T("Procesy podle sítě na tomto rozhraní")) + (model.NetworkAvailable ? "" : " · " + Loc.T("čekám na první data"))
+            : disk ? perDisk is null ? Loc.T("Procesy podle I/O · všechny disky dohromady") : Loc.T("Procesy podle čtení a zápisu na tomto disku") : memory ? Loc.T("Procesy podle paměti") : Loc.T("Procesy podle CPU"));
+        string captionHelp = network ? ProcessNetwork.Help + (owners is null ? "" : "\n" + Loc.T("K rozhraní patří proces, který má spojení TCP nebo UDP z jeho adresy. Proces, který má jen sokety na všech adresách, se řadí k rozhraní s výchozí trasou. Rychlost je za celý proces; ≤ znamená, že proces má spojení i přes jiné rozhraní.")) : disk ? perDisk is null ? ProcessNetwork.IoHelp + " " + Loc.T("Rozdělení po discích měří Windows jen pro aplikaci spuštěnou jako správce.")
+                : Loc.T("Bajty, které proces četl a zapisoval na tento fyzický disk, za uzavřenou sekundu asi před 5 s. Zápisy z mezipaměti provádí Windows později a často pod procesem System.")
+            : memory ? Loc.T("Pracovní sada včetně sdílených stránek") : "";
         if (ToolTipService.GetToolTip(consumerCaption) as string != captionHelp) ToolTipService.SetToolTip(consumerCaption, captionHelp.Length == 0 ? null : captionHelp);
-        var rows = (network ? model.TopNetworkConsumers() : disk ? model.TopDiskConsumers() : model.TopConsumers(memory)).ToArray();
-        Func<ProcessRow, string> value = network ? row => row.NetworkRate!.Value is { Split: true } rate
-                ? "↓ " + ProcessNetworkRate.Text(rate.ReceivedPerSecond) + "  ↑ " + ProcessNetworkRate.Text(rate.SentPerSecond) : "↕ " + ProcessNetworkRate.Text(row.NetworkRate.Value.PerSecond)
+        var rows = (network ? model.TopNetworkConsumers(owners) : perDisk is not null ? perDisk.Select(item => item.Row) : disk ? model.TopDiskConsumers() : model.TopConsumers(memory)).ToArray();
+        Func<ProcessRow, string> value = network ? row => (owners is not null && ProcessSockets.Shared(row.Key.Pid) ? "≤ " : "") + (row.NetworkRate!.Value is { Split: true } rate
+                ? "↓ " + ProcessNetworkRate.Text(rate.ReceivedPerSecond) + "  ↑ " + ProcessNetworkRate.Text(rate.SentPerSecond) : "↕ " + ProcessNetworkRate.Text(row.NetworkRate.Value.PerSecond))
+            : perDisk is not null ? row => Display.Number(perDisk.First(item => ReferenceEquals(item.Row, row)).BytesPerSecond / 1048576, " MiB/s")
             : disk ? row => Display.Number((row.ReadIo.Value + row.WriteIo.Value) / 1048576, " MiB/s")
             : memory ? row => row.WorkingText : row => row.CpuText;
         bool stacked = performanceDetailWidth < 720;

@@ -96,8 +96,9 @@ public sealed partial class MonitorModel : IDisposable
     public IEnumerable<ProcessRow> TopDiskConsumers() => processes.Values
         .Where(row => row.Key.Pid != 0 && row.ReadIo.State == SampleState.Valid && row.WriteIo.State == SampleState.Valid && row.ReadIo.Value + row.WriteIo.Value > 0)
         .OrderByDescending(row => row.ReadIo.Value + row.WriteIo.Value).Take(3);
-    public IEnumerable<ProcessRow> TopNetworkConsumers() => processes.Values
-        .Where(row => row.Key.Pid != 0 && !row.Ended && !row.Stale && row.NetworkRate is { PerSecond: > 0 })
+    /// <summary>Processes by network rate; <paramref name="owners"/> limits them to the PIDs with a socket on one interface.</summary>
+    public IEnumerable<ProcessRow> TopNetworkConsumers(IReadOnlySet<uint>? owners = null) => processes.Values
+        .Where(row => row.Key.Pid != 0 && !row.Ended && !row.Stale && row.NetworkRate is { PerSecond: > 0 } && owners?.Contains(row.Key.Pid) != false)
         .OrderByDescending(row => row.NetworkRate!.Value.PerSecond).Take(3);
     public IEnumerable<ProcessRow> TopConsumers(bool memory) => memory
         ? processes.Values.Where(row => row.Key.Pid != 0).OrderByDescending(row => row.WorkingBytes).Take(3)

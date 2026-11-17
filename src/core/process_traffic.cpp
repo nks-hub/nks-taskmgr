@@ -196,7 +196,7 @@ bool ProcessTrafficStore::commit(const ProcessTrafficObservation& observation, E
     const auto pid = unknown && observation.source != ProcessTrafficSource::physicalDisk ? observation.pidOrTid : candidate.pid;
     // Unresolved observations never collapse several PID lifetimes into one process row.
     const Key key{info.attributionEpoch, start, pid, candidate.creationTime, observation.source, observation.direction,
-        observation.ipv6, attribution, unknown ? sequence + 1 : 0};
+        observation.ipv6, attribution, unknown ? sequence + 1 : 0, observation.device};
     auto found = history.find(key);
     if (found == history.end()) {
         if (history.size() == maximumSamples) {
@@ -219,6 +219,7 @@ bool ProcessTrafficStore::commit(const ProcessTrafficObservation& observation, E
         sample.attribution = attribution;
         if (attributed(attribution)) sample.identityState = SampleState::valid;
         sample.source = observation.source; sample.direction = observation.direction; sample.attributionEpoch = info.attributionEpoch;
+        sample.device = observation.device;
         if (observation.ipv6) sample.flags |= trafficIpv6;
         sample.measurement = measurementMetadata(MeasurementUnit::bytesPerSecond, MeasurementNormalization::none,
             MeasurementBasis::elapsedDelta, observation.observedAtNs);

@@ -50,12 +50,12 @@ struct NksEventFrame {
                 static_cast<std::uint32_t>(sample.identityKind), sample.generation, static_cast<std::uint32_t>(sample.identityState),
                 static_cast<std::uint32_t>(sample.attribution), static_cast<std::uint32_t>(sample.source), static_cast<std::uint32_t>(sample.direction),
                 sample.observedBytes, sample.operations, sample.observedBytesPerSecond, static_cast<std::uint32_t>(sample.state), sample.flags,
-                sample.attributionEpoch, {static_cast<std::uint8_t>(m.unit), static_cast<std::uint8_t>(m.normalization),
+                sample.device, 0, sample.attributionEpoch, {static_cast<std::uint8_t>(m.unit), static_cast<std::uint8_t>(m.normalization),
                     static_cast<std::uint8_t>(m.basis), static_cast<std::uint8_t>(m.intervalState), m.normalizationDivisor,
                     m.observedAtNs, m.intervalNs, m.cadenceNs}});
         }
         const auto& t = batch.traffic.info;
-        trafficView = {1, static_cast<std::uint32_t>(traffic.size()), traffic.data(), static_cast<std::uint32_t>(t.diskState),
+        trafficView = {2, static_cast<std::uint32_t>(traffic.size()), traffic.data(), static_cast<std::uint32_t>(t.diskState),
             static_cast<std::uint32_t>(t.networkState), static_cast<std::uint32_t>(t.identityProviderState), t.flags, t.observedAtNs,
             t.attributionEpoch, t.unknownEvents, t.unknownBytes, t.evictedSamples, t.pendingDropped, t.lateEvents,
             t.identityConflicts, nks::eventBudgetUsed.load(), t.budgetLimit};
@@ -63,7 +63,7 @@ struct NksEventFrame {
 };
 
 static_assert(sizeof(NksProcessEvent) == 80 && sizeof(NksEventFrameView) == 112);
-static_assert(sizeof(NksProcessTrafficSample) == 136 && sizeof(NksProcessTrafficView) == 112);
+static_assert(sizeof(NksProcessTrafficSample) == 144 && sizeof(NksProcessTrafficView) == 112);
 
 NksResult nks_events_create(NksEventMonitor** monitor) noexcept {
     if (!monitor) return NKS_INVALID_ARGUMENT;

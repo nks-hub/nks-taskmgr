@@ -28,7 +28,7 @@ public readonly record struct ProcessEventBatchInfo(ProcessEventMonitorState Sta
 public readonly record struct ProcessTrafficSample(ulong SampleId, long StartQpc, long EndQpc, long ObservedAtNs,
     uint Pid, GenerationKind IdentityKind, ulong Generation, SampleState IdentityState, ProcessTrafficAttribution Attribution,
     ProcessTrafficSource Source, ProcessTrafficDirection Direction, ulong ObservedBytes, ulong Operations, double ObservedBytesPerSecond,
-    SampleState State, ProcessTrafficFlags Flags, ulong AttributionEpoch, MeasurementMetadata Measurement);
+    SampleState State, ProcessTrafficFlags Flags, ulong AttributionEpoch, MeasurementMetadata Measurement, uint Device = 0);
 public readonly record struct ProcessTrafficBatchInfo(SampleState DiskState, SampleState NetworkState, SampleState IdentityProviderState,
     uint Flags, long ObservedAtNs, ulong AttributionEpoch, ulong UnknownEvents, ulong UnknownBytes, ulong EvictedSamples,
     ulong PendingDropped, ulong LateEvents, ulong IdentityConflicts, ulong BudgetBytesUsed, ulong BudgetLimit);
@@ -99,7 +99,7 @@ public sealed unsafe class NativeEventFrame : SafeHandleZeroOrMinusOneIsInvalid
 
     public ProcessTrafficBatch CopyTraffic() => Use(view => {
         if (EventMethods.Traffic(handle, (uint)sizeof(TrafficFrameView), out var traffic) != NativeResult.Ok
-            || traffic.AbiVersion != 1 || traffic.SampleCount > 256 || traffic.SampleCount > 0 && traffic.Samples == null
+            || traffic.AbiVersion != 2 || traffic.SampleCount > 256 || traffic.SampleCount > 0 && traffic.Samples == null
             || traffic.DiskState > SampleState.Gap || traffic.NetworkState > SampleState.Gap || traffic.IdentityProviderState > SampleState.Gap
             || traffic.Flags != 0 || traffic.ObservedAtNs < 0 || traffic.BudgetLimit != 8 * 1024 * 1024 || traffic.BudgetBytesUsed > traffic.BudgetLimit)
             throw new InvalidDataException("Pracovník událostí vrátil neplatný rámec přenosů.");
@@ -125,14 +125,14 @@ public sealed unsafe class NativeEventFrame : SafeHandleZeroOrMinusOneIsInvalid
                 || row.Operations == 0 || !double.IsFinite(row.ObservedBytesPerSecond) || row.ObservedBytesPerSecond < 0
                 || row.State is not (SampleState.Valid or SampleState.Gap) || (row.Flags & ~(ProcessTrafficFlags)63) != 0
                 || (!direct || row.State != SampleState.Valid) && (row.Flags & ProcessTrafficFlags.Partial) == 0
-                || row.AttributionEpoch == 0 || row.AttributionEpoch > traffic.AttributionEpoch || !m.IsValid
+                || row.AttributionEpoch == 0 || row.AttributionEpoch > traffic.AttributionEpoch || !m.IsValid || row.Reserved != 0 || !disk && row.Device != 0
                 || m.Unit != MeasurementUnit.BytesPerSecond || m.Normalization != MeasurementNormalization.None || m.NormalizationDivisor != 1
                 || m.Basis != MeasurementBasis.ElapsedDelta || m.IntervalState != MeasurementIntervalState.Measured || m.IntervalNs != 1_000_000_000
                 || m.ObservedAtNs != row.ObservedAtNs || m.CadenceNs != 0)
                 throw new InvalidDataException("Pracovník událostí vrátil neplatný přenos.");
             samples[i] = new(row.SampleId, row.StartQpc, row.EndQpc, row.ObservedAtNs, row.Pid, row.IdentityKind, row.Generation,
                 row.IdentityState, row.Attribution, row.Source, row.Direction, row.ObservedBytes, row.Operations, row.ObservedBytesPerSecond,
-                row.State, row.Flags, row.AttributionEpoch, m);
+                row.State, row.Flags, row.AttributionEpoch, m, row.Device);
         }
         return new ProcessTrafficBatch(new(traffic.DiskState, traffic.NetworkState, traffic.IdentityProviderState, traffic.Flags,
             traffic.ObservedAtNs, traffic.AttributionEpoch, traffic.UnknownEvents, traffic.UnknownBytes, traffic.EvictedSamples,
@@ -198,6 +198,7 @@ internal struct TrafficRecordView
     internal double ObservedBytesPerSecond;
     internal SampleState State;
     internal ProcessTrafficFlags Flags;
+    internal uint Device, Reserved;
     internal ulong AttributionEpoch;
     internal MeasurementMetadata Measurement;
 }

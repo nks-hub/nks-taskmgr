@@ -5,7 +5,6 @@ Síť: příjem {0} · odeslání {1}	Sieć: odebrane {0} · wysłane {1}
 Síť Ø / max	Sieć śr. / maks.
 Procesy podle sítě	Procesy według sieci
 čekám na první data	czekam na pierwsze dane
-Procesy podle I/O (čtení a zápis)	Procesy według we/wy (odczyt i zapis)
 Síť od spuštění záznamu:	Sieć od rozpoczęcia rejestrowania:
 zpožděno asi o 5 s	opóźnione o około 5 s
 Síť: neměřeno	Sieć: niezmierzona
@@ -15,3 +14,9 @@ Součet čtení a zápisu procesů.	Suma odczytów i zapisów procesów.
 I/O	We/wy
 Síť: {0} (příjem a odeslání dohromady)	Sieć: {0} (odebrane i wysłane razem)
 Síť od spuštění procesu:	Sieć od uruchomienia procesu:
+Procesy podle sítě na tomto rozhraní	Procesy według sieci na tym interfejsie
+K rozhraní patří proces, který má spojení TCP nebo UDP z jeho adresy. Proces, který má jen sokety na všech adresách, se řadí k rozhraní s výchozí trasou. Rychlost je za celý proces; ≤ znamená, že proces má spojení i přes jiné rozhraní.	Proces należy do interfejsu, gdy ma połączenie TCP lub UDP z jego adresu. Proces, który ma tylko gniazda na wszystkich adresach, jest przypisywany do interfejsu z trasą domyślną. Szybkość dotyczy całego procesu; ≤ oznacza, że proces ma też połączenia przez inny interfejs.
+Procesy podle I/O · všechny disky dohromady	Procesy według we/wy · wszystkie dyski razem
+Procesy podle čtení a zápisu na tomto disku	Procesy według odczytu i zapisu na tym dysku
+Rozdělení po discích měří Windows jen pro aplikaci spuštěnou jako správce.	Podział według dysków Windows mierzy tylko dla aplikacji uruchomionej jako administrator.
+Bajty, které proces četl a zapisoval na tento fyzický disk, za uzavřenou sekundu asi před 5 s. Zápisy z mezipaměti provádí Windows později a často pod procesem System.	Bajty, które proces odczytał i zapisał na tym dysku fizycznym, w zamkniętej sekundzie sprzed około 5 s. Zapisy z pamięci podręcznej Windows wykonuje później, często w procesie System.

@@ -5,7 +5,6 @@ Síť: příjem {0} · odeslání {1}	Netzwerk: empfangen {0} · gesendet {1}
 Síť Ø / max	Netzwerk Ø / Max.
 Procesy podle sítě	Prozesse nach Netzwerk
 čekám na první data	warte auf die ersten Daten
-Procesy podle I/O (čtení a zápis)	Prozesse nach E/A (Lesen und Schreiben)
 Síť od spuštění záznamu:	Netzwerk seit Beginn der Aufzeichnung:
 zpožděno asi o 5 s	etwa 5 s verzögert
 Síť: neměřeno	Netzwerk: nicht gemessen
@@ -15,3 +14,9 @@ Součet čtení a zápisu procesů.	Summe der Lese- und Schreibvorgänge der Pro
 I/O	E/A
 Síť: {0} (příjem a odeslání dohromady)	Netzwerk: {0} (empfangen und gesendet zusammen)
 Síť od spuštění procesu:	Netzwerk seit Prozessstart:
+Procesy podle sítě na tomto rozhraní	Prozesse nach Netzwerk auf dieser Schnittstelle
+K rozhraní patří proces, který má spojení TCP nebo UDP z jeho adresy. Proces, který má jen sokety na všech adresách, se řadí k rozhraní s výchozí trasou. Rychlost je za celý proces; ≤ znamená, že proces má spojení i přes jiné rozhraní.	Ein Prozess gehört zur Schnittstelle, wenn er eine TCP- oder UDP-Verbindung von ihrer Adresse hat. Ein Prozess, der nur Sockets auf allen Adressen hat, wird der Schnittstelle mit der Standardroute zugeordnet. Die Rate gilt für den ganzen Prozess; ≤ bedeutet, dass der Prozess auch Verbindungen über eine andere Schnittstelle hat.
+Procesy podle I/O · všechny disky dohromady	Prozesse nach E/A · alle Datenträger zusammen
+Procesy podle čtení a zápisu na tomto disku	Prozesse nach Lesen und Schreiben auf diesem Datenträger
+Rozdělení po discích měří Windows jen pro aplikaci spuštěnou jako správce.	Die Aufteilung nach Datenträgern misst Windows nur für eine App, die als Administrator ausgeführt wird.
+Bajty, které proces četl a zapisoval na tento fyzický disk, za uzavřenou sekundu asi před 5 s. Zápisy z mezipaměti provádí Windows později a často pod procesem System.	Bytes, die der Prozess auf diesem physischen Datenträger gelesen und geschrieben hat, in der abgeschlossenen Sekunde vor etwa 5 s. Schreibvorgänge aus dem Cache führt Windows später aus, oft unter dem Prozess System.

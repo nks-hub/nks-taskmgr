@@ -146,6 +146,15 @@ EventIdentityCandidate EventIdentityIndex::threadOwnerAt(std::uint32_t tid, std:
     return atStart.creationTime && atStart.creationTime == atInit.creationTime ? atInit : EventIdentityCandidate{};
 }
 
+bool EventIdentityIndex::threadTracked(std::uint32_t tid, std::int64_t qpc) const
+{
+    for (auto it = threads.lower_bound({tid, 0}); it != threads.end() && it->first.first == tid; ++it) {
+        const auto& time = it->second.time;
+        if (time.start < qpc && !(time.endSeen && qpc >= time.end)) return true;
+    }
+    return false;
+}
+
 EventIdentityCandidate EventIdentityIndex::processOwnerAt(std::uint32_t pid, std::int64_t point) const
 {
     EventIdentityCandidate result;

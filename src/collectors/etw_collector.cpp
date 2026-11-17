@@ -21,6 +21,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 namespace nks {
@@ -344,6 +345,7 @@ private:
             initiation.direction = opcode == 12 ? ProcessTrafficDirection::read : ProcessTrafficDirection::write;
             if (initiation.qpc < 0 || !data.pointer(L"Irp", initiation.irp)
                 || !data.unsigned32(L"IssuingThreadId", initiation.issuingTid)) { events->decodeFailure(); return; }
+            adoptThread(initiation.issuingTid, initiation.qpc);
             events->diskInitiated(initiation); return;
         }
         ProcessTrafficObservation observation;
@@ -354,9 +356,34 @@ private:
         observation.source = disk ? ProcessTrafficSource::physicalDisk : tcp ? ProcessTrafficSource::tcp : ProcessTrafficSource::udp;
         observation.direction = disk ? (opcode == 10 ? ProcessTrafficDirection::read : ProcessTrafficDirection::write)
             : (opcode == 10 || opcode == 26 ? ProcessTrafficDirection::sent : ProcessTrafficDirection::received);
-        if (disk && !data.pointer(L"Irp", observation.irp)) events->decodeFailure();
+        if (disk && (!data.pointer(L"Irp", observation.irp) || !data.unsigned32(L"DiskNumber", observation.device))) events->decodeFailure();
         observation.ipv6 = !disk && opcode >= 26; events->traffic(observation);
     }
+    // A thread older than the session has no Start event, so its disk I/O would stay without an owner. The live thread
+    // names its process; a creation time before the event proves it is the thread that issued it, not a reused ID.
+    void adoptThread(std::uint32_t tid, std::int64_t qpc) {
+        if (!tid || qpc <= 0 || events->threadTracked(tid, qpc)) return;
+        LARGE_INTEGER frequency{}, now{};
+        if (!QueryPerformanceFrequency(&frequency) || !QueryPerformanceCounter(&now) || now.QuadPart < qpc) return;
+        if (const auto failed = unadopted.find(tid); failed != unadopted.end() && qpc - failed->second < 10 * frequency.QuadPart) return;
+        FILETIME nowTime{}, created{}, exited{}, kernel{}, user{};
+        GetSystemTimePreciseAsFileTime(&nowTime);
+        const auto elapsed100ns = static_cast<std::uint64_t>(now.QuadPart - qpc) / static_cast<std::uint64_t>(frequency.QuadPart) * 10'000'000
+            + static_cast<std::uint64_t>(now.QuadPart - qpc) % static_cast<std::uint64_t>(frequency.QuadPart) * 10'000'000 / static_cast<std::uint64_t>(frequency.QuadPart);
+        const auto eventTime = (static_cast<std::uint64_t>(nowTime.dwHighDateTime) << 32 | nowTime.dwLowDateTime) - elapsed100ns;
+        std::uint32_t pid = 0;
+        if (const HANDLE thread = OpenThread(THREAD_QUERY_LIMITED_INFORMATION, FALSE, tid)) {
+            if (GetThreadTimes(thread, &created, &exited, &kernel, &user)
+                && (static_cast<std::uint64_t>(created.dwHighDateTime) << 32 | created.dwLowDateTime) < eventTime) pid = GetProcessIdOfThread(thread);
+            CloseHandle(thread);
+        }
+        if (!pid) {
+            if (unadopted.size() >= 4096) unadopted.clear();
+            unadopted[tid] = qpc; return;
+        }
+        events->thread(pid, tid, qpc - 1, true);
+    }
+    std::unordered_map<std::uint32_t, std::int64_t> unadopted;
     void manifest(EVENT_RECORD& record) {
         const auto id = record.EventHeader.EventDescriptor.Id;
         if (id < 1 || id > 4) return;

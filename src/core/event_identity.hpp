@@ -21,6 +21,8 @@ public:
     EventIdentityCandidate processOwnerAt(std::uint32_t pid, std::int64_t qpc) const;
     EventIdentityCandidate threadAt(std::uint32_t tid, std::int64_t qpc) const;
     EventIdentityCandidate threadOwnerAt(std::uint32_t tid, std::int64_t qpc) const;
+    /// True when a lifetime of the thread that began before qpc and has not ended by it is recorded.
+    bool threadTracked(std::uint32_t tid, std::int64_t qpc) const;
     /// Events up to floorQpc may be missing, so lifetimes starting there no longer prove ownership.
     void clear(std::int64_t floorQpc = -1) noexcept { processes.clear(); threads.clear(); floor = floorQpc; }
     std::int64_t resetFloor() const noexcept { return floor; }

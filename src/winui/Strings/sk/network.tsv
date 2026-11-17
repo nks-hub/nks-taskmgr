@@ -5,7 +5,6 @@ Síť: příjem {0} · odeslání {1}	Sieť: príjem {0} · odoslanie {1}
 Síť Ø / max	Sieť Ø / max
 Procesy podle sítě	Procesy podľa siete
 čekám na první data	čakám na prvé údaje
-Procesy podle I/O (čtení a zápis)	Procesy podľa I/O (čítanie a zápis)
 Síť od spuštění záznamu:	Sieť od spustenia záznamu:
 zpožděno asi o 5 s	oneskorené asi o 5 s
 Síť: neměřeno	Sieť: nemerané
@@ -15,3 +14,9 @@ Součet čtení a zápisu procesů.	Súčet čítania a zápisu procesov.
 I/O	I/O
 Síť: {0} (příjem a odeslání dohromady)	Sieť: {0} (príjem a odoslanie spolu)
 Síť od spuštění procesu:	Sieť od spustenia procesu:
+Procesy podle sítě na tomto rozhraní	Procesy podľa siete na tomto rozhraní
+K rozhraní patří proces, který má spojení TCP nebo UDP z jeho adresy. Proces, který má jen sokety na všech adresách, se řadí k rozhraní s výchozí trasou. Rychlost je za celý proces; ≤ znamená, že proces má spojení i přes jiné rozhraní.	K rozhraniu patrí proces, ktorý má spojenie TCP alebo UDP z jeho adresy. Proces, ktorý má len sokety na všetkých adresách, sa radí k rozhraniu s predvolenou trasou. Rýchlosť je za celý proces; ≤ znamená, že proces má spojenie aj cez iné rozhranie.
+Procesy podle I/O · všechny disky dohromady	Procesy podľa I/O · všetky disky spolu
+Procesy podle čtení a zápisu na tomto disku	Procesy podľa čítania a zápisu na tomto disku
+Rozdělení po discích měří Windows jen pro aplikaci spuštěnou jako správce.	Rozdelenie podľa diskov meria Windows len pre aplikáciu spustenú ako správca.
+Bajty, které proces četl a zapisoval na tento fyzický disk, za uzavřenou sekundu asi před 5 s. Zápisy z mezipaměti provádí Windows později a často pod procesem System.	Bajty, ktoré proces čítal a zapisoval na tento fyzický disk, za uzavretú sekundu asi pred 5 s. Zápisy z vyrovnávacej pamäte vykonáva Windows neskôr a často pod procesom System.

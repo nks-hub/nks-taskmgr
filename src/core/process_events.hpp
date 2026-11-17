@@ -51,6 +51,8 @@ public:
     void requestStop();
     void push(ProcessEventRecord record);
     void thread(std::uint32_t pid, std::uint32_t tid, std::int64_t qpc, bool start);
+    /// True when the ledger already holds a lifetime of the thread covering qpc.
+    bool threadTracked(std::uint32_t tid, std::int64_t qpc);
     void traffic(ProcessTrafficObservation observation);
     void diskInitiated(ProcessDiskInitiation initiation);
     void providers(SampleState disk, SampleState network, SampleState identity);
