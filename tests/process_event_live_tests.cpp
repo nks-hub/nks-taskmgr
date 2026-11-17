@@ -139,7 +139,7 @@ struct Frame {
             && view->event_count <= 512 && (!view->event_count || view->events) && view->qpc_frequency >= 0,
             "Public event frame violated its ABI contract");
         require(nks_events_frame_get_traffic(value.get(), sizeof(traffic), &traffic) == NKS_OK
-            && traffic.abi_version == 1 && traffic.sample_count <= 256
+            && traffic.abi_version == 2 && traffic.sample_count <= 256
             && (!traffic.sample_count || traffic.samples) && traffic.budget_limit == 8 * 1024 * 1024
             && traffic.budget_bytes_used <= traffic.budget_limit, "Public traffic frame violated its bounded contract");
     }
